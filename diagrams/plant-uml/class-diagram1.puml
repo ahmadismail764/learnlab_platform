@@ -1,0 +1,79 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+enum UserType {
+  STUDENT
+  ADMIN
+}
+
+enum QuestionType {
+  MCQ
+  NUMERIC
+  SYMBOLIC
+}
+
+abstract class User {
+  - id: int
+  - email: string
+  - password_hash: string
+  - user_type: UserType
+  + login(): bool
+}
+
+class Student {
+  - current_xp: int
+  - streak_count: int
+  - highest_streak: int
+  + viewDueTopics(): List<Topic>
+  + practiceQuestion(topic_id): Question
+  + getXP(): int
+}
+
+class Admin {
+  + addTopic(data): Topic
+  + addQuestion(data): Question
+}
+
+class Topic {
+  - id: int
+  - name: string
+  + getQuestionByTier(tier: int): Question
+}
+
+class Question {
+  - id: int
+  - topic_id: int
+  - tier: int
+  - difficulty: int
+  - question_text: string
+  - correct_answer: string
+  - xp_value: int
+  + checkAnswer(input): bool
+}
+
+class TopicMastery {
+  - stability: float
+  - difficulty: float
+  - next_review: datetime
+  + calculateTier(): int
+  + isDue(): bool
+}
+
+class Review {
+  - rating: int
+  - time_taken: int
+  - xp_earned: int
+  - is_correct: bool
+  + save(): void
+}
+
+User <|-- Student
+User <|-- Admin
+
+Student "1" -- "*" TopicMastery : has
+Topic "1" -- "*" TopicMastery : has
+Topic "1" -- "*" Question : contains
+TopicMastery "1" -- "*" Review : tracks
+Question "1" -- "*" Review : appears in
+
+@enduml

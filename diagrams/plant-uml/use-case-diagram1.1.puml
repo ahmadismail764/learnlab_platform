@@ -1,0 +1,66 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam usecase {
+    BackgroundColor White
+    BorderColor DarkSlateGray
+    ArrowColor Black
+}
+
+actor Student as S
+actor "Content Admin" as A
+actor "AI Engine" as AI <<System>>
+
+rectangle "LearnLab Intelligent Platform" {
+  
+  package "Core Learning Loop" {
+      usecase "Start Adaptive Session" as UC_Session
+      usecase "Solve Problem" as UC_Solve
+      usecase "Submit Solution" as UC_Submit
+      usecase "Input via LaTeX/MathLive" as UC_InputMath
+      usecase "Input via Camera (OCR)" as UC_OCR
+      usecase "Request AI Hint" as UC_Hint
+      usecase "Rate Difficulty" as UC_Rate
+  }
+
+  package "Gamification & Social" {
+      usecase "Challenge Friend (PvP)" as UC_PvP
+      usecase "View Dynamic Leaderboard" as UC_Leaderboard
+      usecase "Maintain Daily Streak" as UC_Streak
+  }
+
+  package "Analytics & Mgmt" {
+      usecase "View Knowledge Graph" as UC_Graph
+      usecase "Manage Topics/Curriculum" as UC_ManageTopic
+      usecase "Analyze Cohort Performance" as UC_Analytics
+      usecase "Generate Problem Templates" as UC_GenProb
+  }
+}
+
+' Student Interactions
+S --> UC_Session
+S --> UC_PvP
+S --> UC_Leaderboard
+S --> UC_Graph
+S --> UC_Streak
+
+' The Practice Flow
+UC_Session ..> UC_Solve : <<include>>
+UC_Solve <.. UC_Hint : <<extend>>
+UC_Solve <.. UC_InputMath : <<extend>>
+UC_Solve <.. UC_OCR : <<extend>>
+UC_Solve ..> UC_Submit : <<include>>
+UC_Submit ..> UC_Rate : <<include>>
+
+' Admin Interactions
+A --> UC_ManageTopic
+A --> UC_Analytics
+
+' AI System Interactions (Automation)
+UC_Submit -- AI : "Auto-Grade & Analyze Errors"
+UC_Hint -- AI : "Generate Contextual Hint"
+UC_Session -- AI : "Fetch FSRS Schedule"
+UC_GenProb -- AI : "Generate Variations"
+UC_ManageTopic <.. UC_GenProb : <<extend>>
+
+@enduml

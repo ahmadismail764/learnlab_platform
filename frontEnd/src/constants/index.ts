@@ -11,7 +11,7 @@
 
 export const APP_NAME = 'Learn Lab'
 export const APP_VERSION = '0.1.0'
-export const APP_DESCRIPTION = 'Educational LMS Platform for Primary & Elementary School'
+export const APP_DESCRIPTION = 'Discrete Mathematics Learning Platform for College Students'
 
 // ============================================
 // API Configuration
@@ -47,19 +47,45 @@ export const ROUTES = {
   STUDENT_DASHBOARD: '/student',
   STUDENT_PRACTICE: '/student/practice',
   STUDENT_PROGRESS: '/student/progress',
-  STUDENT_SUBJECTS: '/student/subjects',
+  STUDENT_TOPICS: '/student/topics',
+  STUDENT_ACHIEVEMENTS: '/student/achievements',
   
-  // Teacher/Instructor
-  TEACHER_DASHBOARD: '/teacher',
-  TEACHER_CLASSES: '/teacher/classes',
-  TEACHER_ANALYTICS: '/teacher/analytics',
-  TEACHER_QUESTIONS: '/teacher/questions',
-  
-  // Admin
+  // Admin (Content Manager)
   ADMIN_DASHBOARD: '/admin',
+  ADMIN_QUESTIONS: '/admin/questions',
   ADMIN_USERS: '/admin/users',
+  ADMIN_ANALYTICS: '/admin/analytics',
   ADMIN_SETTINGS: '/admin/settings',
+  
+  // Supervisor (Academic Advisor)
+  SUPERVISOR_DASHBOARD: '/supervisor',
+  SUPERVISOR_REVIEW: '/supervisor/review',
+  SUPERVISOR_REPORTS: '/supervisor/reports',
 } as const
+
+// ============================================
+// Course Configuration (OCP: Extensible)
+// ============================================
+
+/**
+ * Current active course - Discrete Mathematics
+ * Architecture supports adding more courses later
+ * by extending this configuration
+ */
+export const CURRENT_COURSE = {
+  id: 'discrete-math',
+  nameKey: 'topics:discreteMath',
+  icon: '🔢',
+} as const
+
+/**
+ * All available courses (extensible)
+ * To add a new course:
+ * 1. Add course config here
+ * 2. Add translations in topics namespace
+ * 3. Create topic hierarchy in database
+ */
+export const COURSES = [CURRENT_COURSE] as const
 
 // ============================================
 // UI Constants

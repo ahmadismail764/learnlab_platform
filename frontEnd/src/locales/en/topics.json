@@ -1,0 +1,45 @@
+{
+  "discreteMath": "Discrete Mathematics",
+  "sets": {
+    "title": "Set Theory",
+    "operations": "Set Operations",
+    "vennDiagrams": "Venn Diagrams",
+    "powerSets": "Power Sets",
+    "cartesianProduct": "Cartesian Product"
+  },
+  "logic": {
+    "title": "Logic",
+    "propositional": "Propositional Logic",
+    "predicates": "Predicate Logic",
+    "quantifiers": "Quantifiers",
+    "proofTechniques": "Proof Techniques"
+  },
+  "relations": {
+    "title": "Relations",
+    "properties": "Relation Properties",
+    "equivalence": "Equivalence Relations",
+    "partialOrders": "Partial Orders",
+    "functions": "Functions"
+  },
+  "combinatorics": {
+    "title": "Combinatorics",
+    "counting": "Counting Principles",
+    "permutations": "Permutations",
+    "combinations": "Combinations",
+    "pigeonhole": "Pigeonhole Principle"
+  },
+  "graphTheory": {
+    "title": "Graph Theory",
+    "basics": "Graph Basics",
+    "paths": "Paths & Circuits",
+    "trees": "Trees",
+    "planarity": "Planarity"
+  },
+  "numberTheory": {
+    "title": "Number Theory",
+    "divisibility": "Divisibility",
+    "modularArithmetic": "Modular Arithmetic",
+    "gcd": "GCD & LCM",
+    "primes": "Prime Numbers"
+  }
+}

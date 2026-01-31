@@ -3,8 +3,14 @@
  * 
  * Page components that are route targets.
  * Pages compose features and components.
+ * 
+ * Roles:
+ * - student: Primary learner (Discrete Mathematics)
+ * - admin: System admin / Content manager
+ * - supervisor: Academic advisor
  */
 
-// Export pages here as they are created
-// export { HomePage } from './HomePage'
-// export { LoginPage } from './LoginPage'
+export * from './auth'
+export * from './student'
+export * from './admin'
+// Note: supervisor pages will be added as needed

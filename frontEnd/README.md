@@ -41,7 +41,6 @@ src/
 ├── features/        # Feature modules (domain-driven)
 │   ├── auth/        # Authentication feature
 │   ├── student/     # Student-specific features
-│   ├── teacher/     # Teacher-specific features
 │   ├── admin/       # Admin-specific features
 │   └── questions/   # Question/practice system
 ├── hooks/           # Shared custom hooks
@@ -74,8 +73,8 @@ src/
 ## User Roles
 
 - **Student** - Solve questions, track progress, view achievements
-- **Instructor** - View student analytics, manage content
-- **Administrator** - System management, user management
+- **Supervisor** - Academic advisor, content review, student monitoring
+- **Admin** - System management, user management, content management
 
 ## Architecture Principles
 

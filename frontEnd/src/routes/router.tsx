@@ -1,6 +1,14 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { AuthLayout, DashboardLayout } from '@/components/layout'
-import { LoginPage, RegisterPage, StudentDashboard, AdminDashboard } from '@/pages'
+import { 
+  LoginPage, 
+  RegisterPage, 
+  StudentDashboard, 
+  AdminDashboard, 
+  SupervisorDashboard,
+  PracticePage, 
+  TopicsPage 
+} from '@/pages'
 import type { User } from '@/types'
 
 /**
@@ -53,8 +61,8 @@ export function createAppRouter(user: User | null) {
       element: createDashboardElement(user),
       children: [
         { index: true, element: <StudentDashboard /> },
-        { path: 'topics', element: <PlaceholderPage title="Topics" description="Topic browser for Discrete Mathematics" /> },
-        { path: 'practice', element: <PlaceholderPage title="Practice Session" description="Practice interface with MathLive keyboard" /> },
+        { path: 'topics', element: <TopicsPage /> },
+        { path: 'practice', element: <PracticePage /> },
         { path: 'progress', element: <PlaceholderPage title="My Progress" description="FSRS-based progress tracking" /> },
         { path: 'achievements', element: <PlaceholderPage title="Achievements" description="XP, streaks, and badges" /> },
       ],
@@ -78,7 +86,7 @@ export function createAppRouter(user: User | null) {
       path: '/supervisor',
       element: createDashboardElement(user),
       children: [
-        { index: true, element: <PlaceholderPage title="Supervisor Dashboard" description="Content review overview" /> },
+        { index: true, element: <SupervisorDashboard /> },
         { path: 'review', element: <PlaceholderPage title="Content Review" description="Review pedagogical validity of questions" /> },
         { path: 'reports', element: <PlaceholderPage title="Reports" description="Academic performance reports" /> },
       ],

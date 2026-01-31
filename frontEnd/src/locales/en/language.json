@@ -1,6 +1,6 @@
 {
-  "english": "English",
   "arabic": "العربية",
-  "switchLanguage": "Switch Language",
-  "languageChanged": "Language changed to {{language}}"
+  "english": "English",
+  "languageChanged": "Language changed to {{language}}",
+  "switchLanguage": "Switch Language"
 }

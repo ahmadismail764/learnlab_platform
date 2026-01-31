@@ -14,7 +14,7 @@ export interface RegisterData {
   password: string
   firstName: string
   lastName: string
-  role?: 'student' | 'instructor' // Admin created differently
+  role?: 'student' | 'supervisor' // Admin created differently
 }
 
 export interface AuthTokens {

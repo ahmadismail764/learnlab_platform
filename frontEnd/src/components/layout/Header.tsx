@@ -1,15 +1,16 @@
-import { Bell, Search, Menu } from 'lucide-react'
+import { Bell, Menu } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
-import { cn } from '@/utils/cn'
 import type { User } from '@/types'
 
 /**
  * Header Component
  * 
- * Top navigation bar with search, notifications, language switcher, and user menu.
+ * Top navigation bar with notifications, language switcher, and user menu.
  * RTL-aware: icons and layout flip automatically.
+ * 
+ * Note: Search functionality removed - will be added when backend is ready.
  */
 
 export interface HeaderProps {
@@ -21,10 +22,6 @@ export interface HeaderProps {
   showMenuButton?: boolean
   /** Callback when menu button is clicked */
   onMenuClick?: () => void
-  /** Show search bar */
-  showSearch?: boolean
-  /** Callback when search is submitted */
-  onSearch?: (query: string) => void
 }
 
 export function Header({
@@ -32,7 +29,6 @@ export function Header({
   title,
   showMenuButton = false,
   onMenuClick,
-  showSearch = true,
 }: HeaderProps) {
   const { t } = useTranslation()
   
@@ -57,32 +53,15 @@ export function Header({
         )}
       </div>
 
-      {/* Center - Search */}
-      {showSearch && (
-        <div className="flex-1 max-w-md hidden md:block">
-          <div className="relative">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              placeholder={t('common:searchPlaceholder')}
-              className={cn(
-                'w-full ps-10 pe-4 py-2 rounded-lg',
-                'border border-neutral-200 bg-neutral-50',
-                'text-sm placeholder:text-neutral-400',
-                'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
-                'focus:bg-white transition-colors duration-150'
-              )}
-            />
-          </div>
-        </div>
-      )}
+      {/* Center spacer */}
+      <div className="flex-1" />
 
       {/* End side (right in LTR, left in RTL) */}
       <div className="flex items-center gap-2">
         {/* Language Switcher */}
         <LanguageSwitcher variant="minimal" />
         
-        {/* Notifications */}
+        {/* Notifications - static for now */}
         <button 
           className="relative p-2 rounded-lg text-neutral-500 hover:bg-neutral-100"
           aria-label={t('nav:notifications', 'Notifications')}

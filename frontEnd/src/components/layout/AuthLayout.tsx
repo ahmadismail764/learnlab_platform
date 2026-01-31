@@ -34,21 +34,7 @@ export function AuthLayout() {
           </p>
         </div>
 
-        {/* Decorative elements */}
-        <div className="flex gap-4">
-          {/* <div className="flex items-center gap-2">
-            <span className="text-3xl">📚</span>
-            <span className="text-sm text-primary-100">1000+ Questions</span>
-          </div> */}
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">🎯</span>
-            <span className="text-sm text-primary-100">Personalized</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-3xl">📈</span>
-            <span className="text-sm text-primary-100">Track Progress</span>
-          </div>
-        </div>
+        <div />
       </div>
 
       {/* Right side - Form */}

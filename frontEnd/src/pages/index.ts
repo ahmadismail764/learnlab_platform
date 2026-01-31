@@ -13,4 +13,4 @@
 export * from './auth'
 export * from './student'
 export * from './admin'
-// Note: supervisor pages will be added as needed
+export * from './supervisor'

@@ -198,7 +198,7 @@ export interface XPTransaction {
   userId: string
   amount: number
   /** Source of XP */
-  source: 'question' | 'streak_bonus' | 'achievement' | 'daily_goal'
+  source: 'question' | 'streak_bonus' | 'achievement' | 'challenge'
   /** Multiplier applied (streak, etc.) */
   multiplier: number
   createdAt: string

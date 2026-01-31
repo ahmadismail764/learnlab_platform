@@ -27,16 +27,16 @@ export function AdminDashboard() {
   const stats = {
     totalUsers: 1247,
     students: 1150,
-    teachers: 89,
+    supervisors: 89,
     admins: 8,
     activeToday: 423,
     newThisWeek: 34,
   }
 
   const recentUsers = [
-    { id: '1', name: 'يوسف الراشد', email: 'youssef@school.com', roleKey: 'auth:student', hoursAgo: 2 },
-    { id: '2', name: 'هند المنصور', email: 'hind@school.com', roleKey: 'auth:teacher', hoursAgo: 5 },
-    { id: '3', name: 'زينب العمري', email: 'zainab@school.com', roleKey: 'auth:student', daysAgo: 1 },
+    { id: '1', name: 'يوسف محمد', email: 'youssef@school.com', roleKey: 'auth:student', hoursAgo: 2 },
+    { id: '2', name: 'هند أحمد', email: 'hind@school.com', roleKey: 'auth:supervisor', hoursAgo: 5 },
+    { id: '3', name: 'زينب  السيد', email: 'zainab@school.com', roleKey: 'auth:student', daysAgo: 1 },
   ]
 
   const systemHealth = [
@@ -107,8 +107,8 @@ export function AdminDashboard() {
               <BookOpen className="w-5 h-5 text-accent-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{stats.teachers}</p>
-              <p className="text-xs text-neutral-500">{t('admin:teachers')}</p>
+              <p className="text-2xl font-bold text-neutral-800">{stats.supervisors}</p>
+              <p className="text-xs text-neutral-500">{t('admin:supervisors')}</p>
             </div>
           </div>
         </Card>
@@ -128,8 +128,8 @@ export function AdminDashboard() {
                   <p className="text-sm text-neutral-500">{t('admin:students')}</p>
                 </div>
                 <div className="text-center p-4 bg-neutral-50 rounded-lg">
-                  <p className="text-3xl font-bold text-neutral-800">{stats.teachers}</p>
-                  <p className="text-sm text-neutral-500">{t('admin:teachers')}</p>
+                  <p className="text-3xl font-bold text-neutral-800">{stats.supervisors}</p>
+                  <p className="text-sm text-neutral-500">{t('admin:supervisors')}</p>
                 </div>
                 <div className="text-center p-4 bg-neutral-50 rounded-lg">
                   <p className="text-3xl font-bold text-neutral-800">{stats.admins}</p>
@@ -158,7 +158,7 @@ export function AdminDashboard() {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge 
-                        variant={u.roleKey === 'auth:teacher' ? 'secondary' : 'default'}
+                        variant={u.roleKey === 'auth:supervisor' ? 'secondary' : 'default'}
                         size="sm"
                       >
                         {t(u.roleKey)}

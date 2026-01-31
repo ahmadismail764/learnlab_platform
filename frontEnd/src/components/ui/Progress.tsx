@@ -190,7 +190,7 @@ export interface StreakProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const Streak = forwardRef<HTMLDivElement, StreakProps>(
-  ({ className, count, label = 'Day Streak', icon, ...props }, ref) => {
+  ({ className, count, label = 'Streak', icon, ...props }, ref) => {
     return (
       <div
         ref={ref}

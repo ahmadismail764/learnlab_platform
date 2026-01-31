@@ -1,45 +1,45 @@
 {
-  "discreteMath": "Discrete Mathematics",
-  "sets": {
-    "title": "Set Theory",
-    "operations": "Set Operations",
-    "vennDiagrams": "Venn Diagrams",
-    "powerSets": "Power Sets",
-    "cartesianProduct": "Cartesian Product"
-  },
-  "logic": {
-    "title": "Logic",
-    "propositional": "Propositional Logic",
-    "predicates": "Predicate Logic",
-    "quantifiers": "Quantifiers",
-    "proofTechniques": "Proof Techniques"
-  },
-  "relations": {
-    "title": "Relations",
-    "properties": "Relation Properties",
-    "equivalence": "Equivalence Relations",
-    "partialOrders": "Partial Orders",
-    "functions": "Functions"
-  },
   "combinatorics": {
-    "title": "Combinatorics",
+    "combinations": "Combinations",
     "counting": "Counting Principles",
     "permutations": "Permutations",
-    "combinations": "Combinations",
-    "pigeonhole": "Pigeonhole Principle"
+    "pigeonhole": "Pigeonhole Principle",
+    "title": "Combinatorics"
   },
+  "discreteMath": "Discrete Mathematics",
   "graphTheory": {
-    "title": "Graph Theory",
     "basics": "Graph Basics",
     "paths": "Paths & Circuits",
-    "trees": "Trees",
-    "planarity": "Planarity"
+    "planarity": "Planarity",
+    "title": "Graph Theory",
+    "trees": "Trees"
+  },
+  "logic": {
+    "predicates": "Predicate Logic",
+    "proofTechniques": "Proof Techniques",
+    "propositional": "Propositional Logic",
+    "quantifiers": "Quantifiers",
+    "title": "Logic"
   },
   "numberTheory": {
-    "title": "Number Theory",
     "divisibility": "Divisibility",
-    "modularArithmetic": "Modular Arithmetic",
     "gcd": "GCD & LCM",
-    "primes": "Prime Numbers"
+    "modularArithmetic": "Modular Arithmetic",
+    "primes": "Prime Numbers",
+    "title": "Number Theory"
+  },
+  "relations": {
+    "equivalence": "Equivalence Relations",
+    "functions": "Functions",
+    "partialOrders": "Partial Orders",
+    "properties": "Relation Properties",
+    "title": "Relations"
+  },
+  "sets": {
+    "cartesianProduct": "Cartesian Product",
+    "operations": "Set Operations",
+    "powerSets": "Power Sets",
+    "title": "Set Theory",
+    "vennDiagrams": "Venn Diagrams"
   }
 }

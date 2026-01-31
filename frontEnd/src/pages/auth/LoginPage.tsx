@@ -26,13 +26,13 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Mock users for development
+  // Mock users for development - Egyptian Arabic names
   const mockUsers: Record<string, User> = {
     'student@learnlab.com': {
       id: '1',
       email: 'student@learnlab.com',
-      firstName: 'Ahmad',
-      lastName: 'Student',
+      firstName: 'أحمد',   // Ahmed
+      lastName: 'محمد',  // Mohamed
       role: 'student' as UserRole,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -40,8 +40,8 @@ export function LoginPage() {
     'admin@learnlab.com': {
       id: '2',
       email: 'admin@learnlab.com',
-      firstName: 'Sara',
-      lastName: 'Admin',
+      firstName: 'سارة',   // Sara
+      lastName: 'إبراهيم', // Ibrahim
       role: 'admin' as UserRole,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -49,8 +49,8 @@ export function LoginPage() {
     'supervisor@learnlab.com': {
       id: '3',
       email: 'supervisor@learnlab.com',
-      firstName: 'Dr. Khalid',
-      lastName: 'Advisor',
+      firstName: 'د. خالد',    // Dr. Khalid
+      lastName: 'عبدالرحمن',  // Abdulrahman
       role: 'supervisor' as UserRole,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

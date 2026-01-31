@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Card, CardHeader, CardContent, Button, Badge, ProgressBar, ProgressRing, Streak } from '@/components/ui'
+import { Card, CardHeader, CardContent, Button, Badge, ProgressBar, Streak } from '@/components/ui'
 import { useCurrentUser } from '@/contexts'
 
 /**
@@ -23,14 +23,13 @@ import { useCurrentUser } from '@/contexts'
  */
 
 export function StudentDashboard() {
-  const { t } = useTranslation(['student', 'common', 'topics'])
+  const { t } = useTranslation(['student', 'common', 'topics', 'gamification'])
   const user = useCurrentUser()
 
   // Mock data - will come from API
   const stats = {
     streak: 7,
     questionsToday: 12,
-    dailyGoal: 20,
     totalMastered: 156,
     topicsInProgress: 6,
     topicsDue: 3,
@@ -44,10 +43,10 @@ export function StudentDashboard() {
   ]
 
   const achievements = [
-    { id: '1', name: 'First Steps', icon: '🎯', earned: true },
-    { id: '2', name: '7 Day Streak', icon: '🔥', earned: true },
-    { id: '3', name: 'Math Whiz', icon: '🧮', earned: false },
-    { id: '4', name: 'Bookworm', icon: '📖', earned: false },
+    { id: '1', nameKey: 'gamification:achievements.firstSteps', icon: '🎯', earned: true },
+    { id: '2', nameKey: 'gamification:achievements.weekStreak', icon: '🔥', earned: true },
+    { id: '3', nameKey: 'gamification:achievements.mathWhiz', icon: '🧮', earned: false },
+    { id: '4', nameKey: 'gamification:achievements.perfectScore', icon: '⭐', earned: false },
   ]
 
   return (
@@ -62,34 +61,28 @@ export function StudentDashboard() {
             {t('student:readyToContinue')}
           </p>
         </div>
-        <Streak count={stats.streak} label={t('student:dayStreak')} />
+        <Streak count={stats.streak} label={t('gamification:streak')} />
       </div>
 
-      {/* Daily Progress Card */}
+      {/* Session Progress Card */}
       <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white border-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-primary-100 text-sm">{t('student:todaysProgress')}</p>
             <p className="text-3xl font-bold mt-1">
-              {t('student:questionsProgress', { done: stats.questionsToday, goal: stats.dailyGoal })}
+              {t('student:questionsAnsweredToday', { count: stats.questionsToday })}
             </p>
             <p className="text-primary-100 text-sm mt-1">
-              {t('student:moreToGoal', { remaining: stats.dailyGoal - stats.questionsToday })}
+              {t('student:topicsProgress', { due: stats.topicsDue })}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <ProgressRing 
-              value={(stats.questionsToday / stats.dailyGoal) * 100} 
-              size={80}
-              strokeWidth={6}
-              variant="success"
-            />
             <Button 
               variant="outline" 
               className="border-white/30 text-white hover:bg-white/10"
               rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
             >
-              {t('student:continue')}
+              {t('student:startSession')}
             </Button>
           </div>
         </div>
@@ -128,7 +121,7 @@ export function StudentDashboard() {
             </div>
             <div>
               <p className="text-2xl font-bold text-neutral-800">{stats.streak}</p>
-              <p className="text-xs text-neutral-500">{t('student:dayStreak')}</p>
+              <p className="text-xs text-neutral-500">{t('gamification:streak')}</p>
             </div>
           </div>
         </Card>
@@ -204,7 +197,7 @@ export function StudentDashboard() {
                   <span className={`text-xs text-center ${
                     achievement.earned ? 'text-neutral-700' : 'text-neutral-500'
                   }`}>
-                    {achievement.name}
+                    {t(achievement.nameKey)}
                   </span>
                 </div>
               ))}

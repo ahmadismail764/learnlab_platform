@@ -1,0 +1,41 @@
+{
+  "practiceSession": "Practice Session",
+  "question": "Question",
+  "questionOf": "Question {{current}} of {{total}}",
+  "submitAnswer": "Submit Answer",
+  "checkAnswer": "Check Answer",
+  "showSolution": "Show Solution",
+  "hideSolution": "Hide Solution",
+  "nextQuestion": "Next Question",
+  "previousQuestion": "Previous Question",
+  "solutionSteps": "Solution Steps",
+  "step": "Step {{number}}",
+  "correct": "Correct! 🎉",
+  "incorrect": "Not quite right",
+  "tryAgain": "Try Again",
+  "reviewLater": "Review Later",
+  "hint": "Hint",
+  "showHint": "Show Hint",
+  "difficulty": {
+    "tier1": "Basic",
+    "tier2": "Intermediate",
+    "tier3": "Advanced"
+  },
+  "feedback": {
+    "excellent": "Excellent work!",
+    "good": "Good job!",
+    "keepPracticing": "Keep practicing!",
+    "reviewConcept": "Review this concept"
+  },
+  "mathKeyboard": "Math Keyboard",
+  "toggleKeyboard": "Toggle Math Keyboard",
+  "enterAnswer": "Enter your answer...",
+  "sessionSummary": "Session Summary",
+  "questionsAnswered": "Questions Answered",
+  "accuracy": "Accuracy",
+  "timeSpent": "Time Spent",
+  "topicsReviewed": "Topics Reviewed",
+  "endSession": "End Session",
+  "pauseSession": "Pause Session",
+  "resumeSession": "Resume Session"
+}

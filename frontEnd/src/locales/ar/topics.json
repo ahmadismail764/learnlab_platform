@@ -1,0 +1,45 @@
+{
+  "discreteMath": "",
+  "sets": {
+    "title": "",
+    "operations": "",
+    "vennDiagrams": "",
+    "powerSets": "",
+    "cartesianProduct": ""
+  },
+  "logic": {
+    "title": "",
+    "propositional": "",
+    "predicates": "",
+    "quantifiers": "",
+    "proofTechniques": ""
+  },
+  "relations": {
+    "title": "",
+    "properties": "",
+    "equivalence": "",
+    "partialOrders": "",
+    "functions": ""
+  },
+  "combinatorics": {
+    "title": "",
+    "counting": "",
+    "permutations": "",
+    "combinations": "",
+    "pigeonhole": ""
+  },
+  "graphTheory": {
+    "title": "",
+    "basics": "",
+    "paths": "",
+    "trees": "",
+    "planarity": ""
+  },
+  "numberTheory": {
+    "title": "",
+    "divisibility": "",
+    "modularArithmetic": "",
+    "gcd": "",
+    "primes": ""
+  }
+}

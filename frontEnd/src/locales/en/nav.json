@@ -1,0 +1,19 @@
+{
+  "dashboard": "Dashboard",
+  "topics": "Topics",
+  "practice": "Practice",
+  "achievements": "Achievements",
+  "progress": "Progress",
+  "settings": "Settings",
+  "questionBank": "Question Bank",
+  "analytics": "Analytics",
+  "users": "Users",
+  "systemSettings": "System Settings",
+  "reports": "Reports",
+  "contentReview": "Content Review",
+  "pedagogicalReview": "Pedagogical Review",
+  "logout": "Logout",
+  "profile": "Profile",
+  "help": "Help",
+  "notifications": "Notifications"
+}

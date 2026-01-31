@@ -1,0 +1,41 @@
+{
+  "practiceSession": "",
+  "question": "",
+  "questionOf": "",
+  "submitAnswer": "",
+  "checkAnswer": "",
+  "showSolution": "",
+  "hideSolution": "",
+  "nextQuestion": "",
+  "previousQuestion": "",
+  "solutionSteps": "",
+  "step": "",
+  "correct": "",
+  "incorrect": "",
+  "tryAgain": "",
+  "reviewLater": "",
+  "hint": "",
+  "showHint": "",
+  "difficulty": {
+    "tier1": "",
+    "tier2": "",
+    "tier3": ""
+  },
+  "feedback": {
+    "excellent": "",
+    "good": "",
+    "keepPracticing": "",
+    "reviewConcept": ""
+  },
+  "mathKeyboard": "",
+  "toggleKeyboard": "",
+  "enterAnswer": "",
+  "sessionSummary": "",
+  "questionsAnswered": "",
+  "accuracy": "",
+  "timeSpent": "",
+  "topicsReviewed": "",
+  "endSession": "",
+  "pauseSession": "",
+  "resumeSession": ""
+}

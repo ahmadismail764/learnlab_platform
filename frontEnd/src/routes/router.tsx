@@ -8,7 +8,10 @@ import {
   PracticePage, 
   TopicsPage,
   ProgressPage,
-  AchievementsPage
+  AchievementsPage,
+  QuestionsPage,
+  AnalyticsPage,
+  SettingsPage,
 } from '@/pages'
 import type { User } from '@/types'
 
@@ -74,9 +77,9 @@ export function createAppRouter(user: User | null) {
       element: createDashboardElement(user),
       children: [
         { index: true, element: <AdminDashboard /> },
-        { path: 'questions', element: <PlaceholderPage title="Question Bank" description="CRUD topics and questions, assign difficulty tiers" /> },
-        { path: 'analytics', element: <PlaceholderPage title="Student Analytics" description="View aggregate metrics and stability scores per topic" /> },
-        { path: 'settings', element: <PlaceholderPage title="System Settings" description="System configuration" /> },
+        { path: 'questions', element: <QuestionsPage /> },
+        { path: 'analytics', element: <AnalyticsPage /> },
+        { path: 'settings', element: <SettingsPage /> },
       ],
     },
 
@@ -105,15 +108,4 @@ function getDefaultRoute(role: User['role']): string {
     admin: '/admin',
   }
   return routes[role]
-}
-
-// Placeholder component for routes not yet implemented
-function PlaceholderPage({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16">
-      <div className="text-6xl mb-4">🚧</div>
-      <h2 className="text-2xl font-bold text-neutral-800 mb-2">{title}</h2>
-      <p className="text-neutral-600">{description}</p>
-    </div>
-  )
 }

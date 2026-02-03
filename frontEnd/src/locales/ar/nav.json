@@ -1,19 +1,14 @@
 {
   "achievements": "الإنجازات",
   "analytics": "التحليلات",
-  "contentReview": "مراجعة المحتوى",
   "dashboard": "لوحة التحكم",
   "help": "المساعدة",
   "logout": "تسجيل الخروج",
   "notifications": "الإشعارات",
-  "pedagogicalReview": "المراجعة التربوية",
   "practice": "التدريب",
   "profile": "الملف الشخصي",
   "progress": "التقدم",
   "questionBank": "بنك الأسئلة",
-  "reports": "التقارير",
   "settings": "الإعدادات",
-  "systemSettings": "إعدادات النظام",
-  "topics": "الموضوعات",
-  "users": "المستخدمون"
+  "topics": "الموضوعات"
 }

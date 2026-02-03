@@ -5,7 +5,6 @@ import {
   RegisterPage, 
   StudentDashboard, 
   AdminDashboard, 
-  SupervisorDashboard,
   PracticePage, 
   TopicsPage 
 } from '@/pages'
@@ -18,9 +17,8 @@ import type { User } from '@/types'
  * Protected routes are handled by checking auth state.
  * 
  * Roles:
- * - student: Primary learner
- * - admin: System admin / Content manager  
- * - supervisor: Academic advisor / Content reviewer
+ * - student: Primary learner - solves problems, views progress
+ * - admin: Content manager - manages questions, monitors analytics
  */
 
 // Helper to create dashboard layout with user
@@ -64,31 +62,19 @@ export function createAppRouter(user: User | null) {
         { path: 'topics', element: <TopicsPage /> },
         { path: 'practice', element: <PracticePage /> },
         { path: 'progress', element: <PlaceholderPage title="My Progress" description="FSRS-based progress tracking" /> },
-        { path: 'achievements', element: <PlaceholderPage title="Achievements" description="XP, streaks, and badges" /> },
+        { path: 'achievements', element: <PlaceholderPage title="Achievements" description="XP and badges" /> },
       ],
     },
 
-    // Admin (System Admin / Content Manager) routes
+    // Admin (Content Manager) routes
     {
       path: '/admin',
       element: createDashboardElement(user),
       children: [
         { index: true, element: <AdminDashboard /> },
-        { path: 'questions', element: <PlaceholderPage title="Question Bank" description="Manage questions by topic and difficulty tier" /> },
-        { path: 'users', element: <PlaceholderPage title="User Management" description="Manage students and supervisors" /> },
-        { path: 'analytics', element: <PlaceholderPage title="System Analytics" description="Platform usage and performance metrics" /> },
+        { path: 'questions', element: <PlaceholderPage title="Question Bank" description="CRUD topics and questions, assign difficulty tiers" /> },
+        { path: 'analytics', element: <PlaceholderPage title="Student Analytics" description="View aggregate metrics and stability scores per topic" /> },
         { path: 'settings', element: <PlaceholderPage title="System Settings" description="System configuration" /> },
-      ],
-    },
-
-    // Supervisor (Academic Advisor) routes
-    {
-      path: '/supervisor',
-      element: createDashboardElement(user),
-      children: [
-        { index: true, element: <SupervisorDashboard /> },
-        { path: 'review', element: <PlaceholderPage title="Content Review" description="Review pedagogical validity of questions" /> },
-        { path: 'reports', element: <PlaceholderPage title="Reports" description="Academic performance reports" /> },
       ],
     },
 
@@ -115,7 +101,6 @@ function getDefaultRoute(role: User['role']): string {
   const routes: Record<User['role'], string> = {
     student: '/student',
     admin: '/admin',
-    supervisor: '/supervisor',
   }
   return routes[role]
 }

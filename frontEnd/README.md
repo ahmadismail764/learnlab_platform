@@ -1,6 +1,6 @@
 # 🎓 Learn Lab - Frontend
 
-Educational LMS (Learning Management System) platform for primary and elementary school students.
+Educational LMS (Learning Management System) platform for Discrete Mathematics - first-year college students.
 
 ## Tech Stack
 
@@ -70,11 +70,12 @@ src/
 - **Body**: Inter
 - **Headings**: Nunito
 
-## User Roles
+## User Roles (2-Role Model)
 
-- **Student** - Solve questions, track progress, view achievements
-- **Supervisor** - Academic advisor, content review, student monitoring
-- **Admin** - System management, user management, content management
+| Role | Description |
+|------|-------------|
+| **Student** | Primary learner - Solves problems, views leaderboard, progresses through topics |
+| **Admin** | Content Manager - Manages question bank, monitors student analytics |
 
 ## Architecture Principles
 

@@ -8,14 +8,14 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Card, CardHeader, CardContent, Button, Badge, ProgressBar, Streak } from '@/components/ui'
+import { Card, CardHeader, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
 import { useCurrentUser } from '@/contexts'
 
 /**
  * StudentDashboard
  * 
  * Main landing page for students showing:
- * - Welcome message & streak
+ * - Welcome message
  * - Quick actions (Continue Learning, Practice)
  * - Progress overview
  * - Recent activity
@@ -28,11 +28,11 @@ export function StudentDashboard() {
 
   // Mock data - will come from API
   const stats = {
-    streak: 7,
     questionsToday: 12,
     totalMastered: 156,
     topicsInProgress: 6,
     topicsDue: 3,
+    totalXP: 1250,
   }
 
   // Discrete Mathematics topics - FSRS due for review
@@ -44,9 +44,8 @@ export function StudentDashboard() {
 
   const achievements = [
     { id: '1', nameKey: 'gamification:achievements.firstSteps', icon: '🎯', earned: true },
-    { id: '2', nameKey: 'gamification:achievements.weekStreak', icon: '🔥', earned: true },
-    { id: '3', nameKey: 'gamification:achievements.mathWhiz', icon: '🧮', earned: false },
-    { id: '4', nameKey: 'gamification:achievements.perfectScore', icon: '⭐', earned: false },
+    { id: '2', nameKey: 'gamification:achievements.mathWhiz', icon: '🧮', earned: true },
+    { id: '3', nameKey: 'gamification:achievements.perfectScore', icon: '⭐', earned: false },
   ]
 
   return (
@@ -61,7 +60,6 @@ export function StudentDashboard() {
             {t('student:readyToContinue')}
           </p>
         </div>
-        <Streak count={stats.streak} label={t('gamification:streak')} />
       </div>
 
       {/* Session Progress Card */}
@@ -120,8 +118,8 @@ export function StudentDashboard() {
               <Zap className="w-5 h-5 text-accent-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{stats.streak}</p>
-              <p className="text-xs text-neutral-500">{t('gamification:streak')}</p>
+              <p className="text-2xl font-bold text-neutral-800">{stats.totalXP}</p>
+              <p className="text-xs text-neutral-500">{t('gamification:totalXP')}</p>
             </div>
           </div>
         </Card>

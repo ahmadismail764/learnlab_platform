@@ -4,7 +4,7 @@ import { cn } from '@/utils/cn'
 /**
  * Progress Components
  * 
- * For showing learning progress, completion rates, streaks, etc.
+ * For showing learning progress, completion rates, etc.
  */
 
 // ============================================
@@ -175,40 +175,3 @@ export const ProgressRing = forwardRef<HTMLDivElement, ProgressRingProps>(
 )
 
 ProgressRing.displayName = 'ProgressRing'
-
-// ============================================
-// Streak Counter (for gamification)
-// ============================================
-
-export interface StreakProps extends HTMLAttributes<HTMLDivElement> {
-  /** Current streak count */
-  count: number
-  /** Label text */
-  label?: string
-  /** Icon to display */
-  icon?: React.ReactNode
-}
-
-export const Streak = forwardRef<HTMLDivElement, StreakProps>(
-  ({ className, count, label = 'Streak', icon, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          'inline-flex items-center gap-2 px-4 py-2 rounded-full',
-          'bg-accent-100 text-accent-700',
-          className
-        )}
-        {...props}
-      >
-        {icon || <span className="text-xl">🔥</span>}
-        <div className="flex flex-col">
-          <span className="text-xl font-bold leading-none">{count}</span>
-          <span className="text-xs">{label}</span>
-        </div>
-      </div>
-    )
-  }
-)
-
-Streak.displayName = 'Streak'

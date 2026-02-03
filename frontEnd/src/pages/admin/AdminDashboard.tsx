@@ -20,7 +20,7 @@ import { useCurrentUser } from '@/contexts'
  */
 
 export function AdminDashboard() {
-  const { t } = useTranslation()
+  const { t } = useTranslation('admin')
   const user = useCurrentUser()
 
   // Mock data
@@ -38,10 +38,10 @@ export function AdminDashboard() {
   ]
 
   const systemHealth = [
-    { nameKey: 'admin.apiResponseTime', value: '45ms', status: 'good' },
-    { nameKey: 'admin.database', value: '99.9%', status: 'good' },
-    { nameKey: 'admin.storage', value: '67%', status: 'warning' },
-    { nameKey: 'admin.activeSessions', value: '423', status: 'good' },
+    { nameKey: 'admin:apiResponseTime', value: '45ms', status: 'good' },
+    { nameKey: 'admin:database', value: '99.9%', status: 'good' },
+    { nameKey: 'admin:storage', value: '67%', status: 'warning' },
+    { nameKey: 'admin:activeSessions', value: '423', status: 'good' },
   ]
 
   return (

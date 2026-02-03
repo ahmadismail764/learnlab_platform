@@ -224,7 +224,7 @@ export function TopicsPage() {
       )}
 
       {/* Topic categories */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {topicCategories.map((category) => {
           const isExpanded = expandedCategories.has(category.id)
           const categoryProgress = Math.round(

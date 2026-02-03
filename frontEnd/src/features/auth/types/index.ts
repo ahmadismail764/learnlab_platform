@@ -2,6 +2,10 @@
  * Auth Feature - Type Definitions
  * 
  * Authentication-related types.
+ * 
+ * 2-Role Model:
+ * - student: Self-registration allowed
+ * - admin: Created by existing admin only
  */
 
 export interface LoginCredentials {
@@ -14,7 +18,7 @@ export interface RegisterData {
   password: string
   firstName: string
   lastName: string
-  role?: 'student' | 'supervisor' // Admin created differently
+  // Only students can self-register; admin accounts created by existing admins
 }
 
 export interface AuthTokens {

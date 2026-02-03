@@ -2,6 +2,7 @@
   "accuracy": "Accuracy",
   "checkAnswer": "Check Answer",
   "correct": "Correct! 🎉",
+  "correctAnswer": "Correct Answer",
   "difficulty": {
     "tier1": "Basic",
     "tier2": "Intermediate",
@@ -9,6 +10,8 @@
   },
   "endSession": "End Session",
   "enterAnswer": "Enter your answer...",
+  "enterMathExpression": "Enter your math expression...",
+  "essayQuestion": "Math Expression",
   "feedback": {
     "excellent": "Excellent work!",
     "good": "Good job!",
@@ -37,5 +40,6 @@
   "timeSpent": "Time Spent",
   "toggleKeyboard": "Toggle Math Keyboard",
   "topicsReviewed": "Topics Reviewed",
-  "tryAgain": "Try Again"
+  "tryAgain": "Try Again",
+  "yourAnswer": "Your Answer"
 }

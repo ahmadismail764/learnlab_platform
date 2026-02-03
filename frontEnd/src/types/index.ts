@@ -8,9 +8,8 @@
  * Target: First-year college students
  * 
  * Stakeholders:
- * - Student: Primary user - solves problems, views progress
- * - Admin (System Admin): Content manager - manages question bank, difficulty tiers
- * - Supervisor: Academic advisor - reviews pedagogical validity
+ * - Student: Primary user - solves problems, views leaderboard, progresses as learner
+ * - Admin: Content manager - manages question bank, monitors student analytics
  */
 
 // ============================================
@@ -20,10 +19,9 @@
 /**
  * User roles in the system
  * - student: Primary learner
- * - admin: System administrator / Content manager
- * - supervisor: Academic advisor / Content reviewer
+ * - admin: Content manager / System administrator
  */
-export type UserRole = 'student' | 'admin' | 'supervisor'
+export type UserRole = 'student' | 'admin'
 
 export interface User {
   id: string
@@ -41,7 +39,6 @@ export interface StudentProfile extends User {
   role: 'student'
   totalXP: number
   level: number
-  streakCount: number
   lastActiveAt: string
 }
 
@@ -135,9 +132,11 @@ export interface Question {
   /** Question content (may contain LaTeX) */
   content: string
   /** Expected answer format */
-  answerType: 'symbolic' | 'multiple-choice' | 'true-false' | 'text'
+  answerType: 'symbolic' | 'multiple-choice' | 'true-false' | 'text' | 'essay'
   /** Correct answer(s) */
   correctAnswer: string | string[]
+  /** Alternative accepted answers (for essay type) */
+  alternativeAnswers?: string[]
   /** Solution steps for feedback */
   solutionSteps: SolutionStep[]
   /** Hints (progressive disclosure) */
@@ -198,8 +197,8 @@ export interface XPTransaction {
   userId: string
   amount: number
   /** Source of XP */
-  source: 'question' | 'streak_bonus' | 'achievement' | 'challenge'
-  /** Multiplier applied (streak, etc.) */
+  source: 'question' | 'achievement' | 'challenge' | 'bonus'
+  /** Multiplier applied (consistency, etc.) */
   multiplier: number
   createdAt: string
 }

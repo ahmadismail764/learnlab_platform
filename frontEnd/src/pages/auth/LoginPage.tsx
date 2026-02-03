@@ -151,7 +151,6 @@ export function LoginPage() {
         <div className="space-y-1 text-neutral-600">
           <p>{t('auth:student')}: student@learnlab.com</p>
           <p>{t('auth:admin')}: admin@learnlab.com</p>
-          <p>{t('auth:supervisor')}: supervisor@learnlab.com</p>
           <p className="text-neutral-500">Password: password</p>
         </div>
       </div>

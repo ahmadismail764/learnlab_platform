@@ -1,6 +1,5 @@
 import { 
   BookOpen, 
-  Trophy, 
   Target, 
   Clock,
   ChevronRight,
@@ -75,13 +74,15 @@ export function StudentDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              className="border-white/30 text-white hover:bg-white/10"
-              rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
-            >
-              {t('student:startSession')}
-            </Button>
+            <Link to="/student/practice">
+              <Button 
+                variant="outline" 
+                className="border-white/30 text-white hover:bg-white/10"
+                rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
+              >
+                {t('student:startSession')}
+              </Button>
+            </Link>
           </div>
         </div>
       </Card>
@@ -148,25 +149,25 @@ export function StudentDashboard() {
             </Link>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             {topicsDueForReview.map((topic) => (
-              <Card key={topic.id} hoverable padding="sm">
-                <div className="flex items-center gap-4">
-                  <span className="text-3xl">{topic.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-medium text-neutral-800">{t(topic.nameKey)}</h3>
-                      <Badge variant="primary" size="sm">
-                        {t('student:topicsLeft', { count: topic.questionsLeft })}
-                      </Badge>
+              <Link key={topic.id} to={`/student/practice?topic=${topic.id}`} className="block">
+                <Card hoverable padding="sm">
+                  <div className="flex items-center gap-4">
+                    <span className="text-3xl">{topic.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-medium text-neutral-800">{t(topic.nameKey)}</h3>
+                        <Badge variant="primary" size="sm">
+                          {t('student:topicsLeft', { count: topic.questionsLeft })}
+                        </Badge>
+                      </div>
+                      <ProgressBar value={topic.progress} size="sm" showLabel={false} />
                     </div>
-                    <ProgressBar value={topic.progress} size="sm" showLabel={false} />
+                    <ChevronRight className="w-4 h-4 text-neutral-400 rtl:rotate-180" />
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-                  </Button>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -206,12 +207,16 @@ export function StudentDashboard() {
           <Card>
             <CardHeader title={t('common:quickActions')} />
             <CardContent className="space-y-2">
-              <Button variant="primary" fullWidth leftIcon={<Zap className="w-4 h-4" />}>
-                {t('nav:practice')}
-              </Button>
-              <Button variant="outline" fullWidth leftIcon={<Trophy className="w-4 h-4" />}>
-                {t('nav:progress')}
-              </Button>
+              <Link to="/student/practice">
+                <Button variant="primary" fullWidth leftIcon={<Zap className="w-4 h-4" />}>
+                  {t('nav:practice')}
+                </Button>
+              </Link>
+              <Link to="/student/topics">
+                <Button variant="outline" fullWidth leftIcon={<BookOpen className="w-4 h-4" />}>
+                  {t('nav:topics')}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

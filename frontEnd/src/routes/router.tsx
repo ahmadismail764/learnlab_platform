@@ -6,7 +6,9 @@ import {
   StudentDashboard, 
   AdminDashboard, 
   PracticePage, 
-  TopicsPage 
+  TopicsPage,
+  ProgressPage,
+  AchievementsPage
 } from '@/pages'
 import type { User } from '@/types'
 
@@ -61,8 +63,8 @@ export function createAppRouter(user: User | null) {
         { index: true, element: <StudentDashboard /> },
         { path: 'topics', element: <TopicsPage /> },
         { path: 'practice', element: <PracticePage /> },
-        { path: 'progress', element: <PlaceholderPage title="My Progress" description="FSRS-based progress tracking" /> },
-        { path: 'achievements', element: <PlaceholderPage title="Achievements" description="XP and badges" /> },
+        { path: 'progress', element: <ProgressPage /> },
+        { path: 'achievements', element: <AchievementsPage /> },
       ],
     },
 

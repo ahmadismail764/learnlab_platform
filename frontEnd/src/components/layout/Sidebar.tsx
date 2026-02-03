@@ -10,6 +10,7 @@ import {
   GraduationCap,
   LogOut,
   ChevronLeft,
+  Trophy,
   type LucideIcon
 } from 'lucide-react'
 import { Avatar } from '@/components/ui'
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
   { labelKey: 'nav:topics', href: '/student/topics', icon: BookOpen, roles: ['student'] },
   { labelKey: 'nav:practice', href: '/student/practice', icon: FileQuestion, roles: ['student'] },
   { labelKey: 'nav:progress', href: '/student/progress', icon: BarChart3, roles: ['student'] },
+  { labelKey: 'nav:achievements', href: '/student/achievements', icon: Trophy, roles: ['student'] },
   
   // Admin (Content Manager) items
   { labelKey: 'nav:dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin'] },

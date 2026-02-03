@@ -132,9 +132,11 @@ export interface Question {
   /** Question content (may contain LaTeX) */
   content: string
   /** Expected answer format */
-  answerType: 'symbolic' | 'multiple-choice' | 'true-false' | 'text'
+  answerType: 'symbolic' | 'multiple-choice' | 'true-false' | 'text' | 'essay'
   /** Correct answer(s) */
   correctAnswer: string | string[]
+  /** Alternative accepted answers (for essay type) */
+  alternativeAnswers?: string[]
   /** Solution steps for feedback */
   solutionSteps: SolutionStep[]
   /** Hints (progressive disclosure) */

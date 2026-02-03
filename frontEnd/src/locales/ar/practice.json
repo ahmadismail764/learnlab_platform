@@ -1,0 +1,41 @@
+{
+  "accuracy": "الدقة",
+  "checkAnswer": "تحقق من الإجابة",
+  "correct": "صحيح! 🎉",
+  "difficulty": {
+    "tier1": "أساسي",
+    "tier2": "متوسط",
+    "tier3": "متقدم"
+  },
+  "endSession": "إنهاء الجلسة",
+  "enterAnswer": "أدخل إجابتك...",
+  "feedback": {
+    "excellent": "عمل ممتاز!",
+    "good": "أحسنت!",
+    "keepPracticing": "واصل التدريب!",
+    "reviewConcept": "راجع هذا المفهوم"
+  },
+  "hideSolution": "إخفاء الحل",
+  "hint": "تلميح",
+  "incorrect": "ليس صحيحاً تماماً",
+  "mathKeyboard": "لوحة مفاتيح الرياضيات",
+  "nextQuestion": "السؤال التالي",
+  "pauseSession": "إيقاف الجلسة مؤقتاً",
+  "practiceSession": "جلسة تدريب",
+  "previousQuestion": "السؤال السابق",
+  "question": "سؤال",
+  "questionOf": "السؤال {{current}} من {{total}}",
+  "questionsAnswered": "الأسئلة المجابة",
+  "resumeSession": "استئناف الجلسة",
+  "reviewLater": "مراجعة لاحقاً",
+  "sessionSummary": "ملخص الجلسة",
+  "showHint": "عرض التلميح",
+  "showSolution": "عرض الحل",
+  "solutionSteps": "خطوات الحل",
+  "step": "الخطوة {{number}}",
+  "submitAnswer": "إرسال الإجابة",
+  "timeSpent": "الوقت المستغرق",
+  "toggleKeyboard": "تبديل لوحة المفاتيح",
+  "topicsReviewed": "الموضوعات المراجعة",
+  "tryAgain": "حاول مرة أخرى"
+}

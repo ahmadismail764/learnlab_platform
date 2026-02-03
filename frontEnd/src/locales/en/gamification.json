@@ -1,0 +1,38 @@
+{
+  "achievements": {
+    "firstSteps": "First Steps",
+    "mathWhiz": "Math Whiz",
+    "perfectScore": "Perfect Score",
+    "weekStreak": "Week Streak"
+  },
+  "achievementUnlocked": "Achievement Unlocked!",
+  "badges": {
+    "consistent": "Consistent Learner",
+    "firstStep": "First Step",
+    "perfectStreak": "Perfect Streak",
+    "speedDemon": "Speed Demon",
+    "topicMaster": "Topic Master",
+    "weekWarrior": "Week Warrior"
+  },
+  "bonusXP": "Bonus XP",
+  "consistencyBonus": "Consistency Bonus",
+  "leaderboard": "Leaderboard",
+  "level": "Level {{level}}",
+  "levelUp": "Level Up! 🎉",
+  "multiplier": "{{value}}x Multiplier",
+  "perfectScore": "Perfect Score! +{{bonus}} bonus XP",
+  "progress": "Progress",
+  "rank": "Rank",
+  "speedBonus": "Speed Bonus",
+  "streak": "Streak",
+  "streakBonus": "Streak Bonus",
+  "streakFrozen": "Streak Frozen",
+  "streakLost": "Streak Lost",
+  "topPerformers": "Top Performers",
+  "totalXP": "Total XP",
+  "weeklyChallenge": "Weekly Challenge",
+  "xp": "XP",
+  "xpEarned": "+{{amount}} XP",
+  "xpToNextLevel": "{{amount}} XP to next level",
+  "yourRank": "Your Rank"
+}

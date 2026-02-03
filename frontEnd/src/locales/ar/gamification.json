@@ -1,0 +1,38 @@
+{
+  "achievements": {
+    "firstSteps": "الخطوات الأولى",
+    "mathWhiz": "عبقري الرياضيات",
+    "perfectScore": "درجة كاملة",
+    "weekStreak": "سلسلة أسبوعية"
+  },
+  "achievementUnlocked": "تم فتح إنجاز!",
+  "badges": {
+    "consistent": "متعلم منتظم",
+    "firstStep": "الخطوة الأولى",
+    "perfectStreak": "سلسلة مثالية",
+    "speedDemon": "سريع البديهة",
+    "topicMaster": "متقن الموضوعات",
+    "weekWarrior": "محارب الأسبوع"
+  },
+  "bonusXP": "نقاط إضافية",
+  "consistencyBonus": "مكافأة الانتظام",
+  "leaderboard": "لوحة المتصدرين",
+  "level": "المستوى {{level}}",
+  "levelUp": "ترقية! 🎉",
+  "multiplier": "مضاعف {{value}}x",
+  "perfectScore": "درجة كاملة! +{{bonus}} نقاط إضافية",
+  "progress": "التقدم",
+  "rank": "الترتيب",
+  "speedBonus": "مكافأة السرعة",
+  "streak": "السلسلة",
+  "streakBonus": "مكافأة السلسلة",
+  "streakFrozen": "السلسلة مجمدة",
+  "streakLost": "السلسلة ضاعت",
+  "topPerformers": "الأفضل أداءً",
+  "totalXP": "إجمالي النقاط",
+  "weeklyChallenge": "تحدي الأسبوع",
+  "xp": "نقاط الخبرة",
+  "xpEarned": "+{{amount}} نقطة",
+  "xpToNextLevel": "{{amount}} نقطة للمستوى التالي",
+  "yourRank": "ترتيبك"
+}

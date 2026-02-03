@@ -1,0 +1,41 @@
+{
+  "accuracy": "Accuracy",
+  "checkAnswer": "Check Answer",
+  "correct": "Correct! 🎉",
+  "difficulty": {
+    "tier1": "Basic",
+    "tier2": "Intermediate",
+    "tier3": "Advanced"
+  },
+  "endSession": "End Session",
+  "enterAnswer": "Enter your answer...",
+  "feedback": {
+    "excellent": "Excellent work!",
+    "good": "Good job!",
+    "keepPracticing": "Keep practicing!",
+    "reviewConcept": "Review this concept"
+  },
+  "hideSolution": "Hide Solution",
+  "hint": "Hint",
+  "incorrect": "Not quite right",
+  "mathKeyboard": "Math Keyboard",
+  "nextQuestion": "Next Question",
+  "pauseSession": "Pause Session",
+  "practiceSession": "Practice Session",
+  "previousQuestion": "Previous Question",
+  "question": "Question",
+  "questionOf": "Question {{current}} of {{total}}",
+  "questionsAnswered": "Questions Answered",
+  "resumeSession": "Resume Session",
+  "reviewLater": "Review Later",
+  "sessionSummary": "Session Summary",
+  "showHint": "Show Hint",
+  "showSolution": "Show Solution",
+  "solutionSteps": "Solution Steps",
+  "step": "Step {{number}}",
+  "submitAnswer": "Submit Answer",
+  "timeSpent": "Time Spent",
+  "toggleKeyboard": "Toggle Math Keyboard",
+  "topicsReviewed": "Topics Reviewed",
+  "tryAgain": "Try Again"
+}

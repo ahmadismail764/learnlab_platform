@@ -1,0 +1,214 @@
+import { forwardRef, type HTMLAttributes } from 'react'
+import { cn } from '@/utils/cn'
+
+/**
+ * Progress Components
+ * 
+ * For showing learning progress, completion rates, streaks, etc.
+ */
+
+// ============================================
+// Progress Bar
+// ============================================
+
+export interface ProgressBarProps extends HTMLAttributes<HTMLDivElement> {
+  /** Progress value (0-100) */
+  value: number
+  /** Maximum value */
+  max?: number
+  /** Size variant */
+  size?: 'sm' | 'md' | 'lg'
+  /** Color variant */
+  variant?: 'primary' | 'secondary' | 'accent' | 'success'
+  /** Show percentage label */
+  showLabel?: boolean
+  /** Animate the progress bar */
+  animated?: boolean
+}
+
+const barSizeStyles = {
+  sm: 'h-1.5',
+  md: 'h-2.5',
+  lg: 'h-4',
+}
+
+const barColorStyles = {
+  primary: 'bg-primary-500',
+  secondary: 'bg-secondary-500',
+  accent: 'bg-accent-500',
+  success: 'bg-green-500',
+}
+
+export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
+  (
+    {
+      className,
+      value,
+      max = 100,
+      size = 'md',
+      variant = 'primary',
+      showLabel = false,
+      animated = true,
+      ...props
+    },
+    ref
+  ) => {
+    const percentage = Math.min(100, Math.max(0, (value / max) * 100))
+
+    return (
+      <div ref={ref} className={cn('w-full', className)} {...props}>
+        {showLabel && (
+          <div className="flex justify-between text-sm text-neutral-600 mb-1">
+            <span>Progress</span>
+            <span>{Math.round(percentage)}%</span>
+          </div>
+        )}
+        <div
+          className={cn(
+            'w-full bg-neutral-200 rounded-full overflow-hidden',
+            barSizeStyles[size]
+          )}
+          role="progressbar"
+          aria-valuenow={value}
+          aria-valuemin={0}
+          aria-valuemax={max}
+        >
+          <div
+            className={cn(
+              'h-full rounded-full',
+              barColorStyles[variant],
+              animated && 'transition-all duration-500 ease-out'
+            )}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+)
+
+ProgressBar.displayName = 'ProgressBar'
+
+// ============================================
+// Progress Ring (Circular)
+// ============================================
+
+export interface ProgressRingProps extends HTMLAttributes<HTMLDivElement> {
+  /** Progress value (0-100) */
+  value: number
+  /** Size in pixels */
+  size?: number
+  /** Stroke width */
+  strokeWidth?: number
+  /** Color variant */
+  variant?: 'primary' | 'secondary' | 'accent' | 'success'
+  /** Show percentage in center */
+  showLabel?: boolean
+}
+
+const ringColorStyles = {
+  primary: 'text-primary-500',
+  secondary: 'text-secondary-500',
+  accent: 'text-accent-500',
+  success: 'text-green-500',
+}
+
+export const ProgressRing = forwardRef<HTMLDivElement, ProgressRingProps>(
+  (
+    {
+      className,
+      value,
+      size = 64,
+      strokeWidth = 4,
+      variant = 'primary',
+      showLabel = true,
+      ...props
+    },
+    ref
+  ) => {
+    const percentage = Math.min(100, Math.max(0, value))
+    const radius = (size - strokeWidth) / 2
+    const circumference = radius * 2 * Math.PI
+    const offset = circumference - (percentage / 100) * circumference
+
+    return (
+      <div
+        ref={ref}
+        className={cn('relative inline-flex items-center justify-center', className)}
+        style={{ width: size, height: size }}
+        {...props}
+      >
+        <svg width={size} height={size} className="-rotate-90">
+          {/* Background circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            className="text-neutral-200"
+          />
+          {/* Progress circle */}
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className={cn('transition-all duration-500 ease-out', ringColorStyles[variant])}
+          />
+        </svg>
+        
+        {showLabel && (
+          <span className="absolute text-sm font-semibold text-neutral-700">
+            {Math.round(percentage)}%
+          </span>
+        )}
+      </div>
+    )
+  }
+)
+
+ProgressRing.displayName = 'ProgressRing'
+
+// ============================================
+// Streak Counter (for gamification)
+// ============================================
+
+export interface StreakProps extends HTMLAttributes<HTMLDivElement> {
+  /** Current streak count */
+  count: number
+  /** Label text */
+  label?: string
+  /** Icon to display */
+  icon?: React.ReactNode
+}
+
+export const Streak = forwardRef<HTMLDivElement, StreakProps>(
+  ({ className, count, label = 'Streak', icon, ...props }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          'inline-flex items-center gap-2 px-4 py-2 rounded-full',
+          'bg-accent-100 text-accent-700',
+          className
+        )}
+        {...props}
+      >
+        {icon || <span className="text-xl">🔥</span>}
+        <div className="flex flex-col">
+          <span className="text-xl font-bold leading-none">{count}</span>
+          <span className="text-xs">{label}</span>
+        </div>
+      </div>
+    )
+  }
+)
+
+Streak.displayName = 'Streak'

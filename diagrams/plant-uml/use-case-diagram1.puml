@@ -1,42 +1,63 @@
-@startuml
+@startuml UseCaseDiagram
 left to right direction
 skinparam packageStyle rectangle
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+  ArrowColor Black
+}
+skinparam actorStyle awesome
+skinparam defaultTextAlignment center
+skinparam nodesep 80
+skinparam ranksep 100
 
 actor Student as S
 actor Admin as A
 
-rectangle "Discrete Math Practice System" {
-  usecase "Register/Login" as UC1
-  usecase "View Due Topics" as UC2
-  usecase "Practice Question" as UC3
-  usecase "Submit Answer" as UC4
-  usecase "Rate Confidence" as UC5
-  usecase "View Progress Dashboard" as UC6
-  usecase "View Leaderboard" as UC7
-  usecase "Watch Explanation Video" as UC8
+rectangle "LearnLab Platform" {
   
-  usecase "Manage Topics" as UC9
-  usecase "Manage Questions" as UC10
-  usecase "View Student Analytics" as UC11
+  usecase "Register / Login" as UC_Login
+  
+  package "Student Features" #LightBlue {
+    usecase "Rate Confidence" as UC_Rate
+    usecase "View Leaderboard" as UC_Leaderboard
+    usecase "Solve Practice Sheet" as UC_SolveSheet
+    usecase "View Topics\n(with Level)" as UC_ViewTopics
+    usecase "Watch Explanation Video" as UC_WatchVideo
+  }
+  
+  package "Practice Sheet Components" #LightYellow {
+    usecase "Solve Single Question" as UC_SolveQ
+    usecase "Submit Practice Sheet" as UC_Submit
+  }
+  
+  package "Admin Features" #LightGreen {
+    usecase "Manage Topics" as UC_ManageTopics
+    usecase "Manage Question Bank" as UC_ManageQBank
+    usecase "View Student Analytics" as UC_Analytics
+  }
 }
 
-S --> UC1
-S --> UC2
-S --> UC3
-S --> UC4
-S --> UC5
-S --> UC6
-S --> UC7
-S --> UC8
+' Actors link to common auth use case
+S --> UC_Login
+A --> UC_Login
 
-A --> UC1
-A --> UC9
-A --> UC10
-A --> UC11
+' Student interactions
+S --> UC_Rate
+S --> UC_Leaderboard
+S --> UC_SolveSheet
+S --> UC_ViewTopics
 
-UC3 .> UC2 : <<include>>
-UC4 .> UC5 : <<include>>
-UC4 .> UC3 : <<include>>
-UC3 ..> UC8 : <<extend>>
+' Admin interactions
+A --> UC_ManageTopics
+A --> UC_ManageQBank
+A --> UC_Analytics
+
+' Composition of the Solve Practice Sheet use case
+UC_SolveSheet .> UC_SolveQ : <<include>>
+UC_SolveSheet .> UC_Submit : <<include>>
+
+' Watch Explanation Video extends Solve Practice Sheet
+UC_WatchVideo ..> UC_SolveSheet : <<extend>>
 
 @enduml

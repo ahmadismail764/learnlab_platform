@@ -1,4 +1,4 @@
-@startuml
+@startuml ClassDiagram1
 skinparam classAttributeIconSize 0
 
 enum UserType {
@@ -37,13 +37,12 @@ class Admin {
 class Topic {
   - id: int
   - name: string
-  + getQuestionByTier(tier: int): Question
+  + getQuestionByDifficulty(difficulty: int): Question
 }
 
 class Question {
   - id: int
   - topic_id: int
-  - tier: int
   - difficulty: int
   - question_text: string
   - correct_answer: string
@@ -59,7 +58,7 @@ class TopicMastery {
   + isDue(): bool
 }
 
-class Review {
+class Exam {
   - rating: int
   - time_taken: int
   - xp_earned: int
@@ -73,7 +72,7 @@ User <|-- Admin
 Student "1" -- "*" TopicMastery : has
 Topic "1" -- "*" TopicMastery : has
 Topic "1" -- "*" Question : contains
-TopicMastery "1" -- "*" Review : tracks
-Question "1" -- "*" Review : appears in
+TopicMastery "1" -- "*" Exam : tracks
+Question "1" -- "*" Exam : appears in
 
 @enduml

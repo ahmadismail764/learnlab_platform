@@ -199,46 +199,74 @@ export function ProgressPage() {
       <Card>
         <CardHeader title={t('student:monthlyProgress')} />
         <CardContent>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="space-y-4">
             {monthlyProgress.map((week, index) => {
               const correctCount = Math.round(week.questions * week.accuracy / 100)
               const incorrectCount = week.questions - correctCount
+              const maxQuestions = Math.max(...monthlyProgress.map(w => w.questions))
+              const barWidth = (week.questions / maxQuestions) * 100
               
               return (
-                <div key={index} className="text-center">
-                  <div className="relative h-32 bg-neutral-50 rounded-lg overflow-hidden mb-2 border border-neutral-200">
-                    {/* Stacked bar chart - incorrect on top, correct on bottom */}
-                    <div className="absolute bottom-0 w-full flex flex-col">
-                      {/* Incorrect answers (red/orange) */}
-                      <div 
-                        className="w-full bg-red-400"
-                        style={{ height: `${(incorrectCount / 100) * 128}px` }}
-                      />
-                      {/* Correct answers (blue) */}
-                      <div 
-                        className="w-full bg-primary-500"
-                        style={{ height: `${(correctCount / 100) * 128}px` }}
-                      />
-                    </div>
-                    {/* Count labels */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-bold text-sm pointer-events-none">
-                      <span className="drop-shadow-md">{week.questions}</span>
+                <div key={index} className="space-y-1.5">
+                  {/* Week label and stats */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-neutral-700">
+                      {t('student:week', { number: index + 1 })}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-neutral-500">
+                        {week.questions} {t('student:questions')}
+                      </span>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                        week.accuracy >= 85 
+                          ? 'bg-green-100 text-green-700' 
+                          : week.accuracy >= 70 
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-700'
+                      }`}>
+                        {week.accuracy}%
+                      </span>
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-neutral-700">{t('student:week', { number: index + 1 })}</p>
-                  <p className="text-xs text-neutral-500">{week.accuracy}% {t('student:accuracyRate').toLowerCase()}</p>
+                  {/* Progress bar */}
+                  <div className="h-8 bg-neutral-100 rounded-lg overflow-hidden relative">
+                    <div 
+                      className="h-full flex rounded-lg overflow-hidden transition-all duration-300"
+                      style={{ width: `${barWidth}%` }}
+                    >
+                      {/* Correct portion */}
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary-500 to-primary-400 flex items-center justify-end pe-2"
+                        style={{ width: `${week.accuracy}%` }}
+                      >
+                        {correctCount >= 10 && (
+                          <span className="text-xs font-medium text-white drop-shadow-sm">{correctCount}</span>
+                        )}
+                      </div>
+                      {/* Incorrect portion */}
+                      <div 
+                        className="h-full bg-gradient-to-r from-red-400 to-red-300 flex items-center justify-end pe-2"
+                        style={{ width: `${100 - week.accuracy}%` }}
+                      >
+                        {incorrectCount >= 5 && (
+                          <span className="text-xs font-medium text-white drop-shadow-sm">{incorrectCount}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )
             })}
           </div>
-          <div className="flex items-center justify-center gap-6 mt-4 text-xs">
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-neutral-100">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-primary-500 rounded" />
-              <span className="text-neutral-600">{t('student:correctAnswers')}</span>
+              <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-400 rounded" />
+              <span className="text-xs text-neutral-600">{t('student:correctAnswers')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-400 rounded" />
-              <span className="text-neutral-600">{t('student:incorrectAnswers')}</span>
+              <div className="w-3 h-3 bg-gradient-to-r from-red-400 to-red-300 rounded" />
+              <span className="text-xs text-neutral-600">{t('student:incorrectAnswers')}</span>
             </div>
           </div>
         </CardContent>

@@ -1,0 +1,118 @@
+@startuml ClassDiagram1
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 80
+
+' =====================
+' ABSTRACT USER & CHILDREN
+' =====================
+
+abstract class User {
+  - id: int
+  - email: string
+  - passwordHash: string
+  --
+  + login(): bool
+  + logout(): void
+}
+
+class Student {
+  - xp: int
+  --
+  + getXP(): int
+  + addXP(amount: int): void
+  + getDueTopics(): List<Topic>
+  + solvePracticeSheet(sheet: PracticeSheet): PracticeSheetSubmission
+}
+
+class Admin {
+  --
+  + createTopic(name: string): Topic
+  + createQuestion(data): Question
+  + createPracticeSheet(data): PracticeSheet
+  + viewStudentAnalytics(studentId: int): Analytics
+}
+
+' =====================
+' TOPIC & MASTERY
+' =====================
+
+class Topic {
+  - id: int
+  - name: string
+  --
+  + getQuestions(): List<Question>
+}
+
+class TopicMastery {
+  - student_id: int
+  - topic_id: int
+  - stability: float
+  - difficulty: float
+  - next_review: datetime
+  --
+  + isDue(): bool
+  + updateAfterPractice(correct: bool): void
+  + getLevel(): int
+}
+
+' =====================
+' QUESTION
+' =====================
+
+class Question {
+  - id: int
+  - content: string
+  - answers: List<string>
+  - correctAnswerIndex: int
+  --
+  + checkAnswer(selectedIndex: int): bool
+  + getCorrectAnswer(): string
+}
+
+' =====================
+' PRACTICE SHEET & SUBMISSION
+' =====================
+
+class PracticeSheet {
+  - id: int
+  - timeLimitSeconds: int
+  - totalXP: int
+  - Questions: List<Questions>
+  --
+  + getQuestions(): List<Question>
+  + addQuestion(q: Question): void
+}
+
+class PracticeSheetSubmission {
+  - id: int
+  - studentId: int
+  - sheetId: int
+  - receivedXP: int
+  - timeTaken: int
+  - submittedAt: datetime
+  --
+  + calculateScore(): float
+}
+
+' =====================
+' INHERITANCE
+' =====================
+
+User <|-- Student
+User <|-- Admin
+
+' =====================
+' RELATIONSHIPS
+' =====================
+
+Student "1" -- "*" TopicMastery : has >
+Topic "1" -- "*" TopicMastery : tracks >
+Topic "1" -- "*" Question : contains >
+
+PracticeSheet "1" -- "1" PracticeSheetSubmission : results in >
+Student "1" -- "*" PracticeSheetSubmission : submits >
+PracticeSheet "*" -- "*" Question : contains >
+
+@enduml

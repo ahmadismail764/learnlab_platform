@@ -1,0 +1,124 @@
+@startuml ClassDiagram
+
+' --- Page 1: User Hierarchy ---
+
+class User {
+    id
+    email
+    passwordHash
+    + updateEmail()
+    + updatePassword()
+}
+
+class Admin {
+}
+
+class Student {
+    xp : int
+    ' getAnalytics was crossed out in the sketch
+    + {method} <strike>getAnalytics()</strike>
+    + addXp()
+    + getXp()
+}
+
+note left of Student::getAnalytics
+    needs work
+end note
+
+User <|-- Admin
+User <|-- Student
+
+
+' --- Page 2: Practice Sheets ---
+
+class "Practice Sheet" as PracticeSheet {
+    id
+    questions : List
+    total_xp : int
+    + createSheet(data)
+    + updateSheet(data)
+    + deleteSheet(data)
+}
+
+note right of PracticeSheet::total_xp
+    "For example?" (مثلاً)
+end note
+
+note right of PracticeSheet::createSheet
+    constructor
+end note
+
+class "Practice Sheet Submission" as PracticeSheetSubmission {
+    - student_id
+    - submission_id
+    - sheet_id
+    - timeTaken
+    + calculateXP()
+    + submitSheet(sheet_id, student_id)
+    + getSubmissionsByStudent()
+    + getSubmissionsByPracticeSheet()
+}
+
+class "Single Question Answer" as SingleQuestionAnswer {
+    - submission_id*
+    - question_id
+    - confidence
+    - <strike>timeTaken</strike>
+}
+
+note right of SingleQuestionAnswer
+    also needs
+    discussion
+end note
+
+' Relationships inferred from IDs
+PracticeSheetSubmission --> Student : student_id
+PracticeSheetSubmission --> PracticeSheet : sheet_id
+SingleQuestionAnswer --> PracticeSheetSubmission : submission_id
+
+
+' --- Page 3: Topics and Questions ---
+
+class Topic {
+    id
+    name
+    + getTopicName(id)
+    + removeTopic(id)
+}
+
+class Question {
+    id
+    topic_id
+    question : string
+    choices : List
+    correct_answer_index : int
+    + getChoices()
+    + getCorrectAnswer()
+    + getQuestionsByTopic(topic_id)
+    + addQuestion(data)
+    + updateQuestion(id, data)
+    + removeQuestion(id)
+}
+
+note right of Question
+    This one
+    is turning
+    out quite
+    complex
+end note
+
+class "Topic Mastery" as TopicMastery {
+    studentId
+    topicId
+    difficulty
+    stability
+    lastReviewDate
+    create leaderboard
+}
+
+' Relationships inferred from IDs
+Question --> Topic : topic_id
+TopicMastery --> Student : studentId
+TopicMastery --> Topic : topicId
+
+@enduml

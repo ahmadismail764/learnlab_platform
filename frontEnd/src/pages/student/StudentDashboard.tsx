@@ -1,6 +1,5 @@
 import { 
   BookOpen, 
-  Trophy, 
   Target, 
   Clock,
   ChevronRight,
@@ -8,14 +7,14 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Card, CardHeader, CardContent, Button, Badge, ProgressBar, Streak } from '@/components/ui'
+import { Card, CardHeader, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
 import { useCurrentUser } from '@/contexts'
 
 /**
  * StudentDashboard
  * 
  * Main landing page for students showing:
- * - Welcome message & streak
+ * - Welcome message
  * - Quick actions (Continue Learning, Practice)
  * - Progress overview
  * - Recent activity
@@ -28,11 +27,11 @@ export function StudentDashboard() {
 
   // Mock data - will come from API
   const stats = {
-    streak: 7,
     questionsToday: 12,
     totalMastered: 156,
     topicsInProgress: 6,
     topicsDue: 3,
+    totalXP: 1250,
   }
 
   // Discrete Mathematics topics - FSRS due for review
@@ -44,9 +43,8 @@ export function StudentDashboard() {
 
   const achievements = [
     { id: '1', nameKey: 'gamification:achievements.firstSteps', icon: '🎯', earned: true },
-    { id: '2', nameKey: 'gamification:achievements.weekStreak', icon: '🔥', earned: true },
-    { id: '3', nameKey: 'gamification:achievements.mathWhiz', icon: '🧮', earned: false },
-    { id: '4', nameKey: 'gamification:achievements.perfectScore', icon: '⭐', earned: false },
+    { id: '2', nameKey: 'gamification:achievements.mathWhiz', icon: '🧮', earned: true },
+    { id: '3', nameKey: 'gamification:achievements.perfectScore', icon: '⭐', earned: false },
   ]
 
   return (
@@ -61,7 +59,6 @@ export function StudentDashboard() {
             {t('student:readyToContinue')}
           </p>
         </div>
-        <Streak count={stats.streak} label={t('gamification:streak')} />
       </div>
 
       {/* Session Progress Card */}
@@ -77,13 +74,15 @@ export function StudentDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              className="border-white/30 text-white hover:bg-white/10"
-              rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
-            >
-              {t('student:startSession')}
-            </Button>
+            <Link to="/student/practice">
+              <Button 
+                variant="outline" 
+                className="border-white/30 text-white hover:bg-white/10"
+                rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
+              >
+                {t('student:startSession')}
+              </Button>
+            </Link>
           </div>
         </div>
       </Card>
@@ -120,8 +119,8 @@ export function StudentDashboard() {
               <Zap className="w-5 h-5 text-accent-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{stats.streak}</p>
-              <p className="text-xs text-neutral-500">{t('gamification:streak')}</p>
+              <p className="text-2xl font-bold text-neutral-800">{stats.totalXP}</p>
+              <p className="text-xs text-neutral-500">{t('gamification:totalXP')}</p>
             </div>
           </div>
         </Card>
@@ -150,25 +149,25 @@ export function StudentDashboard() {
             </Link>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             {topicsDueForReview.map((topic) => (
-              <Card key={topic.id} hoverable padding="sm">
-                <div className="flex items-center gap-4">
-                  <span className="text-3xl">{topic.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-medium text-neutral-800">{t(topic.nameKey)}</h3>
-                      <Badge variant="primary" size="sm">
-                        {t('student:topicsLeft', { count: topic.questionsLeft })}
-                      </Badge>
+              <Link key={topic.id} to={`/student/practice?topic=${topic.id}`} className="block">
+                <Card hoverable padding="sm">
+                  <div className="flex items-center gap-4">
+                    <span className="text-3xl">{topic.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-medium text-neutral-800">{t(topic.nameKey)}</h3>
+                        <Badge variant="primary" size="sm">
+                          {t('student:topicsLeft', { count: topic.questionsLeft })}
+                        </Badge>
+                      </div>
+                      <ProgressBar value={topic.progress} size="sm" showLabel={false} />
                     </div>
-                    <ProgressBar value={topic.progress} size="sm" showLabel={false} />
+                    <ChevronRight className="w-4 h-4 text-neutral-400 rtl:rotate-180" />
                   </div>
-                  <Button variant="ghost" size="sm">
-                    <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-                  </Button>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -208,12 +207,16 @@ export function StudentDashboard() {
           <Card>
             <CardHeader title={t('common:quickActions')} />
             <CardContent className="space-y-2">
-              <Button variant="primary" fullWidth leftIcon={<Zap className="w-4 h-4" />}>
-                {t('nav:practice')}
-              </Button>
-              <Button variant="outline" fullWidth leftIcon={<Trophy className="w-4 h-4" />}>
-                {t('nav:progress')}
-              </Button>
+              <Link to="/student/practice">
+                <Button variant="primary" fullWidth leftIcon={<Zap className="w-4 h-4" />}>
+                  {t('nav:practice')}
+                </Button>
+              </Link>
+              <Link to="/student/topics">
+                <Button variant="outline" fullWidth leftIcon={<BookOpen className="w-4 h-4" />}>
+                  {t('nav:topics')}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

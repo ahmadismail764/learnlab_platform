@@ -8,10 +8,12 @@ import {
   Lightbulb,
   BookOpen,
   Trophy,
-  Zap
+  Zap,
+  Send
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
-import { sampleQuestions, type SampleQuestion } from '@/data'
+import { MathInput } from '@/components/MathInput'
+import { sampleQuestions, essayQuestionsPool, type SampleQuestion } from '@/data'
 
 /**
  * PracticePage
@@ -32,6 +34,7 @@ type AnswerState = 'unanswered' | 'correct' | 'incorrect'
 interface QuestionState {
   questionId: string
   selectedAnswer: string | null
+  essayAnswer: string // For essay type questions
   answerState: AnswerState
   hintsShown: number
   showSolution: boolean
@@ -52,10 +55,24 @@ export function PracticePage() {
   const currentState = currentQuestion ? questionStates.get(currentQuestion.id) : null
 
   // Start a new practice session
-  const startSession = useCallback((questionCount: number = 6) => {
-    // Get random questions
-    const shuffled = [...sampleQuestions].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, questionCount)
+  const startSession = useCallback((questionCount: number = 6, includeEssay: boolean = true) => {
+    // Get random MC questions
+    const mcShuffled = [...sampleQuestions].sort(() => Math.random() - 0.5)
+    let selected: SampleQuestion[] = []
+    
+    if (includeEssay) {
+      // Include 1-2 essay questions in the mix
+      const essayShuffled = [...essayQuestionsPool].sort(() => Math.random() - 0.5)
+      const essayCount = Math.min(2, essayShuffled.length)
+      const mcCount = questionCount - essayCount
+      
+      selected = [
+        ...mcShuffled.slice(0, mcCount),
+        ...essayShuffled.slice(0, essayCount),
+      ].sort(() => Math.random() - 0.5) // Mix them together
+    } else {
+      selected = mcShuffled.slice(0, questionCount)
+    }
     
     // Initialize question states
     const states = new Map<string, QuestionState>()
@@ -63,6 +80,7 @@ export function PracticePage() {
       states.set(q.id, {
         questionId: q.id,
         selectedAnswer: null,
+        essayAnswer: '',
         answerState: 'unanswered',
         hintsShown: 0,
         showSolution: false,
@@ -94,6 +112,64 @@ export function PracticePage() {
     
     if (isCorrect) {
       // Calculate XP (reduce for hints used)
+      const hintPenalty = currentState.hintsShown * 5
+      const earned = Math.max(currentQuestion.xpReward - hintPenalty, 5)
+      setTotalXP(prev => prev + earned)
+    }
+  }, [currentQuestion, currentState])
+
+  // Update essay answer (for MathInput)
+  const updateEssayAnswer = useCallback((latex: string) => {
+    if (!currentQuestion || !currentState || currentState.answerState !== 'unanswered') return
+    
+    setQuestionStates(prev => {
+      const newStates = new Map(prev)
+      newStates.set(currentQuestion.id, {
+        ...currentState,
+        essayAnswer: latex,
+      })
+      return newStates
+    })
+  }, [currentQuestion, currentState])
+
+  // Submit essay answer
+  const submitEssayAnswer = useCallback(() => {
+    if (!currentQuestion || !currentState || currentState.answerState !== 'unanswered') return
+    if (!currentState.essayAnswer.trim()) return
+
+    const userAnswer = currentState.essayAnswer.trim().toLowerCase()
+    const correctAnswer = (currentQuestion.correctAnswer as string).toLowerCase()
+    
+    // Check if answer matches correct answer or any alternative
+    const alternatives = (currentQuestion as SampleQuestion & { alternativeAnswers?: string[] }).alternativeAnswers || []
+    const allAccepted = [correctAnswer, ...alternatives.map(a => a.toLowerCase())]
+    
+    // Normalize LaTeX for comparison
+    const normalizeLatex = (s: string) => s
+      .replace(/\\s+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/\\left/g, '')
+      .replace(/\\right/g, '')
+      .trim()
+    
+    const normalizedUser = normalizeLatex(userAnswer)
+    const isCorrect = allAccepted.some(accepted => {
+      const normalizedAccepted = normalizeLatex(accepted)
+      return normalizedUser === normalizedAccepted || 
+             normalizedUser.includes(normalizedAccepted) ||
+             normalizedAccepted.includes(normalizedUser)
+    })
+    
+    setQuestionStates(prev => {
+      const newStates = new Map(prev)
+      newStates.set(currentQuestion.id, {
+        ...currentState,
+        answerState: isCorrect ? 'correct' : 'incorrect',
+      })
+      return newStates
+    })
+    
+    if (isCorrect) {
       const hintPenalty = currentState.hintsShown * 5
       const earned = Math.max(currentQuestion.xpReward - hintPenalty, 5)
       setTotalXP(prev => prev + earned)
@@ -376,54 +452,96 @@ export function PracticePage() {
             <p className="text-lg text-neutral-800 leading-relaxed">
               {currentQuestion.content}
             </p>
+            {currentQuestion.answerType === 'essay' && (
+              <Badge variant="secondary" size="sm" className="mt-2">
+                {t('practice:essayQuestion')}
+              </Badge>
+            )}
           </div>
 
-          {/* Answer options */}
-          <div className="space-y-3 mb-6">
-            {answerOptions.map((option, index) => {
-              const isSelected = currentState.selectedAnswer === option
-              const isCorrectAnswer = option === currentQuestion.correctAnswer
-              const showResult = currentState.answerState !== 'unanswered'
+          {/* Answer section - different for MC vs Essay */}
+          {currentQuestion.answerType === 'essay' ? (
+            // Essay answer with MathInput
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-neutral-700 mb-2">
+                {t('practice:yourAnswer')}
+              </label>
+              <MathInput
+                value={currentState.essayAnswer}
+                onChange={updateEssayAnswer}
+                placeholder={t('practice:enterMathExpression')}
+                readOnly={currentState.answerState !== 'unanswered'}
+                showKeyboard={true}
+                className="mb-3"
+              />
               
-              let className = 'w-full p-4 text-start rounded-lg border-2 transition-all '
-              
-              if (showResult) {
-                if (isCorrectAnswer) {
-                  className += 'border-green-500 bg-green-50 text-green-800'
-                } else if (isSelected && !isCorrectAnswer) {
-                  className += 'border-red-500 bg-red-50 text-red-800'
-                } else {
-                  className += 'border-neutral-200 bg-neutral-50 text-neutral-500'
-                }
-              } else {
-                className += isSelected 
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-neutral-200 hover:border-primary-300 hover:bg-primary-50/50'
-              }
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => !showResult && selectAnswer(option)}
-                  disabled={showResult}
-                  className={className}
+              {currentState.answerState === 'unanswered' && (
+                <Button
+                  variant="primary"
+                  onClick={submitEssayAnswer}
+                  disabled={!currentState.essayAnswer.trim()}
+                  rightIcon={<Send className="w-4 h-4" />}
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-white border flex items-center justify-center text-sm font-medium">
-                      {String.fromCharCode(65 + index)}
-                    </span>
-                    <span className="flex-1 font-medium">{option}</span>
-                    {showResult && isCorrectAnswer && (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                    )}
-                    {showResult && isSelected && !isCorrectAnswer && (
-                      <XCircle className="w-5 h-5 text-red-600" />
-                    )}
-                  </div>
-                </button>
-              )
+                  {t('practice:submitAnswer')}
+                </Button>
+              )}
+
+              {/* Show correct answer after submission */}
+              {currentState.answerState !== 'unanswered' && (
+                <div className="mt-4 p-3 bg-neutral-50 rounded-lg border">
+                  <p className="text-sm text-neutral-600 mb-1">{t('practice:correctAnswer')}:</p>
+                  <p className="font-mono text-neutral-800">{currentQuestion.correctAnswer as string}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Multiple choice answer options
+            <div className="space-y-3 mb-6">
+              {answerOptions.map((option, index) => {
+                const isSelected = currentState.selectedAnswer === option
+                const isCorrectAnswer = option === currentQuestion.correctAnswer
+                const showResult = currentState.answerState !== 'unanswered'
+                
+                let className = 'w-full p-4 text-start rounded-lg border-2 transition-all '
+                
+                if (showResult) {
+                  if (isCorrectAnswer) {
+                    className += 'border-green-500 bg-green-50 text-green-800'
+                  } else if (isSelected && !isCorrectAnswer) {
+                    className += 'border-red-500 bg-red-50 text-red-800'
+                  } else {
+                    className += 'border-neutral-200 bg-neutral-50 text-neutral-500'
+                  }
+                } else {
+                  className += isSelected 
+                    ? 'border-primary-500 bg-primary-50'
+                    : 'border-neutral-200 hover:border-primary-300 hover:bg-primary-50/50'
+                }
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => !showResult && selectAnswer(option)}
+                    disabled={showResult}
+                    className={className}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-white border flex items-center justify-center text-sm font-medium">
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      <span className="flex-1 font-medium">{option}</span>
+                      {showResult && isCorrectAnswer && (
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                      )}
+                      {showResult && isSelected && !isCorrectAnswer && (
+                        <XCircle className="w-5 h-5 text-red-600" />
+                      )}
+                    </div>
+                  </button>
+                )
             })}
-          </div>
+            </div>
+          )}
 
           {/* Feedback */}
           {currentState.answerState !== 'unanswered' && (

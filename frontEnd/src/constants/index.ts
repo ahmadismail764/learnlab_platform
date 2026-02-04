@@ -57,10 +57,7 @@ export const ROUTES = {
   ADMIN_ANALYTICS: '/admin/analytics',
   ADMIN_SETTINGS: '/admin/settings',
   
-  // Supervisor (Academic Advisor)
-  SUPERVISOR_DASHBOARD: '/supervisor',
-  SUPERVISOR_REVIEW: '/supervisor/review',
-  SUPERVISOR_REPORTS: '/supervisor/reports',
+
 } as const
 
 // ============================================

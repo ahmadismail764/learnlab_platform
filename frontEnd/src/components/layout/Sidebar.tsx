@@ -6,11 +6,11 @@ import {
   BookOpen, 
   BarChart3, 
   Settings, 
-  Users, 
   FileQuestion,
   GraduationCap,
   LogOut,
   ChevronLeft,
+  Trophy,
   type LucideIcon
 } from 'lucide-react'
 import { Avatar } from '@/components/ui'
@@ -49,18 +49,13 @@ const navItems: NavItem[] = [
   { labelKey: 'nav:topics', href: '/student/topics', icon: BookOpen, roles: ['student'] },
   { labelKey: 'nav:practice', href: '/student/practice', icon: FileQuestion, roles: ['student'] },
   { labelKey: 'nav:progress', href: '/student/progress', icon: BarChart3, roles: ['student'] },
+  { labelKey: 'nav:achievements', href: '/student/achievements', icon: Trophy, roles: ['student'] },
   
-  // Admin (System Admin / Content Manager) items
+  // Admin (Content Manager) items
   { labelKey: 'nav:dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin'] },
   { labelKey: 'nav:questionBank', href: '/admin/questions', icon: FileQuestion, roles: ['admin'] },
-  { labelKey: 'nav:users', href: '/admin/users', icon: Users, roles: ['admin'] },
   { labelKey: 'nav:analytics', href: '/admin/analytics', icon: BarChart3, roles: ['admin'] },
-  { labelKey: 'nav:systemSettings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
-  
-  // Supervisor (Academic Advisor) items
-  { labelKey: 'nav:dashboard', href: '/supervisor', icon: LayoutDashboard, roles: ['supervisor'] },
-  { labelKey: 'nav:contentReview', href: '/supervisor/review', icon: FileQuestion, roles: ['supervisor'] },
-  { labelKey: 'nav:reports', href: '/supervisor/reports', icon: BarChart3, roles: ['supervisor'] },
+  { labelKey: 'nav:settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ]
 
 export function Sidebar({ 
@@ -78,7 +73,6 @@ export function Sidebar({
   const roleLabels: Record<UserRole, string> = {
     student: t('auth:student'),
     admin: t('auth:admin'),
-    supervisor: t('auth:supervisor'),
   }
 
   return (

@@ -2,7 +2,7 @@
  * Features Barrel Export
  * 
  * Central export for all feature modules.
- * Roles: student, admin, supervisor
+ * Roles: student, admin
  */
 
 export * from './auth'

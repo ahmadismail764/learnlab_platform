@@ -26,8 +26,8 @@ export { Avatar } from './Avatar'
 export type { AvatarProps, AvatarSize } from './Avatar'
 
 // Progress
-export { ProgressBar, ProgressRing, Streak } from './Progress'
-export type { ProgressBarProps, ProgressRingProps, StreakProps } from './Progress'
+export { ProgressBar, ProgressRing } from './Progress'
+export type { ProgressBarProps, ProgressRingProps } from './Progress'
 
 // Loading
 export { Spinner, LoadingOverlay, PageLoader, Skeleton, CardSkeleton, ListSkeleton } from './Loading'

@@ -46,15 +46,6 @@ export function LoginPage() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
-    'supervisor@learnlab.com': {
-      id: '3',
-      email: 'supervisor@learnlab.com',
-      firstName: 'د. خالد',    // Dr. Khalid
-      lastName: 'عبدالرحمن',  // Abdulrahman
-      role: 'supervisor' as UserRole,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,7 +64,6 @@ export function LoginPage() {
       const routes: Record<UserRole, string> = {
         student: '/student',
         admin: '/admin',
-        supervisor: '/supervisor',
       }
       navigate(routes[user.role])
     } else {
@@ -161,7 +151,6 @@ export function LoginPage() {
         <div className="space-y-1 text-neutral-600">
           <p>{t('auth:student')}: student@learnlab.com</p>
           <p>{t('auth:admin')}: admin@learnlab.com</p>
-          <p>{t('auth:supervisor')}: supervisor@learnlab.com</p>
           <p className="text-neutral-500">Password: password</p>
         </div>
       </div>

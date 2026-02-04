@@ -2,6 +2,7 @@
   "accuracy": "الدقة",
   "checkAnswer": "تحقق من الإجابة",
   "correct": "صحيح! 🎉",
+  "correctAnswer": "الإجابة الصحيحة",
   "difficulty": {
     "tier1": "أساسي",
     "tier2": "متوسط",
@@ -9,6 +10,8 @@
   },
   "endSession": "إنهاء الجلسة",
   "enterAnswer": "أدخل إجابتك...",
+  "enterMathExpression": "أدخل التعبير الرياضي...",
+  "essayQuestion": "تعبير رياضي",
   "feedback": {
     "excellent": "عمل ممتاز!",
     "good": "أحسنت!",
@@ -37,5 +40,6 @@
   "timeSpent": "الوقت المستغرق",
   "toggleKeyboard": "تبديل لوحة المفاتيح",
   "topicsReviewed": "الموضوعات المراجعة",
-  "tryAgain": "حاول مرة أخرى"
+  "tryAgain": "حاول مرة أخرى",
+  "yourAnswer": "إجابتك"
 }

@@ -2,14 +2,12 @@
   "achievements": {
     "firstSteps": "الخطوات الأولى",
     "mathWhiz": "عبقري الرياضيات",
-    "perfectScore": "درجة كاملة",
-    "weekStreak": "سلسلة أسبوعية"
+    "perfectScore": "درجة كاملة"
   },
   "achievementUnlocked": "تم فتح إنجاز!",
   "badges": {
     "consistent": "متعلم منتظم",
     "firstStep": "الخطوة الأولى",
-    "perfectStreak": "سلسلة مثالية",
     "speedDemon": "سريع البديهة",
     "topicMaster": "متقن الموضوعات",
     "weekWarrior": "محارب الأسبوع"
@@ -24,10 +22,6 @@
   "progress": "التقدم",
   "rank": "الترتيب",
   "speedBonus": "مكافأة السرعة",
-  "streak": "السلسلة",
-  "streakBonus": "مكافأة السلسلة",
-  "streakFrozen": "السلسلة مجمدة",
-  "streakLost": "السلسلة ضاعت",
   "topPerformers": "الأفضل أداءً",
   "totalXP": "إجمالي النقاط",
   "weeklyChallenge": "تحدي الأسبوع",

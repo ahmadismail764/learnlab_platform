@@ -19,7 +19,6 @@ rectangle "LearnLab Platform" {
   usecase "Register / Login" as UC_Login
   
   package "Student Features" #LightBlue {
-    usecase "Rate Confidence" as UC_Rate
     usecase "View Leaderboard" as UC_Leaderboard
     usecase "Solve Practice Sheet" as UC_SolveSheet
     usecase "View Topics\n(with Level)" as UC_ViewTopics
@@ -28,6 +27,7 @@ rectangle "LearnLab Platform" {
   
   package "Practice Sheet Components" #LightYellow {
     usecase "Solve Single Question" as UC_SolveQ
+    usecase "Rate Confidence" as UC_Rate
     usecase "Submit Practice Sheet" as UC_Submit
   }
   
@@ -43,7 +43,6 @@ S --> UC_Login
 A --> UC_Login
 
 ' Student interactions
-S --> UC_Rate
 S --> UC_Leaderboard
 S --> UC_SolveSheet
 S --> UC_ViewTopics
@@ -56,6 +55,9 @@ A --> UC_Analytics
 ' Composition of the Solve Practice Sheet use case
 UC_SolveSheet .> UC_SolveQ : <<include>>
 UC_SolveSheet .> UC_Submit : <<include>>
+
+' Rate Confidence is part of solving a question
+UC_SolveQ .> UC_Rate : <<include>>
 
 ' Watch Explanation Video extends Solve Practice Sheet
 UC_WatchVideo ..> UC_SolveSheet : <<extend>>

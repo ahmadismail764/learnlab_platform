@@ -53,13 +53,13 @@ export function LoadingOverlay({
     <div
       className={cn(
         'absolute inset-0 z-10 flex items-center justify-center',
-        'bg-white/80',
+        'bg-white/80 dark:bg-neutral-900/80',
         blur && 'backdrop-blur-sm'
       )}
     >
       <div className="flex flex-col items-center gap-3">
         <Spinner size="lg" />
-        {text && <p className="text-sm text-neutral-600">{text}</p>}
+        {text && <p className="text-sm text-neutral-600 dark:text-neutral-400">{text}</p>}
       </div>
     </div>
   )
@@ -74,13 +74,13 @@ interface PageLoaderProps {
  */
 export function PageLoader({ text = 'Loading...' }: PageLoaderProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
       <div className="flex flex-col items-center gap-4">
         <div className="relative">
-          <div className="w-16 h-16 border-4 border-primary-200 rounded-full" />
+          <div className="w-16 h-16 border-4 border-primary-200 dark:border-primary-800 rounded-full" />
           <div className="absolute inset-0 w-16 h-16 border-4 border-primary-500 rounded-full border-t-transparent animate-spin" />
         </div>
-        <p className="text-neutral-600 font-medium">{text}</p>
+        <p className="text-neutral-600 dark:text-neutral-400 font-medium">{text}</p>
       </div>
     </div>
   )
@@ -105,7 +105,7 @@ export function Skeleton({
   width,
   height,
 }: SkeletonProps) {
-  const baseClasses = 'animate-pulse bg-neutral-200'
+  const baseClasses = 'animate-pulse bg-neutral-200 dark:bg-neutral-700'
   
   const variantClasses = {
     text: 'rounded h-4',

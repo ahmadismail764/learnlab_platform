@@ -60,6 +60,10 @@ export function MathInput({
     mf.style.fontSize = '1.25rem'
     mf.style.setProperty('--caret-color', 'var(--color-primary-500, #3b82f6)')
     mf.style.setProperty('--selection-background-color', 'var(--color-primary-100, #dbeafe)')
+    
+    // Dark mode text color - check if dark mode is active
+    const isDark = document.documentElement.classList.contains('dark')
+    mf.style.color = isDark ? '#f4f4f5' : '#18181b'
 
     // Configure virtual keyboard
     if (showKeyboard) {
@@ -173,16 +177,16 @@ export function MathInput({
       <div
         className={`
           relative rounded-lg border-2 transition-colors
-          ${isFocused ? 'border-primary-500 ring-2 ring-primary-100' : 'border-neutral-300'}
-          ${disabled ? 'bg-neutral-100 opacity-60' : 'bg-white'}
-          ${readOnly ? 'bg-neutral-50' : ''}
+          ${isFocused ? 'border-primary-500 ring-2 ring-primary-100 dark:ring-primary-900/50' : 'border-neutral-300 dark:border-neutral-600'}
+          ${disabled ? 'bg-neutral-100 dark:bg-neutral-800 opacity-60' : 'bg-white dark:bg-neutral-900'}
+          ${readOnly ? 'bg-neutral-50 dark:bg-neutral-800' : ''}
         `}
       >
         {/* Math field will be mounted here */}
         <div ref={containerRef} />
         
         {placeholder && !value && !isFocused && (
-          <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-neutral-400">
+          <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-neutral-400 dark:text-neutral-500">
             {placeholder}
           </div>
         )}
@@ -193,7 +197,7 @@ export function MathInput({
         <button
           type="button"
           onClick={toggleKeyboard}
-          className="mt-2 px-4 py-2 text-sm bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors flex items-center gap-2 text-neutral-700"
+          className="mt-2 px-4 py-2 text-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors flex items-center gap-2 text-neutral-700 dark:text-neutral-300"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth="2"/>

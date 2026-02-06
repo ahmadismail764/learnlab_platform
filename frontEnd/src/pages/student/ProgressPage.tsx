@@ -116,10 +116,10 @@ export function ProgressPage() {
 
   const getStateColor = (state: TopicProgress['state']) => {
     switch (state) {
-      case 'mastered': return 'bg-green-100 text-green-700'
-      case 'review': return 'bg-blue-100 text-blue-700'
-      case 'learning': return 'bg-amber-100 text-amber-700'
-      case 'new': return 'bg-neutral-100 text-neutral-600'
+      case 'mastered': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+      case 'review': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+      case 'learning': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+      case 'new': return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
     }
   }
 
@@ -136,10 +136,10 @@ export function ProgressPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-800">
+        <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
           {t('student:myProgress')}
         </h1>
-        <p className="text-neutral-600 mt-1">
+        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
           {t('student:progressDescription')}
         </p>
       </div>
@@ -148,48 +148,48 @@ export function ProgressPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <Target className="w-5 h-5 text-primary-600" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <Target className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{weeklyStats.questionsAnswered}</p>
-              <p className="text-xs text-neutral-500">{t('student:questionsThisWeek')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{weeklyStats.questionsAnswered}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('student:questionsThisWeek')}</p>
             </div>
           </div>
         </Card>
 
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{weeklyStats.averageAccuracy}%</p>
-              <p className="text-xs text-neutral-500">{t('student:accuracyRate')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{weeklyStats.averageAccuracy}%</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('student:accuracyRate')}</p>
             </div>
           </div>
         </Card>
 
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary-100 rounded-lg">
-              <Clock className="w-5 h-5 text-secondary-600" />
+            <div className="p-2 bg-secondary-100 dark:bg-secondary-900/30 rounded-lg">
+              <Clock className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{weeklyStats.timeSpent}</p>
-              <p className="text-xs text-neutral-500">{t('student:timeSpent')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{weeklyStats.timeSpent}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('student:timeSpent')}</p>
             </div>
           </div>
         </Card>
 
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-100 rounded-lg">
-              <Zap className="w-5 h-5 text-accent-600" />
+            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+              <Zap className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{weeklyStats.xpEarned}</p>
-              <p className="text-xs text-neutral-500">{t('student:xpEarned')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{weeklyStats.xpEarned}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('student:xpEarned')}</p>
             </div>
           </div>
         </Card>
@@ -210,26 +210,26 @@ export function ProgressPage() {
                 <div key={index} className="space-y-1.5">
                   {/* Week label and stats */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-neutral-700">
+                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                       {t('student:week', { number: index + 1 })}
                     </span>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-neutral-500">
+                      <span className="text-xs text-neutral-500 dark:text-neutral-400">
                         {week.questions} {t('student:questions')}
                       </span>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                         week.accuracy >= 85 
-                          ? 'bg-green-100 text-green-700' 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
                           : week.accuracy >= 70 
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+                            : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                       }`}>
                         {week.accuracy}%
                       </span>
                     </div>
                   </div>
                   {/* Progress bar */}
-                  <div className="h-8 bg-neutral-100 rounded-lg overflow-hidden relative">
+                  <div className="h-8 bg-neutral-100 dark:bg-neutral-800 rounded-lg overflow-hidden relative">
                     <div 
                       className="h-full flex rounded-lg overflow-hidden transition-all duration-300"
                       style={{ width: `${barWidth}%` }}
@@ -259,14 +259,14 @@ export function ProgressPage() {
             })}
           </div>
           {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-neutral-100">
+          <div className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-700">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-400 rounded" />
-              <span className="text-xs text-neutral-600">{t('student:correctAnswers')}</span>
+              <span className="text-xs text-neutral-600 dark:text-neutral-400">{t('student:correctAnswers')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-gradient-to-r from-red-400 to-red-300 rounded" />
-              <span className="text-xs text-neutral-600">{t('student:incorrectAnswers')}</span>
+              <span className="text-xs text-neutral-600 dark:text-neutral-400">{t('student:incorrectAnswers')}</span>
             </div>
           </div>
         </CardContent>
@@ -275,8 +275,8 @@ export function ProgressPage() {
       {/* Topic Mastery */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-neutral-800">{t('student:topicMastery')}</h2>
-          <Link to="/student/topics" className="text-sm text-primary-600 hover:text-primary-700">
+          <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">{t('student:topicMastery')}</h2>
+          <Link to="/student/topics" className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
             {t('common:viewAll')}
           </Link>
         </div>
@@ -285,13 +285,13 @@ export function ProgressPage() {
           {topicProgress.map((topic) => (
             <Card key={topic.id} padding="sm">
               <div className="flex items-center gap-4">
-                <span className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-xl font-mono">
+                <span className="w-10 h-10 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-xl font-mono">
                   {topic.icon}
                 </span>
                 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-medium text-neutral-800">{t(topic.nameKey)}</h3>
+                    <h3 className="font-medium text-neutral-800 dark:text-neutral-100">{t(topic.nameKey)}</h3>
                     <Badge size="sm" className={getStateColor(topic.state)}>
                       {getStateLabel(topic.state)}
                     </Badge>
@@ -302,7 +302,7 @@ export function ProgressPage() {
                       {topic.mastery}%
                     </span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-neutral-500">
+                  <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
                     <span className="flex items-center gap-1">
                       <Target className="w-3 h-3" />
                       {topic.questionsAnswered}/{topic.questionsTotal} {t('student:questions')}

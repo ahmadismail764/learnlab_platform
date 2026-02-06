@@ -54,7 +54,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="text-sm font-medium text-neutral-700"
+            className="text-sm font-medium text-neutral-700 dark:text-neutral-300"
           >
             {label}
           </label>
@@ -62,7 +62,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
               {leftIcon}
             </div>
           )}
@@ -72,11 +72,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             className={cn(
               // Base styles
-              'w-full rounded-lg border bg-white text-neutral-800',
-              'placeholder:text-neutral-400',
+              'w-full rounded-lg border bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100',
+              'placeholder:text-neutral-400 dark:placeholder:text-neutral-500',
               'transition-colors duration-150',
               'focus:outline-none focus:ring-2 focus:border-transparent',
-              'disabled:bg-neutral-100 disabled:cursor-not-allowed',
+              'disabled:bg-neutral-100 dark:disabled:bg-neutral-900 disabled:cursor-not-allowed',
               // Size
               sizeStyles[size],
               // Icon padding
@@ -85,7 +85,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               // Error state
               hasError
                 ? 'border-error focus:ring-error/30'
-                : 'border-neutral-300 focus:ring-primary-500/30 focus:border-primary-500',
+                : 'border-neutral-300 dark:border-neutral-700 focus:ring-primary-500/30 focus:border-primary-500',
               className
             )}
             aria-invalid={hasError}
@@ -96,7 +96,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           />
           
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
               {rightIcon}
             </div>
           )}
@@ -109,7 +109,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
         
         {helperText && !error && (
-          <p id={`${inputId}-helper`} className="text-sm text-neutral-500">
+          <p id={`${inputId}-helper`} className="text-sm text-neutral-500 dark:text-neutral-400">
             {helperText}
           </p>
         )}

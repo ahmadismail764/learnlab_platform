@@ -274,10 +274,10 @@ export function PracticePage() {
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-neutral-800 mb-2">
+          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
             {t('practice:practiceSession')}
           </h1>
-          <p className="text-neutral-600">
+          <p className="text-neutral-600 dark:text-neutral-400">
             Test your knowledge of Discrete Mathematics
           </p>
         </div>
@@ -285,32 +285,32 @@ export function PracticePage() {
         <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
           <Card hoverable className="cursor-pointer" onClick={() => startSession(4)}>
             <CardContent className="text-center py-6">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Zap className="w-6 h-6 text-primary-600" />
+              <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Zap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
-              <h3 className="font-semibold text-neutral-800">Quick Practice</h3>
-              <p className="text-sm text-neutral-500 mt-1">4 questions • ~5 min</p>
+              <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Quick Practice</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">4 questions • ~5 min</p>
             </CardContent>
           </Card>
 
-          <Card hoverable className="cursor-pointer border-primary-200 bg-primary-50/30" onClick={() => startSession(6)}>
+          <Card hoverable className="cursor-pointer border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/20" onClick={() => startSession(6)}>
             <CardContent className="text-center py-6">
-              <div className="w-12 h-12 bg-primary-500 rounded-full flex items-center justify-center mx-auto mb-3">
+              <div className="w-12 h-12 bg-primary-500 dark:bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-3">
                 <BookOpen className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-semibold text-neutral-800">Standard Session</h3>
-              <p className="text-sm text-neutral-500 mt-1">6 questions • ~10 min</p>
+              <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Standard Session</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">6 questions • ~10 min</p>
               <Badge variant="primary" size="sm" className="mt-2">Recommended</Badge>
             </CardContent>
           </Card>
 
           <Card hoverable className="cursor-pointer" onClick={() => startSession(10)}>
             <CardContent className="text-center py-6">
-              <div className="w-12 h-12 bg-accent-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Trophy className="w-6 h-6 text-accent-600" />
+              <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Trophy className="w-6 h-6 text-accent-600 dark:text-accent-400" />
               </div>
-              <h3 className="font-semibold text-neutral-800">Challenge Mode</h3>
-              <p className="text-sm text-neutral-500 mt-1">10 questions • ~15 min</p>
+              <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Challenge Mode</h3>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">10 questions • ~15 min</p>
             </CardContent>
           </Card>
         </div>
@@ -318,7 +318,7 @@ export function PracticePage() {
         {/* Topic preview */}
         <Card className="max-w-3xl mx-auto">
           <CardContent>
-            <h3 className="font-semibold text-neutral-800 mb-3">Topics Covered</h3>
+            <h3 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3">Topics Covered</h3>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{t('topics:logic.title')}</Badge>
               <Badge variant="secondary">{t('topics:sets.title')}</Badge>
@@ -340,41 +340,41 @@ export function PracticePage() {
     return (
       <div className="max-w-xl mx-auto space-y-6">
         <Card className="text-center py-8">
-          <div className="w-20 h-20 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trophy className="w-10 h-10 text-primary-600" />
+          <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Trophy className="w-10 h-10 text-primary-600 dark:text-primary-400" />
           </div>
-          <h1 className="text-2xl font-bold text-neutral-800 mb-2">
+          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
             {t('practice:sessionComplete')}
           </h1>
-          <p className="text-neutral-600">Great work! Here's how you did:</p>
+          <p className="text-neutral-600 dark:text-neutral-400">Great work! Here's how you did:</p>
         </Card>
 
         <div className="grid grid-cols-2 gap-4">
           <Card>
             <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-primary-600">{stats.correct}/{stats.total}</p>
-              <p className="text-sm text-neutral-500">{t('practice:questionsAnswered')}</p>
+              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{stats.correct}/{stats.total}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:questionsAnswered')}</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-secondary-600">{stats.accuracy}%</p>
-              <p className="text-sm text-neutral-500">{t('practice:accuracy')}</p>
+              <p className="text-3xl font-bold text-secondary-600 dark:text-secondary-400">{stats.accuracy}%</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:accuracy')}</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-accent-600">+{totalXP}</p>
-              <p className="text-sm text-neutral-500">XP Earned</p>
+              <p className="text-3xl font-bold text-accent-600 dark:text-accent-400">+{totalXP}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">XP Earned</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-neutral-600">6</p>
-              <p className="text-sm text-neutral-500">{t('practice:topicsReviewed')}</p>
+              <p className="text-3xl font-bold text-neutral-600 dark:text-neutral-300">6</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:topicsReviewed')}</p>
             </CardContent>
           </Card>
         </div>
@@ -425,7 +425,7 @@ export function PracticePage() {
             {tierLabels[currentQuestion.tier]}
           </Badge>
         </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-600">
+        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
           <Zap className="w-4 h-4 text-accent-500" />
           <span>+{totalXP} XP</span>
         </div>
@@ -433,7 +433,7 @@ export function PracticePage() {
 
       {/* Progress bar */}
       <div className="space-y-1">
-        <div className="flex justify-between text-sm text-neutral-600">
+        <div className="flex justify-between text-sm text-neutral-600 dark:text-neutral-400">
           <span>{t('practice:questionOf', { current: currentIndex + 1, total: sessionQuestions.length })}</span>
           <span>{stats.correct} correct</span>
         </div>
@@ -449,7 +449,7 @@ export function PracticePage() {
         <CardContent className="p-6">
           {/* Question text */}
           <div className="mb-6">
-            <p className="text-lg text-neutral-800 leading-relaxed">
+            <p className="text-lg text-neutral-800 dark:text-neutral-100 leading-relaxed">
               {currentQuestion.content}
             </p>
             {currentQuestion.answerType === 'essay' && (
@@ -463,7 +463,7 @@ export function PracticePage() {
           {currentQuestion.answerType === 'essay' ? (
             // Essay answer with MathInput
             <div className="mb-6">
-              <label className="block text-sm font-medium text-neutral-700 mb-2">
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 {t('practice:yourAnswer')}
               </label>
               <MathInput
@@ -488,9 +488,9 @@ export function PracticePage() {
 
               {/* Show correct answer after submission */}
               {currentState.answerState !== 'unanswered' && (
-                <div className="mt-4 p-3 bg-neutral-50 rounded-lg border">
-                  <p className="text-sm text-neutral-600 mb-1">{t('practice:correctAnswer')}:</p>
-                  <p className="font-mono text-neutral-800">{currentQuestion.correctAnswer as string}</p>
+                <div className="mt-4 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{t('practice:correctAnswer')}:</p>
+                  <p className="font-mono text-neutral-800 dark:text-neutral-100">{currentQuestion.correctAnswer as string}</p>
                 </div>
               )}
             </div>
@@ -506,16 +506,16 @@ export function PracticePage() {
                 
                 if (showResult) {
                   if (isCorrectAnswer) {
-                    className += 'border-green-500 bg-green-50 text-green-800'
+                    className += 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200'
                   } else if (isSelected && !isCorrectAnswer) {
-                    className += 'border-red-500 bg-red-50 text-red-800'
+                    className += 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200'
                   } else {
-                    className += 'border-neutral-200 bg-neutral-50 text-neutral-500'
+                    className += 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400'
                   }
                 } else {
                   className += isSelected 
-                    ? 'border-primary-500 bg-primary-50'
-                    : 'border-neutral-200 hover:border-primary-300 hover:bg-primary-50/50'
+                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-neutral-800 dark:text-neutral-100'
+                    : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 text-neutral-800 dark:text-neutral-100'
                 }
 
                 return (
@@ -526,7 +526,7 @@ export function PracticePage() {
                     className={className}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-white border flex items-center justify-center text-sm font-medium">
+                      <span className="w-8 h-8 rounded-full bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-sm font-medium text-neutral-700 dark:text-neutral-300">
                         {String.fromCharCode(65 + index)}
                       </span>
                       <span className="flex-1 font-medium">{option}</span>
@@ -547,15 +547,15 @@ export function PracticePage() {
           {currentState.answerState !== 'unanswered' && (
             <div className={`p-4 rounded-lg mb-4 ${
               currentState.answerState === 'correct' 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
+                ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200' 
+                : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'
             }`}>
               <div className="flex items-center gap-2 font-semibold">
                 {currentState.answerState === 'correct' ? (
                   <>
                     <CheckCircle className="w-5 h-5" />
                     {t('practice:correct')}
-                    <span className="ms-auto text-green-600">+{currentQuestion.xpReward} XP</span>
+                    <span className="ms-auto text-green-600 dark:text-green-400">+{currentQuestion.xpReward} XP</span>
                   </>
                 ) : (
                   <>
@@ -573,7 +573,7 @@ export function PracticePage() {
               {currentState.hintsShown > 0 && (
                 <div className="space-y-2 mb-3">
                   {currentQuestion.hints.slice(0, currentState.hintsShown).map((hint, i) => (
-                    <div key={i} className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                    <div key={i} className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
                       <div className="flex items-start gap-2">
                         <Lightbulb className="w-4 h-4 mt-0.5 shrink-0" />
                         <span>{hint}</span>
@@ -608,15 +608,15 @@ export function PracticePage() {
               </Button>
               
               {currentState.showSolution && (
-                <div className="mt-3 p-4 bg-neutral-50 rounded-lg border">
-                  <h4 className="font-semibold text-neutral-800 mb-3">{t('practice:solutionSteps')}</h4>
+                <div className="mt-3 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                  <h4 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3">{t('practice:solutionSteps')}</h4>
                   <ol className="space-y-2">
                     {currentQuestion.solutionSteps.map((step) => (
                       <li key={step.order} className="flex gap-3 text-sm">
-                        <span className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center shrink-0 text-xs font-medium">
+                        <span className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 flex items-center justify-center shrink-0 text-xs font-medium">
                           {step.order}
                         </span>
-                        <span className="text-neutral-700">{step.content}</span>
+                        <span className="text-neutral-700 dark:text-neutral-300">{step.content}</span>
                       </li>
                     ))}
                   </ol>

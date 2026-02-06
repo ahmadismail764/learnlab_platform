@@ -1,6 +1,6 @@
 import { useMemo, Suspense } from 'react'
 import { RouterProvider } from 'react-router-dom'
-import { AuthProvider, ToastProvider, useAuth } from '@/contexts'
+import { AuthProvider, ToastProvider, ThemeProvider, useAuth } from '@/contexts'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { PageLoader } from '@/components/ui'
 import { createAppRouter } from '@/routes'
@@ -23,11 +23,13 @@ export default function App() {
   return (
     <Suspense fallback={<PageLoader text="Loading..." />}>
       <ErrorBoundary>
-        <AuthProvider>
-          <ToastProvider>
-            <AppRouter />
-          </ToastProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <AppRouter />
+            </ToastProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </Suspense>
   )

@@ -26,8 +26,16 @@ import type { User } from '@/types'
  * - admin: Content manager - manages questions, monitors analytics
  */
 
-// Helper to create dashboard layout with user
-function createDashboardElement(user: User | null) {
+/**
+ * Helper to create dashboard layout with user
+ * 
+ * Note: onLogout is a placeholder that will be replaced when AuthContext
+ * is integrated. The actual logout flow should:
+ * 1. Call logout() from AuthContext
+ * 2. Clear tokens from storage
+ * 3. React Router will auto-redirect via the user check
+ */
+function createDashboardElement(user: User | null, onLogout?: () => void) {
   if (!user) {
     return <Navigate to="/login" replace />
   }
@@ -35,10 +43,11 @@ function createDashboardElement(user: User | null) {
   return (
     <DashboardLayout 
       user={user}
-      onLogout={() => {
-        // Will be handled by context in real implementation
+      onLogout={onLogout ?? (() => {
+        // Placeholder: Will be replaced by AuthContext.logout() in App.tsx
+        // This causes full reload - acceptable for demo, replace for production
         window.location.href = '/login'
-      }}
+      })}
     />
   )
 }

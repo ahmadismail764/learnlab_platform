@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth } from '@/contexts'
 import type { User, UserRole } from '@/types'
 
@@ -12,7 +13,7 @@ import type { User, UserRole } from '@/types'
  * 
  * Handles user authentication.
  * For now, uses mock login - will connect to API later.
- * RTL-aware with language switcher.
+ * RTL-aware with language switcher and dark mode support.
  */
 
 export function LoginPage() {
@@ -75,15 +76,16 @@ export function LoginPage() {
 
   return (
     <div>
-      {/* Language Switcher - top right */}
-      <div className="absolute top-4 end-4">
-        <LanguageSwitcher variant="buttons" />
+      {/* Language Switcher & Theme Toggle - top right */}
+      <div className="absolute top-4 end-4 flex items-center gap-1">
+        <ThemeToggle />
+        <LanguageSwitcher variant="globe" />
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-800 mb-2">
+      <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
         {t('auth:welcomeBack')}
       </h2>
-      <p className="text-neutral-600 mb-8">
+      <p className="text-neutral-600 dark:text-neutral-400 mb-8">
         {t('auth:enterCredentials')}
       </p>
 
@@ -118,17 +120,17 @@ export function LoginPage() {
         />
 
         {error && (
-          <p className="text-sm text-error bg-red-50 px-3 py-2 rounded-lg">
+          <p className="text-sm text-error bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded-lg">
             {error}
           </p>
         )}
 
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center gap-2">
-            <input type="checkbox" className="rounded border-neutral-300" />
-            <span className="text-neutral-600">{t('auth:rememberMe')}</span>
+            <input type="checkbox" className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800" />
+            <span className="text-neutral-600 dark:text-neutral-400">{t('auth:rememberMe')}</span>
           </label>
-          <Link to="/forgot-password" className="text-primary-600 hover:text-primary-700">
+          <Link to="/forgot-password" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">
             {t('auth:forgotPassword')}
           </Link>
         </div>
@@ -138,20 +140,20 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <p className="text-center text-sm text-neutral-600 mt-6">
+      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400 mt-6">
         {t('auth:noAccount')}{' '}
-        <Link to="/register" className="text-primary-600 hover:text-primary-700 font-medium">
+        <Link to="/register" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
           {t('auth:signUp')}
         </Link>
       </p>
 
       {/* Development helper */}
-      <div className="mt-8 p-4 bg-neutral-100 rounded-lg text-sm">
-        <p className="font-medium text-neutral-700 mb-2">🧪 {t('auth:testAccounts')}:</p>
-        <div className="space-y-1 text-neutral-600">
+      <div className="mt-8 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm">
+        <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-2">🧪 {t('auth:testAccounts')}:</p>
+        <div className="space-y-1 text-neutral-600 dark:text-neutral-400">
           <p>{t('auth:student')}: student@learnlab.com</p>
           <p>{t('auth:admin')}: admin@learnlab.com</p>
-          <p className="text-neutral-500">Password: password</p>
+          <p className="text-neutral-500 dark:text-neutral-500">Password: password</p>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Globe } from 'lucide-react'
+import { Globe, Check } from 'lucide-react'
 import { 
   supportedLanguages, 
   languageConfig, 
@@ -18,7 +18,7 @@ import { cn } from '@/utils/cn'
 
 interface LanguageSwitcherProps {
   /** Display variant */
-  variant?: 'dropdown' | 'toggle' | 'buttons' | 'minimal'
+  variant?: 'globe' | 'dropdown' | 'toggle' | 'buttons' | 'minimal'
   /** Additional CSS classes */
   className?: string
   /** Show language names or just flags/icons */
@@ -26,7 +26,7 @@ interface LanguageSwitcherProps {
 }
 
 export function LanguageSwitcher({ 
-  variant = 'toggle', 
+  variant = 'globe', 
   className,
   showLabel = true 
 }: LanguageSwitcherProps) {
@@ -48,6 +48,72 @@ export function LanguageSwitcher({
     setIsOpen(false)
   }
 
+  // Globe variant - earth icon with dropdown (default, recommended)
+  if (variant === 'globe') {
+    return (
+      <div className={cn('relative', className)}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            setIsOpen(!isOpen)
+          }}
+          className={cn(
+            'p-2 rounded-lg transition-colors',
+            'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700',
+            'dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/30'
+          )}
+          title="Change language"
+          aria-label="Change language"
+          aria-expanded={isOpen}
+        >
+          <Globe className="w-5 h-5" />
+        </button>
+
+        {isOpen && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setIsOpen(false)} 
+            />
+            
+            {/* Dropdown */}
+            <div className={cn(
+              'absolute top-full mt-1 py-1 min-w-[140px]',
+              'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
+              'border border-neutral-200 dark:border-neutral-700',
+              'z-50',
+              'ltr:right-0 rtl:left-0'
+            )}>
+              {supportedLanguages.map((lang) => {
+                const config = languageConfig[lang]
+                const isActive = currentLang === lang
+                
+                return (
+                  <button
+                    key={lang}
+                    onClick={() => handleLanguageChange(lang)}
+                    className={cn(
+                      'w-full px-3 py-2 text-sm text-start flex items-center justify-between gap-2',
+                      'hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors',
+                      isActive 
+                        ? 'text-primary-600 dark:text-primary-400 font-medium' 
+                        : 'text-neutral-700 dark:text-neutral-300'
+                    )}
+                  >
+                    <span>{config.nativeName}</span>
+                    {isActive && <Check className="w-4 h-4" />}
+                  </button>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    )
+  }
+
   // Toggle variant - simple switch between 2 languages
   if (variant === 'toggle') {
     const nextLang = currentLang === 'en' ? 'ar' : 'en'
@@ -58,8 +124,8 @@ export function LanguageSwitcher({
         onClick={() => handleLanguageChange(nextLang)}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg',
-          'text-sm font-medium text-neutral-600',
-          'hover:bg-neutral-100 transition-colors',
+          'text-sm font-medium text-neutral-600 dark:text-neutral-400',
+          'hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           className
         )}
@@ -81,8 +147,9 @@ export function LanguageSwitcher({
       <button
         onClick={() => handleLanguageChange(nextLang)}
         className={cn(
-          'p-2 rounded-lg text-neutral-500',
-          'hover:bg-neutral-100 transition-colors',
+          'p-2 rounded-lg',
+          'text-neutral-500 dark:text-neutral-400',
+          'hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           className
         )}
@@ -97,7 +164,11 @@ export function LanguageSwitcher({
   // Buttons variant - all languages visible
   if (variant === 'buttons') {
     return (
-      <div className={cn('flex gap-1 p-1 bg-neutral-100 rounded-lg', className)}>
+      <div className={cn(
+        'flex gap-1 p-1 rounded-lg',
+        'bg-neutral-100 dark:bg-neutral-800',
+        className
+      )}>
         {supportedLanguages.map((lang) => {
           const config = languageConfig[lang]
           const isActive = currentLang === lang
@@ -109,8 +180,8 @@ export function LanguageSwitcher({
               className={cn(
                 'px-3 py-1.5 rounded-md text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-white text-neutral-800 shadow-sm'
-                  : 'text-neutral-600 hover:text-neutral-800'
+                  ? 'bg-white dark:bg-neutral-700 text-neutral-800 dark:text-neutral-100 shadow-sm'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200'
               )}
             >
               {showLabel ? config.nativeName : lang.toUpperCase()}
@@ -121,7 +192,7 @@ export function LanguageSwitcher({
     )
   }
 
-  // Dropdown variant
+  // Dropdown variant (legacy)
   return (
     <div className={cn('relative', className)}>
       <button
@@ -131,8 +202,8 @@ export function LanguageSwitcher({
         }}
         className={cn(
           'flex items-center gap-2 px-3 py-2 rounded-lg',
-          'text-sm font-medium text-neutral-600',
-          'hover:bg-neutral-100 transition-colors',
+          'text-sm font-medium text-neutral-600 dark:text-neutral-400',
+          'hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30'
         )}
       >
@@ -153,9 +224,9 @@ export function LanguageSwitcher({
       {isOpen && (
         <div className={cn(
           'absolute top-full mt-1 py-1 min-w-[140px]',
-          'bg-white rounded-lg shadow-lg border border-neutral-200',
+          'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
+          'border border-neutral-200 dark:border-neutral-700',
           'z-50',
-          // Position based on direction
           'ltr:right-0 rtl:left-0'
         )}>
           {supportedLanguages.map((lang) => {
@@ -168,8 +239,10 @@ export function LanguageSwitcher({
                 onClick={() => handleLanguageChange(lang)}
                 className={cn(
                   'w-full px-4 py-2 text-sm text-start',
-                  'hover:bg-neutral-50 transition-colors',
-                  isActive ? 'text-primary-600 font-medium' : 'text-neutral-700'
+                  'hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors',
+                  isActive 
+                    ? 'text-primary-600 dark:text-primary-400 font-medium' 
+                    : 'text-neutral-700 dark:text-neutral-300'
                 )}
               >
                 {config.nativeName}

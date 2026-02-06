@@ -90,10 +90,10 @@ export function AnalyticsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-800">
+        <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
           {t('admin:studentAnalytics')}
         </h1>
-        <p className="text-neutral-600 mt-1">
+        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
           {t('admin:analyticsDescription')}
         </p>
       </div>
@@ -102,48 +102,48 @@ export function AnalyticsPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary-100 rounded-lg">
-              <Users className="w-5 h-5 text-secondary-600" />
+            <div className="p-2 bg-secondary-100 dark:bg-secondary-900/30 rounded-lg">
+              <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{overviewStats.totalStudents}</p>
-              <p className="text-xs text-neutral-500">{t('admin:totalStudents')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.totalStudents}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalStudents')}</p>
             </div>
           </div>
         </Card>
         
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Activity className="w-5 h-5 text-green-600" />
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{overviewStats.activeThisWeek}</p>
-              <p className="text-xs text-neutral-500">{t('admin:activeThisWeek')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.activeThisWeek}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:activeThisWeek')}</p>
             </div>
           </div>
         </Card>
         
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <Target className="w-5 h-5 text-primary-600" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <Target className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{overviewStats.avgAccuracy}%</p>
-              <p className="text-xs text-neutral-500">{t('admin:avgAccuracy')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.avgAccuracy}%</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:avgAccuracy')}</p>
             </div>
           </div>
         </Card>
         
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-100 rounded-lg">
-              <Clock className="w-5 h-5 text-accent-600" />
+            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+              <Clock className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{overviewStats.avgSessionTime}m</p>
-              <p className="text-xs text-neutral-500">{t('admin:avgSessionTime')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.avgSessionTime}m</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:avgSessionTime')}</p>
             </div>
           </div>
         </Card>
@@ -163,11 +163,11 @@ export function AnalyticsPage() {
                 {topicPerformance.map((item) => (
                   <div key={item.topic} className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-neutral-700">
+                      <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                         {t(`topics:${item.topic}`)}
                       </span>
                       <div className="flex items-center gap-3">
-                        <span className="text-xs text-neutral-500">
+                        <span className="text-xs text-neutral-500 dark:text-neutral-400">
                           {item.attempts.toLocaleString()} {t('admin:attempts')}
                         </span>
                         <Badge 
@@ -187,7 +187,7 @@ export function AnalyticsPage() {
                         className="flex-1"
                       />
                       <div 
-                        className="h-2 bg-neutral-200 rounded-full"
+                        className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full"
                         style={{ width: `${(item.attempts / maxAttempts) * 100}%`, maxWidth: '100px' }}
                         title={`${item.attempts} attempts`}
                       />
@@ -212,8 +212,8 @@ export function AnalyticsPage() {
                     strokeWidth={6}
                     variant="success"
                   />
-                  <p className="text-xs text-neutral-500 mt-2">{t('admin:tier1')}</p>
-                  <p className="text-xs text-neutral-400">{difficultyBreakdown.tier1.attempts.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{t('admin:tier1')}</p>
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500">{difficultyBreakdown.tier1.attempts.toLocaleString()}</p>
                 </div>
                 <div className="text-center">
                   <ProgressRing 
@@ -222,8 +222,8 @@ export function AnalyticsPage() {
                     strokeWidth={6}
                     variant="secondary"
                   />
-                  <p className="text-xs text-neutral-500 mt-2">{t('admin:tier2')}</p>
-                  <p className="text-xs text-neutral-400">{difficultyBreakdown.tier2.attempts.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{t('admin:tier2')}</p>
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500">{difficultyBreakdown.tier2.attempts.toLocaleString()}</p>
                 </div>
                 <div className="text-center">
                   <ProgressRing 
@@ -232,8 +232,8 @@ export function AnalyticsPage() {
                     strokeWidth={6}
                     variant="accent"
                   />
-                  <p className="text-xs text-neutral-500 mt-2">{t('admin:tier3')}</p>
-                  <p className="text-xs text-neutral-400">{difficultyBreakdown.tier3.attempts.toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2">{t('admin:tier3')}</p>
+                  <p className="text-xs text-neutral-400 dark:text-neutral-500">{difficultyBreakdown.tier3.attempts.toLocaleString()}</p>
                 </div>
               </div>
             </CardContent>
@@ -245,19 +245,19 @@ export function AnalyticsPage() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600">{t('admin:totalUnlocked')}</span>
-                  <span className="font-medium text-neutral-800">{achievementStats.totalUnlocked}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:totalUnlocked')}</span>
+                  <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.totalUnlocked}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600">{t('admin:avgPerStudent')}</span>
-                  <span className="font-medium text-neutral-800">{achievementStats.averagePerStudent}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:avgPerStudent')}</span>
+                  <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.averagePerStudent}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600">{t('admin:mostCommon')}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:mostCommon')}</span>
                   <Badge variant="primary" size="sm">{achievementStats.mostCommon}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600">{t('admin:rarest')}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:rarest')}</span>
                   <Badge variant="accent" size="sm">{achievementStats.rarest}</Badge>
                 </div>
               </div>
@@ -283,11 +283,11 @@ export function AnalyticsPage() {
                     style={{ height: `${(day.students / maxDailyStudents) * 100}%` }}
                     title={`${day.students} students, ${day.questions} questions`}
                   />
-                  <span className="text-xs text-neutral-500">{day.day}</span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400">{day.day}</span>
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex justify-center gap-6 text-xs text-neutral-500">
+            <div className="mt-4 flex justify-center gap-6 text-xs text-neutral-500 dark:text-neutral-400">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-primary-500 rounded" />
                 {t('admin:activeStudents')}
@@ -308,16 +308,16 @@ export function AnalyticsPage() {
                 <div key={student.name} className="flex items-center gap-3">
                   <div className={`
                     w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                    ${index === 0 ? 'bg-yellow-100 text-yellow-700' : ''}
-                    ${index === 1 ? 'bg-neutral-200 text-neutral-600' : ''}
-                    ${index === 2 ? 'bg-amber-100 text-amber-700' : ''}
-                    ${index > 2 ? 'bg-neutral-100 text-neutral-500' : ''}
+                    ${index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : ''}
+                    ${index === 1 ? 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300' : ''}
+                    ${index === 2 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : ''}
+                    ${index > 2 ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400' : ''}
                   `}>
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-neutral-800 truncate">{student.name}</p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100 truncate">{student.name}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
                       {student.questionsAnswered} {t('admin:questionsAnswered')} • {student.xp} XP
                     </p>
                   </div>
@@ -339,33 +339,33 @@ export function AnalyticsPage() {
         <CardHeader title={t('admin:questionStatistics')} />
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="text-center p-4 bg-neutral-50 rounded-lg">
+            <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BookOpen className="w-8 h-8 text-primary-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-neutral-800">
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
                 {overviewStats.totalQuestionsAnswered.toLocaleString()}
               </p>
-              <p className="text-sm text-neutral-500">{t('admin:totalAnswered')}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:totalAnswered')}</p>
             </div>
-            <div className="text-center p-4 bg-neutral-50 rounded-lg">
+            <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-neutral-800">
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
                 {overviewStats.questionsThisWeek.toLocaleString()}
               </p>
-              <p className="text-sm text-neutral-500">{t('admin:thisWeek')}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:thisWeek')}</p>
             </div>
-            <div className="text-center p-4 bg-neutral-50 rounded-lg">
+            <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BarChart3 className="w-8 h-8 text-secondary-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-neutral-800">
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
                 {Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalStudents)}
               </p>
-              <p className="text-sm text-neutral-500">{t('admin:avgPerStudent')}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:avgPerStudent')}</p>
             </div>
-            <div className="text-center p-4 bg-neutral-50 rounded-lg">
+            <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <Award className="w-8 h-8 text-accent-500 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-neutral-800">
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
                 {achievementStats.totalUnlocked.toLocaleString()}
               </p>
-              <p className="text-sm text-neutral-500">{t('admin:achievementsUnlocked')}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:achievementsUnlocked')}</p>
             </div>
           </div>
         </CardContent>

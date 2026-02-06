@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode for manual theme switching */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* 
  * Learn Lab - Educational LMS Platform
  * Custom CSS layer for complex components
@@ -61,6 +64,7 @@
   --color-neutral-700: #3f3f46;
   --color-neutral-800: #27272a;
   --color-neutral-900: #18181b;
+  --color-neutral-950: #09090b;
   
   /* Semantic Colors */
   --color-success: #22c55e;
@@ -103,6 +107,13 @@ body {
   min-height: 100vh;
   background-color: var(--color-neutral-50);
   color: var(--color-neutral-800);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Dark mode base styles */
+html.dark body {
+  background-color: var(--color-neutral-950);
+  color: var(--color-neutral-100);
 }
 
 /* Component styles - using plain CSS for complex components */
@@ -127,6 +138,10 @@ body {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow: 0 0 0 2px var(--color-neutral-50), 0 0 0 4px var(--color-primary-500);
+}
+
+html.dark .btn:focus {
+  box-shadow: 0 0 0 2px var(--color-neutral-900), 0 0 0 4px var(--color-primary-500);
 }
 
 .btn:disabled {
@@ -158,8 +173,17 @@ body {
   color: var(--color-neutral-700);
 }
 
+html.dark .btn-outline {
+  border-color: var(--color-neutral-600);
+  color: var(--color-neutral-300);
+}
+
 .btn-outline:hover:not(:disabled) {
   background-color: var(--color-neutral-100);
+}
+
+html.dark .btn-outline:hover:not(:disabled) {
+  background-color: var(--color-neutral-800);
 }
 
 /* Card component */
@@ -169,6 +193,11 @@ body {
   box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   border: 1px solid var(--color-neutral-200);
   padding: 1rem;
+}
+
+html.dark .card {
+  background-color: var(--color-neutral-900);
+  border-color: var(--color-neutral-800);
 }
 
 @media (min-width: 640px) {
@@ -190,8 +219,18 @@ body {
   transition: border-color 150ms ease-in-out, box-shadow 150ms ease-in-out;
 }
 
+html.dark .input {
+  background-color: var(--color-neutral-800);
+  border-color: var(--color-neutral-700);
+  color: var(--color-neutral-100);
+}
+
 .input::placeholder {
   color: var(--color-neutral-400);
+}
+
+html.dark .input::placeholder {
+  color: var(--color-neutral-500);
 }
 
 .input:focus {
@@ -200,9 +239,17 @@ body {
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
+html.dark .input:focus {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
 .input:disabled {
   background-color: var(--color-neutral-100);
   cursor: not-allowed;
+}
+
+html.dark .input:disabled {
+  background-color: var(--color-neutral-900);
 }
 
 /* Utility classes */
@@ -213,6 +260,43 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Custom styled scrollbar */
+.scrollbar-styled {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-300) transparent;
+}
+
+.scrollbar-styled::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-300);
+  border-radius: 3px;
+}
+
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-400);
+}
+
+/* Dark mode scrollbar */
+html.dark .scrollbar-styled {
+  scrollbar-color: var(--color-neutral-600) transparent;
+}
+
+html.dark .scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-600);
+}
+
+html.dark .scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-500);
 }
 
 .safe-area-inset-bottom {

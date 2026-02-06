@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock } from 'lucide-react'
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import type { User } from '@/types'
 
 /**
  * Header Component
  * 
- * Top navigation bar with notifications, language switcher and user menu.
+ * Top navigation bar with notifications, language switcher, theme toggle, and user menu.
  * RTL-aware: icons and layout flip automatically.
  */
 
@@ -98,13 +99,13 @@ export function Header({
   }
 
   return (
-    <header className="h-16 bg-white border-b border-neutral-200 px-4 sm:px-6 flex items-center justify-between gap-4">
+    <header className="h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 flex items-center justify-between gap-4">
       {/* Start side (left in LTR, right in RTL) */}
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 lg:hidden"
+            className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -112,7 +113,7 @@ export function Header({
         )}
         
         {title && (
-          <h1 className="text-xl font-semibold text-neutral-800 hidden sm:block">
+          <h1 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 hidden sm:block">
             {title}
           </h1>
         )}
@@ -122,12 +123,12 @@ export function Header({
       <div className="flex-1" />
 
       {/* End side (right in LTR, left in RTL) */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-lg text-neutral-500 hover:bg-neutral-100"
+            className="relative p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
@@ -148,30 +149,30 @@ export function Header({
               />
               
               {/* Panel */}
-              <div className="absolute end-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-lg border border-neutral-200 z-50 overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-neutral-100">
-                  <h3 className="font-semibold text-neutral-800">Notifications</h3>
-                  <div className="flex items-center gap-2">
+              <div className="absolute end-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800 z-50 overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800">
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Notifications</h3>
+                  <div className="flex items-center gap-1">
                     {unreadCount > 0 && (
                       <button 
                         onClick={markAllAsRead}
-                        className="text-xs text-primary-600 hover:text-primary-700"
+                        className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 px-2 py-1"
                       >
                         Mark all read
                       </button>
                     )}
                     <button 
                       onClick={() => setShowNotifications(false)}
-                      className="p-1 rounded hover:bg-neutral-100"
+                      className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
                     >
-                      <X className="w-4 h-4 text-neutral-400" />
+                      <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                     </button>
                   </div>
                 </div>
                 
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto scrollbar-styled">
                   {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-neutral-500">
+                    <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
                       No notifications
                     </div>
                   ) : (
@@ -180,8 +181,8 @@ export function Header({
                         key={notification.id}
                         onClick={() => markAsRead(notification.id)}
                         aria-label={`Notification: ${notification.title}`}
-                        className={`w-full p-4 text-start hover:bg-neutral-50 border-b border-neutral-50 last:border-0 transition-colors ${
-                          !notification.read ? 'bg-primary-50/50' : ''
+                        className={`w-full p-4 text-start hover:bg-neutral-50 dark:hover:bg-neutral-800 border-b border-neutral-50 dark:border-neutral-800 last:border-0 transition-colors ${
+                          !notification.read ? 'bg-primary-50/50 dark:bg-primary-900/20' : ''
                         }`}
                       >
                         <div className="flex gap-3">
@@ -190,17 +191,17 @@ export function Header({
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <p className={`text-sm font-medium ${!notification.read ? 'text-neutral-800' : 'text-neutral-600'}`}>
+                              <p className={`text-sm font-medium ${!notification.read ? 'text-neutral-800 dark:text-neutral-100' : 'text-neutral-600 dark:text-neutral-400'}`}>
                                 {notification.title}
                               </p>
                               {!notification.read && (
                                 <span className="w-2 h-2 bg-primary-500 rounded-full shrink-0" />
                               )}
                             </div>
-                            <p className="text-sm text-neutral-500 mt-0.5 line-clamp-2">
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
                               {notification.message}
                             </p>
-                            <p className="text-xs text-neutral-400 mt-1">
+                            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                               {notification.time}
                             </p>
                           </div>
@@ -214,14 +215,17 @@ export function Header({
           )}
         </div>
 
+        {/* Theme Toggle */}
+        <ThemeToggle />
+
         {/* Language Switcher */}
-        <LanguageSwitcher variant="minimal" />
+        <LanguageSwitcher variant="globe" />
 
         {/* User avatar */}
         {user && (
-          <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100">
+          <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
             <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
-            <span className="text-sm font-medium text-neutral-700 hidden sm:block">
+            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
               {user.firstName}
             </span>
           </button>

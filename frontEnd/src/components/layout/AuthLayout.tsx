@@ -6,13 +6,14 @@ import { GraduationCap } from 'lucide-react'
  * 
  * Layout for authentication pages (login, register, etc.)
  * Clean, focused design to minimize distractions.
+ * Supports dark mode.
  */
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen bg-neutral-50 flex">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
       {/* Left side - Branding (hidden on mobile) */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary-500 flex-col justify-between p-12 text-white">
+      <div className="hidden lg:flex lg:w-1/2 bg-primary-500 dark:bg-primary-600 flex-col justify-between p-12 text-white">
         <div>
           {/* Logo */}
           <div className="flex items-center gap-3">
@@ -45,7 +46,7 @@ export function AuthLayout() {
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-neutral-800">Learn Lab</span>
+            <span className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">Learn Lab</span>
           </div>
           
           <Outlet />

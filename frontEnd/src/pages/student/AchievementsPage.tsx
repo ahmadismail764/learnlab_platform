@@ -219,10 +219,10 @@ export function AchievementsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-800">
+        <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
           {t('student:achievements')}
         </h1>
-        <p className="text-neutral-600 mt-1">
+        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
           Earn badges by completing challenges and reaching milestones
         </p>
       </div>
@@ -231,36 +231,36 @@ export function AchievementsPage() {
       <div className="grid grid-cols-3 gap-4">
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-100 rounded-lg">
-              <Trophy className="w-5 h-5 text-accent-600" />
+            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+              <Trophy className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{earnedCount}/{achievements.length}</p>
-              <p className="text-xs text-neutral-500">Achievements Earned</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{earnedCount}/{achievements.length}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Achievements Earned</p>
             </div>
           </div>
         </Card>
 
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <Zap className="w-5 h-5 text-primary-600" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <Zap className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{totalXPEarned}</p>
-              <p className="text-xs text-neutral-500">{t('gamification:xp')} from Achievements</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{totalXPEarned}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('gamification:xp')} from Achievements</p>
             </div>
           </div>
         </Card>
 
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Award className="w-5 h-5 text-green-600" />
+            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+              <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{Math.round((earnedCount / achievements.length) * 100)}%</p>
-              <p className="text-xs text-neutral-500">Completion Rate</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{Math.round((earnedCount / achievements.length) * 100)}%</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Completion Rate</p>
             </div>
           </div>
         </Card>
@@ -275,8 +275,8 @@ export function AchievementsPage() {
         return (
           <div key={category}>
             <div className="flex items-center gap-2 mb-4">
-              <CategoryIcon className="w-5 h-5 text-neutral-600" />
-              <h2 className="text-lg font-semibold text-neutral-800">{categoryLabels[category]}</h2>
+              <CategoryIcon className="w-5 h-5 text-neutral-600 dark:text-neutral-400" />
+              <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">{categoryLabels[category]}</h2>
               <Badge size="sm" variant="secondary">
                 {earnedInCategory}/{categoryAchievements.length}
               </Badge>
@@ -293,8 +293,8 @@ export function AchievementsPage() {
                     <div className={`
                       w-12 h-12 rounded-xl flex items-center justify-center text-2xl
                       ${achievement.earned 
-                        ? 'bg-accent-100' 
-                        : 'bg-neutral-100'
+                        ? 'bg-accent-100 dark:bg-accent-900/30' 
+                        : 'bg-neutral-100 dark:bg-neutral-800'
                       }
                     `}>
                       {achievement.earned ? achievement.emoji : <Lock className="w-5 h-5 text-neutral-400" />}
@@ -302,7 +302,7 @@ export function AchievementsPage() {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className={`font-semibold ${achievement.earned ? 'text-neutral-800' : 'text-neutral-500'}`}>
+                        <h3 className={`font-semibold ${achievement.earned ? 'text-neutral-800 dark:text-neutral-100' : 'text-neutral-500 dark:text-neutral-400'}`}>
                           {achievement.nameKey.startsWith('gamification:') 
                             ? t(achievement.nameKey) 
                             : achievement.nameKey}
@@ -312,20 +312,20 @@ export function AchievementsPage() {
                         )}
                       </div>
                       
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                         {achievement.descriptionKey}
                       </p>
 
                       {/* Requirement/How earned */}
-                      <div className="mt-2 p-2 bg-neutral-50 rounded-lg">
+                      <div className="mt-2 p-2 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
                         {achievement.earned ? (
-                          <p className="text-xs text-green-700">
+                          <p className="text-xs text-green-700 dark:text-green-400">
                             <span className="font-medium">✓ Earned:</span> {achievement.earnedDate}
                             <br />
-                            <span className="text-neutral-600">{achievement.requirement}</span>
+                            <span className="text-neutral-600 dark:text-neutral-400">{achievement.requirement}</span>
                           </p>
                         ) : (
-                          <p className="text-xs text-neutral-600">
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400">
                             <span className="font-medium">How to earn:</span> {achievement.requirement}
                           </p>
                         )}
@@ -335,14 +335,14 @@ export function AchievementsPage() {
                       {!achievement.earned && achievement.progress !== undefined && achievement.progress > 0 && (
                         <div className="mt-2">
                           <ProgressBar value={achievement.progress} size="sm" showLabel={false} />
-                          <p className="text-xs text-neutral-500 mt-1">{achievement.progress}% complete</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{achievement.progress}% complete</p>
                         </div>
                       )}
 
                       {/* XP Reward */}
                       <div className="mt-2 flex items-center gap-1">
                         <Zap className="w-3 h-3 text-accent-500" />
-                        <span className={`text-xs font-medium ${achievement.earned ? 'text-accent-600' : 'text-neutral-400'}`}>
+                        <span className={`text-xs font-medium ${achievement.earned ? 'text-accent-600 dark:text-accent-400' : 'text-neutral-400 dark:text-neutral-500'}`}>
                           +{achievement.xpReward} {t('gamification:xp')}
                         </span>
                       </div>

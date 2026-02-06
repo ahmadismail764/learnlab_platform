@@ -58,14 +58,14 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
     return (
       <div ref={ref} className={cn('w-full', className)} {...props}>
         {showLabel && (
-          <div className="flex justify-between text-sm text-neutral-600 mb-1">
+          <div className="flex justify-between text-sm text-neutral-600 dark:text-neutral-400 mb-1">
             <span>Progress</span>
             <span>{Math.round(percentage)}%</span>
           </div>
         )}
         <div
           className={cn(
-            'w-full bg-neutral-200 rounded-full overflow-hidden',
+            'w-full bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden',
             barSizeStyles[size]
           )}
           role="progressbar"
@@ -147,7 +147,7 @@ export const ProgressRing = forwardRef<HTMLDivElement, ProgressRingProps>(
             fill="none"
             stroke="currentColor"
             strokeWidth={strokeWidth}
-            className="text-neutral-200"
+            className="text-neutral-200 dark:text-neutral-700"
           />
           {/* Progress circle */}
           <circle
@@ -165,7 +165,7 @@ export const ProgressRing = forwardRef<HTMLDivElement, ProgressRingProps>(
         </svg>
         
         {showLabel && (
-          <span className="absolute text-sm font-semibold text-neutral-700">
+          <span className="absolute text-sm font-semibold text-neutral-700 dark:text-neutral-300">
             {Math.round(percentage)}%
           </span>
         )}

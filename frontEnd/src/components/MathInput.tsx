@@ -60,10 +60,7 @@ export function MathInput({
     mf.style.fontSize = '1.25rem'
     mf.style.setProperty('--caret-color', 'var(--color-primary-500, #3b82f6)')
     mf.style.setProperty('--selection-background-color', 'var(--color-primary-100, #dbeafe)')
-    
-    // Dark mode text color - check if dark mode is active
-    const isDark = document.documentElement.classList.contains('dark')
-    mf.style.color = isDark ? '#f4f4f5' : '#18181b'
+    // Note: Dark mode colors are handled by a separate useEffect that listens for theme changes
 
     // Configure virtual keyboard
     if (showKeyboard) {
@@ -138,6 +135,37 @@ export function MathInput({
       mf.classList.remove('rtl-container')
     }
   }, [i18n.language, isReady])
+
+  // Handle dark mode changes
+  useEffect(() => {
+    const mf = mathFieldRef.current
+    if (!mf || !isReady) return
+
+    const updateTheme = () => {
+      const isDark = document.documentElement.classList.contains('dark')
+      mf.style.color = isDark ? '#f4f4f5' : '#18181b'
+      mf.style.setProperty('--selection-background-color', isDark ? 'rgba(34, 197, 94, 0.3)' : 'var(--color-primary-100, #dbeafe)')
+    }
+
+    // Initial update
+    updateTheme()
+
+    // Listen for class changes on documentElement (theme toggle)
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.attributeName === 'class') {
+          updateTheme()
+        }
+      }
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    })
+
+    return () => observer.disconnect()
+  }, [isReady])
 
   // Handle input changes
   const handleInput = (evt: Event) => {

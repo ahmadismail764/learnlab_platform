@@ -1,11 +1,11 @@
 from django.db import models
-from django.conf import settings  # To refer to the User model
-
-# We need to reference the Student model from the users app
+from django.conf import settings 
 from users.models import Student
 
 class Topic(models.Model):
     name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, help_text="Short summary of the topic") # <--- NEW
+    parent_module = models.CharField(max_length=255, blank=True, help_text="e.g. Discrete Math > Logic") # <--- NEW
     
     def __str__(self):
         return self.name
@@ -13,15 +13,16 @@ class Topic(models.Model):
 class Question(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField(help_text="The question string")
-    
-    # specific to Postgres - perfect for "choices: List"
-    # Format example: ["Paris", "London", "Berlin"]
     choices = models.JSONField(default=list) 
+    correct_answer_index = models.IntegerField()
     
-    correct_answer_index = models.IntegerField(help_text="Index of the correct answer in the choices list")
+    # Adaptive Scaffolding Field
+    tier = models.IntegerField(default=1, help_text="1=Concept, 2=Application, 3=Synthesis") # <--- NEW
     
     def __str__(self):
-        return f"{self.text[:50]}..."
+        return f"[{self.topic.name}] Tier {self.tier}: {self.text[:50]}..."
+
+# ... Keep PracticeSheet, Submission, Answer, TopicMastery as they were ...
 
 class PracticeSheet(models.Model):
     # If a sheet is a collection of specific questions:

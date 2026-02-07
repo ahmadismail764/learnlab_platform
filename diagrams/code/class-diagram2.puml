@@ -15,10 +15,13 @@ class Admin {
 
 class Student {
     xp : int
+    streak_count : int
+    last_practice_date : Date
     ' getAnalytics was crossed out in the sketch
     + {method} <strike>getAnalytics()</strike>
     + addXp()
     + getXp()
+    + incrementStreak()
 }
 
 note left of Student::getAnalytics
@@ -41,7 +44,7 @@ class "Practice Sheet" as PracticeSheet {
 }
 
 note right of PracticeSheet::total_xp
-    "For example?" (مثلاً)
+    "For example?"
 end note
 
 note right of PracticeSheet::createSheet
@@ -80,8 +83,10 @@ SingleQuestionAnswer --> PracticeSheetSubmission : submission_id
 ' --- Page 3: Topics and Questions ---
 
 class Topic {
-    id
-    name
+    id: int
+    name: string
+    description : string
+    + createTopic(data)
     + getTopicName(id)
     + removeTopic(id)
 }
@@ -92,6 +97,7 @@ class Question {
     question : string
     choices : List
     correct_answer_index : int
+    tier : int
     + getChoices()
     + getCorrectAnswer()
     + getQuestionsByTopic(topic_id)
@@ -101,19 +107,17 @@ class Question {
 }
 
 note right of Question
-    This one
-    is turning
-    out quite
-    complex
+    Added 'tier' for
+    Adaptive Scaffolding
 end note
 
 class "Topic Mastery" as TopicMastery {
-    studentId
-    topicId
-    difficulty
-    stability
-    lastReviewDate
-    create leaderboard
+    studentId: int
+    topicId: int
+    difficulty: float
+    stability: float
+    lastReviewDate: DateTime
+    createLeaderboard()
 }
 
 ' Relationships inferred from IDs

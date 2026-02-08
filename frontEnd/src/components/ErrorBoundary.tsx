@@ -1,6 +1,7 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
 import { Button } from '@/components/ui'
+import { logger } from '@/utils'
 
 /**
  * ErrorBoundary
@@ -45,14 +46,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    // Log error using centralized logger (handles dev/prod appropriately)
+    logger.error('ErrorBoundary caught an error:', error, errorInfo)
     
     // Call optional error handler
     this.props.onError?.(error, errorInfo)
-    
-    // In production, you'd send this to an error tracking service
-    // e.g., Sentry.captureException(error)
   }
 
   handleReset = (): void => {

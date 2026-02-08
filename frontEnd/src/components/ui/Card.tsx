@@ -18,9 +18,9 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantStyles = {
-  default: 'bg-white border border-neutral-200 shadow-sm',
-  outlined: 'bg-white border-2 border-neutral-200',
-  elevated: 'bg-white shadow-md',
+  default: 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm',
+  outlined: 'bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-700',
+  elevated: 'bg-white dark:bg-neutral-900 shadow-md dark:shadow-neutral-900/50',
 }
 
 const paddingStyles = {
@@ -80,10 +80,10 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
         {(title || subtitle) ? (
           <div>
             {title && (
-              <h3 className="text-lg font-semibold text-neutral-800">{title}</h3>
+              <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">{title}</h3>
             )}
             {subtitle && (
-              <p className="text-sm text-neutral-500 mt-0.5">{subtitle}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">{subtitle}</p>
             )}
           </div>
         ) : children}
@@ -110,7 +110,7 @@ export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
     return (
       <div
         ref={ref}
-        className={cn('flex items-center gap-2 mt-4 pt-4 border-t border-neutral-200', className)}
+        className={cn('flex items-center gap-2 mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800', className)}
         {...props}
       />
     )

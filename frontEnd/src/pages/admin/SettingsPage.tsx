@@ -112,7 +112,7 @@ export function SettingsPage() {
         relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full 
         border-2 border-transparent transition-colors duration-200 ease-in-out
         focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-        ${checked ? 'bg-primary-500' : 'bg-neutral-200'}
+        ${checked ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-600'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
     >
@@ -131,10 +131,10 @@ export function SettingsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-800">
+          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
             {t('admin:systemSettings')}
           </h1>
-          <p className="text-neutral-600 mt-1">
+          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
             {t('admin:settingsDescription')}
           </p>
         </div>
@@ -156,7 +156,7 @@ export function SettingsPage() {
 
       {/* Status Badge */}
       {hasChanges && (
-        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
+        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg">
           <Badge variant="warning" dot />
           {t('admin:unsavedChanges')}
         </div>
@@ -178,8 +178,8 @@ export function SettingsPage() {
                       className={`
                         w-full flex items-center gap-3 px-3 py-2 rounded-lg text-start transition-colors
                         ${isActive 
-                          ? 'bg-primary-50 text-primary-700' 
-                          : 'text-neutral-600 hover:bg-neutral-50'
+                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' 
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
                         }
                       `}
                     >
@@ -205,7 +205,7 @@ export function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:siteName')}
                     </label>
                     <Input
@@ -215,13 +215,13 @@ export function SettingsPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:defaultLanguage')}
                     </label>
                     <select
                       value={settings.defaultLanguage}
                       onChange={(e) => updateSetting('defaultLanguage', e.target.value)}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100"
                     >
                       <option value="ar">العربية (Arabic)</option>
                       <option value="en">English</option>
@@ -229,13 +229,13 @@ export function SettingsPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:timezone')}
                     </label>
                     <select
                       value={settings.timezone}
                       onChange={(e) => updateSetting('timezone', e.target.value)}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 dark:text-neutral-100"
                     >
                       <option value="Asia/Riyadh">Asia/Riyadh (GMT+3)</option>
                       <option value="Asia/Dubai">Asia/Dubai (GMT+4)</option>
@@ -256,10 +256,10 @@ export function SettingsPage() {
                 subtitle={t('admin:notificationSettingsDescription')}
               />
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+                <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
                   <div>
-                    <p className="font-medium text-neutral-800">{t('admin:emailNotifications')}</p>
-                    <p className="text-sm text-neutral-500">{t('admin:emailNotificationsDescription')}</p>
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:emailNotifications')}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:emailNotificationsDescription')}</p>
                   </div>
                   <ToggleSwitch 
                     checked={settings.emailNotifications}
@@ -267,10 +267,10 @@ export function SettingsPage() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+                <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
                   <div>
-                    <p className="font-medium text-neutral-800">{t('admin:practiceReminders')}</p>
-                    <p className="text-sm text-neutral-500">{t('admin:practiceRemindersDescription')}</p>
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:practiceReminders')}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:practiceRemindersDescription')}</p>
                   </div>
                   <ToggleSwitch 
                     checked={settings.practiceReminders}
@@ -278,10 +278,10 @@ export function SettingsPage() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+                <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
                   <div>
-                    <p className="font-medium text-neutral-800">{t('admin:achievementAlerts')}</p>
-                    <p className="text-sm text-neutral-500">{t('admin:achievementAlertsDescription')}</p>
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:achievementAlerts')}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:achievementAlertsDescription')}</p>
                   </div>
                   <ToggleSwitch 
                     checked={settings.achievementAlerts}
@@ -291,8 +291,8 @@ export function SettingsPage() {
                 
                 <div className="flex items-center justify-between py-3">
                   <div>
-                    <p className="font-medium text-neutral-800">{t('admin:weeklyDigest')}</p>
-                    <p className="text-sm text-neutral-500">{t('admin:weeklyDigestDescription')}</p>
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:weeklyDigest')}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:weeklyDigestDescription')}</p>
                   </div>
                   <ToggleSwitch 
                     checked={settings.weeklyDigest}
@@ -313,7 +313,7 @@ export function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:sessionTimeout')}
                     </label>
                     <div className="flex items-center gap-2">
@@ -323,12 +323,12 @@ export function SettingsPage() {
                         onChange={(e) => updateSetting('sessionTimeout', Number(e.target.value))}
                         className="w-24"
                       />
-                      <span className="text-neutral-500">{t('common:minutes')}</span>
+                      <span className="text-neutral-500 dark:text-neutral-400">{t('common:minutes')}</span>
                     </div>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:maxLoginAttempts')}
                     </label>
                     <Input
@@ -341,10 +341,10 @@ export function SettingsPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+                  <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
                     <div>
-                      <p className="font-medium text-neutral-800">{t('admin:requireStrongPassword')}</p>
-                      <p className="text-sm text-neutral-500">{t('admin:requireStrongPasswordDescription')}</p>
+                      <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:requireStrongPassword')}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:requireStrongPasswordDescription')}</p>
                     </div>
                     <ToggleSwitch 
                       checked={settings.requireStrongPassword}
@@ -354,8 +354,8 @@ export function SettingsPage() {
                   
                   <div className="flex items-center justify-between py-3">
                     <div>
-                      <p className="font-medium text-neutral-800">{t('admin:twoFactorAuth')}</p>
-                      <p className="text-sm text-neutral-500">{t('admin:twoFactorAuthDescription')}</p>
+                      <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:twoFactorAuth')}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:twoFactorAuthDescription')}</p>
                     </div>
                     <ToggleSwitch 
                       checked={settings.twoFactorEnabled}
@@ -376,7 +376,7 @@ export function SettingsPage() {
               />
               <CardContent className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                     {t('admin:questionsPerSession')}
                   </label>
                   <div className="flex items-center gap-2">
@@ -388,15 +388,15 @@ export function SettingsPage() {
                       min={5}
                       max={50}
                     />
-                    <span className="text-neutral-500">{t('admin:questions')}</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">{t('admin:questions')}</span>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+                  <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
                     <div>
-                      <p className="font-medium text-neutral-800">{t('admin:showHints')}</p>
-                      <p className="text-sm text-neutral-500">{t('admin:showHintsDescription')}</p>
+                      <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:showHints')}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:showHintsDescription')}</p>
                     </div>
                     <ToggleSwitch 
                       checked={settings.showHints}
@@ -404,10 +404,10 @@ export function SettingsPage() {
                     />
                   </div>
                   
-                  <div className="flex items-center justify-between py-3 border-b border-neutral-100">
+                  <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
                     <div>
-                      <p className="font-medium text-neutral-800">{t('admin:allowSkip')}</p>
-                      <p className="text-sm text-neutral-500">{t('admin:allowSkipDescription')}</p>
+                      <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:allowSkip')}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:allowSkipDescription')}</p>
                     </div>
                     <ToggleSwitch 
                       checked={settings.allowSkip}
@@ -417,8 +417,8 @@ export function SettingsPage() {
                   
                   <div className="flex items-center justify-between py-3">
                     <div>
-                      <p className="font-medium text-neutral-800">{t('admin:timerEnabled')}</p>
-                      <p className="text-sm text-neutral-500">{t('admin:timerEnabledDescription')}</p>
+                      <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:timerEnabled')}</p>
+                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:timerEnabledDescription')}</p>
                     </div>
                     <ToggleSwitch 
                       checked={settings.timerEnabled}
@@ -440,7 +440,7 @@ export function SettingsPage() {
               <CardContent className="space-y-6">
                 <div className="grid sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:primaryColor')}
                     </label>
                     <div className="flex items-center gap-3">
@@ -448,7 +448,7 @@ export function SettingsPage() {
                         type="color"
                         value={settings.primaryColor}
                         onChange={(e) => updateSetting('primaryColor', e.target.value)}
-                        className="w-10 h-10 rounded-lg border border-neutral-300 cursor-pointer"
+                        className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-600 cursor-pointer"
                       />
                       <Input
                         value={settings.primaryColor}
@@ -459,7 +459,7 @@ export function SettingsPage() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-neutral-700 mb-2">
+                    <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                       {t('admin:accentColor')}
                     </label>
                     <div className="flex items-center gap-3">
@@ -467,7 +467,7 @@ export function SettingsPage() {
                         type="color"
                         value={settings.accentColor}
                         onChange={(e) => updateSetting('accentColor', e.target.value)}
-                        className="w-10 h-10 rounded-lg border border-neutral-300 cursor-pointer"
+                        className="w-10 h-10 rounded-lg border border-neutral-300 dark:border-neutral-600 cursor-pointer"
                       />
                       <Input
                         value={settings.accentColor}
@@ -478,10 +478,10 @@ export function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between py-3 border-t border-neutral-100">
+                <div className="flex items-center justify-between py-3 border-t border-neutral-100 dark:border-neutral-700">
                   <div>
-                    <p className="font-medium text-neutral-800">{t('admin:darkMode')}</p>
-                    <p className="text-sm text-neutral-500">{t('admin:darkModeDescription')}</p>
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:darkMode')}</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:darkModeDescription')}</p>
                   </div>
                   <ToggleSwitch 
                     checked={settings.darkModeEnabled}
@@ -490,8 +490,8 @@ export function SettingsPage() {
                 </div>
 
                 {/* Theme Preview */}
-                <div className="mt-6 p-4 bg-neutral-50 rounded-lg">
-                  <p className="text-sm font-medium text-neutral-700 mb-3">{t('admin:preview')}</p>
+                <div className="mt-6 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3">{t('admin:preview')}</p>
                   <div className="flex gap-3">
                     <Button style={{ backgroundColor: settings.primaryColor }}>
                       {t('common:primary')}

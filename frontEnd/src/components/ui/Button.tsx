@@ -30,8 +30,8 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
   secondary: 'bg-secondary-500 text-white hover:bg-secondary-600 focus:ring-secondary-500',
   accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500',
-  outline: 'border-2 border-neutral-300 bg-transparent text-neutral-700 hover:bg-neutral-100 focus:ring-neutral-400',
-  ghost: 'bg-transparent text-neutral-600 hover:bg-neutral-100 focus:ring-neutral-400',
+  outline: 'border-2 border-neutral-300 dark:border-neutral-600 bg-transparent text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:ring-neutral-400',
+  ghost: 'bg-transparent text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:ring-neutral-400',
   danger: 'bg-error text-white hover:bg-red-600 focus:ring-red-500',
 }
 

@@ -124,10 +124,10 @@ export function TopicsPage() {
 
   const getStateColor = (state: TopicItem['state']) => {
     switch (state) {
-      case 'mastered': return 'bg-green-100 text-green-700'
-      case 'review': return 'bg-blue-100 text-blue-700'
-      case 'learning': return 'bg-amber-100 text-amber-700'
-      case 'new': return 'bg-neutral-100 text-neutral-600'
+      case 'mastered': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+      case 'review': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+      case 'learning': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
+      case 'new': return 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
     }
   }
 
@@ -155,10 +155,10 @@ export function TopicsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-neutral-800">
+        <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
           {t('topics:discreteMath')}
         </h1>
-        <p className="text-neutral-600 mt-1">
+        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
           Browse and practice topics
         </p>
       </div>
@@ -167,36 +167,36 @@ export function TopicsPage() {
       <div className="grid grid-cols-3 gap-4">
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <BookOpen className="w-5 h-5 text-primary-600" />
+            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+              <BookOpen className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{totalTopics}</p>
-              <p className="text-xs text-neutral-500">Total Topics</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{totalTopics}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Total Topics</p>
             </div>
           </div>
         </Card>
         
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary-100 rounded-lg">
-              <Clock className="w-5 h-5 text-secondary-600" />
+            <div className="p-2 bg-secondary-100 dark:bg-secondary-900/30 rounded-lg">
+              <Clock className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{topicsDue}</p>
-              <p className="text-xs text-neutral-500">Due for Review</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{topicsDue}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Due for Review</p>
             </div>
           </div>
         </Card>
         
         <Card padding="sm">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-100 rounded-lg">
-              <Target className="w-5 h-5 text-accent-600" />
+            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
+              <Target className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800">{avgProgress}%</p>
-              <p className="text-xs text-neutral-500">Avg Progress</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{avgProgress}%</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Avg Progress</p>
             </div>
           </div>
         </Card>
@@ -237,15 +237,15 @@ export function TopicsPage() {
               {/* Category header */}
               <button
                 onClick={() => toggleCategory(category.id)}
-                className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 transition-colors"
+                className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
               >
                 <span className="text-2xl">{category.icon}</span>
                 <div className="flex-1 text-start">
-                  <h3 className="font-semibold text-neutral-800">{t(category.nameKey)}</h3>
-                  <p className="text-sm text-neutral-500">
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t(category.nameKey)}</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {category.topics.length} topics • {categoryProgress}% complete
                     {categoryDue > 0 && (
-                      <span className="text-primary-600 ms-2">• {categoryDue} due</span>
+                      <span className="text-primary-600 dark:text-primary-400 ms-2">• {categoryDue} due</span>
                     )}
                   </p>
                 </div>
@@ -259,28 +259,28 @@ export function TopicsPage() {
 
               {/* Topic list */}
               {isExpanded && (
-                <div className="border-t border-neutral-100">
+                <div className="border-t border-neutral-100 dark:border-neutral-700">
                   {category.topics.map((topic, index) => (
                     <div
                       key={topic.id}
-                      className={`p-4 flex items-center gap-4 hover:bg-neutral-50 ${
-                        index !== category.topics.length - 1 ? 'border-b border-neutral-100' : ''
+                      className={`p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 ${
+                        index !== category.topics.length - 1 ? 'border-b border-neutral-100 dark:border-neutral-700' : ''
                       }`}
                     >
-                      <span className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center text-lg font-mono">
+                      <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono">
                         {topic.icon}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-neutral-800">{t(topic.nameKey)}</h4>
+                          <h4 className="font-medium text-neutral-800 dark:text-neutral-100">{t(topic.nameKey)}</h4>
                           <Badge size="sm" className={getStateColor(topic.state)}>
                             {getStateLabel(topic.state)}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-neutral-500">
+                        <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
                           <span>{topic.questionsTotal} questions</span>
                           {topic.questionsDue > 0 && (
-                            <span className="text-primary-600 font-medium">
+                            <span className="text-primary-600 dark:text-primary-400 font-medium">
                               {topic.questionsDue} due
                             </span>
                           )}
@@ -292,7 +292,7 @@ export function TopicsPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-20">
                           <ProgressBar value={topic.progress} size="sm" showLabel={false} />
-                          <p className="text-xs text-neutral-500 text-center mt-1">{topic.progress}%</p>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-1">{topic.progress}%</p>
                         </div>
                         <Link to={`/student/practice?topic=${topic.id}`}>
                           <Button variant="ghost" size="sm">

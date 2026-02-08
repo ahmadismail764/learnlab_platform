@@ -7,3 +7,4 @@
 
 export { AuthProvider, useAuth, useCurrentUser } from './AuthContext'
 export { ToastProvider, useToast } from './ToastContext'
+export { ThemeProvider, useTheme } from './ThemeContext'

@@ -9,6 +9,7 @@ import { cn } from '@/utils/cn'
  * 
  * Main layout wrapper for authenticated pages.
  * Includes sidebar navigation and header.
+ * Supports dark mode.
  */
 
 export interface DashboardLayoutProps {
@@ -25,7 +26,7 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex">
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar

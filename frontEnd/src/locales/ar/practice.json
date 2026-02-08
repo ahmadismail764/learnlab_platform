@@ -1,6 +1,6 @@
 {
   "accuracy": "الدقة",
-  "checkAnswer": "تحقق من الإجابة",
+  "checkAnswer": "تحقَّق",
   "correct": "صحيح! 🎉",
   "correctAnswer": "الإجابة الصحيحة",
   "difficulty": {
@@ -9,8 +9,8 @@
     "tier3": "متقدم"
   },
   "endSession": "إنهاء الجلسة",
-  "enterAnswer": "أدخل إجابتك...",
-  "enterMathExpression": "أدخل التعبير الرياضي...",
+  "enterAnswer": "اكتب إجابتك...",
+  "enterMathExpression": "اكتب التعبير الرياضي...",
   "essayQuestion": "تعبير رياضي",
   "feedback": {
     "excellent": "عمل ممتاز!",
@@ -18,9 +18,9 @@
     "keepPracticing": "واصل التدريب!",
     "reviewConcept": "راجع هذا المفهوم"
   },
-  "hideSolution": "إخفاء الحل",
+  "hideSolution": "أخفِ الحل",
   "hint": "تلميح",
-  "incorrect": "ليس صحيحاً تماماً",
+  "incorrect": "غير صحيح",
   "mathKeyboard": "لوحة مفاتيح الرياضيات",
   "nextQuestion": "السؤال التالي",
   "pauseSession": "إيقاف الجلسة مؤقتاً",
@@ -32,14 +32,14 @@
   "resumeSession": "استئناف الجلسة",
   "reviewLater": "مراجعة لاحقاً",
   "sessionSummary": "ملخص الجلسة",
-  "showHint": "عرض التلميح",
-  "showSolution": "عرض الحل",
+  "showHint": "أظهِر تلميحاً",
+  "showSolution": "أظهِر الحل",
   "solutionSteps": "خطوات الحل",
   "step": "الخطوة {{number}}",
-  "submitAnswer": "إرسال الإجابة",
+  "submitAnswer": "أرسِل",
   "timeSpent": "الوقت المستغرق",
   "toggleKeyboard": "تبديل لوحة المفاتيح",
   "topicsReviewed": "الموضوعات المراجعة",
-  "tryAgain": "حاول مرة أخرى",
+  "tryAgain": "أعِد المحاولة",
   "yourAnswer": "إجابتك"
 }

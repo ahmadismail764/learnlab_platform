@@ -78,21 +78,21 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        'flex flex-col h-screen bg-white border-e border-neutral-200',
+        'flex flex-col h-screen bg-white dark:bg-neutral-900 border-e border-neutral-200 dark:border-neutral-800',
         'transition-all duration-300 ease-in-out',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
       {/* Logo */}
       <div className={cn(
-        'flex items-center h-16 px-4 border-b border-neutral-200',
+        'flex items-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-800',
         isCollapsed ? 'justify-center' : 'gap-3'
       )}>
         <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
           <GraduationCap className="w-5 h-5 text-white" />
         </div>
         {!isCollapsed && (
-          <span className="font-bold text-lg text-neutral-800">{t('common:appName')}</span>
+          <span className="font-bold text-lg text-neutral-800 dark:text-neutral-100">{t('common:appName')}</span>
         )}
       </div>
 
@@ -112,8 +112,8 @@ export function Sidebar({
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg',
                     'transition-colors duration-150',
                     isActive
-                      ? 'bg-primary-50 text-primary-700 font-medium'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800',
+                      ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-800 dark:hover:text-neutral-200',
                     isCollapsed && 'justify-center'
                   )}
                   title={isCollapsed ? label : undefined}
@@ -132,8 +132,8 @@ export function Sidebar({
         <button
           onClick={onToggleCollapse}
           className={cn(
-            'mx-2 mb-2 p-2 rounded-lg text-neutral-500',
-            'hover:bg-neutral-100 hover:text-neutral-700',
+            'mx-2 mb-2 p-2 rounded-lg text-neutral-500 dark:text-neutral-400',
+            'hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200',
             'transition-colors duration-150',
             isCollapsed && 'mx-auto'
           )}
@@ -149,7 +149,7 @@ export function Sidebar({
 
       {/* User section */}
       <div className={cn(
-        'border-t border-neutral-200 p-4',
+        'border-t border-neutral-200 dark:border-neutral-800 p-4',
         isCollapsed && 'px-2'
       )}>
         <div className={cn(
@@ -163,10 +163,10 @@ export function Sidebar({
           />
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-800 truncate">
+              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {roleLabels[user.role]}
               </p>
             </div>
@@ -174,7 +174,7 @@ export function Sidebar({
           {!isCollapsed && onLogout && (
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100"
+              className="p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
               title={t('nav:logout')}
             >
               <LogOut className="w-4 h-4" />

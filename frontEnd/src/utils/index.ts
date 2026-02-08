@@ -3,13 +3,21 @@
  * 
  * Pure utility functions with no side effects.
  * Should be testable and reusable.
- * 
- * Examples:
- * - formatDate - Date formatting helpers
- * - cn - Classname merging (Tailwind)
- * - storage - Type-safe localStorage wrapper
  */
 
+// Styling
 export { cn } from './cn'
-// export { formatDate } from './formatDate'
-// export { storage } from './storage'
+
+// Logging
+export { logger } from './logger'
+
+// Error handling
+export { 
+  ApiError, 
+  NetworkError, 
+  TimeoutError,
+  isApiError,
+  getErrorMessage,
+  safeAsync,
+  withRetry
+} from './errors'

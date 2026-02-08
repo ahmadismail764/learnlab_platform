@@ -180,27 +180,27 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   > = {
     success: {
       icon: CheckCircle,
-      bg: 'bg-green-50',
-      border: 'border-green-200',
-      iconColor: 'text-green-600',
+      bg: 'bg-green-50 dark:bg-green-900/40',
+      border: 'border-green-200 dark:border-green-800',
+      iconColor: 'text-green-600 dark:text-green-400',
     },
     error: {
       icon: AlertCircle,
-      bg: 'bg-red-50',
-      border: 'border-red-200',
-      iconColor: 'text-red-600',
+      bg: 'bg-red-50 dark:bg-red-900/40',
+      border: 'border-red-200 dark:border-red-800',
+      iconColor: 'text-red-600 dark:text-red-400',
     },
     warning: {
       icon: AlertTriangle,
-      bg: 'bg-amber-50',
-      border: 'border-amber-200',
-      iconColor: 'text-amber-600',
+      bg: 'bg-amber-50 dark:bg-amber-900/40',
+      border: 'border-amber-200 dark:border-amber-800',
+      iconColor: 'text-amber-600 dark:text-amber-400',
     },
     info: {
       icon: Info,
-      bg: 'bg-blue-50',
-      border: 'border-blue-200',
-      iconColor: 'text-blue-600',
+      bg: 'bg-blue-50 dark:bg-blue-900/40',
+      border: 'border-blue-200 dark:border-blue-800',
+      iconColor: 'text-blue-600 dark:text-blue-400',
     },
   }
 
@@ -218,13 +218,13 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       role="alert"
     >
       <Icon className={cn('w-5 h-5 flex-shrink-0 mt-0.5', config.iconColor)} />
-      <p className="flex-1 text-sm text-neutral-800">{toast.message}</p>
+      <p className="flex-1 text-sm text-neutral-800 dark:text-neutral-100">{toast.message}</p>
       <button
         onClick={onClose}
-        className="flex-shrink-0 p-1 rounded hover:bg-black/5 transition-colors"
+        className="flex-shrink-0 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
         aria-label="Dismiss notification"
       >
-        <X className="w-4 h-4 text-neutral-500" />
+        <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
       </button>
     </div>
   )

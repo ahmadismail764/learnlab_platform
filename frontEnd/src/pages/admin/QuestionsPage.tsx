@@ -135,8 +135,8 @@ export function QuestionsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-neutral-900">{t('admin:questions.title')}</h1>
-          <p className="mt-1 text-neutral-600">{t('admin:questions.subtitle')}</p>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{t('admin:questions.title')}</h1>
+          <p className="mt-1 text-neutral-600 dark:text-neutral-400">{t('admin:questions.subtitle')}</p>
         </div>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
@@ -148,48 +148,48 @@ export function QuestionsPage() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 text-primary-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
               <BookOpen className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-neutral-500">{t('admin:questions.stats.total')}</p>
-              <p className="text-xl font-bold text-neutral-900">{stats.total}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.total')}</p>
+              <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{stats.total}</p>
             </div>
           </div>
         </Card>
         
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
               <CheckCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-neutral-500">{t('admin:questions.stats.basic')}</p>
-              <p className="text-xl font-bold text-neutral-900">{stats.byDifficulty[1]}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.basic')}</p>
+              <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{stats.byDifficulty[1]}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 text-secondary-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400">
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-neutral-500">{t('admin:questions.stats.intermediate')}</p>
-              <p className="text-xl font-bold text-neutral-900">{stats.byDifficulty[2]}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.intermediate')}</p>
+              <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{stats.byDifficulty[2]}</p>
             </div>
           </div>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-100 text-accent-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400">
               <XCircle className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-sm text-neutral-500">{t('admin:questions.stats.advanced')}</p>
-              <p className="text-xl font-bold text-neutral-900">{stats.byDifficulty[3]}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.advanced')}</p>
+              <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{stats.byDifficulty[3]}</p>
             </div>
           </div>
         </Card>
@@ -231,16 +231,16 @@ export function QuestionsPage() {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="mt-4 grid grid-cols-1 gap-4 border-t border-neutral-200 pt-4 sm:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 border-t border-neutral-200 dark:border-neutral-700 pt-4 sm:grid-cols-3">
               {/* Topic Filter */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700">
+                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   {t('admin:questions.filterTopic')}
                 </label>
                 <select
                   value={filterTopicId}
                   onChange={(e) => setFilterTopicId(e.target.value)}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                  className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:text-neutral-100"
                 >
                   <option value="all">{t('admin:questions.allTopics')}</option>
                   {topicIds.map(topicId => (
@@ -253,13 +253,13 @@ export function QuestionsPage() {
 
               {/* Difficulty Filter */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700">
+                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   {t('admin:questions.filterDifficulty')}
                 </label>
                 <select
                   value={filterDifficulty}
                   onChange={(e) => setFilterDifficulty(e.target.value === 'all' ? 'all' : Number(e.target.value) as DifficultyTier)}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                  className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:text-neutral-100"
                 >
                   <option value="all">{t('admin:questions.allDifficulties')}</option>
                   <option value="1">{t('admin:questions.difficulty.basic')}</option>
@@ -270,13 +270,13 @@ export function QuestionsPage() {
 
               {/* Type Filter */}
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-neutral-700">
+                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                   {t('admin:questions.filterType')}
                 </label>
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as FilterType)}
-                  className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                  className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:text-neutral-100"
                 >
                   <option value="all">{t('admin:questions.allTypes')}</option>
                   <option value="multiple-choice">{t('admin:questions.types.multipleChoice')}</option>
@@ -294,9 +294,9 @@ export function QuestionsPage() {
       {/* Questions Table */}
       <Card>
         <CardHeader>
-          <h2 className="text-lg font-semibold text-neutral-900">
+          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
             {t('admin:questions.questionBank')}
-            <span className="ml-2 text-sm font-normal text-neutral-500">
+            <span className="ml-2 text-sm font-normal text-neutral-500 dark:text-neutral-400">
               ({filteredQuestions.length} {t('admin:questions.questionsCount')})
             </span>
           </h2>
@@ -314,40 +314,40 @@ export function QuestionsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="border-b border-neutral-200 bg-neutral-50">
+                <thead className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.question')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.topic')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.difficulty')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.type')}
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold tracking-wider text-neutral-600 uppercase">
+                    <th className="px-4 py-3 text-right text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.actions')}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-neutral-200">
+                <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
                   {filteredQuestions.map((question) => (
                     <tr 
                       key={question.id}
-                      className="transition-colors hover:bg-neutral-50 cursor-pointer"
+                      className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer"
                       onClick={() => setSelectedQuestion(question)}
                     >
                       <td className="px-4 py-4">
-                        <p className="max-w-md truncate text-sm text-neutral-900">
+                        <p className="max-w-md truncate text-sm text-neutral-900 dark:text-neutral-100">
                           {question.content}
                         </p>
-                        <p className="text-xs text-neutral-500">{question.id}</p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{question.id}</p>
                       </td>
                       <td className="px-4 py-4">
-                        <span className="text-sm text-neutral-700">{question.topicId}</span>
+                        <span className="text-sm text-neutral-700 dark:text-neutral-300">{question.topicId}</span>
                       </td>
                       <td className="px-4 py-4">
                         {getDifficultyBadge(question.tier)}
@@ -405,8 +405,8 @@ export function QuestionsPage() {
           <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <CardHeader className="flex flex-row items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-neutral-900">{t('admin:questions.preview.title')}</h2>
-                <p className="text-sm text-neutral-500">{selectedQuestion.id}</p>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{t('admin:questions.preview.title')}</h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">{selectedQuestion.id}</p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setSelectedQuestion(null)}>
                 <X className="h-5 w-5" />
@@ -422,14 +422,14 @@ export function QuestionsPage() {
 
               {/* Question Content */}
               <div>
-                <h3 className="mb-1 text-sm font-medium text-neutral-700">{t('admin:questions.preview.question')}</h3>
-                <p className="text-neutral-900">{selectedQuestion.content}</p>
+                <h3 className="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('admin:questions.preview.question')}</h3>
+                <p className="text-neutral-900 dark:text-neutral-100">{selectedQuestion.content}</p>
               </div>
 
               {/* Correct Answer */}
               <div>
-                <h3 className="mb-1 text-sm font-medium text-neutral-700">{t('admin:questions.preview.correctAnswer')}</h3>
-                <div className="rounded-lg bg-green-50 p-3 text-green-800">
+                <h3 className="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('admin:questions.preview.correctAnswer')}</h3>
+                <div className="rounded-lg bg-green-50 dark:bg-green-900/30 p-3 text-green-800 dark:text-green-200">
                   {Array.isArray(selectedQuestion.correctAnswer) 
                     ? selectedQuestion.correctAnswer.join(', ')
                     : selectedQuestion.correctAnswer
@@ -440,17 +440,17 @@ export function QuestionsPage() {
               {/* Solution Steps */}
               {selectedQuestion.solutionSteps.length > 0 && (
                 <div>
-                  <h3 className="mb-2 text-sm font-medium text-neutral-700">{t('admin:questions.preview.solutionSteps')}</h3>
+                  <h3 className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('admin:questions.preview.solutionSteps')}</h3>
                   <ol className="space-y-2">
                     {selectedQuestion.solutionSteps.map((step) => (
                       <li key={step.order} className="flex gap-3">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 text-sm font-medium text-primary-600">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/30 text-sm font-medium text-primary-600 dark:text-primary-400">
                           {step.order}
                         </span>
                         <div>
-                          <p className="text-neutral-700">{step.content}</p>
+                          <p className="text-neutral-700 dark:text-neutral-300">{step.content}</p>
                           {step.explanation && (
-                            <p className="mt-0.5 text-sm text-neutral-500">{step.explanation}</p>
+                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{step.explanation}</p>
                           )}
                         </div>
                       </li>
@@ -462,10 +462,10 @@ export function QuestionsPage() {
               {/* Hints */}
               {selectedQuestion.hints && selectedQuestion.hints.length > 0 && (
                 <div>
-                  <h3 className="mb-2 text-sm font-medium text-neutral-700">{t('admin:questions.preview.hints')}</h3>
+                  <h3 className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">{t('admin:questions.preview.hints')}</h3>
                   <ul className="space-y-1">
                     {selectedQuestion.hints.map((hint, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm text-neutral-600">
+                      <li key={i} className="flex items-start gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                         <span className="text-accent-500">💡</span>
                         {hint}
                       </li>
@@ -475,21 +475,21 @@ export function QuestionsPage() {
               )}
 
               {/* Metadata */}
-              <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 pt-4">
+              <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                 <div>
-                  <p className="text-xs text-neutral-500">{t('admin:questions.preview.xpReward')}</p>
-                  <p className="font-medium text-neutral-900">{selectedQuestion.xpReward} XP</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.xpReward')}</p>
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100">{selectedQuestion.xpReward} XP</p>
                 </div>
                 {selectedQuestion.estimatedTime && (
                   <div>
-                    <p className="text-xs text-neutral-500">{t('admin:questions.preview.estimatedTime')}</p>
-                    <p className="font-medium text-neutral-900">{selectedQuestion.estimatedTime}s</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.estimatedTime')}</p>
+                    <p className="font-medium text-neutral-900 dark:text-neutral-100">{selectedQuestion.estimatedTime}s</p>
                   </div>
                 )}
               </div>
 
               {/* Actions */}
-              <div className="flex justify-end gap-3 border-t border-neutral-200 pt-4">
+              <div className="flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                 <Button variant="outline" onClick={() => setSelectedQuestion(null)}>
                   {t('common:close')}
                 </Button>

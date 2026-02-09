@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronLeft,
   Trophy,
+  UserCircle,
   type LucideIcon
 } from 'lucide-react'
 import { Avatar } from '@/components/ui'
@@ -50,12 +51,14 @@ const navItems: NavItem[] = [
   { labelKey: 'nav:practice', href: '/student/practice', icon: FileQuestion, roles: ['student'] },
   { labelKey: 'nav:progress', href: '/student/progress', icon: BarChart3, roles: ['student'] },
   { labelKey: 'nav:achievements', href: '/student/achievements', icon: Trophy, roles: ['student'] },
+  { labelKey: 'nav:profile', href: '/student/profile', icon: UserCircle, roles: ['student'] },
   
   // Admin (Content Manager) items
   { labelKey: 'nav:dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin'] },
   { labelKey: 'nav:questionBank', href: '/admin/questions', icon: FileQuestion, roles: ['admin'] },
   { labelKey: 'nav:analytics', href: '/admin/analytics', icon: BarChart3, roles: ['admin'] },
   { labelKey: 'nav:settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
+  { labelKey: 'nav:profile', href: '/admin/profile', icon: UserCircle, roles: ['admin'] },
 ]
 
 export function Sidebar({ 
@@ -113,7 +116,7 @@ export function Sidebar({
                     'transition-colors duration-150',
                     isActive
                       ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium'
-                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-800 dark:hover:text-neutral-200',
+                      : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-800 dark:hover:text-neutral-200',
                     isCollapsed && 'justify-center'
                   )}
                   title={isCollapsed ? label : undefined}
@@ -133,7 +136,7 @@ export function Sidebar({
           onClick={onToggleCollapse}
           className={cn(
             'mx-2 mb-2 p-2 rounded-lg text-neutral-500 dark:text-neutral-400',
-            'hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-700 dark:hover:text-neutral-200',
+            'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
             'transition-colors duration-150',
             isCollapsed && 'mx-auto'
           )}
@@ -156,25 +159,33 @@ export function Sidebar({
           'flex items-center',
           isCollapsed ? 'justify-center' : 'gap-3'
         )}>
-          <Avatar 
-            name={`${user.firstName} ${user.lastName}`} 
-            src={user.avatarUrl} 
-            size="sm"
-          />
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                {user.firstName} {user.lastName}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {roleLabels[user.role]}
-              </p>
-            </div>
-          )}
+          <Link
+            to={`/${user.role}/profile`}
+            className={cn(
+              'flex items-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors',
+              isCollapsed ? 'p-1' : 'flex-1 min-w-0 gap-3 p-1.5 -m-1.5'
+            )}
+          >
+            <Avatar 
+              name={`${user.firstName} ${user.lastName}`} 
+              src={user.avatarUrl} 
+              size="sm"
+            />
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100 truncate">
+                  {user.firstName} {user.lastName}
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {roleLabels[user.role]}
+                </p>
+              </div>
+            )}
+          </Link>
           {!isCollapsed && onLogout && (
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              className="p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
               title={t('nav:logout')}
             >
               <LogOut className="w-4 h-4" />

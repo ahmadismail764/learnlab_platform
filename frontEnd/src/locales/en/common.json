@@ -1,6 +1,6 @@
 {
   "accent": "Accent",
-  "appName": "Learn Lab",
+  "appName": "LearnLab",
   "back": "Back",
   "cancel": "Cancel",
   "clearAll": "Clear All",
@@ -22,7 +22,6 @@
   "optional": "Optional",
   "previous": "Previous",
   "primary": "Primary",
-  "quickActions": "Quick Actions",
   "required": "Required",
   "reset": "Reset",
   "save": "Save",

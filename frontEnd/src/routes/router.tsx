@@ -9,9 +9,11 @@ import {
   TopicsPage,
   ProgressPage,
   AchievementsPage,
+  StudentProfilePage,
   QuestionsPage,
   AnalyticsPage,
   SettingsPage,
+  AdminProfilePage,
 } from '@/pages'
 import type { User } from '@/types'
 
@@ -77,6 +79,7 @@ export function createAppRouter(user: User | null) {
         { path: 'practice', element: <PracticePage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: 'achievements', element: <AchievementsPage /> },
+        { path: 'profile', element: <StudentProfilePage /> },
       ],
     },
 
@@ -89,6 +92,7 @@ export function createAppRouter(user: User | null) {
         { path: 'questions', element: <QuestionsPage /> },
         { path: 'analytics', element: <AnalyticsPage /> },
         { path: 'settings', element: <SettingsPage /> },
+        { path: 'profile', element: <AdminProfilePage /> },
       ],
     },
 

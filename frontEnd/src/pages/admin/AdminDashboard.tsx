@@ -2,9 +2,7 @@ import {
   Users, 
   BookOpen, 
   Activity,
-  Settings,
-  TrendingUp,
-  UserPlus
+  TrendingUp
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardContent, Button, Badge, Avatar } from '@/components/ui'
@@ -56,9 +54,6 @@ export function AdminDashboard() {
             {t('admin:welcomeBackAdmin', { name: user.firstName })}
           </p>
         </div>
-        <Button leftIcon={<UserPlus className="w-4 h-4" />}>
-          {t('admin:addUser')}
-        </Button>
       </div>
 
       {/* Stats Grid */}
@@ -172,7 +167,7 @@ export function AdminDashboard() {
           </Card>
         </div>
 
-        {/* System Health & Quick Actions */}
+        {/* System Health */}
         <div className="space-y-6">
           {/* System Health */}
           <Card>
@@ -195,21 +190,7 @@ export function AdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader title={t('admin:quickActions')} />
-            <CardContent className="space-y-2">
-              <Button variant="primary" fullWidth leftIcon={<UserPlus className="w-4 h-4" />}>
-                {t('admin:addNewUser')}
-              </Button>
-              <Button variant="outline" fullWidth leftIcon={<Settings className="w-4 h-4" />}>
-                {t('admin:systemSettings')}
-              </Button>
-              <Button variant="outline" fullWidth leftIcon={<Activity className="w-4 h-4" />}>
-                {t('admin:viewLogs')}
-              </Button>
-            </CardContent>
-          </Card>
+
         </div>
       </div>
     </div>

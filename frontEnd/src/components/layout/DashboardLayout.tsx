@@ -28,7 +28,7 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block sticky top-0 h-screen">
         <Sidebar
           user={user}
           isCollapsed={sidebarCollapsed}

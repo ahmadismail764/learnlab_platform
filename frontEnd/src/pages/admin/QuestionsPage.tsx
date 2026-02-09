@@ -312,7 +312,7 @@ export function QuestionsPage() {
               />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-styled">
               <table className="w-full">
                 <thead className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                   <tr>
@@ -337,7 +337,7 @@ export function QuestionsPage() {
                   {filteredQuestions.map((question) => (
                     <tr 
                       key={question.id}
-                      className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800 cursor-pointer"
+                      className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
                       onClick={() => setSelectedQuestion(question)}
                     >
                       <td className="px-4 py-4">
@@ -402,7 +402,7 @@ export function QuestionsPage() {
       {/* Question Preview Modal */}
       {selectedQuestion && (
         <div className="bg-black/50 fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedQuestion(null)}>
-          <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto scrollbar-styled" onClick={(e) => e.stopPropagation()}>
             <CardHeader className="flex flex-row items-start justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{t('admin:questions.preview.title')}</h2>

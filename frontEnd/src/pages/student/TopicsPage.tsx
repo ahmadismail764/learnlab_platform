@@ -237,7 +237,7 @@ export function TopicsPage() {
               {/* Category header */}
               <button
                 onClick={() => toggleCategory(category.id)}
-                className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
               >
                 <span className="text-2xl">{category.icon}</span>
                 <div className="flex-1 text-start">
@@ -263,7 +263,7 @@ export function TopicsPage() {
                   {category.topics.map((topic, index) => (
                     <div
                       key={topic.id}
-                      className={`p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800 ${
+                      className={`p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 ${
                         index !== category.topics.length - 1 ? 'border-b border-neutral-100 dark:border-neutral-700' : ''
                       }`}
                     >

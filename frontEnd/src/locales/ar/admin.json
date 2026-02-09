@@ -58,7 +58,7 @@
   "manageDifficulty": "إدارة مستويات الصعوبة",
   "maxLoginAttempts": "الحد الأقصى لمحاولات تسجيل الدخول",
   "mostCommon": "الأكثر شيوعاً",
-  "multipleChoice": "اختيار متعدد",
+  "multipleChoice": "اختيارات",
   "newThisWeek": "جديد هذا الأسبوع",
   "noQuestionsFound": "لا أسئلة موجودة",
   "notificationSettings": "إعدادات الإشعارات",
@@ -123,7 +123,7 @@
     "tryDifferentFilters": "عدِّل الفلاتر",
     "types": {
       "essay": "مقالي",
-      "multipleChoice": "اختيار متعدد",
+      "multipleChoice": "اختيارات",
       "symbolic": "رمزي",
       "text": "نصي",
       "trueFalse": "صح/خطأ"
@@ -134,7 +134,6 @@
   "questionsPerSession": "الأسئلة لكل جلسة",
   "questionStatistics": "إحصائيات الأسئلة",
   "questionText": "نص السؤال",
-  "quickActions": "الإجراءات السريعة",
   "rarest": "الأندر",
   "recentUsers": "المستخدمون الجدد",
   "requireStrongPassword": "طلب كلمة مرور قوية",

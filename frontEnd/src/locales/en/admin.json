@@ -58,7 +58,7 @@
   "manageDifficulty": "Manage Difficulty Tiers",
   "maxLoginAttempts": "Max Login Attempts",
   "mostCommon": "Most Common",
-  "multipleChoice": "Multiple Choice",
+  "multipleChoice": "MCQ",
   "newThisWeek": "New This Week",
   "noQuestionsFound": "No Questions Found",
   "notificationSettings": "Notification Settings",
@@ -123,10 +123,10 @@
     "tryDifferentFilters": "Try adjusting your filters",
     "types": {
       "essay": "Essay",
-      "multipleChoice": "Multiple Choice",
+      "multipleChoice": "MCQ",
       "symbolic": "Symbolic",
       "text": "Text",
-      "trueFalse": "True/False"
+      "trueFalse": "T/F"
     }
   },
   "questionsAnswered": "questions answered",
@@ -134,7 +134,6 @@
   "questionsPerSession": "Questions per Session",
   "questionStatistics": "Question Statistics",
   "questionText": "Question Text",
-  "quickActions": "Quick Actions",
   "rarest": "Rarest",
   "recentUsers": "Recent Users",
   "requireStrongPassword": "Require Strong Password",
@@ -171,7 +170,7 @@
   "totalStudents": "Total Students",
   "totalUnlocked": "Total Unlocked",
   "totalUsers": "Total Users",
-  "trueFalse": "True/False",
+  "trueFalse": "T/F",
   "tryDifferentFilters": "Try adjusting your filters",
   "twoFactorAuth": "Two-Factor Authentication",
   "twoFactorAuthDescription": "Require 2FA for admin accounts",

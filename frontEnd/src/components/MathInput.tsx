@@ -225,7 +225,7 @@ export function MathInput({
         <button
           type="button"
           onClick={toggleKeyboard}
-          className="mt-2 px-4 py-2 text-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition-colors flex items-center gap-2 text-neutral-700 dark:text-neutral-300"
+          className="mt-2 px-4 py-2 text-sm bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700/70 rounded-lg transition-colors flex items-center gap-2 text-neutral-700 dark:text-neutral-300"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <rect x="2" y="6" width="20" height="12" rx="2" strokeWidth="2"/>

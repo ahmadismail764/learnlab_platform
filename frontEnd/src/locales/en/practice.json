@@ -1,6 +1,7 @@
 {
   "accuracy": "Accuracy",
   "checkAnswer": "Check Answer",
+  "closeKeyboard": "Close",
   "correct": "Correct! 🎉",
   "correctAnswer": "Correct Answer",
   "difficulty": {
@@ -18,6 +19,7 @@
     "keepPracticing": "Keep practicing!",
     "reviewConcept": "Review this concept"
   },
+  "hideKeyboard": "Hide Keyboard",
   "hideSolution": "Hide Solution",
   "hint": "Hint",
   "incorrect": "Not quite right",
@@ -33,6 +35,7 @@
   "reviewLater": "Review Later",
   "sessionSummary": "Session Summary",
   "showHint": "Show Hint",
+  "showKeyboard": "Show Keyboard",
   "showSolution": "Show Solution",
   "solutionSteps": "Solution Steps",
   "step": "Step {{number}}",

@@ -57,8 +57,8 @@ const navItems: NavItem[] = [
   { labelKey: 'nav:dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin'] },
   { labelKey: 'nav:questionBank', href: '/admin/questions', icon: FileQuestion, roles: ['admin'] },
   { labelKey: 'nav:analytics', href: '/admin/analytics', icon: BarChart3, roles: ['admin'] },
-  { labelKey: 'nav:settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
   { labelKey: 'nav:profile', href: '/admin/profile', icon: UserCircle, roles: ['admin'] },
+  { labelKey: 'nav:settings', href: '/admin/settings', icon: Settings, roles: ['admin'] },
 ]
 
 export function Sidebar({ 

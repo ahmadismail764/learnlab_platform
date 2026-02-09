@@ -267,17 +267,17 @@ export function TopicsPage() {
                         index !== category.topics.length - 1 ? 'border-b border-neutral-100 dark:border-neutral-700' : ''
                       }`}
                     >
-                      <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono">
+                      <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono shrink-0">
                         {topic.icon}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-neutral-800 dark:text-neutral-100">{t(topic.nameKey)}</h4>
-                          <Badge size="sm" className={getStateColor(topic.state)}>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">{t(topic.nameKey)}</h4>
+                          <Badge size="sm" className={`shrink-0 ${getStateColor(topic.state)}`}>
                             {getStateLabel(topic.state)}
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
+                        <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                           <span>{topic.questionsTotal} questions</span>
                           {topic.questionsDue > 0 && (
                             <span className="text-primary-600 dark:text-primary-400 font-medium">

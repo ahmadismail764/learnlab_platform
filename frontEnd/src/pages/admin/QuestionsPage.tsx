@@ -9,9 +9,9 @@ import {
   Eye,
   ChevronDown,
   BookOpen,
-  CheckCircle,
-  XCircle,
-  FileText,
+  GraduationCap,
+  Layers,
+  Crown,
   X,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState } from '@/components/ui'
@@ -161,7 +161,7 @@ export function QuestionsPage() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-              <CheckCircle className="h-5 w-5" />
+              <GraduationCap className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.basic')}</p>
@@ -173,7 +173,7 @@ export function QuestionsPage() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400">
-              <FileText className="h-5 w-5" />
+              <Layers className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.intermediate')}</p>
@@ -185,7 +185,7 @@ export function QuestionsPage() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400">
-              <XCircle className="h-5 w-5" />
+              <Crown className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.advanced')}</p>

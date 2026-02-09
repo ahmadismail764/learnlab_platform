@@ -46,12 +46,23 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
             onClick={() => setMobileMenuOpen(false)}
           />
           {/* Sidebar */}
-          <div className="fixed inset-y-0 left-0 z-50 w-64">
+          <div className="fixed inset-y-0 start-0 z-50 w-64">
             <Sidebar
               user={user}
               isCollapsed={false}
               onLogout={onLogout}
             />
+            {/* Close button - positioned at top-end corner of the sidebar */}
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="absolute top-3 end-3 p-1.5 rounded-lg bg-neutral-200/80 dark:bg-neutral-700/80 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-neutral-600 dark:text-neutral-300 transition-colors z-[60]"
+              aria-label="Close menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { 
   CheckCircle, 
@@ -53,6 +53,15 @@ export function PracticePage() {
   // Current question
   const currentQuestion = sessionQuestions[currentIndex]
   const currentState = currentQuestion ? questionStates.get(currentQuestion.id) : null
+
+  // Auto-close virtual keyboard when navigating to a non-essay question
+  useEffect(() => {
+    if (currentQuestion && currentQuestion.answerType !== 'essay') {
+      if (window.mathVirtualKeyboard?.visible) {
+        window.mathVirtualKeyboard.hide()
+      }
+    }
+  }, [currentQuestion])
 
   // Start a new practice session
   const startSession = useCallback((questionCount: number = 6, includeEssay: boolean = true) => {

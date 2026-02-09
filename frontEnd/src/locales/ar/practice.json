@@ -1,6 +1,7 @@
 {
   "accuracy": "الدقة",
   "checkAnswer": "تحقَّق",
+  "closeKeyboard": "إغلاق",
   "correct": "صحيح! 🎉",
   "correctAnswer": "الإجابة الصحيحة",
   "difficulty": {
@@ -18,6 +19,7 @@
     "keepPracticing": "واصل التدريب!",
     "reviewConcept": "راجع هذا المفهوم"
   },
+  "hideKeyboard": "إخفاء لوحة المفاتيح",
   "hideSolution": "أخفِ الحل",
   "hint": "تلميح",
   "incorrect": "غير صحيح",
@@ -33,6 +35,7 @@
   "reviewLater": "مراجعة لاحقاً",
   "sessionSummary": "ملخص الجلسة",
   "showHint": "أظهِر تلميحاً",
+  "showKeyboard": "إظهار لوحة المفاتيح",
   "showSolution": "أظهِر الحل",
   "solutionSteps": "خطوات الحل",
   "step": "الخطوة {{number}}",

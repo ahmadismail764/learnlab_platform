@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   User,
@@ -227,31 +226,6 @@ export function AdminProfilePage() {
 
         {/* Right column */}
         <div className="space-y-6">
-          {/* Admin Tools */}
-          <Card>
-            <CardHeader
-              title={t('profile:adminTools')}
-              subtitle={t('profile:adminToolsDescription')}
-            />
-            <CardContent className="space-y-3 py-2">
-              <Link to="/admin/questions">
-                <Button variant="outline" fullWidth leftIcon={<FileQuestion className="w-4 h-4" />}>
-                  {t('profile:manageQuestions')}
-                </Button>
-              </Link>
-              <Link to="/admin/analytics">
-                <Button variant="outline" fullWidth leftIcon={<BarChart3 className="w-4 h-4" />}>
-                  {t('profile:viewAnalytics')}
-                </Button>
-              </Link>
-              <Link to="/admin/settings">
-                <Button variant="outline" fullWidth leftIcon={<Settings className="w-4 h-4" />}>
-                  {t('profile:systemSettings')}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
           {/* Change Password */}
           <Card>
             <CardHeader
@@ -298,7 +272,22 @@ export function AdminProfilePage() {
             )}
           </Card>
 
-          {/* Danger Zone */}
+          {/*
+           * Danger Zone — Admin Account Deletion
+           *
+           * ANOMALY PREVENTION (Backend Requirements):
+           * Before implementing the delete handler, the backend MUST enforce:
+           * 1. Re-authentication: Require the admin to re-enter their password before proceeding.
+           * 2. Last Admin Check: Prevent deletion if this is the ONLY admin account in the system
+           *    to avoid orphaning the platform without any admin access.
+           * 3. Multi-step Confirmation: Use a typed confirmation (e.g. type "DELETE MY ACCOUNT")
+           *    to prevent accidental clicks.
+           * 4. Ownership Transfer: Prompt to reassign owned content (questions, settings) to
+           *    another admin before deletion.
+           * 5. Audit Log: Record the deletion event with timestamp, IP, and actor details.
+           * 6. Soft Delete / Grace Period: Consider a 30-day grace period before permanent
+           *    deletion so the action can be reversed if needed.
+           */}
           <Card className="border-red-200 dark:border-red-900/50">
             <CardHeader title={t('profile:dangerZone')} />
             <CardContent>

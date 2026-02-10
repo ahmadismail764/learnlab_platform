@@ -43,7 +43,11 @@ export function LoginPage() {
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
 
-  // Mock users for development - Egyptian Arabic names
+  /**
+   * Mock users for development — Egyptian Arabic names.
+   * In production, authentication is handled entirely by the backend API.
+   * The demo accepts any non-empty password for the accounts below.
+   */
   const mockUsers: Record<string, User> = {
     'student@learnlab.com': {
       id: '1',
@@ -113,8 +117,11 @@ export function LoginPage() {
     await new Promise(resolve => setTimeout(resolve, 800))
 
     const user = mockUsers[email.toLowerCase()]
-    
-    if (user && password === 'password') {
+
+    // Demo: accept any non-empty password for known mock accounts.
+    // In production, credentials are validated by the backend API.
+    const isValidDemo = user && password.length > 0
+    if (isValidDemo) {
       // Success — reset attempts and navigate
       setFailedAttempts(0)
       login(user)

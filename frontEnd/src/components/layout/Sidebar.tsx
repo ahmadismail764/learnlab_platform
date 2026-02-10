@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronLeft,
   Trophy,
+  Medal,
   UserCircle,
   type LucideIcon
 } from 'lucide-react'
@@ -51,10 +52,12 @@ const navItems: NavItem[] = [
   { labelKey: 'nav:practice', href: '/student/practice', icon: FileQuestion, roles: ['student'] },
   { labelKey: 'nav:progress', href: '/student/progress', icon: BarChart3, roles: ['student'] },
   { labelKey: 'nav:achievements', href: '/student/achievements', icon: Trophy, roles: ['student'] },
+  { labelKey: 'nav:leaderboard', href: '/student/leaderboard', icon: Medal, roles: ['student'] },
   { labelKey: 'nav:profile', href: '/student/profile', icon: UserCircle, roles: ['student'] },
   
   // Admin (Content Manager) items
   { labelKey: 'nav:dashboard', href: '/admin', icon: LayoutDashboard, roles: ['admin'] },
+  { labelKey: 'nav:curriculum', href: '/admin/topics', icon: BookOpen, roles: ['admin'] },
   { labelKey: 'nav:questionBank', href: '/admin/questions', icon: FileQuestion, roles: ['admin'] },
   { labelKey: 'nav:analytics', href: '/admin/analytics', icon: BarChart3, roles: ['admin'] },
   { labelKey: 'nav:profile', href: '/admin/profile', icon: UserCircle, roles: ['admin'] },

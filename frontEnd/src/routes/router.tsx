@@ -14,6 +14,8 @@ import {
   AnalyticsPage,
   SettingsPage,
   AdminProfilePage,
+  LeaderboardPage,
+  TopicsManagementPage,
 } from '@/pages'
 import type { User } from '@/types'
 
@@ -79,6 +81,7 @@ export function createAppRouter(user: User | null) {
         { path: 'practice', element: <PracticePage /> },
         { path: 'progress', element: <ProgressPage /> },
         { path: 'achievements', element: <AchievementsPage /> },
+        { path: 'leaderboard', element: <LeaderboardPage /> },
         { path: 'profile', element: <StudentProfilePage /> },
       ],
     },
@@ -89,6 +92,7 @@ export function createAppRouter(user: User | null) {
       element: createDashboardElement(user),
       children: [
         { index: true, element: <AdminDashboard /> },
+        { path: 'topics', element: <TopicsManagementPage /> },
         { path: 'questions', element: <QuestionsPage /> },
         { path: 'analytics', element: <AnalyticsPage /> },
         { path: 'settings', element: <SettingsPage /> },

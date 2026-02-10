@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -9,8 +9,11 @@ import {
   Award,
   BarChart3,
   Activity,
+  Search,
+  Download,
+  AlertTriangle,
 } from 'lucide-react'
-import { Card, CardHeader, CardContent, Badge } from '@/components/ui'
+import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 
 /**
@@ -25,6 +28,7 @@ import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 
 export function AnalyticsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
+  const [topicSearch, setTopicSearch] = useState('')
 
   // Mock analytics data
   const overviewStats = {
@@ -34,7 +38,18 @@ export function AnalyticsPage() {
     avgSessionTime: 24, // minutes
     totalQuestionsAnswered: 45320,
     questionsThisWeek: 3420,
+    totalReviews: 45320, // For insufficient-data check (UC-04 alt flow 2a)
   }
+
+  // UC-04 Step 3: FSRS-specific metrics per topic (mock data)
+  const fsrsMetrics = [
+    { topic: 'logic', stability: 14.2, retention: 92 },
+    { topic: 'sets', stability: 11.5, retention: 88 },
+    { topic: 'relations', stability: 8.7, retention: 82 },
+    { topic: 'combinatorics', stability: 6.3, retention: 76 },
+    { topic: 'graphs', stability: 9.8, retention: 85 },
+    { topic: 'numtheory', stability: 7.1, retention: 79 },
+  ]
 
   const topicPerformance = [
     { topic: 'logic', accuracy: 78, attempts: 12450, avgTime: 45 },
@@ -86,18 +101,72 @@ export function AnalyticsPage() {
     [weeklyActivity]
   )
 
+  // UC-04 Step 4a: Filter topics by search
+  const filteredTopics = useMemo(() =>
+    topicSearch
+      ? topicPerformance.filter(item =>
+          t(`topics:${item.topic}`).toLowerCase().includes(topicSearch.toLowerCase())
+        )
+      : topicPerformance,
+    [topicSearch, topicPerformance, t]
+  )
+
+  // UC-04 Alternate Flow 2a: Insufficient data check
+  const hasInsufficientData = overviewStats.totalReviews < 10
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-          {t('admin:studentAnalytics')}
-        </h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          {t('admin:analyticsDescription')}
-        </p>
+      {/* Header with export button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
+            {t('admin:studentAnalytics')}
+          </h1>
+          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
+            {t('admin:analyticsDescription')}
+          </p>
+        </div>
+        {/* UC-04 Step 6: Export option */}
+        <div className="flex gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-4 h-4" />}
+            onClick={() => { /* Export CSV — backend integration */ }}
+          >
+            {t('admin:exportCSV')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Download className="w-4 h-4" />}
+            onClick={() => { /* Export PDF — backend integration */ }}
+          >
+            {t('admin:exportPDF')}
+          </Button>
+        </div>
       </div>
 
+      {/* UC-04 Alternate Flow 2a: Insufficient data empty state */}
+      {hasInsufficientData ? (
+        <Card className="text-center py-12">
+          <CardContent>
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
+              {t('admin:insufficientData')}
+            </h2>
+            <p className="text-neutral-500 dark:text-neutral-400 max-w-md mx-auto">
+              {t('admin:insufficientDataDescription')}
+            </p>
+            <p className="text-sm text-neutral-400 dark:text-neutral-500 mt-3">
+              {t('admin:reviewsCollected')}: {overviewStats.totalReviews}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+      <>
       {/* Overview Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card padding="sm">
@@ -149,6 +218,43 @@ export function AnalyticsPage() {
         </Card>
       </div>
 
+      {/* UC-04 Step 3: FSRS Metrics Section */}
+      <Card>
+        <CardHeader
+          title={t('admin:fsrsMetrics')}
+          subtitle={t('admin:fsrsMetricsDescription')}
+        />
+        <CardContent>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {fsrsMetrics.map((item) => (
+              <div key={item.topic} className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                  {t(`topics:${item.topic}`)}
+                </p>
+                <div className="flex items-baseline justify-between">
+                  <div>
+                    <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                      {item.stability}d
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {t('admin:stability')}
+                    </p>
+                  </div>
+                  <div className="text-end">
+                    <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {item.retention}%
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                      {t('admin:retention')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Topic Performance */}
@@ -159,8 +265,23 @@ export function AnalyticsPage() {
               subtitle={t('admin:accuracyByTopic')}
             />
             <CardContent>
+              {/* UC-04 Step 4/4a: Topic search/filter */}
+              <div className="mb-4">
+                <Input
+                  placeholder={t('admin:searchTopics')}
+                  value={topicSearch}
+                  onChange={(e) => setTopicSearch(e.target.value)}
+                  leftIcon={<Search className="w-4 h-4" />}
+                  size="sm"
+                />
+              </div>
               <div className="space-y-4">
-                {topicPerformance.map((item) => (
+                {filteredTopics.length === 0 ? (
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-4">
+                    {t('admin:filterByTopic')}
+                  </p>
+                ) : (
+                filteredTopics.map((item) => (
                   <div key={item.topic} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -193,7 +314,8 @@ export function AnalyticsPage() {
                       />
                     </div>
                   </div>
-                ))}
+                ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -370,6 +492,8 @@ export function AnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   )
 }

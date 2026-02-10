@@ -20,7 +20,7 @@ export function AuthLayout() {
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <GraduationCap className="w-6 h-6" />
             </div>
-            <span className="text-2xl font-bold">Learn Lab</span>
+            <span className="text-2xl font-bold">LearnLab</span>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export function AuthLayout() {
             <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">Learn Lab</span>
+            <span className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">LearnLab</span>
           </div>
           
           <Outlet />

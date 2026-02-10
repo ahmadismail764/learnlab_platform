@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { 
   CheckCircle, 
@@ -9,7 +9,9 @@ import {
   BookOpen,
   Trophy,
   Zap,
-  Send
+  Send,
+  PlayCircle,
+  PartyPopper
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
 import { MathInput } from '@/components/MathInput'
@@ -53,6 +55,15 @@ export function PracticePage() {
   // Current question
   const currentQuestion = sessionQuestions[currentIndex]
   const currentState = currentQuestion ? questionStates.get(currentQuestion.id) : null
+
+  // Auto-close virtual keyboard when navigating to a non-essay question
+  useEffect(() => {
+    if (currentQuestion && currentQuestion.answerType !== 'essay') {
+      if (window.mathVirtualKeyboard?.visible) {
+        window.mathVirtualKeyboard.hide()
+      }
+    }
+  }, [currentQuestion])
 
   // Start a new practice session
   const startSession = useCallback((questionCount: number = 6, includeEssay: boolean = true) => {
@@ -271,6 +282,10 @@ export function PracticePage() {
 
   // Render topic selection screen
   if (sessionState === 'selecting') {
+    // UC-03 Alternate Flow 2a: Simulate checking if topics are due
+    // In production, this comes from the FSRS scheduler via API
+    const topicsDue: number = 3 // Mock: set to 0 to see the "all caught up" state
+
     return (
       <div className="space-y-6">
         <div className="text-center">
@@ -278,57 +293,79 @@ export function PracticePage() {
             {t('practice:practiceSession')}
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400">
-            Test your knowledge of Discrete Mathematics
+            {t('practice:testKnowledge')}
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-          <Card hoverable className="cursor-pointer" onClick={() => startSession(4)}>
-            <CardContent className="text-center py-6">
-              <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Zap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+        {/* UC-03 Alternate Flow 2a: All caught up state */}
+        {topicsDue === 0 ? (
+          <Card className="max-w-lg mx-auto text-center py-10">
+            <CardContent>
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
+                <PartyPopper className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
-              <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Quick Practice</h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">4 questions • ~5 min</p>
+              <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
+                {t('practice:allCaughtUp')}
+              </h2>
+              <p className="text-neutral-500 dark:text-neutral-400 mb-6">
+                {t('practice:allCaughtUpDescription')}
+              </p>
+              <Button variant="outline" onClick={() => startSession(4)}>
+                {t('practice:reviewMastered')}
+              </Button>
             </CardContent>
           </Card>
+        ) : (
+          <>
+            <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              <Card hoverable className="cursor-pointer" onClick={() => startSession(4)}>
+                <CardContent className="text-center py-6">
+                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Zap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('practice:quickPractice')}</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t('practice:questionsMinutes', { count: 4, minutes: 5 })}</p>
+                </CardContent>
+              </Card>
 
-          <Card hoverable className="cursor-pointer border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/20" onClick={() => startSession(6)}>
-            <CardContent className="text-center py-6">
-              <div className="w-12 h-12 bg-primary-500 dark:bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Standard Session</h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">6 questions • ~10 min</p>
-              <Badge variant="primary" size="sm" className="mt-2">Recommended</Badge>
-            </CardContent>
-          </Card>
+              <Card hoverable className="cursor-pointer border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/20" onClick={() => startSession(6)}>
+                <CardContent className="text-center py-6">
+                  <div className="w-12 h-12 bg-primary-500 dark:bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('practice:standardSession')}</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t('practice:questionsMinutes', { count: 6, minutes: 10 })}</p>
+                  <Badge variant="primary" size="sm" className="mt-2">{t('practice:recommended')}</Badge>
+                </CardContent>
+              </Card>
 
-          <Card hoverable className="cursor-pointer" onClick={() => startSession(10)}>
-            <CardContent className="text-center py-6">
-              <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Trophy className="w-6 h-6 text-accent-600 dark:text-accent-400" />
-              </div>
-              <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Challenge Mode</h3>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">10 questions • ~15 min</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Topic preview */}
-        <Card className="max-w-3xl mx-auto">
-          <CardContent>
-            <h3 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3">Topics Covered</h3>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">{t('topics:logic.title')}</Badge>
-              <Badge variant="secondary">{t('topics:sets.title')}</Badge>
-              <Badge variant="secondary">{t('topics:relations.title')}</Badge>
-              <Badge variant="secondary">{t('topics:combinatorics.title')}</Badge>
-              <Badge variant="secondary">{t('topics:graphTheory.title')}</Badge>
-              <Badge variant="secondary">{t('topics:numberTheory.title')}</Badge>
+              <Card hoverable className="cursor-pointer" onClick={() => startSession(10)}>
+                <CardContent className="text-center py-6">
+                  <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Trophy className="w-6 h-6 text-accent-600 dark:text-accent-400" />
+                  </div>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('practice:challengeMode')}</h3>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t('practice:questionsMinutes', { count: 10, minutes: 15 })}</p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Topic preview */}
+            <Card className="max-w-3xl mx-auto">
+              <CardContent>
+                <h3 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3">{t('practice:topicsCovered')}</h3>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary">{t('topics:logic.title')}</Badge>
+                  <Badge variant="secondary">{t('topics:sets.title')}</Badge>
+                  <Badge variant="secondary">{t('topics:relations.title')}</Badge>
+                  <Badge variant="secondary">{t('topics:combinatorics.title')}</Badge>
+                  <Badge variant="secondary">{t('topics:graphTheory.title')}</Badge>
+                  <Badge variant="secondary">{t('topics:numberTheory.title')}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
     )
   }
@@ -346,7 +383,7 @@ export function PracticePage() {
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
             {t('practice:sessionComplete')}
           </h1>
-          <p className="text-neutral-600 dark:text-neutral-400">Great work! Here's how you did:</p>
+          <p className="text-neutral-600 dark:text-neutral-400">{t('practice:greatWork')}</p>
         </Card>
 
         <div className="grid grid-cols-2 gap-4">
@@ -367,13 +404,13 @@ export function PracticePage() {
           <Card>
             <CardContent className="text-center py-4">
               <p className="text-3xl font-bold text-accent-600 dark:text-accent-400">+{totalXP}</p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">XP Earned</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:xpEarned')}</p>
             </CardContent>
           </Card>
           
           <Card>
             <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-neutral-600 dark:text-neutral-300">6</p>
+              <p className="text-3xl font-bold text-neutral-600 dark:text-neutral-300">{new Set(sessionQuestions.map(q => q.topicId)).size}</p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:topicsReviewed')}</p>
             </CardContent>
           </Card>
@@ -392,7 +429,7 @@ export function PracticePage() {
             fullWidth
             onClick={() => startSession(6)}
           >
-            Practice Again
+            {t('practice:practiceAgain')}
           </Button>
         </div>
       </div>
@@ -401,7 +438,7 @@ export function PracticePage() {
 
   // Render practice question
   if (!currentQuestion || !currentState) {
-    return <div>Loading...</div>
+    return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">{t('practice:loading')}</div>
   }
 
   const stats = getSessionStats()
@@ -435,7 +472,7 @@ export function PracticePage() {
       <div className="space-y-1">
         <div className="flex justify-between text-sm text-neutral-600 dark:text-neutral-400">
           <span>{t('practice:questionOf', { current: currentIndex + 1, total: sessionQuestions.length })}</span>
-          <span>{stats.correct} correct</span>
+          <span>{stats.correct} {t('practice:correct')}</span>
         </div>
         <ProgressBar 
           value={(currentIndex / sessionQuestions.length) * 100} 
@@ -620,6 +657,17 @@ export function PracticePage() {
                       </li>
                     ))}
                   </ol>
+
+                  {/* UC-03 Alternate Flow 3a: Watch Explanation (placeholder — video URL from backend) */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    leftIcon={<PlayCircle className="w-4 h-4" />}
+                    className="mt-3 text-primary-600 dark:text-primary-400"
+                    onClick={() => { /* Will open explanation video when backend provides URL */ }}
+                  >
+                    {t('practice:watchExplanation')}
+                  </Button>
                 </div>
               )}
             </div>

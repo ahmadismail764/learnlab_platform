@@ -50,13 +50,13 @@ src/
 ├── data/            # Mock data & question pools
 │   └── sampleQuestions # MC, True/False, and Essay questions
 ├── locales/         # i18n translation files
-│   ├── en/          # English translations (10 namespaces)
+│   ├── en/          # English translations (11 namespaces)
 │   └── ar/          # Arabic translations (RTL)
 ├── types/           # Shared TypeScript types
 ├── pages/           # Page components
 │   ├── auth/        # Login page
-│   ├── student/     # Student pages (Dashboard, Topics, Practice, Progress, Achievements)
-│   └── admin/       # Admin pages (Dashboard, Questions, Analytics, Settings)
+│   ├── student/     # Student pages (Dashboard, Topics, Practice, Progress, Achievements, Leaderboard, Profile)
+│   └── admin/       # Admin pages (Dashboard, Curriculum, Questions, Analytics, Settings, Profile)
 └── styles/          # Global styles & Tailwind config
 ```
 
@@ -80,10 +80,20 @@ src/
 - Multiple achievement tiers (bronze, silver, gold, platinum)
 - Detailed achievement reasons/criteria
 
+### � Leaderboard
+- Weekly, monthly, and all-time rankings
+- Own rank highlight with streaks display
+- Offline banner and empty state handling
+
+### 📚 Curriculum Management (Admin)
+- Topic list organized by module hierarchy
+- Create/Edit topics with name, description, and parent module
+- Duplicate name validation and cascade delete warnings
+
 ### 🌐 Internationalization
 - Full English and Arabic support
 - RTL layout for Arabic
-- 10 translation namespaces (common, auth, student, practice, etc.)
+- 11 translation namespaces (common, auth, nav, student, admin, practice, gamification, time, topics, language, profile)
 
 ### 🔔 Notifications
 - Toast notification system
@@ -148,9 +158,11 @@ src/
 | Page | Description |
 |------|-------------|
 | **Dashboard** | System overview with quick stats and recent activity |
-| **Questions** | Question bank management with filtering, search, and preview |
-| **Analytics** | Student analytics dashboard with charts and performance metrics |
+| **Curriculum** | Topic management with module hierarchy, CRUD, and cascade delete warnings |
+| **Questions** | Question bank management with CRUD, filtering, search, and preview |
+| **Analytics** | Student analytics with FSRS metrics, topic search/filter, and export |
 | **Settings** | System settings (general, notifications, security, practice, theme) |
+| **Profile** | Admin profile page |
 
 ## Architecture Principles
 

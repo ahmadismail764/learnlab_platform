@@ -179,7 +179,7 @@ export function SettingsPage() {
                         w-full flex items-center gap-3 px-3 py-2 rounded-lg text-start transition-colors
                         ${isActive 
                           ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' 
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
                         }
                       `}
                     >

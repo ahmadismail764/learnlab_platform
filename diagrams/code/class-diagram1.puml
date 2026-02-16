@@ -1,118 +1,128 @@
-@startuml ClassDiagram1
-skinparam classAttributeIconSize 0
-skinparam linetype ortho
-skinparam nodesep 60
-skinparam ranksep 80
+@startuml ClassDiagram
 
-' =====================
-' ABSTRACT USER & CHILDREN
-' =====================
+' --- Page 1: User Hierarchy ---
 
-abstract class User {
-  - id: int
-  - email: string
-  - passwordHash: string
-  --
-  + login(): bool
-  + logout(): void
-}
-
-class Student {
-  - xp: int
-  --
-  + getXP(): int
-  + addXP(amount: int): void
-  + getDueTopics(): List<Topic>
-  + solvePracticeSheet(sheet: PracticeSheet): PracticeSheetSubmission
+class User {
+    id
+    email
+    passwordHash
+    + updateEmail()
+    + updatePassword()
 }
 
 class Admin {
-  --
-  + createTopic(name: string): Topic
-  + createQuestion(data): Question
-  + createPracticeSheet(data): PracticeSheet
-  + viewStudentAnalytics(studentId: int): Analytics
 }
 
-' =====================
-' TOPIC & MASTERY
-' =====================
+class Student {
+    xp : int
+    streak_count : int
+    last_practice_date : Date
+    ' getAnalytics was crossed out in the sketch
+    + {method} <strike>getAnalytics()</strike>
+    + addXp()
+    + getXp()
+    + incrementStreak()
+}
+
+note left of Student::getAnalytics
+    needs work
+end note
+
+User <|-- Admin
+User <|-- Student
+
+
+' --- Page 2: Practice Sheets ---
+
+class "Practice Sheet" as PracticeSheet {
+    id
+    questions : List
+    total_xp : int
+    + createSheet(data)
+    + updateSheet(data)
+    + deleteSheet(data)
+}
+
+note right of PracticeSheet::total_xp
+    "For example?"
+end note
+
+note right of PracticeSheet::createSheet
+    constructor
+end note
+
+class "Practice Sheet Submission" as PracticeSheetSubmission {
+    - student_id
+    - submission_id
+    - sheet_id
+    - timeTaken
+    + calculateXP()
+    + submitSheet(sheet_id, student_id)
+    + getSubmissionsByStudent()
+    + getSubmissionsByPracticeSheet()
+}
+
+class "Single Question Answer" as SingleQuestionAnswer {
+    - submission_id*
+    - question_id
+    - confidence
+    - <strike>timeTaken</strike>
+}
+
+note right of SingleQuestionAnswer
+    also needs
+    discussion
+end note
+
+' Relationships inferred from IDs
+PracticeSheetSubmission --> Student : student_id
+PracticeSheetSubmission --> PracticeSheet : sheet_id
+SingleQuestionAnswer --> PracticeSheetSubmission : submission_id
+
+
+' --- Page 3: Topics and Questions ---
 
 class Topic {
-  - id: int
-  - name: string
-  --
-  + getQuestions(): List<Question>
+    id: int
+    name: string
+    description : string
+    + createTopic(data)
+    + getTopicName(id)
+    + removeTopic(id)
 }
-
-class TopicMastery {
-  - student_id: int
-  - topic_id: int
-  - stability: float
-  - difficulty: float
-  - next_review: datetime
-  --
-  + isDue(): bool
-  + updateAfterPractice(correct: bool): void
-  + getLevel(): int
-}
-
-' =====================
-' QUESTION
-' =====================
 
 class Question {
-  - id: int
-  - content: string
-  - answers: List<string>
-  - correctAnswerIndex: int
-  --
-  + checkAnswer(selectedIndex: int): bool
-  + getCorrectAnswer(): string
+    id
+    topic_id
+    question : string
+    choices : List
+    correct_answer_index : int
+    tier : int
+    + getChoices()
+    + getCorrectAnswer()
+    + getQuestionsByTopic(topic_id)
+    + addQuestion(data)
+    + updateQuestion(id, data)
+    + removeQuestion(id)
 }
 
-' =====================
-' PRACTICE SHEET & SUBMISSION
-' =====================
+note right of Question
+    Added 'tier' for
+    Adaptive Scaffolding
+end note
 
-class PracticeSheet {
-  - id: int
-  - timeLimitSeconds: int
-  - totalXP: int
-  - Questions: List<Questions>
-  --
-  + getQuestions(): List<Question>
-  + addQuestion(q: Question): void
+class "Topic Mastery" as TopicMastery {
+    studentId: int
+    topicId: int
+    difficulty: float
+    stability: float
+    lastReviewDate: DateTime
+    createLeaderboard()
 }
 
-class PracticeSheetSubmission {
-  - id: int
-  - studentId: int
-  - sheetId: int
-  - receivedXP: int
-  - timeTaken: int
-  - submittedAt: datetime
-  --
-  + calculateScore(): float
-}
-
-' =====================
-' INHERITANCE
-' =====================
-
-User <|-- Student
-User <|-- Admin
-
-' =====================
-' RELATIONSHIPS
-' =====================
-
-Student "1" -- "*" TopicMastery : has >
-Topic "1" -- "*" TopicMastery : tracks >
-Topic "1" -- "*" Question : contains >
-
-PracticeSheet "1" -- "1" PracticeSheetSubmission : results in >
-Student "1" -- "*" PracticeSheetSubmission : submits >
-PracticeSheet "*" -- "*" Question : contains >
+' Relationships inferred from IDs
+Question --> Topic : topic_id
+TopicMastery --> Student : studentId
+TopicMastery --> Topic : topicId
 
 @enduml

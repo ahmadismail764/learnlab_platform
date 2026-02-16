@@ -1,9 +1,5 @@
 # Meeting Notes
 
-1. XP goes to every question
-
-2. Class diagram function placement
-
 3. Split Register and Login use cases
 
 4. Use case 2 needs a sequence diagram

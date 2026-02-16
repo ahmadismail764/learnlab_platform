@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Card, CardHeader, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
+import { Card, Button, Badge, ProgressBar } from '@/components/ui'
 import { useCurrentUser } from '@/contexts'
 
 /**
@@ -15,7 +15,6 @@ import { useCurrentUser } from '@/contexts'
  * 
  * Main landing page for students showing:
  * - Welcome message
- * - Quick actions (Continue Learning, Practice)
  * - Progress overview
  * - Recent activity
  * RTL-aware with full i18n support.
@@ -203,22 +202,7 @@ export function StudentDashboard() {
             </div>
           </Card>
 
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader title={t('common:quickActions')} />
-            <CardContent className="space-y-2">
-              <Link to="/student/practice">
-                <Button variant="primary" fullWidth leftIcon={<Zap className="w-4 h-4" />}>
-                  {t('nav:practice')}
-                </Button>
-              </Link>
-              <Link to="/student/topics">
-                <Button variant="outline" fullWidth leftIcon={<BookOpen className="w-4 h-4" />}>
-                  {t('nav:topics')}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+
         </div>
       </div>
     </div>

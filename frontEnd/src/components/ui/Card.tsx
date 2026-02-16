@@ -49,7 +49,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
           'rounded-xl',
           variantStyles[variant],
           paddingStyles[padding],
-          hoverable && 'transition-shadow duration-200 hover:shadow-md cursor-pointer',
+          hoverable && 'transition-all duration-200 hover:shadow-md dark:hover:bg-neutral-800/50 cursor-pointer',
           className
         )}
         {...props}

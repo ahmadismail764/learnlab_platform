@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock } from 'lucide-react'
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
@@ -99,13 +100,13 @@ export function Header({
   }
 
   return (
-    <header className="h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 flex items-center justify-between gap-4">
+    <header className="h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
       {/* Start side (left in LTR, right in RTL) */}
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 lg:hidden"
+            className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors lg:hidden"
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -128,7 +129,7 @@ export function Header({
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="relative p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
@@ -163,7 +164,7 @@ export function Header({
                     )}
                     <button 
                       onClick={() => setShowNotifications(false)}
-                      className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
                     >
                       <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
                     </button>
@@ -181,7 +182,7 @@ export function Header({
                         key={notification.id}
                         onClick={() => markAsRead(notification.id)}
                         aria-label={`Notification: ${notification.title}`}
-                        className={`w-full p-4 text-start hover:bg-neutral-50 dark:hover:bg-neutral-800 border-b border-neutral-50 dark:border-neutral-800 last:border-0 transition-colors ${
+                        className={`w-full p-4 text-start hover:bg-neutral-50 dark:hover:bg-neutral-800/50 border-b border-neutral-50 dark:border-neutral-800 last:border-0 transition-colors ${
                           !notification.read ? 'bg-primary-50/50 dark:bg-primary-900/20' : ''
                         }`}
                       >
@@ -221,14 +222,17 @@ export function Header({
         {/* Language Switcher */}
         <LanguageSwitcher variant="globe" />
 
-        {/* User avatar */}
+        {/* User avatar → Profile link */}
         {user && (
-          <button className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
+          <Link
+            to={`/${user.role}/profile`}
+            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+          >
             <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
               {user.firstName}
             </span>
-          </button>
+          </Link>
         )}
       </div>
     </header>

@@ -13,6 +13,7 @@ import enGamification from './locales/en/gamification.json'
 import enTime from './locales/en/time.json'
 import enTopics from './locales/en/topics.json'
 import enLanguage from './locales/en/language.json'
+import enProfile from './locales/en/profile.json'
 
 // Arabic translations - split by namespace
 import arCommon from './locales/ar/common.json'
@@ -25,6 +26,7 @@ import arGamification from './locales/ar/gamification.json'
 import arTime from './locales/ar/time.json'
 import arTopics from './locales/ar/topics.json'
 import arLanguage from './locales/ar/language.json'
+import arProfile from './locales/ar/profile.json'
 
 /**
  * i18n Configuration
@@ -63,6 +65,7 @@ export const namespaces = [
   'time',
   'topics',
   'language',
+  'profile',
 ] as const
 export type Namespace = typeof namespaces[number]
 
@@ -98,6 +101,7 @@ const resources = {
     time: enTime,
     topics: enTopics,
     language: enLanguage,
+    profile: enProfile,
   },
   ar: {
     common: arCommon,
@@ -110,6 +114,7 @@ const resources = {
     time: arTime,
     topics: arTopics,
     language: arLanguage,
+    profile: arProfile,
   },
 }
 

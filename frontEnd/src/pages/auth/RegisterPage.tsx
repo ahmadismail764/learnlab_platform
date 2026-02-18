@@ -50,7 +50,7 @@ interface FieldErrors {
 export function RegisterPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { register } = useAuth()
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -143,27 +143,28 @@ export function RegisterPage() {
 
     setIsLoading(true)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // UC-01 step 5-6: Create account, authenticate, redirect to student dashboard
-    setSuccess(true)
-
-    // Brief success message, then auto-login and redirect
-    setTimeout(() => {
-      login({
-        id: crypto.randomUUID(),
+    try {
+      // UC-01 step 5-6: Create account, authenticate, redirect to student dashboard
+      // register() in AuthContext also handles auto-login
+      await register({
+        username: formData.email,
         email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        role: 'student' as UserRole,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
       })
-      navigate('/student')
-    }, 1200)
 
-    setIsLoading(false)
+      setSuccess(true)
+
+      // Brief success message before redirect
+      setTimeout(() => {
+        navigate('/student')
+      }, 1200)
+    } catch (err: any) {
+      setGeneralError(err.message || 'Registration failed')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Show success state briefly before redirect

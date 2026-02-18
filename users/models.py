@@ -8,6 +8,9 @@ class User(AbstractUser):
     """
     email = models.EmailField(unique=True)
     
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+
     # You can add the 'updateEmail' logic as a method here or in a serializer later
     def __str__(self):
         return self.username
@@ -19,6 +22,8 @@ class Student(models.Model):
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='student_profile')
     xp = models.IntegerField(default=0)
+    streak_count = models.IntegerField(default=0)
+    last_practice_date = models.DateField(null=True, blank=True)
     
     def add_xp(self, amount):
         self.xp += amount

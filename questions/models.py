@@ -54,6 +54,7 @@ class Answer(models.Model):
     """
     submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name='answers')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_answer_index = models.IntegerField(null=True)
     confidence = models.FloatField(help_text="User confidence level (e.g. 0.0 to 1.0)")
     # time_taken was crossed out in your diagram, so omitting it.
 

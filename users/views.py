@@ -1,14 +1,27 @@
-from django.http import HttpResponse, JsonResponse
+from rest_framework import generics, permissions
+from .serializers import RegisterSerializer, UserSerializer, StudentSerializer
+from .models import Student
+from rest_framework.response import Response
 
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
 
-def index(request):
-    return HttpResponse("Users index — routing works.")
+class CurrentUserView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get_object(self):
+        return self.request.user
 
-def hello(request):
-    name = request.GET.get('name', 'friend')
-    return HttpResponse(f"Hello, {name}!")
+class StudentProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = StudentSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get_object(self):
+        return self.request.user.student_profile
 
-def json_test(request):
-    return JsonResponse({"status": "ok", "message": "JSON route works"})
+class LeaderboardView(generics.ListAPIView):
+    serializer_class = StudentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = Student.objects.all().order_by('-xp')

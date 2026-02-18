@@ -4,3 +4,13 @@ __pycache__/
 *.pyc
 .env
 .venv-linux/
+
+# Frontend
+frontEnd/node_modules/
+frontEnd/dist/
+frontEnd/.env
+frontEnd/.env.local
+
+# Python
+db.sqlite3
+staticfiles/

@@ -1,0 +1,16 @@
+.venv/
+.vscode/
+__pycache__/
+*.pyc
+.env
+.venv-linux/
+.env
+
+# Frontend
+frontEnd/node_modules/
+frontEnd/dist/
+frontEnd/.env
+frontEnd/.env.local
+
+# Python
+staticfiles/

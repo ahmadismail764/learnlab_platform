@@ -1,29 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Background circle with primary green -->
-  <circle cx="32" cy="32" r="30" fill="#58cc02"/>
+  <!-- LearnLab Logo — Graph nodes forming learning paths -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0d9488"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
   
-  <!-- Book/Learning icon -->
-  <g fill="white">
-    <!-- Open book base -->
-    <path d="M16 20 L32 24 L48 20 L48 44 L32 48 L16 44 Z" fill="white" opacity="0.9"/>
-    
-    <!-- Book spine/center -->
-    <path d="M32 24 L32 48" stroke="#3ea500" stroke-width="2" fill="none"/>
-    
-    <!-- Left page lines -->
-    <line x1="20" y1="28" x2="29" y2="30" stroke="#58cc02" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="20" y1="33" x2="29" y2="35" stroke="#58cc02" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="20" y1="38" x2="29" y2="40" stroke="#58cc02" stroke-width="1.5" stroke-linecap="round"/>
-    
-    <!-- Right page lines -->
-    <line x1="35" y1="30" x2="44" y2="28" stroke="#58cc02" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="35" y1="35" x2="44" y2="33" stroke="#58cc02" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="35" y1="40" x2="44" y2="38" stroke="#58cc02" stroke-width="1.5" stroke-linecap="round"/>
-    
-    <!-- Graduation cap on top -->
-    <polygon points="32,12 22,18 32,22 42,18" fill="white"/>
-    <rect x="30" y="18" width="4" height="4" fill="white"/>
-    <circle cx="42" cy="22" r="1.5" fill="white"/>
-    <line x1="42" y1="18" x2="42" y2="22" stroke="white" stroke-width="1"/>
-  </g>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bg)"/>
+  
+  <!-- Graph edges (learning paths) -->
+  <line x1="20" y1="16" x2="20" y2="32" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="20" y1="32" x2="20" y2="46" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="20" y1="46" x2="34" y2="46" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  <line x1="34" y1="46" x2="46" y2="46" stroke="white" stroke-width="2.5" stroke-linecap="round" opacity="0.6"/>
+  
+  <!-- Discovery path edges (violet) -->
+  <line x1="20" y1="32" x2="34" y2="24" stroke="url(#accent)" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+  <line x1="34" y1="24" x2="46" y2="16" stroke="url(#accent)" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  
+  <!-- Primary nodes (white — main path) -->
+  <circle cx="20" cy="16" r="5" fill="white"/>
+  <circle cx="20" cy="32" r="5" fill="white"/>
+  <circle cx="20" cy="46" r="5" fill="white"/>
+  <circle cx="34" cy="46" r="5" fill="white"/>
+  <circle cx="46" cy="46" r="4" fill="#f59e0b"/>
+  
+  <!-- Discovery nodes (violet — branching paths) -->
+  <circle cx="34" cy="24" r="3.5" fill="#a78bfa"/>
+  <circle cx="46" cy="16" r="3" fill="#a78bfa" opacity="0.7"/>
 </svg>

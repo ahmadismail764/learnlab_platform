@@ -118,14 +118,18 @@ src/
 
 ## Design System
 
-### Color Palette (Duolingo/Khan Academy inspired)
+### Brand Identity
 
-| Color | Purpose |
-|-------|---------|
-| **Primary (Green)** | Learning, Progress, Success |
-| **Secondary (Blue)** | Information, Trust, Links |
-| **Accent (Orange)** | Engagement, Highlights |
-| **Neutral (Gray)** | Text, Backgrounds, Borders |
+The name **LearnLab** evokes experimentation and discovery. The logo uses connected graph nodes forming an "L" shape — a direct reference to discrete-mathematics graph theory.
+
+### Color Palette
+
+| Color | Usage |
+|-------|-------|
+| **Primary (Teal)** | Scientific, fresh — learning, progress, CTAs |
+| **Secondary (Violet)** | Intelligence, depth — discovery, admin |
+| **Accent (Amber)** | Energy, warmth — achievements, streaks, XP |
+| **Neutral (Gray)** | Text, backgrounds, borders |
 
 ### Typography
 

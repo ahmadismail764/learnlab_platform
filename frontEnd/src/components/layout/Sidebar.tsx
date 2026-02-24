@@ -7,7 +7,6 @@ import {
   BarChart3, 
   Settings, 
   FileQuestion,
-  GraduationCap,
   LogOut,
   ChevronLeft,
   Trophy,
@@ -16,6 +15,7 @@ import {
   type LucideIcon
 } from 'lucide-react'
 import { Avatar } from '@/components/ui'
+import { LogoMark, LogoFull } from '@/components/brand'
 import type { User, UserRole } from '@/types'
 
 /**
@@ -94,11 +94,10 @@ export function Sidebar({
         'flex items-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-800',
         isCollapsed ? 'justify-center' : 'gap-3'
       )}>
-        <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
-          <GraduationCap className="w-5 h-5 text-white" />
-        </div>
-        {!isCollapsed && (
-          <span className="font-bold text-lg text-neutral-800 dark:text-neutral-100">{t('common:appName')}</span>
+        {isCollapsed ? (
+          <LogoMark size={32} />
+        ) : (
+          <LogoFull iconSize={32} />
         )}
       </div>
 

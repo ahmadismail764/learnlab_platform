@@ -43,6 +43,32 @@ export function LoginPage() {
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null)
   const [lockoutRemaining, setLockoutRemaining] = useState(0)
 
+  /**
+   * Mock users for development — Egyptian Arabic names.
+   * In production, authentication is handled entirely by the backend API.
+   * The demo accepts any non-empty password for the accounts below.
+   */
+  const mockUsers: Record<string, User> = {
+    'student@learnlab.com': {
+      id: '1',
+      email: 'student@learnlab.com',
+      firstName: 'أحمد',
+      lastName: 'محمد',
+      role: 'student' as UserRole,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    'admin@learnlab.com': {
+      id: '2',
+      email: 'admin@learnlab.com',
+      firstName: 'سارة',
+      lastName: 'إبراهيم',
+      role: 'admin' as UserRole,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  }
+
   // Check if currently locked out
   const isLockedOut = useCallback(() => {
     if (!lockoutUntil) return false
@@ -87,12 +113,24 @@ export function LoginPage() {
 
     setIsLoading(true)
 
-    try {
-      await login({ email, password })
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    const user = mockUsers[email.toLowerCase()]
+
+    // Demo: accept any non-empty password for known mock accounts.
+    // In production, credentials are validated by the backend API.
+    const isValidDemo = user && password.length > 0
+    if (isValidDemo) {
       // Success — reset attempts and navigate
       setFailedAttempts(0)
-      navigate('/student') // Default redirect, usually handled by router or based on role
-    } catch (err) {
+      login(user)
+      const routes: Record<UserRole, string> = {
+        student: '/student',
+        admin: '/admin',
+      }
+      navigate(routes[user.role])
+    } else {
       // UC-02 alternate 4a: Invalid credentials
       const newAttempts = failedAttempts + 1
       setFailedAttempts(newAttempts)
@@ -212,7 +250,7 @@ export function LoginPage() {
         <div className="space-y-1 text-neutral-600 dark:text-neutral-400">
           <p>{t('auth:student')}: student@learnlab.com</p>
           <p>{t('auth:admin')}: admin@learnlab.com</p>
-          <p className="text-neutral-500 dark:text-neutral-500">Password: password</p>
+          <p className="text-neutral-500 dark:text-neutral-500">{t('auth:anyPassword')}</p>
         </div>
       </div>
     </div>

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock } from 'lucide-react'
+import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock, User as UserIcon, LogOut, ChevronDown } from 'lucide-react'
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useAuth } from '@/contexts'
 import type { User } from '@/types'
 
 /**
@@ -76,9 +77,25 @@ export function Header({
   onMenuClick,
 }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [notifications, setNotifications] = useState(mockNotifications)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
+  const { logout } = useAuth()
 
   const unreadCount = notifications.filter(n => !n.read).length
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setShowProfileMenu(false)
+      }
+    }
+    if (showProfileMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showProfileMenu])
 
   const markAsRead = (id: string) => {
     setNotifications(prev => 
@@ -222,17 +239,62 @@ export function Header({
         {/* Language Switcher */}
         <LanguageSwitcher variant="globe" />
 
-        {/* User avatar → Profile link */}
+        {/* User avatar → Profile dropdown */}
         {user && (
-          <Link
-            to={`/${user.role}/profile`}
-            className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
-          >
-            <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
-            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
-              {user.firstName}
-            </span>
-          </Link>
+          <div className="relative" ref={profileMenuRef}>
+            <button
+              onClick={() => setShowProfileMenu(!showProfileMenu)}
+              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+            >
+              <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
+              <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
+                {user.firstName}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-neutral-400 hidden sm:block" />
+            </button>
+
+            {showProfileMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
+                <div className="absolute end-0 top-full mt-2 w-56 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800 z-50 overflow-hidden py-1">
+                  {/* User info */}
+                  <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
+                    <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                      {user.firstName} {user.lastName}
+                    </p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                      {user.email}
+                    </p>
+                  </div>
+
+                  {/* Menu items */}
+                  <div className="py-1">
+                    <Link
+                      to={`/${user.role}/profile`}
+                      onClick={() => setShowProfileMenu(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
+                    >
+                      <UserIcon className="w-4 h-4 text-neutral-400" />
+                      Profile
+                    </Link>
+                  </div>
+
+                  <div className="border-t border-neutral-100 dark:border-neutral-800 py-1">
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        logout()
+                      }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
     </header>

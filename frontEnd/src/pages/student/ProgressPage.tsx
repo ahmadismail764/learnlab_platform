@@ -236,7 +236,7 @@ export function ProgressPage() {
                     >
                       {/* Correct portion */}
                       <div 
-                        className="h-full bg-gradient-to-r from-primary-500 to-primary-400 flex items-center justify-end pe-2"
+                        className="h-full bg-linear-to-r from-primary-500 to-primary-400 flex items-center justify-end pe-2"
                         style={{ width: `${week.accuracy}%` }}
                       >
                         {correctCount >= 10 && (
@@ -245,7 +245,7 @@ export function ProgressPage() {
                       </div>
                       {/* Incorrect portion */}
                       <div 
-                        className="h-full bg-gradient-to-r from-red-400 to-red-300 flex items-center justify-end pe-2"
+                        className="h-full bg-linear-to-r from-red-400 to-red-300 flex items-center justify-end pe-2"
                         style={{ width: `${100 - week.accuracy}%` }}
                       >
                         {incorrectCount >= 5 && (
@@ -261,11 +261,11 @@ export function ProgressPage() {
           {/* Legend */}
           <div className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-neutral-100 dark:border-neutral-700">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-gradient-to-r from-primary-500 to-primary-400 rounded" />
+              <div className="w-3 h-3 bg-linear-to-r from-primary-500 to-primary-400 rounded" />
               <span className="text-xs text-neutral-600 dark:text-neutral-400">{t('student:correctAnswers')}</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-gradient-to-r from-red-400 to-red-300 rounded" />
+              <div className="w-3 h-3 bg-linear-to-r from-red-400 to-red-300 rounded" />
               <span className="text-xs text-neutral-600 dark:text-neutral-400">{t('student:incorrectAnswers')}</span>
             </div>
           </div>

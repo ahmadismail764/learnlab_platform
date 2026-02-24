@@ -303,7 +303,7 @@ export function TopicsPage() {
         </Card>
       ) : (
         /* Start practice CTA — only when topics are due */
-        <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white border-0">
+        <Card className="bg-linear-to-r from-primary-500 to-primary-600 text-white border-0">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold">{t('student:topicsProgress', { due: topicsDue })}</p>

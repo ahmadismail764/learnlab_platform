@@ -1,0 +1,58 @@
+sequenceDiagram
+    actor Admin
+    participant AdminDashboard as Admin Dashboard
+    participant QuestionBankController as Question Bank Controller
+    participant Database
+
+    Note over Admin,Database: UC-05: Manage Question Bank (CRUD)
+
+    Admin->>AdminDashboard: Navigates to "Add New Question"
+    AdminDashboard->>QuestionBankController: getTopics()
+    QuestionBankController->>Database: fetchTopics()
+    Database-->>QuestionBankController: list of topics
+    QuestionBankController-->>AdminDashboard: return topics for dropdown
+    AdminDashboard-->>Admin: Display input fields (LaTeX, Tiers, Topics)
+
+    Admin->>AdminDashboard: Enters details & clicks "Save"
+    AdminDashboard->>QuestionBankController: createQuestion(text, solution, topicId, tier)
+    QuestionBankController->>QuestionBankController: validateInputFormat(LaTeX, required_fields)
+
+    alt Invalid Input
+        QuestionBankController-->>AdminDashboard: Error: "Missing fields or invalid math syntax"
+        AdminDashboard-->>Admin: Show error & highlight fields
+    else Input Valid
+        par Persistence & Logic
+            QuestionBankController->>Database: add_question(data)
+            QuestionBankController->>Database: incrementTopicQuestionCount(topicId)
+        end
+        Database-->>QuestionBankController: success
+        QuestionBankController-->>AdminDashboard: return success message
+        
+        AdminDashboard->>QuestionBankController: getUpdatedQuestionList()
+        QuestionBankController->>Database: fetchQuestions()
+        Database-->>QuestionBankController: questions_data
+        QuestionBankController-->>AdminDashboard: Display Question Bank Dashboard (List View)
+    end
+
+    Note over Admin,Database: Phase 2: Management Flow (Decision Point)
+
+    alt Admin chooses to Edit
+        Admin->>AdminDashboard: Selects "Edit" on question
+        AdminDashboard->>QuestionBankController: getQuestionDetails(id)
+        QuestionBankController->>Database: fetchQuestionById(id)
+        Database-->>QuestionBankController: question_object
+        QuestionBankController-->>AdminDashboard: Fill form with current data
+        Admin->>AdminDashboard: Modifies fields & clicks "Update"
+        AdminDashboard->>QuestionBankController: updateQuestion(id, data)
+        QuestionBankController->>Database: update_content(text, choices)
+        Database-->>QuestionBankController: success
+        QuestionBankController-->>AdminDashboard: Update confirmed
+    else Admin chooses to Delete
+        Admin->>AdminDashboard: Clicks "Delete" icon
+        AdminDashboard-->>Admin: Prompt: "Confirm Soft Delete?"
+        Admin->>AdminDashboard: Confirm
+        AdminDashboard->>QuestionBankController: removeQuestion(id)
+        QuestionBankController->>Database: update(is_active=False)
+        Database-->>QuestionBankController: success
+        QuestionBankController-->>AdminDashboard: Remove from active dashboard view
+    end

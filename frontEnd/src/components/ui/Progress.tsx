@@ -24,6 +24,8 @@ export interface ProgressBarProps extends HTMLAttributes<HTMLDivElement> {
   showLabel?: boolean
   /** Animate the progress bar */
   animated?: boolean
+  /** Custom class for the progress indicator */
+  indicatorClassName?: string
 }
 
 const barSizeStyles = {
@@ -49,6 +51,7 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
       variant = 'primary',
       showLabel = false,
       animated = true,
+      indicatorClassName,
       ...props
     },
     ref
@@ -77,9 +80,10 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
             className={cn(
               'h-full rounded-full',
               barColorStyles[variant],
-              animated && 'transition-all duration-500 ease-out'
+              animated && 'transition-all duration-500 ease-out',
+              indicatorClassName
             )}
-            style={{ width: `${percentage}%` }}
+            style={{ width: `${percentage}%` } as any}
           />
         </div>
       </div>

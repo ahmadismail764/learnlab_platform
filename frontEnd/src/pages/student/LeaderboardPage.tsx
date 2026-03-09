@@ -1,307 +1,296 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  Trophy,
   Medal,
   Flame,
   Crown,
   ChevronUp,
   ChevronDown,
   WifiOff,
-  Minus,
+  Sparkles,
+  Search,
+  LayoutGrid,
+  Activity,
+  Binary,
+  Dna
 } from 'lucide-react'
-import { Card, CardHeader, CardContent, Badge, Avatar } from '@/components/ui'
+import { Card, Badge, Avatar, Button, ProgressBar } from '@/components/ui'
+import { studentsService } from '@/services/students'
+import { cn } from '@/utils/cn'
 
 /**
- * LeaderboardPage — UC-06: View Leaderboard
- * 
- * Shows global or time-filtered rankings by total XP.
- * Highlights the current student's rank, streak, and relative standing.
- * 
- * Alternate Flows:
- * - 2a: Offline mode banner (PWA placeholder)
- * - 4a: Empty leaderboard (< 2 active students)
+ * LeaderboardPage (Hall of Fame)
+ * Re-imagined as a global ranking metrics display with clinical laboratory visuals.
  */
 
-type TimeFilter = 'week' | 'month' | 'allTime'
-
 interface LeaderboardEntry {
-  id: string
+  id: number | string
   name: string
   avatar?: string
   xp: number
   streak: number
   accuracy: number
   rank: number
-  rankChange: number // positive = moved up, negative = moved down, 0 = no change
+  rank_change: number
+  is_current_user?: boolean
 }
 
-// Current student ID (mock — would come from auth context)
-const CURRENT_STUDENT_ID = 'student-current'
-
 export function LeaderboardPage() {
-  const { t } = useTranslation(['gamification', 'common'])
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('week')
+  const { t: _t } = useTranslation(['gamification', 'common'])
+  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'allTime'>('week')
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<LeaderboardEntry | null>(null)
 
-  // UC-06 Alt Flow 2a: Offline mode simulation
-  // In production, this would check navigator.onLine or a PWA service worker
-  const isOffline = false
-  const lastUpdated = new Date('2026-02-10T14:30:00')
+  useEffect(() => {
+    let isMounted = true
+    const fetchData = async () => {
+      setIsLoading(true)
+      try {
+        const data = await studentsService.getLeaderboard()
+        const results = Array.isArray(data) ? data : (data.results || [])
+        
+        const mappedResults: LeaderboardEntry[] = results.map((e: any, index: number) => ({
+          id: e.id,
+          name: e.user ? `${e.user.first_name} ${e.user.last_name}`.trim() || e.user.username : 'Unknown Researcher',
+          xp: e.total_xp || 0,
+          streak: e.streak_count || 0,
+          accuracy: e.accuracy || 100,
+          rank: index + 1,
+          rank_change: e.rank_change || 0,
+          is_current_user: e.is_current_user
+        }))
 
-  // Mock leaderboard data — varies by time filter to show different views
-  const leaderboardData: Record<TimeFilter, LeaderboardEntry[]> = useMemo(() => ({
-    week: [
-      { id: 'student-1', name: 'أحمد محمد', xp: 1520, streak: 14, accuracy: 94, rank: 1, rankChange: 2 },
-      { id: 'student-2', name: 'فاطمة علي', xp: 1380, streak: 21, accuracy: 91, rank: 2, rankChange: 0 },
-      { id: 'student-3', name: 'يوسف حسن', xp: 1245, streak: 7, accuracy: 89, rank: 3, rankChange: -1 },
-      { id: 'student-4', name: 'نور الدين', xp: 1120, streak: 10, accuracy: 88, rank: 4, rankChange: 1 },
-      { id: 'student-5', name: 'سارة أحمد', xp: 980, streak: 5, accuracy: 87, rank: 5, rankChange: -2 },
-      { id: 'student-6', name: 'محمد خالد', xp: 870, streak: 3, accuracy: 82, rank: 6, rankChange: 0 },
-      { id: 'student-7', name: 'ليلى عمر', xp: 750, streak: 8, accuracy: 80, rank: 7, rankChange: 3 },
-      { id: 'student-8', name: 'عمر حسين', xp: 620, streak: 2, accuracy: 76, rank: 8, rankChange: -1 },
-      { id: 'student-9', name: 'هدى سعيد', xp: 510, streak: 4, accuracy: 73, rank: 9, rankChange: 0 },
-      { id: 'student-10', name: 'كريم أنور', xp: 440, streak: 1, accuracy: 70, rank: 10, rankChange: -2 },
-      // Current student outside top 10
-      { id: CURRENT_STUDENT_ID, name: 'طالب حالي', xp: 385, streak: 6, accuracy: 78, rank: 14, rankChange: 1 },
-    ],
-    month: [
-      { id: 'student-2', name: 'فاطمة علي', xp: 5820, streak: 21, accuracy: 91, rank: 1, rankChange: 1 },
-      { id: 'student-1', name: 'أحمد محمد', xp: 5640, streak: 14, accuracy: 94, rank: 2, rankChange: -1 },
-      { id: 'student-3', name: 'يوسف حسن', xp: 4890, streak: 7, accuracy: 89, rank: 3, rankChange: 0 },
-      { id: CURRENT_STUDENT_ID, name: 'طالب حالي', xp: 4210, streak: 6, accuracy: 78, rank: 4, rankChange: 3 },
-      { id: 'student-4', name: 'نور الدين', xp: 3950, streak: 10, accuracy: 88, rank: 5, rankChange: -1 },
-      { id: 'student-7', name: 'ليلى عمر', xp: 3780, streak: 8, accuracy: 80, rank: 6, rankChange: 1 },
-      { id: 'student-5', name: 'سارة أحمد', xp: 3540, streak: 5, accuracy: 87, rank: 7, rankChange: -2 },
-      { id: 'student-6', name: 'محمد خالد', xp: 3120, streak: 3, accuracy: 82, rank: 8, rankChange: -2 },
-      { id: 'student-9', name: 'هدى سعيد', xp: 2870, streak: 4, accuracy: 73, rank: 9, rankChange: 0 },
-      { id: 'student-8', name: 'عمر حسين', xp: 2650, streak: 2, accuracy: 76, rank: 10, rankChange: -2 },
-    ],
-    // UC-06 Alt Flow 4a: Empty leaderboard — set to empty array to test
-    // To test: change to [] 
-    allTime: [
-      { id: 'student-1', name: 'أحمد محمد', xp: 24520, streak: 14, accuracy: 94, rank: 1, rankChange: 0 },
-      { id: 'student-2', name: 'فاطمة علي', xp: 22380, streak: 21, accuracy: 91, rank: 2, rankChange: 0 },
-      { id: 'student-3', name: 'يوسف حسن', xp: 19245, streak: 7, accuracy: 89, rank: 3, rankChange: 0 },
-      { id: 'student-4', name: 'نور الدين', xp: 17120, streak: 10, accuracy: 88, rank: 4, rankChange: 0 },
-      { id: 'student-5', name: 'سارة أحمد', xp: 15980, streak: 5, accuracy: 87, rank: 5, rankChange: 0 },
-      { id: 'student-7', name: 'ليلى عمر', xp: 14750, streak: 8, accuracy: 80, rank: 6, rankChange: 0 },
-      { id: 'student-6', name: 'محمد خالد', xp: 13870, streak: 3, accuracy: 82, rank: 7, rankChange: 0 },
-      { id: 'student-8', name: 'عمر حسين', xp: 11620, streak: 2, accuracy: 76, rank: 8, rankChange: 0 },
-      { id: CURRENT_STUDENT_ID, name: 'طالب حالي', xp: 10385, streak: 6, accuracy: 78, rank: 9, rankChange: 2 },
-      { id: 'student-9', name: 'هدى سعيد', xp: 9510, streak: 4, accuracy: 73, rank: 10, rankChange: -1 },
-    ],
-  }), [])
+        if (isMounted) {
+          setLeaderboard(mappedResults)
+          const current = mappedResults.find((e: any) => e.is_current_user) || null
+          setCurrentUser(current)
+        }
+      } catch (err) {
+        if (isMounted) console.error("Failed to fetch leaderboard", err)
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+    fetchData()
+    return () => { isMounted = false }
+  }, [timeFilter])
 
-  const entries = leaderboardData[timeFilter]
-  const topEntries = entries.filter(e => e.id !== CURRENT_STUDENT_ID).slice(0, 10)
-  const currentStudent = entries.find(e => e.id === CURRENT_STUDENT_ID)
-  const isCurrentInTop10 = topEntries.some(e => e.id === CURRENT_STUDENT_ID) || 
-                           (currentStudent && currentStudent.rank <= 10)
-  const hasEnoughStudents = entries.length >= 2
-
-  // Insert current student in the right position if they're in the top 10
   const displayEntries = useMemo(() => {
-    const allSorted = [...entries].sort((a, b) => a.rank - b.rank)
-    return allSorted.filter(e => e.rank <= 10)
-  }, [entries])
-
-  const filters: { key: TimeFilter; labelKey: string }[] = [
-    { key: 'week', labelKey: 'gamification:thisWeek' },
-    { key: 'month', labelKey: 'gamification:thisMonth' },
-    { key: 'allTime', labelKey: 'gamification:allTime' },
-  ]
+    return leaderboard.slice(0, 10).sort((a, b) => a.rank - b.rank)
+  }, [leaderboard])
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-5 h-5 text-yellow-500" />
-    if (rank === 2) return <Medal className="w-5 h-5 text-neutral-400" />
-    if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />
+    if (rank === 1) return <Crown className="w-8 h-8 text-amber-500 animate-bounce" />
+    if (rank === 2) return <Medal className="w-8 h-8 text-neutral-400" />
+    if (rank === 3) return <Medal className="w-8 h-8 text-orange-600" />
     return null
   }
 
-  const getRankStyle = (rank: number) => {
-    if (rank === 1) return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800'
-    if (rank === 2) return 'bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700'
-    if (rank === 3) return 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-    return 'border-transparent'
-  }
-
-  const getRankChangeIcon = (change: number) => {
-    if (change > 0) return <ChevronUp className="w-4 h-4 text-green-500" />
-    if (change < 0) return <ChevronDown className="w-4 h-4 text-red-500" />
-    return <Minus className="w-4 h-4 text-neutral-400" />
-  }
+  if (isLoading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
+      <div className="relative">
+         <Dna className="w-16 h-16 text-primary-600 animate-spin" />
+         <div className="absolute inset-0 bg-primary-500 blur-2xl opacity-20 animate-pulse" />
+      </div>
+      <p className="text-[10px] font-black uppercase tracking-[0.5em] text-neutral-400">Verifying Rankings...</p>
+    </div>
+  )
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* UC-06 Alt Flow 2a: Offline banner */}
-      {isOffline && (
-        <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-          <WifiOff className="w-5 h-5 shrink-0" />
-          <div>
-            <p className="font-medium">{t('gamification:offlineMode')}</p>
-            <p className="text-amber-600 dark:text-amber-300">
-              {t('gamification:lastUpdated', { time: lastUpdated.toLocaleString() })}
-            </p>
+    <div className="stagger-in space-y-12 pb-20 pt-4">
+      {/* Editorial Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-neutral-200 dark:border-neutral-800 pb-10">
+        <div className="space-y-4 max-w-2xl">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-1 bg-amber-500 rounded-full" />
+             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400">Global Standings // HALL OF FAME</span>
           </div>
+          <h1 className="text-5xl md:text-6xl font-black font-display tracking-tight text-neutral-950 dark:text-white leading-none">
+            Hall of <br/>Fame<span className="text-amber-500">.</span>
+          </h1>
+          <p className="text-lg text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed">
+            Synthesized list of paramount researchers. Rankings are recalibrated every 24 hours based on synaptic XP gains.
+          </p>
         </div>
-      )}
 
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-          <Trophy className="w-8 h-8 text-yellow-600 dark:text-yellow-400" />
+        <div className="flex gap-4 p-2 bg-neutral-100 dark:bg-neutral-900 rounded-3xl border border-neutral-200/50 dark:border-neutral-800">
+           {(['week', 'month', 'all'] as const).map(f => (
+              <button
+                 key={f}
+                 onClick={() => setTimeFilter(f === 'all' ? 'allTime' : f as any)}
+                 className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    (timeFilter === 'allTime' ? 'all' : timeFilter) === f 
+                       ? 'bg-neutral-950 text-white shadow-xl scale-105' 
+                       : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                 }`}
+              >
+                 {f}
+              </button>
+           ))}
         </div>
-        <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-          {t('gamification:leaderboard')}
-        </h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          {t('gamification:leaderboardDescription')}
-        </p>
       </div>
 
-      {/* Time Filters — UC-06 Step 5 */}
-      <div className="flex justify-center gap-2">
-        {filters.map(({ key, labelKey }) => (
-          <button
-            key={key}
-            onClick={() => !isOffline && setTimeFilter(key)}
-            disabled={isOffline}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              timeFilter === key
-                ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-            } ${isOffline ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {t(labelKey)}
-          </button>
-        ))}
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* User Standing - Sidebar */}
+        <div className="lg:col-span-4 space-y-8">
+           <div className="flex items-center gap-3 px-2">
+              <Sparkles className="w-5 h-5 text-amber-500" />
+              <h2 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">Your Position</h2>
+           </div>
 
-      {/* Current Student Card — UC-06 Step 4: Always visible */}
-      {currentStudent && hasEnoughStudents && (
-        <Card className="border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-900/20">
-          <CardContent className="py-4">
-            <div className="flex items-center gap-4">
-              <div className="text-center min-w-12">
-                <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">#{currentStudent.rank}</p>
-                <div className="flex items-center justify-center">
-                  {getRankChangeIcon(currentStudent.rankChange)}
-                </div>
-              </div>
-              <Avatar name={currentStudent.name} size="md" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-neutral-800 dark:text-neutral-100">
-                  {currentStudent.name}
-                  <Badge variant="primary" size="sm" className="ms-2">{t('gamification:you')}</Badge>
-                </p>
-                <div className="flex items-center gap-3 mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                  <span className="font-medium text-primary-600 dark:text-primary-400">
-                    {currentStudent.xp.toLocaleString()} {t('gamification:xp')}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Flame className="w-4 h-4 text-orange-500" />
-                    {t('gamification:streakDays', { count: currentStudent.streak })}
-                  </span>
-                </div>
-              </div>
-              <div className="text-end">
-                <Badge variant="secondary">{currentStudent.accuracy}%</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Leaderboard List */}
-      {!hasEnoughStudents ? (
-        /* UC-06 Alt Flow 4a: Empty leaderboard */
-        <Card className="text-center py-12">
-          <CardContent>
-            <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Crown className="w-8 h-8 text-yellow-500" />
-            </div>
-            <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-              {t('gamification:emptyLeaderboard')}
-            </h2>
-            <p className="text-neutral-500 dark:text-neutral-400">
-              {t('gamification:beFirstToClaim')}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card>
-          <CardHeader
-            title={t('gamification:topPerformers')}
-            subtitle={t('gamification:topPerformersSubtitle')}
-          />
-          <CardContent className="p-0">
-            <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
-              {displayEntries.map((entry) => {
-                const isCurrent = entry.id === CURRENT_STUDENT_ID
-                return (
-                  <div
-                    key={entry.id}
-                    className={`flex items-center gap-4 px-4 py-3 transition-colors ${getRankStyle(entry.rank)} ${
-                      isCurrent ? 'bg-primary-50/60 dark:bg-primary-900/20 border-s-4 border-s-primary-500' : ''
-                    }`}
-                  >
-                    {/* Rank */}
-                    <div className="w-10 text-center">
-                      {getRankIcon(entry.rank) || (
-                        <span className="text-lg font-bold text-neutral-500 dark:text-neutral-400">
-                          {entry.rank}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Rank change */}
-                    <div className="w-6 flex justify-center">
-                      {getRankChangeIcon(entry.rankChange)}
-                    </div>
-
-                    {/* Avatar + Name */}
-                    <Avatar name={entry.name} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-medium truncate ${
-                        isCurrent 
-                          ? 'text-primary-700 dark:text-primary-300' 
-                          : 'text-neutral-800 dark:text-neutral-100'
-                      }`}>
-                        {entry.name}
-                        {isCurrent && (
-                          <Badge variant="primary" size="sm" className="ms-2">{t('gamification:you')}</Badge>
-                        )}
-                      </p>
-                    </div>
-
-                    {/* Streak */}
-                    <div className="flex items-center gap-1 text-sm text-neutral-500 dark:text-neutral-400">
-                      <Flame className="w-4 h-4 text-orange-500" />
-                      <span>{entry.streak}</span>
-                    </div>
-
-                    {/* XP */}
-                    <div className="text-end min-w-16">
-                      <p className="font-bold text-neutral-800 dark:text-neutral-100">
-                        {entry.xp.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('gamification:xp')}</p>
-                    </div>
+           <Card className="glass border-0 rounded-[3rem] p-10 bg-neutral-900 text-white relative overflow-hidden group shadow-2xl">
+              <div className="absolute inset-0 bg-scanline opacity-10" />
+              {currentUser ? (
+                <div className="relative z-10 space-y-10">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                     <div className="w-24 h-24 rounded-[2rem] border-2 border-primary-500/30 flex items-center justify-center p-2 relative">
+                        <div className="absolute inset-0 bg-primary-500 blur-2xl opacity-10" />
+                        <Avatar name={currentUser.name} size="xl" className="shadow-2xl" />
+                     </div>
+                     <div>
+                        <p className="text-2xl font-black tracking-tight">{currentUser.name}</p>
+                        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Operator State: ACTIVE</p>
+                     </div>
                   </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Show current student separately if outside top 10 */}
-      {currentStudent && !isCurrentInTop10 && currentStudent.rank > 10 && hasEnoughStudents && (
-        <div className="text-center text-sm text-neutral-500 dark:text-neutral-400">
-          <p>···</p>
-          <p className="mt-1">{t('gamification:yourRankPosition', { rank: currentStudent.rank })}</p>
+                  <div className="flex flex-col items-center py-6 bg-white/5 rounded-[2rem] border border-white/5 shadow-inner">
+                     <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Rank index</p>
+                     <p className="text-6xl font-black tracking-tighter text-amber-500">#{currentUser.rank}</p>
+                     <div className="flex items-center gap-2 mt-4 px-4 py-1.5 bg-neutral-950 rounded-full shadow-lg border border-white/5">
+                        {currentUser.rank_change >= 0 ? <ChevronUp className="w-4 h-4 text-emerald-500" /> : <ChevronDown className="w-4 h-4 text-rose-500" />}
+                        <span className={cn(
+                           "text-[9px] font-black uppercase tracking-widest",
+                           currentUser.rank_change >= 0 ? "text-emerald-500" : "text-rose-500"
+                        )}>
+                           {Math.abs(currentUser.rank_change)} Pos Change
+                        </span>
+                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                     <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Synaptic XP</p>
+                        <p className="text-xl font-black">{currentUser.xp.toLocaleString()}</p>
+                     </div>
+                     <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
+                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Streak</p>
+                        <p className="text-xl font-black text-orange-500 flex items-center gap-2">
+                           <Flame className="w-5 h-5 fill-current" /> {currentUser.streak}
+                        </p>
+                     </div>
+                  </div>
+
+                  <div className="space-y-3">
+                     <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest mb-1">
+                        <span className="text-neutral-500">Accuracy Vector</span>
+                        <span className="text-emerald-500">{currentUser.accuracy}%</span>
+                     </div>
+                     <ProgressBar value={currentUser.accuracy} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
+                  </div>
+                </div>
+              ) : (
+                <div className="relative z-10 h-96 flex flex-col items-center justify-center text-center p-6 space-y-6">
+                   <div className="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center text-neutral-500">
+                      <WifiOff className="w-10 h-10" />
+                   </div>
+                   <div className="space-y-2">
+                      <h3 className="text-xl font-black uppercase tracking-tight">Index Null</h3>
+                      <p className="text-neutral-500 text-sm font-medium leading-relaxed">
+                         Complete simulations to establish your position in the hall of fame.
+                      </p>
+                   </div>
+                </div>
+              )}
+           </Card>
         </div>
-      )}
+
+        {/* Global Standings Table */}
+        <div className="lg:col-span-8 space-y-8">
+           <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-3">
+                 <LayoutGrid className="w-5 h-5 text-primary-500" />
+                 <h2 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">Global Operators</h2>
+              </div>
+              <div className="relative group max-w-[240px]">
+                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
+                 <input 
+                    type="text" 
+                    placeholder="Search by ID or name..." 
+                    className="h-12 w-full pl-12 pr-4 bg-neutral-100 dark:bg-neutral-900 rounded-[1.2rem] text-xs font-bold border-0 ring-1 ring-neutral-200/50 dark:ring-neutral-800 transition-all outline-hidden focus:ring-2 focus:ring-primary-500/30" 
+                 />
+              </div>
+           </div>
+
+           <Card className="glass border-0 rounded-[3rem] shadow-xl overflow-hidden min-h-[600px]">
+              <div className="overflow-x-auto">
+                 <table className="w-full text-left border-collapse">
+                    <thead>
+                       <tr className="bg-neutral-50/50 dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800">
+                          <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Idx</th>
+                          <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Specimen Name</th>
+                          <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">XP Metrics</th>
+                          <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Streak</th>
+                          <th className="px-10 py-6 text-right text-[10px] font-black uppercase tracking-widest text-neutral-400">Status</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/50">
+                       {displayEntries.map((entry) => (
+                          <tr 
+                             key={entry.id} 
+                             className={cn(
+                                "group transition-all hover:bg-neutral-50 dark:hover:bg-neutral-800/20",
+                                entry.is_current_user && "bg-primary-500/5"
+                             )}
+                          >
+                             <td className="px-10 py-8">
+                                <div className="flex items-center justify-center w-12 h-12">
+                                   {getRankIcon(entry.rank) || (
+                                      <span className="text-2xl font-black text-neutral-300 dark:text-neutral-700 tracking-tighter">#{entry.rank.toString().padStart(2, '0')}</span>
+                                   )}
+                                </div>
+                             </td>
+                             <td className="px-6 py-8">
+                                <div className="flex items-center gap-5">
+                                   <div className="relative shrink-0">
+                                      <Avatar name={entry.name} size="lg" className="rounded-2xl shadow-xl group-hover:scale-110 transition-transform duration-500" />
+                                      {entry.is_current_user && (
+                                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-neutral-900" />
+                                      )}
+                                   </div>
+                                   <div>
+                                      <p className="font-black text-neutral-900 dark:text-white text-lg tracking-tight uppercase leading-none">
+                                         {entry.name}
+                                      </p>
+                                      <p className="text-[9px] font-bold text-neutral-400 uppercase mt-2 tracking-widest">Operator-ID: {String(entry.id).padStart(5, '0')}</p>
+                                   </div>
+                                </div>
+                             </td>
+                             <td className="px-6 py-8">
+                                <p className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter">{(entry.xp || 0).toLocaleString()}</p>
+                             </td>
+                             <td className="px-6 py-8">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 rounded-lg">
+                                   <Flame className="w-4 h-4 text-orange-500 fill-current" />
+                                   <span className="font-black text-orange-600 dark:text-orange-400 text-sm font-mono">{entry.streak}</span>
+                                </div>
+                             </td>
+                             <td className="px-10 py-8 text-right">
+                                <Badge className={cn(
+                                   "font-black text-[9px] px-3 py-1 rounded-full uppercase tracking-widest border-0",
+                                   entry.is_current_user ? 'bg-primary-500 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
+                                )}>
+                                   {entry.is_current_user ? 'Self' : 'Linked'}
+                                </Badge>
+                             </td>
+                          </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
+           </Card>
+        </div>
+      </div>
     </div>
   )
 }

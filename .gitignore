@@ -5,6 +5,10 @@ __pycache__/
 .env
 .venv-linux/
 .env
+.agent*
+.kilocode
+skills-lock.*
+venv
 
 # Frontend
 frontEnd/node_modules/

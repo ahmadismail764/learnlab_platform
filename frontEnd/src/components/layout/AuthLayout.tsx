@@ -1,5 +1,7 @@
 import { Outlet } from 'react-router-dom'
 import { LogoMark, LogoFull } from '@/components/brand'
+import { ThemeToggle } from '@/components/ThemeToggle'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 /**
  * AuthLayout Component
@@ -65,7 +67,13 @@ export function AuthLayout() {
       </div>
 
       {/* Right side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-8 relative">
+        {/* Theme & Language Controls */}
+        <div className="absolute top-4 end-4 flex items-center gap-1">
+          <ThemeToggle />
+          <LanguageSwitcher variant="globe" />
+        </div>
+
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">

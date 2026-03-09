@@ -1,702 +1,532 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { 
   CheckCircle, 
   XCircle, 
-  ChevronRight, 
-  ChevronLeft,
-  Lightbulb,
-  BookOpen,
   Trophy,
   Zap,
-  Send,
   PlayCircle,
-  PartyPopper
+  PartyPopper,
+  Clock,
+  Dna,
+  Atom,
+  TestTube2,
+  Lightbulb,
+  Keyboard,
+  CheckCircle2,
+  Activity,
+  Binary,
+  Target,
+  ArrowRight,
+  ChevronRight,
+  Mic2
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
 import { MathInput } from '@/components/MathInput'
-import { sampleQuestions, essayQuestionsPool, type SampleQuestion } from '@/data'
+import { practiceService } from '@/services/practice'
+import { cn } from '@/utils/cn'
 
 /**
- * PracticePage
- * 
- * Interactive practice session for Discrete Mathematics.
- * Features:
- * - Multiple choice and true/false questions
- * - Progressive hints
- * - Step-by-step solutions
- * - XP rewards and progress tracking
- * 
- * RTL-aware with i18n support.
+ * PracticePage (Experiment Mode)
+ * Re-imagined as a high-stakes focus environment.
  */
 
 type SessionState = 'selecting' | 'practicing' | 'complete'
-type AnswerState = 'unanswered' | 'correct' | 'incorrect'
+type AnswerState = 'unanswered' | 'answered'
+type FSRSGrade = 1 | 2 | 3 | 4 // Again, Hard, Good, Easy
+
+interface Question {
+  id: number
+  text: string
+  choices: string[]
+  correct_answer_index: number
+  tier: number
+  explanation_video_url?: string
+  topic_name: string
+  topic_id: number
+}
 
 interface QuestionState {
-  questionId: string
-  selectedAnswer: string | null
-  essayAnswer: string // For essay type questions
+  questionId: number
+  userResponse: string | null
   answerState: AnswerState
-  hintsShown: number
-  showSolution: boolean
+  isCorrect: boolean | null
+  grade: FSRSGrade | null
+  startTime: number
 }
 
 export function PracticePage() {
-  const { t } = useTranslation(['practice', 'common', 'topics'])
-  
-  // Session state
+  // const { t } = useTranslation(['student', 'common', 'practice'])
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
-  const [sessionQuestions, setSessionQuestions] = useState<SampleQuestion[]>([])
+  const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [questionStates, setQuestionStates] = useState<Map<string, QuestionState>>(new Map())
-  const [totalXP, setTotalXP] = useState(0)
-  
-  // Current question
-  const currentQuestion = sessionQuestions[currentIndex]
-  const currentState = currentQuestion ? questionStates.get(currentQuestion.id) : null
+  const [sessionRecord, setSessionRecord] = useState<any>(null)
+  const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
+  const [earnedXp, setEarnedXp] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const [mathValue, setMathValue] = useState('')
 
-  // Auto-close virtual keyboard when navigating to a non-essay question
-  useEffect(() => {
-    if (currentQuestion && currentQuestion.answerType !== 'essay') {
-      if (window.mathVirtualKeyboard?.visible) {
-        window.mathVirtualKeyboard.hide()
-      }
-    }
-  }, [currentQuestion])
+  const currentQuestion = questions[currentIndex]
+  const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
 
-  // Start a new practice session
-  const startSession = useCallback((questionCount: number = 6, includeEssay: boolean = true) => {
-    // Get random MC questions
-    const mcShuffled = [...sampleQuestions].sort(() => Math.random() - 0.5)
-    let selected: SampleQuestion[] = []
-    
-    if (includeEssay) {
-      // Include 1-2 essay questions in the mix
-      const essayShuffled = [...essayQuestionsPool].sort(() => Math.random() - 0.5)
-      const essayCount = Math.min(2, essayShuffled.length)
-      const mcCount = questionCount - essayCount
+  // --- Fetch Adaptive Session ---
+  const startSession = async () => {
+    setIsLoading(true)
+    try {
+      const data = await practiceService.generateAdaptiveSession()
+      setQuestions(data.questions)
       
-      selected = [
-        ...mcShuffled.slice(0, mcCount),
-        ...essayShuffled.slice(0, essayCount),
-      ].sort(() => Math.random() - 0.5) // Mix them together
-    } else {
-      selected = mcShuffled.slice(0, questionCount)
-    }
-    
-    // Initialize question states
-    const states = new Map<string, QuestionState>()
-    selected.forEach(q => {
-      states.set(q.id, {
-        questionId: q.id,
-        selectedAnswer: null,
-        essayAnswer: '',
-        answerState: 'unanswered',
-        hintsShown: 0,
-        showSolution: false,
+      const session = await practiceService.createSession({ 
+        session_type: data.session_type 
       })
-    })
-    
-    setSessionQuestions(selected)
-    setQuestionStates(states)
-    setCurrentIndex(0)
-    setTotalXP(0)
-    setSessionState('practicing')
-  }, [])
-
-  // Handle answer selection
-  const selectAnswer = useCallback((answer: string) => {
-    if (!currentQuestion || !currentState || currentState.answerState !== 'unanswered') return
-    
-    const isCorrect = answer === currentQuestion.correctAnswer
-    
-    setQuestionStates(prev => {
-      const newStates = new Map(prev)
-      newStates.set(currentQuestion.id, {
-        ...currentState,
-        selectedAnswer: answer,
-        answerState: isCorrect ? 'correct' : 'incorrect',
+      setSessionRecord(session)
+      
+      const initialStates: Record<number, QuestionState> = {}
+      data.questions.forEach((q: Question, idx: number) => {
+        initialStates[idx] = {
+          questionId: q.id,
+          userResponse: null,
+          answerState: 'unanswered',
+          isCorrect: null,
+          grade: null,
+          startTime: Date.now()
+        }
       })
-      return newStates
-    })
-    
-    if (isCorrect) {
-      // Calculate XP (reduce for hints used)
-      const hintPenalty = currentState.hintsShown * 5
-      const earned = Math.max(currentQuestion.xpReward - hintPenalty, 5)
-      setTotalXP(prev => prev + earned)
+      setQuestionStates(initialStates)
+      setSessionState('practicing')
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
     }
-  }, [currentQuestion, currentState])
-
-  // Update essay answer (for MathInput)
-  const updateEssayAnswer = useCallback((latex: string) => {
-    if (!currentQuestion || !currentState || currentState.answerState !== 'unanswered') return
-    
-    setQuestionStates(prev => {
-      const newStates = new Map(prev)
-      newStates.set(currentQuestion.id, {
-        ...currentState,
-        essayAnswer: latex,
-      })
-      return newStates
-    })
-  }, [currentQuestion, currentState])
-
-  // Submit essay answer
-  const submitEssayAnswer = useCallback(() => {
-    if (!currentQuestion || !currentState || currentState.answerState !== 'unanswered') return
-    if (!currentState.essayAnswer.trim()) return
-
-    const userAnswer = currentState.essayAnswer.trim().toLowerCase()
-    const correctAnswer = (currentQuestion.correctAnswer as string).toLowerCase()
-    
-    // Check if answer matches correct answer or any alternative
-    const alternatives = (currentQuestion as SampleQuestion & { alternativeAnswers?: string[] }).alternativeAnswers || []
-    const allAccepted = [correctAnswer, ...alternatives.map(a => a.toLowerCase())]
-    
-    // Normalize LaTeX for comparison
-    const normalizeLatex = (s: string) => s
-      .replace(/\\s+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .replace(/\\left/g, '')
-      .replace(/\\right/g, '')
-      .trim()
-    
-    const normalizedUser = normalizeLatex(userAnswer)
-    const isCorrect = allAccepted.some(accepted => {
-      const normalizedAccepted = normalizeLatex(accepted)
-      return normalizedUser === normalizedAccepted || 
-             normalizedUser.includes(normalizedAccepted) ||
-             normalizedAccepted.includes(normalizedUser)
-    })
-    
-    setQuestionStates(prev => {
-      const newStates = new Map(prev)
-      newStates.set(currentQuestion.id, {
-        ...currentState,
-        answerState: isCorrect ? 'correct' : 'incorrect',
-      })
-      return newStates
-    })
-    
-    if (isCorrect) {
-      const hintPenalty = currentState.hintsShown * 5
-      const earned = Math.max(currentQuestion.xpReward - hintPenalty, 5)
-      setTotalXP(prev => prev + earned)
-    }
-  }, [currentQuestion, currentState])
-
-  // Show next hint
-  const showHint = useCallback(() => {
-    if (!currentQuestion || !currentState) return
-    if (!currentQuestion.hints || currentState.hintsShown >= currentQuestion.hints.length) return
-    
-    setQuestionStates(prev => {
-      const newStates = new Map(prev)
-      newStates.set(currentQuestion.id, {
-        ...currentState,
-        hintsShown: currentState.hintsShown + 1,
-      })
-      return newStates
-    })
-  }, [currentQuestion, currentState])
-
-  // Toggle solution visibility
-  const toggleSolution = useCallback(() => {
-    if (!currentQuestion || !currentState) return
-    
-    setQuestionStates(prev => {
-      const newStates = new Map(prev)
-      newStates.set(currentQuestion.id, {
-        ...currentState,
-        showSolution: !currentState.showSolution,
-      })
-      return newStates
-    })
-  }, [currentQuestion, currentState])
-
-  // Navigation
-  const goToNext = useCallback(() => {
-    if (currentIndex < sessionQuestions.length - 1) {
-      setCurrentIndex(prev => prev + 1)
-    } else {
-      setSessionState('complete')
-    }
-  }, [currentIndex, sessionQuestions.length])
-
-  const goToPrevious = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1)
-    }
-  }, [currentIndex])
-
-  // Calculate session stats
-  const getSessionStats = useCallback(() => {
-    let correct = 0
-    let answered = 0
-    
-    questionStates.forEach(state => {
-      if (state.answerState !== 'unanswered') {
-        answered++
-        if (state.answerState === 'correct') correct++
-      }
-    })
-    
-    return {
-      correct,
-      answered,
-      total: sessionQuestions.length,
-      accuracy: answered > 0 ? Math.round((correct / answered) * 100) : 0,
-    }
-  }, [questionStates, sessionQuestions.length])
-
-  // Generate answer options for multiple choice
-  const getAnswerOptions = (question: SampleQuestion): string[] => {
-    if (question.answerType === 'true-false') {
-      return ['true', 'false']
-    }
-    
-    // For multiple choice, generate plausible wrong answers based on question
-    const correct = question.correctAnswer as string
-    
-    // Question-specific wrong answers
-    const wrongAnswers: Record<string, string[]> = {
-      'logic-1': ['P ∧ Q', 'Q → P', 'P ↔ Q'],
-      'logic-2': ['FALSE', 'UNDEFINED', 'Cannot be determined'],
-      'sets-1': ['{1, 2, 5, 6}', '{1, 2, 3, 4, 5, 6}', '{3}'],
-      'sets-2': ['6', '3', '9'],
-      'relations-1': [], // true-false
-      'relations-2': ['{..., -3, 0, 3, 6, 9, ...}', '{..., -5, -2, 1, 4, 7, ...}', '{2, 5}'],
-      'comb-1': ['12', '16', '4'],
-      'comb-2': ['21', '42', '210'],
-      'graph-1': ['7', '10', '12'],
-      'graph-2': ['6', '4', '3'],
-      'num-1': ['12', '3', '9'],
-      'num-2': ['7', '10', '0'],
-    }
-    
-    const options = [correct, ...(wrongAnswers[question.id] || ['Option A', 'Option B', 'Option C'])]
-    return options.sort(() => Math.random() - 0.5)
   }
 
-  // Render topic selection screen
+  const handleAnswer = (choice: string) => {
+    if (!currentStatus || currentStatus.answerState === 'answered') return
+    const isCorrect = currentQuestion.choices.indexOf(choice) === currentQuestion.correct_answer_index
+    setQuestionStates((prev) => ({
+      ...prev,
+      [currentIndex]: {
+        ...prev[currentIndex],
+        userResponse: choice,
+        answerState: 'answered',
+        isCorrect: isCorrect
+      }
+    }))
+    if (isCorrect) setEarnedXp(prev => prev + 10 * currentQuestion.tier)
+  }
+
+  const handleSubmitMathAnswer = () => {
+    if (!mathValue || !currentStatus || currentStatus.answerState === 'answered') return
+    setQuestionStates(prev => ({
+      ...prev,
+      [currentIndex]: {
+        ...prev[currentIndex],
+        userResponse: mathValue,
+        answerState: 'answered',
+        isCorrect: true 
+      }
+    }))
+    setEarnedXp(prev => prev + 15 * currentQuestion.tier)
+  }
+
+  const handleGrade = async (grade: FSRSGrade) => {
+    if (!currentStatus || !sessionRecord || !currentQuestion) return
+    const timeTaken = Math.round((Date.now() - currentStatus.startTime) / 1000)
+    setQuestionStates((prev) => ({
+      ...prev,
+      [currentIndex]: { ...prev[currentIndex], grade: grade }
+    }))
+    try {
+      await practiceService.submitInteraction({
+        session: sessionRecord.id,
+        question: currentQuestion.id,
+        user_response: currentStatus.userResponse || mathValue || 'N/A',
+        is_correct: grade > 1,
+        time_taken_seconds: timeTaken,
+        confidence_rating: grade
+      })
+    } catch (err) {
+      console.error("Failed to submit interaction", err)
+    }
+    setMathValue('')
+    if (currentIndex < questions.length - 1) {
+      const nextIndex = currentIndex + 1
+      setCurrentIndex(nextIndex)
+      setQuestionStates((prev) => ({
+        ...prev,
+        [nextIndex]: { ...prev[nextIndex], startTime: Date.now() }
+      }))
+    } else {
+      completeSession()
+    }
+  }
+
+  const completeSession = () => {
+    setSessionState('complete')
+    if (sessionRecord) {
+      practiceService.completeSession(sessionRecord.id, earnedXp)
+    }
+  }
+
   if (sessionState === 'selecting') {
-    // UC-03 Alternate Flow 2a: Simulate checking if topics are due
-    // In production, this comes from the FSRS scheduler via API
-    const topicsDue: number = 3 // Mock: set to 0 to see the "all caught up" state
-
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-            {t('practice:practiceSession')}
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400">
-            {t('practice:testKnowledge')}
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-lab relative overflow-hidden">
+        {/* Neural Grid Overlay */}
+        <div className="absolute inset-0 bg-neural-grid opacity-20" />
+        <div className="absolute inset-0 bg-scanline opacity-10 pointer-events-none" />
 
-        {/* UC-03 Alternate Flow 2a: All caught up state */}
-        {topicsDue === 0 ? (
-          <Card className="max-w-lg mx-auto text-center py-10">
-            <CardContent>
-              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
-                <PartyPopper className="w-8 h-8 text-green-600 dark:text-green-400" />
-              </div>
-              <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-                {t('practice:allCaughtUp')}
-              </h2>
-              <p className="text-neutral-500 dark:text-neutral-400 mb-6">
-                {t('practice:allCaughtUpDescription')}
-              </p>
-              <Button variant="outline" onClick={() => startSession(4)}>
-                {t('practice:reviewMastered')}
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-              <Card hoverable className="cursor-pointer" onClick={() => startSession(4)}>
-                <CardContent className="text-center py-6">
-                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Zap className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('practice:quickPractice')}</h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t('practice:questionsMinutes', { count: 4, minutes: 5 })}</p>
-                </CardContent>
-              </Card>
-
-              <Card hoverable className="cursor-pointer border-primary-200 dark:border-primary-800 bg-primary-50/30 dark:bg-primary-900/20" onClick={() => startSession(6)}>
-                <CardContent className="text-center py-6">
-                  <div className="w-12 h-12 bg-primary-500 dark:bg-primary-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <BookOpen className="w-6 h-6 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('practice:standardSession')}</h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t('practice:questionsMinutes', { count: 6, minutes: 10 })}</p>
-                  <Badge variant="primary" size="sm" className="mt-2">{t('practice:recommended')}</Badge>
-                </CardContent>
-              </Card>
-
-              <Card hoverable className="cursor-pointer" onClick={() => startSession(10)}>
-                <CardContent className="text-center py-6">
-                  <div className="w-12 h-12 bg-accent-100 dark:bg-accent-900/40 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Trophy className="w-6 h-6 text-accent-600 dark:text-accent-400" />
-                  </div>
-                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('practice:challengeMode')}</h3>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{t('practice:questionsMinutes', { count: 10, minutes: 15 })}</p>
-                </CardContent>
-              </Card>
+        <div className="max-w-xl w-full stagger-in relative z-10">
+          <Card className="glass p-12 text-center rounded-[3rem] border-neutral-200/50 dark:border-white/5 shadow-2xl space-y-8">
+            <div className="relative mx-auto w-32 h-32">
+               <div className="absolute inset-0 bg-primary-500/10 rounded-full animate-ping" />
+               <div className="relative w-full h-full rounded-full bg-linear-to-br from-primary-600 to-secondary-600 flex items-center justify-center text-white shadow-xl">
+                  <TestTube2 className="w-16 h-16 opacity-80" />
+               </div>
+            </div>
+            
+            <div className="space-y-4">
+               <h1 className="text-4xl font-black font-display tracking-tight text-neutral-950 dark:text-white leading-tight">
+                 Prepare for <br/>Experiment<span className="text-primary-600">.</span>
+               </h1>
+               <p className="text-neutral-500 dark:text-neutral-400 font-medium max-w-sm mx-auto leading-relaxed">
+                 Calibrating adaptive FSRS matrix. Ensure focus is maintained. High-priority concepts ahead.
+               </p>
             </div>
 
-            {/* Topic preview */}
-            <Card className="max-w-3xl mx-auto">
-              <CardContent>
-                <h3 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3">{t('practice:topicsCovered')}</h3>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">{t('topics:logic.title')}</Badge>
-                  <Badge variant="secondary">{t('topics:sets.title')}</Badge>
-                  <Badge variant="secondary">{t('topics:relations.title')}</Badge>
-                  <Badge variant="secondary">{t('topics:combinatorics.title')}</Badge>
-                  <Badge variant="secondary">{t('topics:graphTheory.title')}</Badge>
-                  <Badge variant="secondary">{t('topics:numberTheory.title')}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </>
-        )}
+            <Button 
+              className="w-full h-20 bg-neutral-950 dark:bg-white text-white dark:text-neutral-900 rounded-[2rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl hover:bg-primary-600 hover:text-white dark:hover:bg-primary-600 dark:hover:text-white transition-all group"
+              onClick={startSession}
+              disabled={isLoading}
+            >
+              {isLoading ? 'Decrypting Inventory...' : 'Initiate Sequence'}
+              <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-2 transition-transform" />
+            </Button>
+            
+            <div className="flex justify-center gap-8">
+               <div className="text-center">
+                  <p className="text-xl font-black text-neutral-800 dark:text-neutral-200">10</p>
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Tasks</p>
+               </div>
+               <div className="w-px h-8 bg-neutral-100 dark:bg-neutral-800" />
+               <div className="text-center">
+                  <p className="text-xl font-black text-neutral-800 dark:text-neutral-200">15m</p>
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Est. Duration</p>
+               </div>
+            </div>
+          </Card>
+        </div>
       </div>
     )
   }
 
-  // Render session complete screen
   if (sessionState === 'complete') {
-    const stats = getSessionStats()
-    
     return (
-      <div className="max-w-xl mx-auto space-y-6">
-        <Card className="text-center py-8">
-          <div className="w-20 h-20 bg-primary-100 dark:bg-primary-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trophy className="w-10 h-10 text-primary-600 dark:text-primary-400" />
+      <div className="max-w-3xl mx-auto py-12 px-4 stagger-in bg-lab min-h-screen">
+        <Card className="glass border-0 overflow-hidden rounded-[3.5rem] bg-lab">
+          <div className="bg-neutral-950 p-16 text-center text-white relative">
+            <div className="absolute inset-0 bg-scanline opacity-10" />
+            <div className="absolute top-8 right-8 text-[12px] font-mono text-white/40 tracking-[0.5em] uppercase">Status: Success</div>
+            
+            <div className="relative w-24 h-24 mx-auto mb-8">
+               <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-20" />
+               <div className="w-full h-full rounded-full border-4 border-emerald-500 flex items-center justify-center">
+                  <PartyPopper className="w-12 h-12 text-emerald-500" />
+               </div>
+            </div>
+            <h2 className="text-5xl font-black font-display tracking-tight mb-4 leading-none">Discovery Report<span className="text-emerald-500">.</span></h2>
+            <p className="text-neutral-400 text-lg font-medium max-w-sm mx-auto">Neural pathways have been significantly reinforced and stabilized.</p>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-            {t('practice:sessionComplete')}
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400">{t('practice:greatWork')}</p>
+          
+          <CardContent className="p-12 space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="p-10 rounded-[2.5rem] bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 flex flex-col items-center">
+                <Trophy className="w-10 h-10 text-amber-500 mb-4" />
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">XP Harvested</p>
+                <p className="text-5xl font-black text-neutral-900 dark:text-white leading-none">+{earnedXp}</p>
+              </div>
+              <div className="p-10 rounded-[2.5rem] bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-800 flex flex-col items-center">
+                <Activity className="w-10 h-10 text-primary-500 mb-4" />
+                <p className="text-[10px] font-black text-neutral-400 uppercase tracking-widest mb-1">Global Stability</p>
+                <p className="text-5xl font-black text-neutral-900 dark:text-white leading-none">100<span className="text-xl">%</span></p>
+              </div>
+            </div>
+
+            <Button className="w-full h-20 bg-neutral-950 dark:bg-white text-white dark:text-neutral-900 rounded-[2.2rem] text-sm font-black uppercase tracking-[0.4em] shadow-2xl group" onClick={() => window.location.href='/student/dashboard'}>
+               Commit Lab Log
+               <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-2 transition-transform" />
+            </Button>
+          </CardContent>
         </Card>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Card>
-            <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-primary-600 dark:text-primary-400">{stats.correct}/{stats.total}</p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:questionsAnswered')}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-secondary-600 dark:text-secondary-400">{stats.accuracy}%</p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:accuracy')}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-accent-600 dark:text-accent-400">+{totalXP}</p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:xpEarned')}</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="text-center py-4">
-              <p className="text-3xl font-bold text-neutral-600 dark:text-neutral-300">{new Set(sessionQuestions.map(q => q.topicId)).size}</p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('practice:topicsReviewed')}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            fullWidth
-            onClick={() => setSessionState('selecting')}
-          >
-            {t('common:done')}
-          </Button>
-          <Button 
-            variant="primary" 
-            fullWidth
-            onClick={() => startSession(6)}
-          >
-            {t('practice:practiceAgain')}
-          </Button>
-        </div>
       </div>
     )
   }
 
-  // Render practice question
-  if (!currentQuestion || !currentState) {
-    return <div className="text-center py-12 text-neutral-500 dark:text-neutral-400">{t('practice:loading')}</div>
-  }
+  if (!currentQuestion || !currentStatus) return (
+      <div className="min-h-screen flex items-center justify-center bg-lab">
+          <Dna className="w-12 h-12 text-primary-600 animate-spin" />
+      </div>
+  )
 
-  const stats = getSessionStats()
-  const answerOptions = getAnswerOptions(currentQuestion)
-  const tierLabels: Record<number, string> = {
-    1: t('practice:difficulty.tier1'),
-    2: t('practice:difficulty.tier2'),
-    3: t('practice:difficulty.tier3'),
-  }
+  const isMCQ = currentQuestion.choices && currentQuestion.choices.length > 0
+  const isAnswered = currentStatus.answerState === 'answered'
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Progress header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary">{t(currentQuestion.topicKey)}</Badge>
-          <Badge 
-            variant={currentQuestion.tier === 1 ? 'success' : currentQuestion.tier === 2 ? 'warning' : 'error'}
-            size="sm"
-          >
-            {tierLabels[currentQuestion.tier]}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-          <Zap className="w-4 h-4 text-accent-500" />
-          <span>+{totalXP} XP</span>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-sm text-neutral-600 dark:text-neutral-400">
-          <span>{t('practice:questionOf', { current: currentIndex + 1, total: sessionQuestions.length })}</span>
-          <span>{stats.correct} {t('practice:correct')}</span>
-        </div>
-        <ProgressBar 
-          value={(currentIndex / sessionQuestions.length) * 100} 
-          size="sm" 
-          showLabel={false}
-        />
-      </div>
-
-      {/* Question card */}
-      <Card className="overflow-hidden">
-        <CardContent className="p-6">
-          {/* Question text */}
-          <div className="mb-6">
-            <p className="text-lg text-neutral-800 dark:text-neutral-100 leading-relaxed">
-              {currentQuestion.content}
-            </p>
-            {currentQuestion.answerType === 'essay' && (
-              <Badge variant="secondary" size="sm" className="mt-2">
-                {t('practice:essayQuestion')}
-              </Badge>
-            )}
-          </div>
-
-          {/* Answer section - different for MC vs Essay */}
-          {currentQuestion.answerType === 'essay' ? (
-            // Essay answer with MathInput
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                {t('practice:yourAnswer')}
-              </label>
-              <MathInput
-                value={currentState.essayAnswer}
-                onChange={updateEssayAnswer}
-                placeholder={t('practice:enterMathExpression')}
-                readOnly={currentState.answerState !== 'unanswered'}
-                showKeyboard={true}
-                className="mb-3"
-              />
-              
-              {currentState.answerState === 'unanswered' && (
-                <Button
-                  variant="primary"
-                  onClick={submitEssayAnswer}
-                  disabled={!currentState.essayAnswer.trim()}
-                  rightIcon={<Send className="w-4 h-4" />}
-                >
-                  {t('practice:submitAnswer')}
-                </Button>
-              )}
-
-              {/* Show correct answer after submission */}
-              {currentState.answerState !== 'unanswered' && (
-                <div className="mt-4 p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-1">{t('practice:correctAnswer')}:</p>
-                  <p className="font-mono text-neutral-800 dark:text-neutral-100">{currentQuestion.correctAnswer as string}</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            // Multiple choice answer options
-            <div className="space-y-3 mb-6">
-              {answerOptions.map((option, index) => {
-                const isSelected = currentState.selectedAnswer === option
-                const isCorrectAnswer = option === currentQuestion.correctAnswer
-                const showResult = currentState.answerState !== 'unanswered'
-                
-                let className = 'w-full p-4 text-start rounded-lg border-2 transition-all '
-                
-                if (showResult) {
-                  if (isCorrectAnswer) {
-                    className += 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200'
-                  } else if (isSelected && !isCorrectAnswer) {
-                    className += 'border-red-500 bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-                  } else {
-                    className += 'border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400'
-                  }
-                } else {
-                  className += isSelected 
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-neutral-800 dark:text-neutral-100'
-                    : 'border-neutral-200 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 text-neutral-800 dark:text-neutral-100'
-                }
-
-                return (
-                  <button
-                    key={index}
-                    onClick={() => !showResult && selectAnswer(option)}
-                    disabled={showResult}
-                    className={className}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 flex items-center justify-center text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                        {String.fromCharCode(65 + index)}
-                      </span>
-                      <span className="flex-1 font-medium">{option}</span>
-                      {showResult && isCorrectAnswer && (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      )}
-                      {showResult && isSelected && !isCorrectAnswer && (
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      )}
-                    </div>
-                  </button>
-                )
-            })}
-            </div>
-          )}
-
-          {/* Feedback */}
-          {currentState.answerState !== 'unanswered' && (
-            <div className={`p-4 rounded-lg mb-4 ${
-              currentState.answerState === 'correct' 
-                ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200' 
-                : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'
-            }`}>
-              <div className="flex items-center gap-2 font-semibold">
-                {currentState.answerState === 'correct' ? (
-                  <>
-                    <CheckCircle className="w-5 h-5" />
-                    {t('practice:correct')}
-                    <span className="ms-auto text-green-600 dark:text-green-400">+{currentQuestion.xpReward} XP</span>
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="w-5 h-5" />
-                    {t('practice:incorrect')}
-                  </>
-                )}
+    <div className="max-w-6xl mx-auto py-8 px-4 bg-lab min-h-screen relative overflow-hidden">
+      <div className="absolute inset-0 bg-neural-grid opacity-10 pointer-events-none" />
+      
+      {/* Dynamic Telemetry Header */}
+      <div className="flex items-center justify-between mb-12 relative z-10 px-4">
+        <div className="flex items-center gap-6 flex-1 max-w-md">
+           <div className="flex-1 space-y-2">
+              <div className="flex justify-between text-[9px] font-black text-neutral-500 uppercase tracking-[0.2em]">
+                 <span>Transmission Progress</span>
+                 <span>{Math.round(((currentIndex + 1) / questions.length) * 100)}%</span>
               </div>
-            </div>
-          )}
+              <ProgressBar 
+                value={((currentIndex + 1) / questions.length) * 100} 
+                className="h-1.5 bg-neutral-200 dark:bg-neutral-800"
+                indicatorClassName="bg-primary-600"
+              />
+           </div>
+           <Badge className="bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 font-mono text-[10px] tracking-widest px-4 py-1.5 rounded-full border-0">
+             PKT_{currentIndex + 1}.{questions.length}
+           </Badge>
+        </div>
+        
+        <div className="hidden md:flex items-center gap-8">
+           <div className="text-end">
+              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Active Stream</p>
+              <p className="text-xs font-mono text-neutral-800 dark:text-neutral-200 font-bold uppercase">{currentQuestion.topic_name}</p>
+           </div>
+           <div className="w-px h-8 bg-neutral-200 dark:bg-neutral-800" />
+           <div className="flex items-center gap-3">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Stable Link</span>
+           </div>
+        </div>
+      </div>
 
-          {/* Hints section */}
-          {currentQuestion.hints && currentQuestion.hints.length > 0 && currentState.answerState === 'unanswered' && (
-            <div className="mb-4">
-              {currentState.hintsShown > 0 && (
-                <div className="space-y-2 mb-3">
-                  {currentQuestion.hints.slice(0, currentState.hintsShown).map((hint, i) => (
-                    <div key={i} className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-                      <div className="flex items-start gap-2">
-                        <Lightbulb className="w-4 h-4 mt-0.5 shrink-0" />
-                        <span>{hint}</span>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
+        <div className="lg:col-span-8 space-y-10">
+          {/* Main Focus Card */}
+          <Card className="glass border-0 rounded-[3rem] shadow-2xl overflow-hidden relative group">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+               <Binary className="w-48 h-48 rotate-12" />
+            </div>
+            
+            <CardContent className="p-10 md:p-14 space-y-12">
+              <div className="flex items-center gap-3 text-primary-600 dark:text-primary-400 font-black text-[10px] tracking-[0.3em] uppercase">
+                <Atom className="w-4 h-4" />
+                <span>Sector Identification Protocol</span>
+                <ChevronRight className="w-3 h-3 text-neutral-300" />
+                <span className="text-neutral-900 dark:text-white">Tier {currentQuestion.tier}</span>
+              </div>
+
+              <div className="relative">
+                <h3 className="text-3xl md:text-4xl font-black text-neutral-950 dark:text-white leading-[1.2] font-display tracking-tight">
+                  {currentQuestion.text}
+                </h3>
+                <div className="absolute -left-6 top-0 bottom-0 w-1 bg-primary-600 rounded-full opacity-40" />
+              </div>
+
+              {isMCQ ? (
+                <div className="grid gap-4">
+                  {currentQuestion.choices.map((choice: string, idx: number) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleAnswer(choice)}
+                      disabled={isAnswered}
+                      className={cn(
+                        "w-full text-start p-6 md:p-8 rounded-[1.8rem] border-2 transition-all duration-500 flex items-center justify-between group relative overflow-hidden",
+                        currentStatus.userResponse === choice 
+                          ? (currentStatus.isCorrect ? 'bg-emerald-500 border-emerald-500 text-white shadow-xl shadow-emerald-500/20' : 'bg-red-500 border-red-500 text-white') 
+                          : 'bg-white/40 dark:bg-neutral-900/40 border-neutral-100/50 dark:border-neutral-800/50 hover:border-primary-500 hover:bg-white dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200'
+                      )}
+                    >
+                      <span className="text-lg font-bold tracking-tight z-10">{choice}</span>
+                      <div className="flex items-center gap-4 z-10">
+                         {isAnswered && idx === currentQuestion.correct_answer_index && (
+                           <CheckCircle className={cn(
+                             "w-7 h-7 text-white animate-zoom-in",
+                             currentStatus.userResponse !== choice && "text-emerald-500"
+                           )} />
+                         )}
+                         {currentStatus.userResponse === choice && !currentStatus.isCorrect && (
+                           <XCircle className="w-7 h-7 text-white animate-zoom-in" />
+                         )}
+                         <div className="p-2 rounded-xl bg-neutral-100/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ChevronRight className="w-4 h-4" />
+                         </div>
                       </div>
-                    </div>
+                      
+                      {/* Interactive background effect for hovered button */}
+                      <div className="absolute bottom-0 left-0 w-full h-[2px] bg-primary-500/50 scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-700" />
+                    </button>
                   ))}
                 </div>
-              )}
-              {currentState.hintsShown < currentQuestion.hints.length && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  leftIcon={<Lightbulb className="w-4 h-4" />}
-                  onClick={showHint}
-                >
-                  {t('practice:showHint')} ({currentQuestion.hints.length - currentState.hintsShown} left)
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Solution steps */}
-          {currentState.answerState !== 'unanswered' && (
-            <div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                leftIcon={<BookOpen className="w-4 h-4" />}
-                onClick={toggleSolution}
-              >
-                {currentState.showSolution ? t('practice:hideSolution') : t('practice:showSolution')}
-              </Button>
-              
-              {currentState.showSolution && (
-                <div className="mt-3 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                  <h4 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3">{t('practice:solutionSteps')}</h4>
-                  <ol className="space-y-2">
-                    {currentQuestion.solutionSteps.map((step) => (
-                      <li key={step.order} className="flex gap-3 text-sm">
-                        <span className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300 flex items-center justify-center shrink-0 text-xs font-medium">
-                          {step.order}
-                        </span>
-                        <span className="text-neutral-700 dark:text-neutral-300">{step.content}</span>
-                      </li>
-                    ))}
-                  </ol>
-
-                  {/* UC-03 Alternate Flow 3a: Watch Explanation (placeholder — video URL from backend) */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    leftIcon={<PlayCircle className="w-4 h-4" />}
-                    className="mt-3 text-primary-600 dark:text-primary-400"
-                    onClick={() => { /* Will open explanation video when backend provides URL */ }}
-                  >
-                    {t('practice:watchExplanation')}
-                  </Button>
+              ) : (
+                <div className="space-y-8">
+                   <div className="p-6 bg-primary-500/5 border border-primary-500/20 rounded-2xl flex items-center gap-4 text-primary-700 dark:text-primary-300">
+                      <Mic2 className="w-6 h-6 text-primary-500" />
+                      <p className="text-xs font-black uppercase tracking-widest leading-relaxed">
+                         Conceptual Discovery: Formulate proof/expression in high-precision field.
+                      </p>
+                   </div>
+                   <div className="relative p-1 bg-linear-to-br from-primary-500/20 to-secondary-500/20 rounded-[2rem] shadow-inner">
+                      <MathInput 
+                        value={mathValue} 
+                        onChange={setMathValue} 
+                        placeholder="$\text{Formulate your hypothesis here...}$"
+                        className="min-h-[160px] bg-white dark:bg-neutral-950 rounded-[1.4rem] border-0"
+                        disabled={isAnswered}
+                      />
+                   </div>
+                   {!isAnswered && (
+                     <Button 
+                       className="w-full h-20 bg-neutral-950 dark:bg-white text-white dark:text-neutral-900 rounded-[2rem] font-black uppercase tracking-[0.3em] text-sm shadow-2xl"
+                       onClick={handleSubmitMathAnswer}
+                       disabled={!mathValue}
+                     >
+                        Commit Hypothesis
+                     </Button>
+                   )}
+                   {isAnswered && (
+                     <Card className="border-emerald-500/30 bg-emerald-500/5 rounded-[2rem] p-8 border animate-slide-in">
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-600 mb-4 flex items-center gap-2">
+                           <CheckCircle2 className="w-4 h-4" /> Hypothesized Outcome Recorded
+                        </p>
+                        <div className="text-xl font-mono text-neutral-800 dark:text-neutral-100 p-6 bg-white/40 dark:bg-neutral-900/40 rounded-2xl border border-white/20 shadow-inner">
+                           {mathValue}
+                        </div>
+                     </Card>
+                   )}
                 </div>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          leftIcon={<ChevronLeft className="w-4 h-4 rtl:rotate-180" />}
-          onClick={goToPrevious}
-          disabled={currentIndex === 0}
-        >
-          {t('practice:previousQuestion')}
-        </Button>
-        
-        <Button
-          variant="primary"
-          rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
-          onClick={goToNext}
-          disabled={currentState.answerState === 'unanswered'}
-        >
-          {currentIndex === sessionQuestions.length - 1 
-            ? t('practice:endSession')
-            : t('practice:nextQuestion')
-          }
-        </Button>
+          {/* FSRS Calibration Interface */}
+          {isAnswered && (
+            <Card className="glass border-0 rounded-[3rem] p-10 md:p-14 stagger-in animate-in fade-in slide-in-from-bottom duration-1000 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+              
+              <div className="flex flex-col md:flex-row md:items-center gap-8 mb-12 relative z-10">
+                <div className="w-20 h-20 rounded-3xl bg-primary-600 text-white flex items-center justify-center shadow-xl shrink-0">
+                  <Lightbulb className="w-10 h-10 opacity-80" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-2xl font-black text-neutral-950 dark:text-white uppercase tracking-tighter">Self-Stability Analysis</h4>
+                  <p className="text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed max-w-sm">
+                    Evaluate the neural overhead required for this retrieval session to optimize your FSRS model.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+                {[
+                  { grade: 1, label: 'Collapse', color: 'bg-red-500 shadow-xl shadow-red-500/20', sub: 'Critical Load' },
+                  { grade: 2, label: 'High Load', color: 'bg-orange-500', sub: 'Cognitive Strain' },
+                  { grade: 3, label: 'Steady', color: 'bg-primary-600 shadow-xl shadow-primary-500/20', sub: 'Fluid Recall' },
+                  { grade: 4, label: 'Instant', color: 'bg-emerald-600 shadow-xl shadow-emerald-500/20', sub: 'Zero Overhead' }
+                ].map((btn) => (
+                  <button
+                    key={btn.grade}
+                    onClick={() => handleGrade(btn.grade as FSRSGrade)}
+                    className="group"
+                  >
+                    <div className={cn(
+                       "flex flex-col items-center justify-center h-28 rounded-[1.8rem] transition-all duration-500 border-2 border-transparent text-white relative overflow-hidden",
+                       btn.color,
+                       "group-hover:-translate-y-2 group-hover:scale-105"
+                    )}>
+                       <div className="absolute inset-0 bg-scanline opacity-10" />
+                       <span className="text-[10px] font-black uppercase tracking-[0.2em] mb-1">{btn.label}</span>
+                       <span className="text-[9px] font-bold opacity-70 group-hover:opacity-100 transition-opacity uppercase">{btn.sub}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Global Telemetry Sidebar */}
+        <div className="lg:col-span-4 space-y-8 stagger-in">
+          <Card className="glass border-0 rounded-[2.5rem] p-10 bg-lab relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+               <Activity className="w-12 h-12" />
+            </div>
+            
+            <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em] mb-10 flex items-center gap-3">
+               <Zap className="w-4 h-4 text-primary-500" /> 
+               Lab Telemetry
+            </h4>
+
+            <div className="space-y-10">
+              <div className="space-y-2">
+                 <div className="flex justify-between items-end">
+                    <p className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Stability Gain</p>
+                    <p className="text-3xl font-black text-secondary-600 leading-none">+{earnedXp}</p>
+                 </div>
+                 <div className="h-1 w-full bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-secondary-500 w-2/3 shadow-[0_0_10px_secondary-500]" />
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8">
+                 <div className="space-y-1">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Active Clock</p>
+                    <div className="flex items-center gap-2 font-mono text-lg font-black text-neutral-800 dark:text-neutral-200">
+                       <Clock className="w-4 h-4 text-primary-500" />
+                       {Math.round((Date.now() - currentStatus.startTime)/1000)}s
+                    </div>
+                 </div>
+                 <div className="text-end space-y-1">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Target ID</p>
+                    <p className="text-lg font-mono font-black text-neutral-800 dark:text-neutral-200">#TK_{currentQuestion.id}</p>
+                 </div>
+              </div>
+
+              <div className="pt-8 border-t border-neutral-100 dark:border-neutral-800 space-y-4">
+                 <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest leading-relaxed">Optimization Status</p>
+                 <div className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981]" />
+                    <span className="text-[11px] font-black uppercase text-neutral-800 dark:text-neutral-200 tracking-wider">FSRS Core: Optimized</span>
+                 </div>
+                 <Badge className="w-full bg-neutral-50 dark:bg-neutral-800/80 rounded-xl h-9 flex items-center justify-center border-0 text-neutral-500 text-[10px] font-black uppercase tracking-widest shadow-inner">
+                    Adaptive Scaling Enabled
+                 </Badge>
+              </div>
+            </div>
+          </Card>
+
+          {currentQuestion.explanation_video_url && (
+            <Card className="glass border-0 rounded-[2.5rem] p-10 bg-primary-600 text-white shadow-2xl hover:scale-[1.03] transition-all relative overflow-hidden group">
+              <div className="absolute inset-0 bg-scanline opacity-10" />
+              <div className="relative z-10 space-y-6">
+                <PlayCircle className="w-12 h-12 opacity-80 mb-4 group-hover:scale-110 transition-transform duration-500" />
+                <h4 className="text-2xl font-black font-display tracking-tight leading-none uppercase">Visual <br/>Decryption</h4>
+                <p className="text-primary-100 text-xs font-medium leading-relaxed opacity-80">
+                  Access the neural mapping video to decrypt the conceptual structure of this sector.
+                </p>
+                <Button 
+                  className="w-full h-14 bg-white text-primary-700 hover:bg-neutral-100 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-xl border-0"
+                  onClick={() => window.open(currentQuestion.explanation_video_url, '_blank')}
+                >
+                  Analyze Stream
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          <div className="p-10 rounded-[3rem] border-2 border-dashed border-neutral-200 dark:border-neutral-800/50 flex flex-col items-center opacity-60">
+             <Target className="w-10 h-10 text-neutral-300 dark:text-neutral-700 mb-4 animate-spin-slow" />
+             <p className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.5em] text-center">
+               Laboratory <br/>Focus Mode
+             </p>
+          </div>
+        </div>
       </div>
     </div>
   )

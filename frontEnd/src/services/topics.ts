@@ -7,9 +7,16 @@ export const topicsService = {
     return await response.json();
   },
 
-  getTopic: async (id: number) => {
+  getTopicMastery: async (filters: any = {}) => {
+    const query = new URLSearchParams(filters).toString();
+    const response = await api.get(`/topic-mastery/?${query}`);
+    if (!response.ok) throw new Error('Failed to fetch topic mastery');
+    return await response.json();
+  },
+
+  getTopicDetails: async (id: number) => {
     const response = await api.get(`/topics/${id}/`);
-    if (!response.ok) throw new Error('Failed to fetch topic');
+    if (!response.ok) throw new Error('Failed to fetch topic details');
     return await response.json();
   },
 

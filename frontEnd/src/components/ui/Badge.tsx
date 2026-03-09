@@ -8,7 +8,7 @@ import { cn } from '@/utils/cn'
  * Great for achievements, levels, and topic tags.
  */
 
-export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error'
+export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'outline'
 export type BadgeSize = 'sm' | 'md' | 'lg'
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
@@ -26,6 +26,7 @@ const variantStyles: Record<BadgeVariant, string> = {
   success: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300',
   warning: 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300',
   error: 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300',
+  outline: 'bg-transparent border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400',
 }
 
 const sizeStyles: Record<BadgeSize, string> = {

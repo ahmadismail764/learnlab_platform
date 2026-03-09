@@ -89,15 +89,34 @@ export function Sidebar({
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
-      {/* Logo */}
+      {/* Logo & Toggle Section */}
       <div className={cn(
-        'flex items-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-800',
-        isCollapsed ? 'justify-center' : 'gap-3'
+        'flex items-center justify-between h-16 px-4 border-b border-neutral-200 dark:border-neutral-800',
+        isCollapsed ? 'flex-col py-2 h-auto gap-4' : 'gap-3'
       )}>
-        {isCollapsed ? (
-          <LogoMark size={32} />
-        ) : (
-          <LogoFull iconSize={32} />
+        <div className="flex items-center gap-3">
+          {isCollapsed ? (
+            <LogoMark size={32} />
+          ) : (
+            <LogoFull iconSize={32} />
+          )}
+        </div>
+
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              'p-1.5 rounded-lg text-neutral-500 dark:text-neutral-400',
+              'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
+              'transition-colors duration-150 cursor-pointer'
+            )}
+            title={isCollapsed ? t('nav:expand', 'Expand sidebar') : t('nav:collapse', 'Collapse sidebar')}
+          >
+            <ChevronLeft className={cn(
+              'w-5 h-5 transition-transform duration-300',
+              isCollapsed && 'ltr:rotate-180 rtl:-rotate-180'
+            )} />
+          </button>
         )}
       </div>
 
@@ -132,25 +151,6 @@ export function Sidebar({
         </ul>
       </nav>
 
-      {/* Collapse Toggle */}
-      {onToggleCollapse && (
-        <button
-          onClick={onToggleCollapse}
-          className={cn(
-            'mx-2 mb-2 p-2 rounded-lg text-neutral-500 dark:text-neutral-400',
-            'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
-            'transition-colors duration-150',
-            isCollapsed && 'mx-auto'
-          )}
-          title={isCollapsed ? t('nav:expand', 'Expand sidebar') : t('nav:collapse', 'Collapse sidebar')}
-        >
-          <ChevronLeft className={cn(
-            'w-5 h-5 transition-transform duration-300',
-            // In RTL, chevron should point opposite direction
-            isCollapsed && 'ltr:rotate-180 rtl:-rotate-180'
-          )} />
-        </button>
-      )}
 
       {/* User section */}
       <div className={cn(

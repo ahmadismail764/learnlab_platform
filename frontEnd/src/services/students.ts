@@ -1,18 +1,6 @@
 import { api } from './api';
 
 export const studentsService = {
-  getProfile: async () => {
-    const response = await api.get('/students/me/');
-    if (!response.ok) throw new Error('Failed to fetch profile');
-    return await response.json();
-  },
-
-  updateProfile: async (data: any) => {
-    const response = await api.patch('/students/me/', data);
-    if (!response.ok) throw new Error('Failed to update profile');
-    return await response.json();
-  },
-
   getLeaderboard: async () => {
     const response = await api.get('/leaderboard/');
     if (!response.ok) throw new Error('Failed to fetch leaderboard');

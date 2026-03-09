@@ -13,10 +13,8 @@ import { createAppRouter } from '@/routes'
 
 function AppRouter() {
   const { user } = useAuth()
-  
-  const router = useMemo(() => createAppRouter(user), [user])
-  
-  return <RouterProvider router={router} />
+  const routerInstance = useMemo(() => createAppRouter(user), [user])
+  return <RouterProvider router={routerInstance} />
 }
 
 export default function App() {

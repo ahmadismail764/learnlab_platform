@@ -55,7 +55,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return;
       }
 
+      // Check if we already have a user (to avoid redundant 'me' call on fast clicks/remounts)
+      if (state.user && state.isAuthenticated) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
       try {
+        // Optimization: Use a local variable to prevent race conditions
         const userDate = await authService.getCurrentUser();
         // Map backend user to frontend user
         const user: User = {

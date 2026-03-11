@@ -57,7 +57,7 @@ function createDashboardElement(user: User | null, onLogout?: () => void) {
 }
 
 // Factory function to create router with current user
-export function createAppRouter(user: User | null) {
+export function createAppRouter(user: User | null, onLogout?: () => void) {
   return createBrowserRouter([
     // Public routes - Auth
     {
@@ -74,7 +74,7 @@ export function createAppRouter(user: User | null) {
     // Student routes
     {
       path: '/student',
-      element: createDashboardElement(user),
+      element: createDashboardElement(user, onLogout),
       children: [
         { index: true, element: <StudentDashboard /> },
         { path: 'topics', element: <TopicsPage /> },
@@ -89,7 +89,7 @@ export function createAppRouter(user: User | null) {
     // Admin (Content Manager) routes
     {
       path: '/admin',
-      element: createDashboardElement(user),
+      element: createDashboardElement(user, onLogout),
       children: [
         { index: true, element: <AdminDashboard /> },
         { path: 'topics', element: <TopicsManagementPage /> },

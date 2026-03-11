@@ -12,9 +12,9 @@ import { createAppRouter } from '@/routes'
  */
 
 function AppRouter() {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   
-  const router = useMemo(() => createAppRouter(user), [user])
+  const router = useMemo(() => createAppRouter(user, logout), [user, logout])
   
   return <RouterProvider router={router} />
 }

@@ -8,14 +8,15 @@ import {
   type ReactNode 
 } from 'react'
 import type { User } from '@/types'
-import { authService } from '@/services/auth'
 
 /**
  * AuthContext
  * 
  * Manages authentication state across the application.
- * Single Responsibility: Only handles auth state, not API calls directly (delegates to service).
+ * Currently uses mock/local data — no backend integration yet.
  */
+
+const STORAGE_KEY = 'learnlab_user'
 
 interface AuthState {
   user: User | null
@@ -24,8 +25,8 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (credentials: any) => Promise<void>
-  register: (userData: any) => Promise<void>
+  login: (user: User) => void
+  register: (userData: any) => void
   logout: () => void
   updateUser: (updates: Partial<User>) => void
 }
@@ -36,104 +37,63 @@ const AuthContext = createContext<AuthContextValue | null>(null)
 const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
-  isLoading: true, // Start loading to check auth
+  isLoading: true, // Start loading to check stored user
 }
 
 interface AuthProviderProps {
   children: ReactNode
+  initialUser?: User | null
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [state, setState] = useState<AuthState>(initialState)
+export function AuthProvider({ children, initialUser }: AuthProviderProps) {
+  const [state, setState] = useState<AuthState>(
+    initialUser
+      ? { user: initialUser, isAuthenticated: true, isLoading: false }
+      : initialState
+  )
 
-  // Hydrate user on mount
+  // Hydrate user from localStorage on mount (no backend call)
   useEffect(() => {
-    const hydrate = async () => {
-      const token = localStorage.getItem('learnlab_auth_token');
-      if (!token) {
-        setState(prev => ({ ...prev, isLoading: false }));
-        return;
-      }
-
-      try {
-        const userDate = await authService.getCurrentUser();
-        // Map backend user to frontend user
-        const user: User = {
-          id: userDate.id,
-          email: userDate.email,
-          firstName: userDate.first_name,
-          lastName: userDate.last_name,
-          role: userDate.is_staff ? 'admin' : 'student',
-          createdAt: userDate.date_joined,
-          updatedAt: userDate.date_joined, // backend doesn't send updated_at yet
-        };
-
-        setState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } catch (error) {
-        console.error("Failed to hydrate user", error);
-        // Clear tokens if invalid
-        authService.logout();
-        setState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      }
-    };
-
-    hydrate();
-  }, []);
-
-  const login = useCallback(async (credentials: any) => {
-    setState(prev => ({ ...prev, isLoading: true }));
+    if (initialUser !== undefined) return // skip hydration when pre-seeded (tests)
     try {
-      await authService.login(credentials);
-      const userDate = await authService.getCurrentUser();
-
-      const user: User = {
-        id: userDate.id,
-        email: userDate.email,
-        firstName: userDate.first_name,
-        lastName: userDate.last_name,
-        role: userDate.is_staff ? 'admin' : 'student',
-        createdAt: userDate.date_joined,
-        updatedAt: userDate.date_joined,
-      };
-
-      setState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (error) {
-      setState(prev => ({ ...prev, isLoading: false }));
-      throw error;
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const user: User = JSON.parse(stored)
+        setState({ user, isAuthenticated: true, isLoading: false })
+      } else {
+        setState(prev => ({ ...prev, isLoading: false }))
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY)
+      setState({ user: null, isAuthenticated: false, isLoading: false })
     }
+  }, [initialUser])
+
+  const login = useCallback((user: User) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
+    setState({ user, isAuthenticated: true, isLoading: false })
   }, [])
 
-  const register = useCallback(async (userData: any) => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    try {
-      await authService.register(userData);
-      // Auto login
-      await login({ email: userData.email, password: userData.password });
-    } catch (error) {
-      setState(prev => ({ ...prev, isLoading: false }));
-      throw error;
+  const register = useCallback((userData: any) => {
+    const user: User = {
+      id: userData.id ?? crypto.randomUUID(),
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      role: userData.role ?? 'student',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }
+    login(user)
   }, [login])
 
   const logout = useCallback(() => {
-    authService.logout();
+    localStorage.removeItem(STORAGE_KEY)
     setState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
-    });
+    })
     // Navigation is handled by AppRouter observing user state change
   }, [])
 

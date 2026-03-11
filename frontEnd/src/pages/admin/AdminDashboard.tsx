@@ -135,8 +135,8 @@ export function AdminDashboard() {
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:students')}</p>
                 </div>
                 <div className="text-center p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl">
-                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.students}</p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:students')}</p>
+                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.totalUsers}</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:totalUsers')}</p>
                 </div>
                 <div className="text-center p-4 bg-accent-50 dark:bg-accent-900/20 rounded-xl">
                   <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.admins}</p>

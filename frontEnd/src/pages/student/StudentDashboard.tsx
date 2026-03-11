@@ -88,7 +88,7 @@ export function StudentDashboard() {
             <Link to="/student/practice">
               <Button 
                 variant="outline" 
-                className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm"
+                className="border-white/50 dark:border-white/50 text-white hover:bg-white/20 hover:border-white/70 dark:hover:bg-white/20 dark:hover:border-white/70 backdrop-blur-sm"
                 rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
               >
                 {t('student:startSession')}

@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor User as User (Student/Admin)
+    participant AuthUI as Auth UI
+    participant System
+    participant Database
+
+    Note over User,AuthUI: UC-02: Login
+
+    User->>AuthUI: Enters email & password
+    AuthUI->>System: login(email, password)
+    System->>Database: checkLockStatus(email)
+    Database-->>System: lock status
+
+    alt Account is Locked
+        System-->>AuthUI: Error: "Account Locked (Too many attempts)"
+        AuthUI-->>User: Notify: Account locked
+    else Account Active
+        System->>Database: validateCredentials(email, hash(password))
+        Database-->>System: credentials valid?
+
+        alt Invalid Credentials
+            System-->>AuthUI: Error: "Invalid email or password"
+            AuthUI-->>User: Prompt to retry login
+        else Credentials Valid
+            System->>System: Create authenticated session
+            System->>Database: getUserRole(email)
+            Database-->>System: role
+
+            alt Role: Student
+                System-->>AuthUI: Login Success (Student)
+                AuthUI-->>User: Redirect to Student Dashboard
+            else Role: Admin
+                System-->>AuthUI: Login Success (Admin)
+                AuthUI-->>User: Redirect to Admin Dashboard
+            end
+        end
+    end

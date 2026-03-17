@@ -8,7 +8,6 @@ import {
   type ReactNode 
 } from 'react'
 import type { User } from '@/types'
-import { authService } from '@/services/auth'
 
 /**
  * AuthContext
@@ -24,7 +23,7 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (credentials: any) => Promise<void>
+  login: (user: User) => void
   register: (userData: any) => Promise<void>
   logout: () => void
   updateUser: (updates: Partial<User>) => void
@@ -46,95 +45,45 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>(initialState)
 
-  // Hydrate user on mount
+  // Hydrate user on mount (check localStorage for persisted session)
   useEffect(() => {
-    const hydrate = async () => {
-      const token = localStorage.getItem('learnlab_auth_token');
-      if (!token) {
-        setState(prev => ({ ...prev, isLoading: false }));
-        return;
-      }
-
+    const stored = localStorage.getItem('learnlab_user')
+    if (stored) {
       try {
-        const userDate = await authService.getCurrentUser();
-        // Map backend user to frontend user
-        const user: User = {
-          id: userDate.id,
-          email: userDate.email,
-          firstName: userDate.first_name,
-          lastName: userDate.last_name,
-          role: userDate.is_staff ? 'admin' : 'student',
-          createdAt: userDate.date_joined,
-          updatedAt: userDate.date_joined, // backend doesn't send updated_at yet
-        };
-
-        setState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } catch (error) {
-        console.error("Failed to hydrate user", error);
-        // Clear tokens if invalid
-        authService.logout();
-        setState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
+        const user = JSON.parse(stored) as User
+        setState({ user, isAuthenticated: true, isLoading: false })
+      } catch {
+        localStorage.removeItem('learnlab_user')
+        setState(prev => ({ ...prev, isLoading: false }))
       }
-    };
-
-    hydrate();
-  }, []);
-
-  const login = useCallback(async (credentials: any) => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    try {
-      await authService.login(credentials);
-      const userDate = await authService.getCurrentUser();
-
-      const user: User = {
-        id: userDate.id,
-        email: userDate.email,
-        firstName: userDate.first_name,
-        lastName: userDate.last_name,
-        role: userDate.is_staff ? 'admin' : 'student',
-        createdAt: userDate.date_joined,
-        updatedAt: userDate.date_joined,
-      };
-
-      setState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (error) {
-      setState(prev => ({ ...prev, isLoading: false }));
-      throw error;
+    } else {
+      setState(prev => ({ ...prev, isLoading: false }))
     }
   }, [])
 
-  const register = useCallback(async (userData: any) => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    try {
-      await authService.register(userData);
-      // Auto login
-      await login({ email: userData.email, password: userData.password });
-    } catch (error) {
-      setState(prev => ({ ...prev, isLoading: false }));
-      throw error;
-    }
-  }, [login])
+  const login = useCallback((user: User) => {
+    localStorage.setItem('learnlab_user', JSON.stringify(user))
+    setState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+    })
+  }, [])
+
+  const register = useCallback(async (_userData: any) => {
+    // In production, this will call the backend API
+    // For now, no-op — registration is not wired yet
+  }, [])
 
   const logout = useCallback(() => {
-    authService.logout();
+    localStorage.removeItem('learnlab_user')
+    localStorage.removeItem('learnlab_auth_token')
+    localStorage.removeItem('learnlab_refresh_token')
     setState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
-    });
-    // Navigation is handled by AppRouter observing user state change
+    })
   }, [])
 
   const updateUser = useCallback((updates: Partial<User>) => {

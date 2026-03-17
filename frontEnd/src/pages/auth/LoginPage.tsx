@@ -146,7 +146,7 @@ export function LoginPage() {
         )
       }
     }
-    
+
     setIsLoading(false)
   }
 
@@ -256,3 +256,4 @@ export function LoginPage() {
     </div>
   )
 }
+

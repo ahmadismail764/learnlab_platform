@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { LogoMark, LogoFull } from '@/components/brand'
+import { IntegrationStatusBadge } from '@/components/common'
 
 /**
  * AuthLayout Component
@@ -67,6 +68,10 @@ export function AuthLayout() {
       {/* Right side - Form */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
+          <div className="mb-4 flex justify-end">
+            <IntegrationStatusBadge compact />
+          </div>
+
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">
             <LogoFull iconSize={40} />

@@ -11,3 +11,5 @@
 // Export common components here as they are created
 // export { SearchBar } from './SearchBar'
 // export { UserMenu } from './UserMenu'
+
+export { IntegrationStatusBadge } from './IntegrationStatusBadge'

@@ -85,24 +85,64 @@ export function Sidebar({
     <aside
       className={cn(
         'flex flex-col h-screen bg-white dark:bg-neutral-900 border-e border-neutral-200 dark:border-neutral-800',
-        'transition-all duration-300 ease-in-out',
+        'overflow-hidden transition-[width] duration-300 ease-out',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
-      {/* Logo */}
-      <div className={cn(
-        'flex items-center h-16 px-4 border-b border-neutral-200 dark:border-neutral-800',
-        isCollapsed ? 'justify-center' : 'gap-3'
-      )}>
-        {isCollapsed ? (
-          <LogoMark size={32} />
-        ) : (
-          <LogoFull iconSize={32} />
-        )}
+      {/* Logo + Collapse Toggle */}
+      <div className="border-b border-neutral-200 dark:border-neutral-800">
+        <div
+          className={cn(
+            'relative flex items-center h-16 px-4',
+            isCollapsed ? 'justify-center' : 'gap-3'
+          )}
+        >
+          {isCollapsed ? (
+            <LogoMark size={32} />
+          ) : (
+            <LogoFull iconSize={32} />
+          )}
+
+          {onToggleCollapse && !isCollapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className={cn(
+                'absolute top-1/2 -translate-y-1/2 p-2 rounded-lg text-neutral-500 dark:text-neutral-400',
+                'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
+                'transition-colors duration-150',
+                'ltr:right-2 rtl:left-2'
+              )}
+              title={t('nav:collapse', 'Collapse sidebar')}
+            >
+              <ChevronLeft className="w-5 h-5 transition-transform duration-300" />
+            </button>
+          )}
+        </div>
+
+        <div className="h-12 flex items-center justify-center">
+          {onToggleCollapse && isCollapsed && (
+            <button
+              onClick={onToggleCollapse}
+              className={cn(
+                'p-2 rounded-lg text-neutral-500 dark:text-neutral-400',
+                'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
+                'transition-colors duration-150'
+              )}
+              title={t('nav:expand', 'Expand sidebar')}
+            >
+              <ChevronLeft
+                className={cn(
+                  'w-5 h-5 transition-transform duration-300',
+                  'ltr:rotate-180 rtl:-rotate-180'
+                )}
+              />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto">
+      <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
         <ul className="space-y-1 px-2">
           {visibleItems.map((item) => {
             const isActive = location.pathname === item.href
@@ -131,26 +171,6 @@ export function Sidebar({
           })}
         </ul>
       </nav>
-
-      {/* Collapse Toggle */}
-      {onToggleCollapse && (
-        <button
-          onClick={onToggleCollapse}
-          className={cn(
-            'mx-2 mb-2 p-2 rounded-lg text-neutral-500 dark:text-neutral-400',
-            'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
-            'transition-colors duration-150',
-            isCollapsed && 'mx-auto'
-          )}
-          title={isCollapsed ? t('nav:expand', 'Expand sidebar') : t('nav:collapse', 'Collapse sidebar')}
-        >
-          <ChevronLeft className={cn(
-            'w-5 h-5 transition-transform duration-300',
-            // In RTL, chevron should point opposite direction
-            isCollapsed && 'ltr:rotate-180 rtl:-rotate-180'
-          )} />
-        </button>
-      )}
 
       {/* User section */}
       <div className={cn(

@@ -4,6 +4,7 @@ import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock, User as UserIcon, LogOut, 
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { IntegrationStatusBadge } from '@/components/common'
 import { useAuth } from '@/contexts'
 import type { User } from '@/types'
 
@@ -135,6 +136,9 @@ export function Header({
             {title}
           </h1>
         )}
+        <div className="hidden md:block">
+          <IntegrationStatusBadge compact />
+        </div>
       </div>
 
       {/* Center spacer */}
@@ -181,6 +185,8 @@ export function Header({
                     )}
                     <button 
                       onClick={() => setShowNotifications(false)}
+                      aria-label="Close notifications"
+                      title="Close notifications"
                       className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
                     >
                       <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />

@@ -26,7 +26,7 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
+    <div className="h-screen bg-neutral-50 dark:bg-neutral-950 flex overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block sticky top-0 h-screen">
         <Sidebar

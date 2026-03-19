@@ -6,7 +6,7 @@ import { Button, Input } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth } from '@/contexts'
-import type { UserRole } from '@/types'
+import { addAdminOverrideEmail, removeAdminOverrideEmail } from '@/utils/adminOverride'
 
 /**
  * RegisterPage — UC-01
@@ -21,9 +21,6 @@ import type { UserRole } from '@/types'
  * 4a. Invalid input → field-level errors (weak password, required fields)
  * 4b. Email exists → "Email already registered. Log in" message
  */
-
-// Mock "existing" emails for demo
-const existingEmails = ['student@learnlab.com', 'admin@learnlab.com']
 
 type PasswordStrength = 'weak' | 'medium' | 'strong'
 
@@ -50,7 +47,7 @@ interface FieldErrors {
 export function RegisterPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { register } = useAuth()
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -64,6 +61,8 @@ export function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [generalError, setGeneralError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [backendStatus, setBackendStatus] = useState<'idle' | 'requesting' | 'ok' | 'error'>('idle')
+  const [grantAdminTestingAccess, setGrantAdminTestingAccess] = useState(false)
 
   // Live password strength
   const passwordStrength = useMemo<PasswordStrength | null>(
@@ -113,9 +112,6 @@ export function RegisterPage() {
       errors.email = t('auth:fieldRequired')
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = t('auth:invalidEmail')
-    } else if (existingEmails.includes(formData.email.toLowerCase())) {
-      // UC-01 alternate 4b: Email already registered
-      errors.email = t('auth:emailAlreadyRegistered')
     }
 
     if (!formData.password) {
@@ -138,32 +134,41 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setGeneralError('')
+    setBackendStatus('requesting')
 
     if (!validate()) return
 
     setIsLoading(true)
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    try {
+      if (grantAdminTestingAccess) {
+        addAdminOverrideEmail(formData.email)
+      } else {
+        removeAdminOverrideEmail(formData.email)
+      }
 
-    // UC-01 step 5-6: Create account, authenticate, redirect to student dashboard
-    setSuccess(true)
-
-    // Brief success message, then auto-login and redirect
-    setTimeout(() => {
-      login({
-        id: crypto.randomUUID(),
+      const user = await register({
         email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        role: 'student' as UserRole,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        username: formData.email.split('@')[0],
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
       })
-      navigate('/student')
-    }, 1200)
-
-    setIsLoading(false)
+      setBackendStatus('ok')
+      setSuccess(true)
+      const nextRoute = user.role === 'admin' ? '/admin' : '/student'
+      setTimeout(() => navigate(nextRoute, { replace: true }), 700)
+    } catch (err: unknown) {
+      setBackendStatus('error')
+      const message = err instanceof Error ? err.message : t('auth:registrationFailed')
+      if (message.toLowerCase().includes('email')) {
+        setFieldErrors(prev => ({ ...prev, email: message }))
+      } else {
+        setGeneralError(message)
+      }
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Show success state briefly before redirect
@@ -194,6 +199,14 @@ export function RegisterPage() {
       <p className="text-neutral-600 dark:text-neutral-400 mb-8">
         {t('auth:startLearning')}
       </p>
+
+      <div className="mb-4 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 text-xs text-neutral-600 dark:text-neutral-300">
+        <p className="font-medium">Backend Auth Status</p>
+        {backendStatus === 'idle' && <p>Ready to send registration request.</p>}
+        {backendStatus === 'requesting' && <p>Sending registration request to backend...</p>}
+        {backendStatus === 'ok' && <p>Registration successful. Auto-login and redirect in progress...</p>}
+        {backendStatus === 'error' && <p>Backend returned an error. See details below.</p>}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-4">
@@ -301,6 +314,18 @@ export function RegisterPage() {
             <a href="#" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth:termsOfService')}</a>
             {' '}{t('auth:and')}{' '}
             <a href="#" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth:privacyPolicy')}</a>
+          </span>
+        </label>
+
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={grantAdminTestingAccess}
+            onChange={(e) => setGrantAdminTestingAccess(e.target.checked)}
+            className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 mt-0.5"
+          />
+          <span className="text-amber-700 dark:text-amber-300">
+            Grant temporary admin access for this account (frontend testing mode)
           </span>
         </label>
 

@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import { LogoMark, LogoFull } from '@/components/brand'
-import { IntegrationStatusBadge } from '@/components/common'
+import { DataSourceBreakdown, IntegrationStatusBadge } from '@/components/common'
 
 /**
  * AuthLayout Component
@@ -70,6 +70,10 @@ export function AuthLayout() {
         <div className="w-full max-w-md">
           <div className="mb-4 flex justify-end">
             <IntegrationStatusBadge compact />
+          </div>
+
+          <div className="mb-4">
+            <DataSourceBreakdown compact />
           </div>
 
           {/* Mobile logo */}

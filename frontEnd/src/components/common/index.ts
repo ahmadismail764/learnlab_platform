@@ -13,3 +13,4 @@
 // export { UserMenu } from './UserMenu'
 
 export { IntegrationStatusBadge } from './IntegrationStatusBadge'
+export { DataSourceBreakdown } from './DataSourceBreakdown'

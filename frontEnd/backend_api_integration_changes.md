@@ -127,6 +127,33 @@ Frontend changes:
 Important:
 - This is intentionally temporary and should be removed once backend-managed admin provisioning is finalized.
 
+## Step 7: Full UI Data Source Clarification (Per Aspect)
+Status: Integrated in this pass
+
+Goal:
+- Clearly flag all major aspects shown in the UI (topics, question bank, leaderboard, achievements, etc.) as `Backend`, `Partial`, or `Static` without removing existing static/mock data.
+
+Frontend changes:
+- Added `src/constants/dataSourceBreakdown.ts`
+  - Route-aware mapping of page aspects and source type.
+  - Includes explicit entries for:
+    - Topics
+    - Question bank
+    - Leaderboard
+    - Achievements
+    - Practice sessions
+    - Dashboard/profile metrics
+    - Auth endpoints and forgot-password placeholder
+- Added `src/components/common/DataSourceBreakdown.tsx`
+  - Reusable panel that lists current-route aspects and their source status.
+  - Includes per-item notes and collapsible visibility.
+- Updated `src/components/common/index.ts`
+  - Exported `DataSourceBreakdown`.
+- Updated `src/components/layout/DashboardLayout.tsx`
+  - Displays breakdown panel above page content for all authenticated routes.
+- Updated `src/components/layout/AuthLayout.tsx`
+  - Displays breakdown panel on login/register area.
+
 ## Validation Notes
 - All changed service/auth files compile without TypeScript/ESLint errors via workspace diagnostics.
 - Endpoint paths include trailing slashes to match Django router behavior.

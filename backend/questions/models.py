@@ -53,16 +53,19 @@ class SingleQuestionInteraction(models.Model):
 
 class TopicMastery(models.Model):
     """
-    For the Spaced Repetition Algorithm (SRS)
+    Represents an FSRS 'Card' for spaced repetition per student/topic.
     """
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='masteries')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
-    
-    # SRS Parameters
-    difficulty = models.FloatField(default=5.0) # From FSRS sequence diagram starting at 5.0
+
+    # FSRS Card Fields
+    state = models.IntegerField(default=0)          # 0=New, 1=Learning, 2=Review, 3=Relearning
+    difficulty = models.FloatField(default=0.0)
     stability = models.FloatField(default=0.0)
-    last_review_date = models.DateTimeField(auto_now=True)
+    reps = models.IntegerField(default=0)
+    lapses = models.IntegerField(default=0)
+    last_review_date = models.DateTimeField(null=True, blank=True)
     next_review_date = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
-        unique_together = ('student', 'topic') # A student has one mastery record per topic
+        unique_together = ('student', 'topic')  # One mastery record per student/topic

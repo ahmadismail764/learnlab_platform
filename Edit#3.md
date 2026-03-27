@@ -78,13 +78,13 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
                 selected_index = int(interaction.user_response)
             except (ValueError, TypeError):
                 selected_index = -1
-            
+
             interaction.is_correct = (selected_index == question.correct_answer_index)
             interaction.save()
 
             if not interaction.is_correct:
                 rating = 1 # Again
-                student.streak_count = 0 
+                student.streak_count = 0
             else:
                 if interaction.confidence_rating >= 4:
                     rating = 4 # Easy
@@ -113,14 +113,14 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
             mastery.stability = new_stability
             mastery.difficulty = new_difficulty
-            
+
             next_interval = calculate_next_review(new_stability)
             mastery.next_review_date = timezone.now() + next_interval
-            mastery.save() 
+            mastery.save()
 
         session.total_xp_earned = total_xp_gained
         session.save()
-        
+
         student.total_xp += total_xp_gained
         student.last_practice_date = timezone.now().date()
         student.save()
@@ -143,7 +143,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
         # 3. Fetch questions for this topic and tier
         questions = Question.objects.filter(topic=mastery.topic, tier=tier)
-        
+
         if not questions.exists():
             # Fallback to any question for this topic
             questions = Question.objects.filter(topic=mastery.topic)
@@ -151,7 +151,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         # 4. Return serialized questions (limit to e.g. 5 for a quick adaptive set)
         limit = min(questions.count(), 5)
         selected_questions = random.sample(list(questions), limit)
-        
+
         from .serializers import QuestionSerializer
         serializer = QuestionSerializer(selected_questions, many=True)
         return Response({
@@ -315,7 +315,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
         # 3. Fetch questions for this topic and tier
         questions = Question.objects.filter(topic=mastery.topic, tier=tier)
-        
+
         if not questions.exists():
             # Fallback to any question for this topic
             questions = Question.objects.filter(topic=mastery.topic)
@@ -323,7 +323,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         # 4. Return serialized questions (limit to e.g. 5 for a quick adaptive set)
         limit = min(questions.count(), 5)
         selected_questions = random.sample(list(questions), limit)
-        
+
         from .serializers import QuestionSerializer
         serializer = QuestionSerializer(selected_questions, many=True)
         return Response({
@@ -347,10 +347,10 @@ class TopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
 
 ## Key Changes
 
-| Area | Before | After |
-|---|---|---|
-| Import | `update_stability, calculate_next_review` | [process_topic_review](file:///g:/Uni/GradProj/learnlab_platform/backend/questions/fsrs_engine.py#21-68) |
-| FSRS update | Called once **per interaction** | Called once **per topic** (averaged rating) |
-| Rating aggregation | None | `topic_ratings` dict collects all ratings per `topic.id`, then averages + clamps to 1–4 |
-| [select_question_tier](file:///g:/Uni/GradProj/learnlab_platform/backend/questions/views.py#126-130) | Imported from removed helper | Inline closure inside [generate_adaptive](file:///g:/Uni/GradProj/learnlab_platform/backend/questions/views.py#122-161) |
-| DB queries | `interactions.all()` | `interactions.select_related('question__topic').all()` (avoids N+1) |
+| Area                                                                                                 | Before                                    | After                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Import                                                                                               | `update_stability, calculate_next_review` | [process_topic_review](file:///g:/Uni/GradProj/learnlab_platform/backend/questions/fsrs_engine.py#21-68)                |
+| FSRS update                                                                                          | Called once **per interaction**           | Called once **per topic** (averaged rating)                                                                             |
+| Rating aggregation                                                                                   | None                                      | `topic_ratings` dict collects all ratings per `topic.id`, then averages + clamps to 1–4                                 |
+| [select_question_tier](file:///g:/Uni/GradProj/learnlab_platform/backend/questions/views.py#126-130) | Imported from removed helper              | Inline closure inside [generate_adaptive](file:///g:/Uni/GradProj/learnlab_platform/backend/questions/views.py#122-161) |
+| DB queries                                                                                           | `interactions.all()`                      | `interactions.select_related('question__topic').all()` (avoids N+1)                                                     |

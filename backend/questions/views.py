@@ -8,7 +8,7 @@ from .serializers import (
     TopicMasterySerializer
 )
 from django_filters.rest_framework import DjangoFilterBackend
-from .fsrs_engine import update_stability, calculate_next_review
+from .fsrs_engine import process_topic_review
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
@@ -62,12 +62,15 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def perform_create(self, serializer):
-        # This standard perform_create handles saving the session results (end_time, XP, etc.)
         session = serializer.save(student=self.request.user.student_profile, end_time=timezone.now())
         student = session.student
         total_xp_gained = 0
 
-        for interaction in session.interactions.all():
+        # --- Pass 1: grade every interaction, accumulate per-topic ratings ---
+        # topic_id -> list of integer ratings (1-4)
+        topic_ratings: dict[int, list[int]] = {}
+
+        for interaction in session.interactions.select_related('question__topic').all():
             question = interaction.question
             topic = question.topic
 
@@ -75,86 +78,94 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
                 selected_index = int(interaction.user_response)
             except (ValueError, TypeError):
                 selected_index = -1
-            
+
             interaction.is_correct = (selected_index == question.correct_answer_index)
             interaction.save()
 
             if not interaction.is_correct:
-                rating = 1 # Again
-                student.streak_count = 0 
+                rating = 1  # Again
+                student.streak_count = 0
             else:
                 if interaction.confidence_rating >= 4:
-                    rating = 4 # Easy
+                    rating = 4  # Easy
                 elif interaction.confidence_rating >= 3:
-                    rating = 3 # Good
+                    rating = 3  # Good
                 else:
-                    rating = 2 # Hard
+                    rating = 2  # Hard
 
                 base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
                 multiplier = min(2.0, 1.0 + (student.streak_count * 0.1))
-                xp = int(base_xp * multiplier)
-                total_xp_gained += xp
+                total_xp_gained += int(base_xp * multiplier)
                 student.streak_count += 1
 
-            mastery, created = TopicMastery.objects.get_or_create(
-                student=student,
-                topic=topic
-            )
+            topic_ratings.setdefault(topic.id, []).append(rating)
 
-            new_stability, new_difficulty = update_stability(
-                current_stability=mastery.stability,
-                current_difficulty=mastery.difficulty,
-                last_review=mastery.last_review_date,
-                rating_val=rating
-            )
+        # --- Pass 2: run FSRS once per topic using the averaged rating ---
+        from .models import Topic as TopicModel
+        for topic_id, ratings in topic_ratings.items():
+            topic = TopicModel.objects.get(pk=topic_id)
+            mastery, _ = TopicMastery.objects.get_or_create(student=student, topic=topic)
 
-            mastery.stability = new_stability
-            mastery.difficulty = new_difficulty
-            
-            next_interval = calculate_next_review(new_stability)
-            mastery.next_review_date = timezone.now() + next_interval
-            mastery.save() 
+            # Round to nearest valid rating (1-4)
+            avg_rating = round(sum(ratings) / len(ratings))
+            avg_rating = max(1, min(4, avg_rating))
+
+            process_topic_review(mastery, avg_rating)
 
         session.total_xp_earned = total_xp_gained
         session.save()
-        
+
         student.total_xp += total_xp_gained
         student.last_practice_date = timezone.now().date()
         student.save()
 
     @action(detail=False, methods=['get'], url_path='generate-adaptive')
     def generate_adaptive(self, request):
-        student = request.user.student_profile
-        from .fsrs_engine import select_question_tier
         import random
+        from .models import Topic
 
-        # 1. Identify due topic masteries
-        due_masteries = TopicMastery.objects.filter(student=student, next_review_date__lte=timezone.now())
+        student = request.user.student_profile
+        now = timezone.now()
 
-        if not due_masteries.exists():
-            return Response({"status": "All caught up", "message": "No topics are due for review!"})
+        # 1. Identify due topic masteries (max 5)
+        due_masteries = list(TopicMastery.objects.filter(
+            student=student, 
+            next_review_date__lte=now
+        ).select_related('topic').order_by('next_review_date')[:5])
 
-        # 2. Pick a random due mastery to focus on, or a mix
-        mastery = random.choice(due_masteries)
-        tier = select_question_tier(mastery.stability)
+        selected_topics = [m.topic for m in due_masteries]
+        slots_needed = 5 - len(selected_topics)
 
-        # 3. Fetch questions for this topic and tier
-        questions = Question.objects.filter(topic=mastery.topic, tier=tier)
-        
-        if not questions.exists():
-            # Fallback to any question for this topic
-            questions = Question.objects.filter(topic=mastery.topic)
+        # 2. Fill remaining slots with un-interacted topics
+        if slots_needed > 0:
+            interacted_topic_ids = TopicMastery.objects.filter(
+                student=student
+            ).values_list('topic_id', flat=True)
 
-        # 4. Return serialized questions (limit to e.g. 5 for a quick adaptive set)
-        limit = min(questions.count(), 5)
-        selected_questions = random.sample(list(questions), limit)
-        
+            new_topics = list(Topic.objects.exclude(
+                id__in=interacted_topic_ids
+            )[:slots_needed])
+
+            selected_topics.extend(new_topics)
+
+        if not selected_topics:
+            return Response({"status": "All caught up", "message": "No topics available!"})
+
+        # 3. Pick 1 random question for each selected topic
+        selected_questions = []
+        for topic in selected_topics:
+            # We don't bother with 'tier' mapping here for a general practice sheet, 
+            # just grab any question from the topic.
+            topic_questions = list(Question.objects.filter(topic=topic))
+            if topic_questions:
+                selected_questions.append(random.choice(topic_questions))
+
+        # 4. Return serialized questions
         from .serializers import QuestionSerializer
         serializer = QuestionSerializer(selected_questions, many=True)
         return Response({
-            "topic": mastery.topic.name,
-            "topic_id": mastery.topic.id,
-            "tier": tier,
+            "status": "success",
+            "sheet_size": len(selected_questions),
             "questions": serializer.data
         })
 

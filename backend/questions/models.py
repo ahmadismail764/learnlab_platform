@@ -1,5 +1,6 @@
 from django.db import models
-from django.conf import settings 
+from django.utils import timezone
+from django.conf import settings
 from users.models import Student
 
 class Topic(models.Model):

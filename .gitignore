@@ -11,6 +11,11 @@ skills-lock.*
 venv
 
 # Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
 frontEnd/node_modules/
 frontEnd/dist/
 frontEnd/.env

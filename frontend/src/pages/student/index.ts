@@ -1,0 +1,7 @@
+export { StudentDashboard } from './StudentDashboard'
+export { PracticePage } from './PracticePage'
+export { TopicsPage } from './TopicsPage'
+export { ProgressPage } from './ProgressPage'
+export { AchievementsPage } from './AchievementsPage'
+export { StudentProfilePage } from './StudentProfilePage'
+export { LeaderboardPage } from './LeaderboardPage'

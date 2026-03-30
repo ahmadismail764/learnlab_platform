@@ -1,27 +1,27 @@
-import { api } from './api';
+import { api } from "./api";
 
 export const practiceService = {
   getSessions: async () => {
-    const response = await api.get('/sessions/');
-    if (!response.ok) throw new Error('Failed to fetch sessions');
+    const response = await api.get("/sessions/");
+    if (!response.ok) throw new Error("Failed to fetch sessions");
     return await response.json();
   },
 
   getSession: async (id: number) => {
     const response = await api.get(`/sessions/${id}/`);
-    if (!response.ok) throw new Error('Failed to fetch session');
+    if (!response.ok) throw new Error("Failed to fetch session");
     return await response.json();
   },
 
   createSession: async (data: any) => {
-    const response = await api.post('/sessions/', data);
-    if (!response.ok) throw new Error('Failed to create session');
+    const response = await api.post("/sessions/", data);
+    if (!response.ok) throw new Error("Failed to create session");
     return await response.json();
   },
 
   updateSession: async (id: number, data: any) => {
     const response = await api.patch(`/sessions/${id}/`, data);
-    if (!response.ok) throw new Error('Failed to update session');
+    if (!response.ok) throw new Error("Failed to update session");
     return await response.json();
   },
 
@@ -36,5 +36,5 @@ export const practiceService = {
 
   getSubmissionHistory: async () => {
     return practiceService.getSessions();
-  }
+  },
 };

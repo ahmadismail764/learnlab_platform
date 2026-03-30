@@ -9,5 +9,5 @@ router.register('sessions', PracticeSessionViewSet, basename='practicesession')
 router.register('mastery', TopicMasteryViewSet, basename='topicmastery')
 
 urlpatterns = [
-    path('api/v1/', include(router.urls)),
+    path('', include(router.urls)),
 ]

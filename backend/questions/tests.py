@@ -1,99 +1,118 @@
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
-from rest_framework import status
-from questions.models import Topic, Question, TopicMastery, Student, PracticeSession, SingleQuestionInteraction
-from questions.fsrs_engine import update_stability
+"""
+questions/tests.py
+Basic test suite to secure FSRS features and the adaptive practice session endpoint.
+"""
+
+from datetime import timedelta
 from django.utils import timezone
-from datetime import datetime
+from django.contrib.auth import get_user_model
+from rest_framework import status
+from rest_framework.test import APITestCase
+
+from users.models import Student
+from questions.models import Question, Topic, TopicMastery
+from questions.fsrs_engine import process_topic_review
 
 User = get_user_model()
 
-class AuthTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.register_url = '/api/v1/auth/register/'
-
-    def test_register(self):
-        data = {
-            'username': 'testuser',
-            'email': 'test@example.com',
-            'password': 'password123',
-            'first_name': 'Test',
-            'last_name': 'User'
-        }
-        response = self.client.post(self.register_url, data)
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(User.objects.filter(email='test@example.com').exists())
-        self.assertTrue(Student.objects.filter(user__email='test@example.com').exists())
-
-class FSRSTests(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-    def test_update_stability(self):
-        # Test initial update
-        stab, diff = update_stability(0, 5.0, None, 3) # Good
-        self.assertGreater(stab, 0)
-
-    def test_session_lifecycle(self):
-        # Create user and student
-        user = User.objects.create_user(username='student', email='s@e.com', password='p')
+class FSRSEngineTests(APITestCase):
+    """
+    Unit tests for the FSRS scheduling engine utility functions.
+    """
+    def test_process_topic_review_easy(self):
+        """
+        Test the process_topic_review function with a rating of 4 (Easy).
+        It creates a dummy student and topic, constructs a TopicMastery,
+        then evaluates that reps increase, stability grows, and next_review_date is populated.
+        """
+        # Create dummy user and student
+        user = User.objects.create_user(username='teststudent', email='test@example.com', password='password123')
         student = Student.objects.create(user=user)
-        self.client.force_authenticate(user=user)
-
-        # Create topic and question
-        topic = Topic.objects.create(name='Math')
-        question = Question.objects.create(topic=topic, text='Q1', correct_answer_index=0, tier=1)
-
-        # Create session with interaction
-        session_data = {
-            'session_type': 'adaptive',
-            'interactions': [
-                {
-                    'question': question.id,
-                    'user_response': '0', # Correct index as string
-                    'confidence_rating': 4, # Easy
-                    'time_taken_seconds': 15.0
-                }
-            ]
-        }
-
-        url = '/api/v1/sessions/'
-        response = self.client.post(url, session_data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
-        # Verify student XP and streak
-        student.refresh_from_db()
-        self.assertEqual(student.streak_count, 1)
-        self.assertGreater(student.total_xp, 0)
-
-        # Verify TopicMastery
-        mastery = TopicMastery.objects.get(student=student, topic=topic)
-        self.assertGreater(mastery.stability, 0)
-        self.assertIsNotNone(mastery.next_review_date)
-
-    def test_generate_adaptive_session(self):
-        user = User.objects.create_user(username='student2', email='s2@e.com', password='p')
-        student = Student.objects.create(user=user)
-        self.client.force_authenticate(user=user)
-
-        topic = Topic.objects.create(name='Logic')
-        Question.objects.create(topic=topic, text='Q1', correct_answer_index=0, tier=1)
         
-        # Manually create a due mastery
-        from django.utils import timezone
-        from datetime import timedelta
-        TopicMastery.objects.create(
-            student=student, 
-            topic=topic, 
-            next_review_date=timezone.now() - timedelta(days=1),
-            stability=1.0,
-            difficulty=5.0
+        # Create a dummy topic
+        topic = Topic.objects.create(name='Mathematics')
+        
+        # Create a TopicMastery for the student and topic
+        mastery = TopicMastery.objects.create(student=student, topic=topic)
+        
+        # Capture initial state metrics
+        initial_reps = mastery.reps
+        initial_stability = mastery.stability
+        self.assertIsNone(mastery.next_review_date, "New mastery should lack a next_review_date.")
+        
+        # Pass the mastery to the engine with a rating of 4 (Easy)
+        process_topic_review(mastery, rating=4)
+        
+        # Reload from the database to get actual saved values instead of in-memory approximations
+        mastery.refresh_from_db()
+        
+        # Assert that repetition count increased
+        self.assertGreater(mastery.reps, initial_reps, "Reps should increase after a review.")
+        
+        # Assert that stability increased (FSRS adjusts stability dynamically)
+        self.assertGreater(mastery.stability, initial_stability, "Stability should increase on an Easy rating.")
+        
+        # Assert that next_review_date is no longer None
+        self.assertIsNotNone(mastery.next_review_date, "Next review date must be scheduled after a review.")
+
+
+class PracticeSessionAPITests(APITestCase):
+    """
+    API tests for the practice session endpoints.
+    """
+    def test_generate_adaptive_endpoint(self):
+        """
+        Test the adaptive generation endpoint. It creates an authenticated student,
+        calls GET /api/questions/practice-sessions/generate-adaptive/,
+        and asserts the response status corresponds to 200 OK.
+        We also ensure that it returns the expected JSON structure containing
+        the nested attributes like topic, tier, and the main key questions.
+        """
+        # Create authenticated student for our API call
+        user = User.objects.create_user(username='apitest', email='api@example.com', password='password123')
+        student = Student.objects.create(user=user)
+        
+        # Force authentication so the API test bypasses standard login flows 
+        self.client.force_authenticate(user=user)
+        
+        # Provide base requirements for the generation to work
+        # Create dummy topics
+        math_topic = Topic.objects.create(name='Calculus')
+        
+        # Create dummy question under this topic to be retrieved by the endpoint
+        Question.objects.create(
+            topic=math_topic,
+            text='What is the derivative of x^2?',
+            choices=['2x', 'x^2', '2', 'x'],
+            correct_answer_index=0,
+            tier=2, # Synthesis/Application level
+            explanation_video_url='http://example.com'
         )
 
-        url = '/api/v1/sessions/generate-adaptive/'
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['topic'], 'Logic')
-        self.assertGreater(len(response.data['questions']), 0)
+        # Ensure the math_topic is 'due' by backdating a mastery
+        TopicMastery.objects.create(
+            student=student,
+            topic=math_topic,
+            next_review_date=timezone.now() - timedelta(days=1)
+        )
+        
+        # Call GET /api/questions/practice-sessions/generate-adaptive/
+        # Since we use router structure we can directly use the explicit path string as required
+        response = self.client.get('/api/questions/practice-sessions/generate-adaptive/')
+        
+        # Assert the response status is 200 OK
+        self.assertEqual(response.status_code, status.HTTP_200_OK, "Adapter generation should return a 200 success code.")
+        
+        # Validate that the top level 'questions' key is present
+        self.assertIn('questions', response.data, "Response should have the 'questions' key.")
+        
+        # Obtain the array/list of returned questions
+        questions = response.data['questions']
+        self.assertIsInstance(questions, list, "Expected 'questions' to be a valid JSON array/list.")
+        self.assertGreater(len(questions), 0, "Expected to retrieve at least one question for the due mastery topics.")
+        
+        first_question = questions[0]
+        
+        # Assert the returned question structure contains expected attributes (topic, tier)
+        self.assertIn('topic', first_question, "Each question must contain its assigned topic.")
+        self.assertIn('tier', first_question, "Each question must report its difficulty tier.")

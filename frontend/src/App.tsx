@@ -12,11 +12,17 @@ import { createAppRouter } from '@/routes'
  */
 
 function AppRouter() {
+<<<<<<< HEAD
   const { user, logout } = useAuth()
   
   const router = useMemo(() => createAppRouter(user, logout), [user, logout])
   
   return <RouterProvider router={router} />
+=======
+  const { user } = useAuth()
+  const routerInstance = useMemo(() => createAppRouter(user), [user])
+  return <RouterProvider router={routerInstance} />
+>>>>>>> backend-updates
 }
 
 export default function App() {

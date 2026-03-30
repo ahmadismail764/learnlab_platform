@@ -1,5 +1,6 @@
 from django.db import models
-from django.conf import settings 
+from django.utils import timezone
+from django.conf import settings
 from users.models import Student
 
 class Topic(models.Model):
@@ -59,7 +60,7 @@ class TopicMastery(models.Model):
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
 
     # FSRS Card Fields
-    state = models.IntegerField(default=0)          # 0=New, 1=Learning, 2=Review, 3=Relearning
+    state = models.IntegerField(default=0)                              # 0=New, 1=Learning, 2=Review, 3=Relearning
     difficulty = models.FloatField(default=0.0)
     stability = models.FloatField(default=0.0)
     reps = models.IntegerField(default=0)

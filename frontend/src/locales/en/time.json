@@ -1,0 +1,18 @@
+{
+  "days": "{{count}} days",
+  "daysAgo": "{{count}} days ago",
+  "dueIn": "Due in {{time}}",
+  "dueNow": "Due now",
+  "hours": "{{count}} hr",
+  "hoursAgo": "{{count}} hours ago",
+  "justNow": "Just now",
+  "lastActive": "Last active {{time}}",
+  "minutes": "{{count}} min",
+  "minutesAgo": "{{count}} minutes ago",
+  "nextWeek": "Next Week",
+  "overdue": "Overdue by {{time}}",
+  "thisWeek": "This Week",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "yesterday": "Yesterday"
+}

@@ -3,10 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Lock, User, Eye, EyeOff, CheckCircle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button, Input } from '@/components/ui'
+<<<<<<< HEAD
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useAuth } from '@/contexts'
 import { addAdminOverrideEmail, removeAdminOverrideEmail } from '@/utils/adminOverride'
+=======
+import { authService } from '@/services/auth'
+>>>>>>> backend-updates
 
 /**
  * RegisterPage — UC-01
@@ -14,12 +18,9 @@ import { addAdminOverrideEmail, removeAdminOverrideEmail } from '@/utils/adminOv
  * Flow:
  * 1. Student opens LearnLab → system shows registration form
  * 2. Student enters unique email and password
- * 3. System validates inputs (client-side: email format, password strength, match)
- * 4. System creates account, authenticates, and redirects to student dashboard
- *
- * Alternate Flows:
- * 4a. Invalid input → field-level errors (weak password, required fields)
- * 4b. Email exists → "Email already registered. Log in" message
+ * 3. System validates inputs (client-side: email format, password strength, match, terms)
+ * 4. System calls backend register API
+ * 5. System authenticates and redirects to student dashboard
  */
 
 type PasswordStrength = 'weak' | 'medium' | 'strong'
@@ -42,12 +43,16 @@ interface FieldErrors {
   email?: string
   password?: string
   confirmPassword?: string
+  agreedToTerms?: string
 }
 
 export function RegisterPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
+<<<<<<< HEAD
   const { register } = useAuth()
+=======
+>>>>>>> backend-updates
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -55,6 +60,7 @@ export function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    agreedToTerms: false,
   })
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -92,8 +98,10 @@ export function RegisterPage() {
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    const val = type === 'checkbox' ? checked : value
+    setFormData(prev => ({ ...prev, [name]: val }))
+    
     // Clear field error on change
     if (fieldErrors[name as keyof FieldErrors]) {
       setFieldErrors(prev => ({ ...prev, [name]: undefined }))
@@ -117,7 +125,6 @@ export function RegisterPage() {
     if (!formData.password) {
       errors.password = t('auth:fieldRequired')
     } else if (formData.password.length < 8) {
-      // UC-01 alternate 4a: weak password
       errors.password = t('auth:passwordTooShort')
     }
 
@@ -125,6 +132,10 @@ export function RegisterPage() {
       errors.confirmPassword = t('auth:fieldRequired')
     } else if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = t('auth:passwordsDoNotMatch')
+    }
+
+    if (!formData.agreedToTerms) {
+      errors.agreedToTerms = t('auth:agreeToTermsRequired') || 'You must agree to the terms'
     }
 
     setFieldErrors(errors)
@@ -141,6 +152,7 @@ export function RegisterPage() {
     setIsLoading(true)
 
     try {
+<<<<<<< HEAD
       if (grantAdminTestingAccess) {
         addAdminOverrideEmail(formData.email)
       } else {
@@ -166,6 +178,36 @@ export function RegisterPage() {
       } else {
         setGeneralError(message)
       }
+=======
+      // 1. Backend Registration
+      const registrationData = {
+        email: formData.email,
+        username: formData.email, // Use email as username for simplicity
+        password: formData.password,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+      }
+      
+      await authService.register(registrationData)
+
+      // 2. Auto-login upon success
+      await authService.login({
+        email: formData.email,
+        password: formData.password,
+      })
+
+      // 3. Set success and redirect
+      setSuccess(true)
+      
+      setTimeout(() => {
+        // Navigate to dashboard
+        navigate('/student/dashboard')
+      }, 1500)
+
+    } catch (err: any) {
+      console.error('Registration failed:', err)
+      setGeneralError(err.message || t('auth:registrationFailed'))
+>>>>>>> backend-updates
     } finally {
       setIsLoading(false)
     }
@@ -174,25 +216,32 @@ export function RegisterPage() {
   // Show success state briefly before redirect
   if (success) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
+      <div className="text-center py-12 animate-in fade-in duration-500">
+        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/10">
+          <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
         </div>
-        <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
+        <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
           {t('auth:registrationSuccess')}
         </h2>
+        <p className="text-neutral-600 dark:text-neutral-400">
+          Synchronizing neural profile...
+        </p>
       </div>
     )
   }
 
   return (
-    <div>
-      {/* Language Switcher & Theme Toggle - top right */}
-      <div className="absolute top-4 end-4 flex items-center gap-1">
-        <ThemeToggle />
-        <LanguageSwitcher variant="globe" />
+    <div className="stagger-in space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100 font-display tracking-tight">
+          {t('auth:createAccount')}
+        </h2>
+        <p className="text-neutral-500 dark:text-neutral-400">
+          {t('auth:startLearning')}
+        </p>
       </div>
 
+<<<<<<< HEAD
       <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
         {t('auth:createAccount')}
       </h2>
@@ -208,6 +257,8 @@ export function RegisterPage() {
         {backendStatus === 'error' && <p>Backend returned an error. See details below.</p>}
       </div>
 
+=======
+>>>>>>> backend-updates
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-4">
           <Input
@@ -219,6 +270,7 @@ export function RegisterPage() {
             leftIcon={<User className="w-4 h-4" />}
             error={fieldErrors.firstName}
             required
+            className="glass"
           />
           <Input
             label={t('auth:lastName')}
@@ -228,6 +280,7 @@ export function RegisterPage() {
             onChange={handleChange}
             error={fieldErrors.lastName}
             required
+            className="glass"
           />
         </div>
 
@@ -241,6 +294,7 @@ export function RegisterPage() {
           leftIcon={<Mail className="w-4 h-4" />}
           error={fieldErrors.email}
           required
+          className="glass"
         />
 
         <div>
@@ -263,22 +317,23 @@ export function RegisterPage() {
             }
             error={fieldErrors.password}
             required
+            className="glass"
           />
 
           {/* Password Strength Indicator */}
           {passwordStrength && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-neutral-500 dark:text-neutral-400">
+            <div className="mt-2 px-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-neutral-500 dark:text-neutral-400 uppercase tracking-widest font-bold">
                   {t('auth:passwordStrength')}
                 </span>
-                <span className={`text-xs font-medium ${strengthConfig[passwordStrength].color}`}>
+                <span className={`text-[10px] font-bold uppercase ${strengthConfig[passwordStrength].color}`}>
                   {strengthConfig[passwordStrength].label}
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-neutral-200 dark:bg-neutral-700/50 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-300 ${strengthConfig[passwordStrength].barColor} ${strengthConfig[passwordStrength].width}`}
+                  className={`h-full rounded-full transition-all duration-500 shadow-sm ${strengthConfig[passwordStrength].barColor} ${strengthConfig[passwordStrength].width}`}
                 />
               </div>
             </div>
@@ -295,28 +350,37 @@ export function RegisterPage() {
           leftIcon={<Lock className="w-4 h-4" />}
           error={fieldErrors.confirmPassword}
           required
+          className="glass"
         />
 
         {generalError && (
-          <p className="text-sm text-error bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded-lg">
+          <div className="text-sm text-error bg-error/10 border border-error/20 px-4 py-3 rounded-2xl animate-in slide-in-from-top-2">
             {generalError}
-          </p>
+          </div>
         )}
 
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 mt-1"
-            required
-          />
-          <span className="text-neutral-600 dark:text-neutral-400">
-            {t('auth:agreeToTerms')}{' '}
-            <a href="#" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth:termsOfService')}</a>
-            {' '}{t('auth:and')}{' '}
-            <a href="#" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300">{t('auth:privacyPolicy')}</a>
-          </span>
-        </label>
+        <div className="space-y-1">
+          <label className="flex items-start gap-3 text-sm group cursor-pointer">
+            <input
+              type="checkbox"
+              name="agreedToTerms"
+              checked={formData.agreedToTerms}
+              onChange={handleChange}
+              className="mt-1 rounded-lg border-neutral-300 dark:border-neutral-600 text-primary-600 focus:ring-primary-500 dark:bg-neutral-800 transition-colors"
+            />
+            <span className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
+              {t('auth:agreeToTerms')}{' '}
+              <a href="#" className="text-primary-600 dark:text-primary-400 hover:underline font-medium">{t('auth:termsOfService')}</a>
+              {' '}{t('auth:and')}{' '}
+              <a href="#" className="text-primary-600 dark:text-primary-400 hover:underline font-medium">{t('auth:privacyPolicy')}</a>
+            </span>
+          </label>
+          {fieldErrors.agreedToTerms && (
+            <p className="text-xs text-error font-medium px-8">{fieldErrors.agreedToTerms}</p>
+          )}
+        </div>
 
+<<<<<<< HEAD
         <label className="flex items-start gap-2 text-sm">
           <input
             type="checkbox"
@@ -330,13 +394,21 @@ export function RegisterPage() {
         </label>
 
         <Button type="submit" fullWidth isLoading={isLoading}>
+=======
+        <Button 
+          type="submit" 
+          fullWidth 
+          isLoading={isLoading}
+          className="h-12 text-base rounded-2xl shadow-xl shadow-primary-500/20 hover:scale-[1.01] transition-transform active:scale-95 btn-primary"
+        >
+>>>>>>> backend-updates
           {isLoading ? t('auth:creatingAccount') : t('auth:createAccount')}
         </Button>
       </form>
 
-      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400 mt-6">
+      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400 mt-8">
         {t('auth:haveAccount')}{' '}
-        <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium">
+        <Link to="/login" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-bold">
           {t('auth:signIn')}
         </Link>
       </p>

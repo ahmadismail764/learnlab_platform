@@ -39,4 +39,8 @@
 
 ## ⚠️ Notes for the Frontend Developer
 - **Authentication**: All protected endpoints require an `Authorization` header with the Bearer scheme: `Authorization: Bearer <your_access_token>`.
+<<<<<<< HEAD
 - **Trailing Slashes**: Django API endpoints strictly require a trailing slash (e.g., `/auth/login/` not `/auth/login`), unless configured otherwise.
+=======
+- **Trailing Slashes**: Django API endpoints strictly require a trailing slash (e.g., `/auth/login/` not `/auth/login`), unless configured otherwise.
+>>>>>>> backend-updates

@@ -9,7 +9,10 @@ import {
 } from 'react'
 import type { User } from '@/types'
 import { authService } from '@/services/auth'
+<<<<<<< HEAD
 import { isAdminOverrideEmail } from '@/utils/adminOverride'
+=======
+>>>>>>> backend-updates
 
 /**
  * AuthContext
@@ -25,8 +28,13 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
+<<<<<<< HEAD
   login: (credentials: { email: string; password: string }) => Promise<User>
   register: (userData: { email: string; username: string; password: string; first_name: string; last_name: string }) => Promise<User>
+=======
+  login: (credentials: any) => Promise<void>
+  register: (userData: any) => Promise<void>
+>>>>>>> backend-updates
   logout: () => void
   updateUser: (updates: Partial<User>) => void
 }
@@ -42,6 +50,7 @@ const initialState: AuthState = {
 
 interface AuthProviderProps {
   children: ReactNode
+<<<<<<< HEAD
   initialUser?: User | null
 }
 
@@ -122,16 +131,117 @@ export function AuthProvider({ children, initialUser }: AuthProviderProps) {
     } catch (error) {
       setState(prev => ({ ...prev, isLoading: false }))
       throw error
+=======
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const [state, setState] = useState<AuthState>(initialState)
+
+  // Hydrate user on mount
+  useEffect(() => {
+    const hydrate = async () => {
+      const token = localStorage.getItem('learnlab_auth_token');
+      if (!token) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      // Check if we already have a user (to avoid redundant 'me' call on fast clicks/remounts)
+      if (state.user && state.isAuthenticated) {
+        setState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      try {
+        // Optimization: Use a local variable to prevent race conditions
+        const userDate = await authService.getCurrentUser();
+        // Map backend user to frontend user
+        const user: User = {
+          id: userDate.id,
+          email: userDate.email,
+          firstName: userDate.first_name,
+          lastName: userDate.last_name,
+          role: userDate.is_staff ? 'admin' : 'student',
+          createdAt: userDate.date_joined,
+          updatedAt: userDate.date_joined, // backend doesn't send updated_at yet
+        };
+
+        setState({
+          user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      } catch (error) {
+        console.error("Failed to hydrate user", error);
+        // Clear tokens if invalid
+        authService.logout();
+        setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+        });
+      }
+    };
+
+    hydrate();
+  }, []);
+
+  const login = useCallback(async (credentials: any) => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    try {
+      await authService.login(credentials);
+      const userDate = await authService.getCurrentUser();
+
+      const user: User = {
+        id: userDate.id,
+        email: userDate.email,
+        firstName: userDate.first_name,
+        lastName: userDate.last_name,
+        role: userDate.is_staff ? 'admin' : 'student',
+        createdAt: userDate.date_joined,
+        updatedAt: userDate.date_joined,
+      };
+
+      setState({
+        user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch (error) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      throw error;
+    }
+  }, [])
+
+  const register = useCallback(async (userData: any) => {
+    setState(prev => ({ ...prev, isLoading: true }));
+    try {
+      await authService.register(userData);
+      // Auto login
+      await login({ email: userData.email, password: userData.password });
+    } catch (error) {
+      setState(prev => ({ ...prev, isLoading: false }));
+      throw error;
+>>>>>>> backend-updates
     }
   }, [login])
 
   const logout = useCallback(() => {
+<<<<<<< HEAD
     authService.logout()
+=======
+    authService.logout();
+>>>>>>> backend-updates
     setState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
+<<<<<<< HEAD
     })
+=======
+    });
+    // Navigation is handled by AppRouter observing user state change
+>>>>>>> backend-updates
   }, [])
 
   const updateUser = useCallback((updates: Partial<User>) => {

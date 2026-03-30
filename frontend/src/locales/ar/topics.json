@@ -1,0 +1,45 @@
+{
+  "combinatorics": {
+    "combinations": "التوافيق",
+    "counting": "مبادئ العد",
+    "permutations": "التباديل",
+    "pigeonhole": "مبدأ صندوق الحمام",
+    "title": "التوافقيات"
+  },
+  "discreteMath": "الرياضيات المتقطعة",
+  "graphTheory": {
+    "basics": "أساسيات الرسوم البيانية",
+    "paths": "المسارات والدوائر",
+    "planarity": "التسطيح",
+    "title": "نظرية الرسوم البيانية",
+    "trees": "الأشجار"
+  },
+  "logic": {
+    "predicates": "منطق المحمولات",
+    "proofTechniques": "طرق البرهان",
+    "propositional": "المنطق الاقتراحي",
+    "quantifiers": "المحددات الكمية",
+    "title": "المنطق"
+  },
+  "numberTheory": {
+    "divisibility": "القسمة",
+    "gcd": "القاسم المشترك الأكبر والمضاعف المشترك الأصغر",
+    "modularArithmetic": "الحساب المعياري",
+    "primes": "الأعداد الأولية",
+    "title": "نظرية الأعداد"
+  },
+  "relations": {
+    "equivalence": "علاقات التكافؤ",
+    "functions": "الدوال",
+    "partialOrders": "الترتيب الجزئي",
+    "properties": "خصائص العلاقات",
+    "title": "العلاقات"
+  },
+  "sets": {
+    "cartesianProduct": "الضرب الديكارتي",
+    "operations": "عمليات المجموعات",
+    "powerSets": "مجموعة القوة",
+    "title": "نظرية المجموعات",
+    "vennDiagrams": "مخططات فن"
+  }
+}

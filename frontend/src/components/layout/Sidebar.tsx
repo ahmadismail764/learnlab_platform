@@ -89,6 +89,7 @@ export function Sidebar({
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
+<<<<<<< HEAD
       {/* Logo + Collapse Toggle */}
       <div className="border-b border-neutral-200 dark:border-neutral-800">
         <div
@@ -97,11 +98,20 @@ export function Sidebar({
             isCollapsed ? 'justify-center' : 'gap-3'
           )}
         >
+=======
+      {/* Logo & Toggle Section */}
+      <div className={cn(
+        'flex items-center justify-between h-16 px-4 border-b border-neutral-200 dark:border-neutral-800',
+        isCollapsed ? 'flex-col py-2 h-auto gap-4' : 'gap-3'
+      )}>
+        <div className="flex items-center gap-3">
+>>>>>>> backend-updates
           {isCollapsed ? (
             <LogoMark size={32} />
           ) : (
             <LogoFull iconSize={32} />
           )}
+<<<<<<< HEAD
 
           {onToggleCollapse && !isCollapsed && (
             <button
@@ -139,6 +149,26 @@ export function Sidebar({
             </button>
           )}
         </div>
+=======
+        </div>
+
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              'p-1.5 rounded-lg text-neutral-500 dark:text-neutral-400',
+              'hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200',
+              'transition-colors duration-150 cursor-pointer'
+            )}
+            title={isCollapsed ? t('nav:expand', 'Expand sidebar') : t('nav:collapse', 'Collapse sidebar')}
+          >
+            <ChevronLeft className={cn(
+              'w-5 h-5 transition-transform duration-300',
+              isCollapsed && 'ltr:rotate-180 rtl:-rotate-180'
+            )} />
+          </button>
+        )}
+>>>>>>> backend-updates
       </div>
 
       {/* Navigation */}
@@ -172,6 +202,10 @@ export function Sidebar({
         </ul>
       </nav>
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> backend-updates
       {/* User section */}
       <div className={cn(
         'border-t border-neutral-200 dark:border-neutral-800 p-4',

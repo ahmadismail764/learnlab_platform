@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar, type SidebarProps } from './Sidebar'
 import { Header } from './Header'
+import { DataSourceBreakdown } from '@/components/common'
 import { cn } from '@/utils/cn'
 
 /**
@@ -26,7 +27,7 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
+    <div className="h-screen bg-neutral-50 dark:bg-neutral-950 flex overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block sticky top-0 h-screen">
         <Sidebar
@@ -81,6 +82,9 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
           'flex-1 p-4 sm:p-6 lg:p-8',
           'overflow-y-auto'
         )}>
+          <div className="mb-6">
+            <DataSourceBreakdown compact defaultOpen />
+          </div>
           <Outlet />
         </main>
       </div>

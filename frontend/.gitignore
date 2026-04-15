@@ -16,6 +16,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+.env.*.example
 
 # Editor directories and files
 .vscode/*
@@ -33,9 +34,16 @@ plans.md
 plan.md
 docs/internal/
 NOTES.md
+backend_api_integration_changes.md
 
 # Internal documentation (developer notes)
 code_guide.md
 notes.md
 STATIC_ELEMENTS.md
 CODE_REVIEW.md
+
+settings.json
+settings.py
+
+
+

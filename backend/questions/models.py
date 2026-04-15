@@ -8,11 +8,22 @@ class Topic(models.Model):
     description = models.TextField(blank=True, help_text="Short summary of the topic") # <--- NEW
     parent_module = models.CharField(max_length=255, blank=True, help_text="e.g. Discrete Math > Logic") # <--- NEW
     
+    prerequisites = models.ManyToManyField('self', symmetrical=False, related_name='prerequisite_for', blank=True, help_text="Topics that must be known before learning this topic")
+    encompassings = models.ManyToManyField('self', symmetrical=False, related_name='encompassed_by', blank=True, help_text="Simpler topics that are implicitly practiced when this topic is practiced")
+    
     def __str__(self):
         return self.name
 
+class KnowledgePoint(models.Model):
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='knowledge_points')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, help_text="Detailed description of this specific bit of knowledge")
+    
+    def __str__(self):
+        return f"{self.topic.name} - {self.name}"
+
 class Question(models.Model):
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='questions')
+    knowledge_point = models.ForeignKey(KnowledgePoint, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
     text = models.TextField(help_text="The question string")
     choices = models.JSONField(default=list) 
     correct_answer_index = models.IntegerField()
@@ -22,7 +33,7 @@ class Question(models.Model):
     explanation_video_url = models.URLField(null=True, blank=True)
     
     def __str__(self):
-        return f"[{self.topic.name}] Tier {self.tier}: {self.text[:50]}..."
+        return f"[{self.knowledge_point.topic.name}] Tier {self.tier}: {self.text[:50]}..."
 
 # ... Practice Session Models ...
 

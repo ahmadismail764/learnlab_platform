@@ -12,16 +12,16 @@ class TopicSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'parent_module', 'question_count']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    topic_name = serializers.CharField(source='topic.name', read_only=True)
+    topic_name = serializers.CharField(source='knowledge_point.topic.name', read_only=True)
 
     class Meta:
         model = Question
-        fields = ['id', 'topic', 'topic_name', 'text', 'choices', 'correct_answer_index', 'tier', 'explanation_video_url']
+        fields = ['id', 'knowledge_point', 'topic_name', 'text', 'choices', 'correct_answer_index', 'tier', 'explanation_video_url']
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['id', 'topic', 'text', 'choices', 'correct_answer_index', 'tier', 'explanation_video_url']
+        fields = ['id', 'knowledge_point', 'text', 'choices', 'correct_answer_index', 'tier', 'explanation_video_url']
 
 class SingleQuestionInteractionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -64,10 +64,15 @@ class TopicMasterySerializer(serializers.ModelSerializer):
         fields = ['id', 'student', 'topic', 'topic_name', 'difficulty', 'stability', 'last_review_date', 'next_review_date', 'retrievability']
         read_only_fields = ['student', 'topic', 'difficulty', 'stability', 'last_review_date', 'retrievability']
 
-    def get_retrievability(self, obj):
+    def get_retrievability(self, obj) -> float:
         if obj.stability <= 0:
             return 0.0
 
         now = datetime.now(timezone.utc)
         elapsed_days = (now - obj.last_review_date).total_seconds() / 86400
         return math.exp(elapsed_days / obj.stability * math.log(0.9))
+
+class InteractionPayloadSerializer(serializers.Serializer):
+    question_id = serializers.IntegerField()
+    is_correct = serializers.BooleanField()
+    session_id = serializers.IntegerField()

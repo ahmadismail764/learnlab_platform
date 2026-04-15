@@ -13,6 +13,9 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 from datetime import datetime
+from django.shortcuts import get_object_or_404
+from . import services
+from .serializers import InteractionPayloadSerializer
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -21,7 +24,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user and request.user.is_staff
 
 class TopicViewSet(viewsets.ModelViewSet):
-    queryset = Topic.objects.annotate(question_count=Count('questions'))
+    queryset = Topic.objects.annotate(question_count=Count('knowledge_points__questions'))
     serializer_class = TopicSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -37,22 +40,21 @@ class TopicViewSet(viewsets.ModelViewSet):
             ]
             TopicMastery.objects.bulk_create(masteries, ignore_conflicts=True)
 
-class QuestionViewSet(viewsets.ModelViewSet):
+class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Question.objects.all()
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['topic', 'tier']
-
-    def get_serializer_class(self):
-        if self.action in ['create', 'update', 'partial_update']:
-            return QuestionCreateSerializer
-        return QuestionSerializer
+    filterset_fields = ['knowledge_point__topic', 'tier']
+    serializer_class = QuestionSerializer
 
 class PracticeSessionViewSet(viewsets.ModelViewSet):
+    queryset = PracticeSession.objects.none()
     serializer_class = PracticeSessionSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return self.queryset.none()
         return PracticeSession.objects.filter(student=self.request.user.student_profile)
 
     def get_serializer_class(self):
@@ -60,64 +62,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             return PracticeSessionCreateSerializer
         return PracticeSessionSerializer
 
-    @transaction.atomic
     def perform_create(self, serializer):
         session = serializer.save(student=self.request.user.student_profile, end_time=timezone.now())
-        student = session.student
-        total_xp_gained = 0
-
-        # --- Pass 1: grade every interaction, accumulate per-topic ratings ---
-        # topic_id -> list of integer ratings (1-4)
-        topic_ratings: dict[int, list[int]] = {}
-
-        for interaction in session.interactions.select_related('question__topic').all():
-            question = interaction.question
-            topic = question.topic
-
-            try:
-                selected_index = int(interaction.user_response)
-            except (ValueError, TypeError):
-                selected_index = -1
-
-            interaction.is_correct = (selected_index == question.correct_answer_index)
-            interaction.save()
-
-            if not interaction.is_correct:
-                rating = 1  # Again
-                student.streak_count = 0
-            else:
-                if interaction.confidence_rating >= 4:
-                    rating = 4  # Easy
-                elif interaction.confidence_rating >= 3:
-                    rating = 3  # Good
-                else:
-                    rating = 2  # Hard
-
-                base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
-                multiplier = min(2.0, 1.0 + (student.streak_count * 0.1))
-                total_xp_gained += int(base_xp * multiplier)
-                student.streak_count += 1
-
-            topic_ratings.setdefault(topic.id, []).append(rating)
-
-        # --- Pass 2: run FSRS once per topic using the averaged rating ---
-        from .models import Topic as TopicModel
-        for topic_id, ratings in topic_ratings.items():
-            topic = TopicModel.objects.get(pk=topic_id)
-            mastery, _ = TopicMastery.objects.get_or_create(student=student, topic=topic)
-
-            # Round to nearest valid rating (1-4)
-            avg_rating = round(sum(ratings) / len(ratings))
-            avg_rating = max(1, min(4, avg_rating))
-
-            process_topic_review(mastery, avg_rating)
-
-        session.total_xp_earned = total_xp_gained
-        session.save()
-
-        student.total_xp += total_xp_gained
-        student.last_practice_date = timezone.now().date()
-        student.save()
 
     @action(detail=False, methods=['get'], url_path='generate-adaptive')
     def generate_adaptive(self, request):
@@ -156,7 +102,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         for topic in selected_topics:
             # We don't bother with 'tier' mapping here for a general practice sheet, 
             # just grab any question from the topic.
-            topic_questions = list(Question.objects.filter(topic=topic))
+            topic_questions = list(Question.objects.filter(knowledge_point__topic=topic))
             if topic_questions:
                 selected_questions.append(random.choice(topic_questions))
 
@@ -170,12 +116,39 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         })
 
 class TopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TopicMastery.objects.none()
     serializer_class = TopicMasterySerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return self.queryset.none()
         queryset = TopicMastery.objects.filter(student=self.request.user.student_profile).select_related('topic')
         due_only = self.request.query_params.get('due_only')
         if due_only == 'true':
             queryset = queryset.filter(next_review_date__lte=timezone.now())
         return queryset
+
+class InteractionViewSet(viewsets.ViewSet):
+    serializer_class = InteractionPayloadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def create(self, request):
+        serializer = InteractionPayloadSerializer(data=request.data)
+        if serializer.is_valid():
+            question_id = serializer.validated_data['question_id']
+            is_correct = serializer.validated_data['is_correct']
+            session_id = serializer.validated_data['session_id']
+            
+            student = request.user.student_profile
+            question = get_object_or_404(Question, id=question_id)
+            session = get_object_or_404(PracticeSession, id=session_id)
+            
+            if session.student != student:
+                return Response({'detail': 'Session does not belong to this user.'}, status=status.HTTP_403_FORBIDDEN)
+                
+            services.process_interaction(student, question, is_correct, session)
+            
+            return Response({'status': 'Interaction processed.'}, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

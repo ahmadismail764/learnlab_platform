@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'corsheaders',
     'django_filters',
+    'drf_spectacular',
     
     'users.apps.UsersConfig',
     'analytics',
@@ -34,7 +35,6 @@ INSTALLED_APPS = [
     'curriculum',
     'practice',
     'questions',
-    'users'
 ]
 
 MIDDLEWARE = [
@@ -117,6 +117,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
@@ -135,4 +136,10 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'LearnLab API',
+    'DESCRIPTION': 'Mastery-based learning backend powered by the FIRe framework',
+    'VERSION': '1.0.0',
 }

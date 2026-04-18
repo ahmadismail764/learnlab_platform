@@ -1,12 +1,23 @@
+venv/
 .venv/
 .vscode/
 __pycache__/
 *.pyc
 .env
-.venv-linux/
-.env
+.agent*
+.kilocode
+skills-lock.*
+venv
+*.sqlite3
+*.log
+.env.example
 
 # Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+
 frontEnd/node_modules/
 frontEnd/dist/
 frontEnd/.env
@@ -14,3 +25,4 @@ frontEnd/.env.local
 
 # Python
 staticfiles/
+

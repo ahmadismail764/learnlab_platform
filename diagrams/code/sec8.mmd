@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor Student
+    participant StudentDashboard as Student Dashboard
+    participant DashboardController as Dashboard Controller
+    participant KnowledgeModel as Knowledge Model (FSRS)
+    participant Database
+
+    Note over Student, Database: UC-08: View Topics (Dashboard & Progress)
+
+    Student->>StudentDashboard: Lands on Home/Dashboard
+    StudentDashboard->>DashboardController: getStudentProgress(studentId)
+    DashboardController->>Database: fetchTopicMastery(studentId)
+    Database-->>DashboardController: return mastery_records (stability, difficulty, next_review)
+    
+    Note right of DashboardController: Step 4: Prioritize using FSRS retrievability
+    DashboardController->>KnowledgeModel: calculateRetrievability(mastery_data)
+    KnowledgeModel-->>DashboardController: list of priority_scores
+    DashboardController->>DashboardController: Categorize (Due vs. Future) & Sort by Score
+    DashboardController-->>StudentDashboard: return dashboard_payload (topics, tiers, status)
+
+    alt Nothing Due (Flow 3a)
+        StudentDashboard-->>Student: Display "All caught up! 🎉" & "Study Ahead" suggestions
+    else Topics Due
+        StudentDashboard-->>Student: Render topics with Tier badges (🥉, , 🥇) & "Review!" tags
+    end
+
+    opt Search/Filter (Flow 5a)
+        Student->>StudentDashboard: Enters search query (e.g., "Modus Ponens")
+        StudentDashboard->>DashboardController: searchTopics(query)
+        DashboardController->>Database: findTopics(query)
+        Database-->>DashboardController: match_results
+        DashboardController-->>StudentDashboard: display filtered topics
+        StudentDashboard-->>Student: Updated list view
+    end
+
+    Student->>StudentDashboard: Selects a topic to practice
+    StudentDashboard-->>Student: Trigger UC-03: Solve Practice Sheet (Adaptive)

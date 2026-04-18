@@ -19,5 +19,5 @@
  *    "types": ["vitest/globals", "@testing-library/jest-dom"]
  */
 
-export { renderWithProviders, createMockUser, createMockStudent, createMockAdmin } from './render'
+export { renderWithProviders, createMockUser, createMockLearner, createMockAdmin } from './render'
 export { mockAuthContext, mockToastContext, mockThemeContext } from './mocks'

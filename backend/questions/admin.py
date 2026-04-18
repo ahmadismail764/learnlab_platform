@@ -20,9 +20,9 @@ class QuestionAdmin(admin.ModelAdmin):
 
 @admin.register(PracticeSession)
 class PracticeSessionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'student', 'session_type', 'start_time', 'end_time', 'total_xp_earned')
+    list_display = ('id', 'learner', 'session_type', 'start_time', 'end_time', 'total_xp_earned')
     list_filter = ('session_type', 'start_time')
-    search_fields = ('student__user__username',)
+    search_fields = ('learner__user__username',)
 
 @admin.register(SingleQuestionInteraction)
 class SingleQuestionInteractionAdmin(admin.ModelAdmin):
@@ -30,6 +30,6 @@ class SingleQuestionInteractionAdmin(admin.ModelAdmin):
 
 @admin.register(TopicMastery)
 class TopicMasteryAdmin(admin.ModelAdmin):
-    list_display = ('student', 'topic', 'difficulty', 'stability', 'last_review_date', 'next_review_date')
+    list_display = ('learner', 'topic', 'difficulty', 'stability', 'last_review_date', 'next_review_date')
     list_filter = ('topic', 'last_review_date')
-    search_fields = ('student__user__username', 'topic__name')
+    search_fields = ('learner__user__username', 'topic__name')

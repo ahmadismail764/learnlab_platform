@@ -38,7 +38,7 @@ export function AdminProfilePage() {
 
   // Mock system stats
   const systemStats = {
-    totalStudents: 245,
+    totalLearners: 245,
     totalQuestions: 1280,
     activeToday: 42,
     systemUptime: '99.9%',
@@ -49,7 +49,7 @@ export function AdminProfilePage() {
     { type: 'question' as const, descKey: 'profile:addedQuestion', detail: 'Propositional Logic - Tier 2', time: '1h ago' },
     { type: 'settings' as const, descKey: 'profile:updatedSettings', detail: 'Notification preferences', time: '3h ago' },
     { type: 'review' as const, descKey: 'profile:reviewedContent', detail: '5 questions approved', time: '1d ago' },
-    { type: 'export' as const, descKey: 'profile:exportedData', detail: 'Student analytics CSV', time: '2d ago' },
+    { type: 'export' as const, descKey: 'profile:exportedData', detail: 'Learner analytics CSV', time: '2d ago' },
   ]
 
   function getActionIcon(type: string) {
@@ -157,8 +157,8 @@ export function AdminProfilePage() {
                   <div className="p-2 bg-primary-100 dark:bg-primary-800/30 rounded-lg w-fit mx-auto mb-2">
                     <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
                   </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.totalStudents}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:totalStudents')}</p>
+                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.totalLearners}</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:totalLearners')}</p>
                 </div>
                 <div className="text-center p-3 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl">
                   <div className="p-2 bg-secondary-100 dark:bg-secondary-800/30 rounded-lg w-fit mx-auto mb-2">

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery
-from users.serializers import StudentSerializer
+from users.serializers import LearnerSerializer
 import math
 from datetime import datetime, timezone
 
@@ -29,12 +29,12 @@ class SingleQuestionInteractionSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'user_response', 'is_correct', 'time_taken_seconds', 'confidence_rating']
 
 class PracticeSessionSerializer(serializers.ModelSerializer):
-    student = StudentSerializer(read_only=True)
+    learner = LearnerSerializer(read_only=True)
     interactions = SingleQuestionInteractionSerializer(many=True, read_only=True)
 
     class Meta:
         model = PracticeSession
-        fields = ['id', 'student', 'session_type', 'start_time', 'end_time', 'total_xp_earned', 'interactions']
+        fields = ['id', 'learner', 'session_type', 'start_time', 'end_time', 'total_xp_earned', 'interactions']
 
 class SingleQuestionInteractionCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,8 +61,8 @@ class TopicMasterySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TopicMastery
-        fields = ['id', 'student', 'topic', 'topic_name', 'difficulty', 'stability', 'last_review_date', 'next_review_date', 'retrievability']
-        read_only_fields = ['student', 'topic', 'difficulty', 'stability', 'last_review_date', 'retrievability']
+        fields = ['id', 'learner', 'topic', 'topic_name', 'difficulty', 'stability', 'last_review_date', 'next_review_date', 'retrievability']
+        read_only_fields = ['learner', 'topic', 'difficulty', 'stability', 'last_review_date', 'retrievability']
 
     def get_retrievability(self, obj) -> float:
         if obj.stability <= 0:

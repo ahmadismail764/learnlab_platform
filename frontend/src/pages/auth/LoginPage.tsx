@@ -19,7 +19,7 @@ import {
  * 2. User enters email/password
  * 3. System validates credentials
  * 4. System authenticates user
- *    - If student → redirect to student dashboard
+ *    - If learner → redirect to learner dashboard
  *    - If admin   → redirect to admin dashboard
  *
  * Alternate Flows:
@@ -58,7 +58,7 @@ export function LoginPage() {
 
       const user = await login({ email, password });
       setBackendStatus("ok");
-      const nextRoute = user.role === "admin" ? "/admin" : "/student";
+      const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       navigate(nextRoute, { replace: true });
     } catch (err: unknown) {
       setBackendStatus("error");
@@ -194,7 +194,7 @@ export function LoginPage() {
           🧪 {t("auth:testAccounts")}:
         </p>
         <div className="space-y-1 text-neutral-600 dark:text-neutral-400">
-          <p>{t("auth:student")}: student@learnlab.com / Student123!</p>
+          <p>{t("auth:learner")}: learner@learnlab.com / Learner123!</p>
           <p>{t("auth:admin")}: admin@learnlab.com / Admin123!</p>
         </div>
       </div>

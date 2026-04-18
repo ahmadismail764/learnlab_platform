@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
-from users.models import Student
+from users.models import Learner
 
 class Topic(models.Model):
     name = models.CharField(max_length=255)
@@ -43,14 +43,14 @@ class PracticeSession(models.Model):
         ('quiz', 'Quiz'),
         ('review', 'Review')
     )
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='practice_sessions')
+    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='practice_sessions')
     session_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='adaptive')
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     total_xp_earned = models.IntegerField(default=0)
     
     def __str__(self):
-        return f"{self.session_type} Session {self.id} for {self.student.user.username}"
+        return f"{self.session_type} Session {self.id} for {self.learner.user.username}"
 
 class SingleQuestionInteraction(models.Model):
     session = models.ForeignKey(PracticeSession, on_delete=models.CASCADE, related_name='interactions')
@@ -65,9 +65,9 @@ class SingleQuestionInteraction(models.Model):
 
 class TopicMastery(models.Model):
     """
-    Represents an FSRS 'Card' for spaced repetition per student/topic.
+    Represents an FSRS 'Card' for spaced repetition per learner/topic.
     """
-    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='masteries')
+    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
 
     # FSRS Card Fields
@@ -80,4 +80,4 @@ class TopicMastery(models.Model):
     next_review_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('student', 'topic')  # One mastery record per student/topic
+        unique_together = ('learner', 'topic')  # One mastery record per learner/topic

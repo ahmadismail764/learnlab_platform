@@ -2,14 +2,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Avg, Count
-from users.models import Student
+from users.models import Learner
 from questions.models import TopicMastery, PracticeSession
 from datetime import timedelta
 from django.utils import timezone
 import math
+
+""" 
+    The following func. AggregatedMetrics retrives aggregated platform metrics including 
+    review counts, active users, mastery averages, and estimated retention.
+"""
 class AggregatedMetricsView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    
     def get(self, request):
         # 1. Get Review Count (Practice Sessions)
         review_count = PracticeSession.objects.count()
@@ -22,8 +28,8 @@ class AggregatedMetricsView(APIView):
 
         # 2. Get Active Users (7 & 30 days)
         now = timezone.now()
-        active_7_days = Student.objects.filter(last_practice_date__gte=now.date() - timedelta(days=7)).count()
-        active_30_days = Student.objects.filter(last_practice_date__gte=now.date() - timedelta(days=30)).count()
+        active_7_days = Learner.objects.filter(last_practice_date__gte=now.date() - timedelta(days=7)).count()
+        active_30_days = Learner.objects.filter(last_practice_date__gte=now.date() - timedelta(days=30)).count()
 
         # 3. Get Topic Mastery Averages
         mastery_stats = TopicMastery.objects.aggregate(
@@ -50,18 +56,24 @@ class AggregatedMetricsView(APIView):
             "estimated_retention": round(retention_rate, 4)
         })
 
+
+"""
+    Retrieves specific performance analytics, mastery averages, 
+    and stability distribution for a given topic.
+"""
 class TopicAnalyticsView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
+    
     def get(self, request, topic_id):
         # Get specific analytics for a topic
         stats = TopicMastery.objects.filter(topic_id=topic_id).aggregate(
             avg_stability=Avg('stability'),
             avg_difficulty=Avg('difficulty'),
-            student_count=Count('student', distinct=True)
+            learner_count=Count('learner', distinct=True)
         )
         
-        # Performance distribution (e.g. how many students in stability tiers)
+        # Performance distribution (e.g. how many learners in stability tiers)
         distribution = {
             "low_stability": TopicMastery.objects.filter(topic_id=topic_id, stability__lt=5).count(),
             "medium_stability": TopicMastery.objects.filter(topic_id=topic_id, stability__gte=5, stability__lt=20).count(),

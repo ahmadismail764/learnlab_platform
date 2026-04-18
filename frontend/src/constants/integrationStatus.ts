@@ -19,7 +19,7 @@ const routeStatusMap: Array<{
     },
   },
   {
-    match: (p) => p === '/student/profile' || p === '/admin/profile',
+    match: (p) => p === '/learner/profile' || p === '/admin/profile',
     info: {
       status: 'partial',
       label: 'Partially Integrated',
@@ -27,7 +27,7 @@ const routeStatusMap: Array<{
     },
   },
   {
-    match: (p) => p.startsWith('/student') || p.startsWith('/admin'),
+    match: (p) => p.startsWith('/learner') || p.startsWith('/admin'),
     info: {
       status: 'static',
       label: 'Static Demo Data',

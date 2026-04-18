@@ -151,7 +151,7 @@ const categoryIcons: Record<string, any> = {
 }
 
 export function AchievementsPage() {
-  const { t: _t } = useTranslation(['gamification', 'student', 'common'])
+  const { t: _t } = useTranslation(['gamification', 'learner', 'common'])
 
   const earnedCount = achievements.filter(a => a.earned).length
   const totalXPEarned = achievements.filter(a => a.earned).reduce((sum, a) => sum + a.xpReward, 0)

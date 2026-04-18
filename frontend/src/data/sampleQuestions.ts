@@ -154,7 +154,7 @@ const combinatoricsQuestions: SampleQuestion[] = [
     topicId: 'permutations',
     topicKey: 'topics:combinatorics.permutations',
     tier: 1,
-    content: 'How many ways can 4 students line up in a row?',
+    content: 'How many ways can 4 learners line up in a row?',
     answerType: 'multiple-choice',
     correctAnswer: '24',
     solutionSteps: [

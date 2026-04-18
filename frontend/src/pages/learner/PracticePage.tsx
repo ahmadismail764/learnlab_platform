@@ -56,7 +56,7 @@ interface QuestionState {
 }
 
 export function PracticePage() {
-  // const { t } = useTranslation(['student', 'common', 'practice'])
+  // const { t } = useTranslation(['learner', 'common', 'practice'])
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -252,7 +252,7 @@ export function PracticePage() {
               </div>
             </div>
 
-            <Button className="w-full h-20 bg-neutral-950 dark:bg-white text-white dark:text-neutral-900 rounded-[2.2rem] text-sm font-black uppercase tracking-[0.4em] shadow-2xl group" onClick={() => window.location.href='/student/dashboard'}>
+            <Button className="w-full h-20 bg-neutral-950 dark:bg-white text-white dark:text-neutral-900 rounded-[2.2rem] text-sm font-black uppercase tracking-[0.4em] shadow-2xl group" onClick={() => window.location.href='/learner/dashboard'}>
                Commit Lab Log
                <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-2 transition-transform" />
             </Button>

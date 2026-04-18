@@ -46,48 +46,48 @@ interface NavItem {
 
 // Navigation items configuration - extensible without modifying component
 const navItems: NavItem[] = [
-  // Student items
+  // Learner items
   {
     labelKey: "nav:dashboard",
-    href: "/student",
+    href: "/learner",
     icon: LayoutDashboard,
-    roles: ["student"],
+    roles: ["learner"],
   },
   {
     labelKey: "nav:topics",
-    href: "/student/topics",
+    href: "/learner/topics",
     icon: BookOpen,
-    roles: ["student"],
+    roles: ["learner"],
   },
   {
     labelKey: "nav:practice",
-    href: "/student/practice",
+    href: "/learner/practice",
     icon: FileQuestion,
-    roles: ["student"],
+    roles: ["learner"],
   },
   {
     labelKey: "nav:progress",
-    href: "/student/progress",
+    href: "/learner/progress",
     icon: BarChart3,
-    roles: ["student"],
+    roles: ["learner"],
   },
   {
     labelKey: "nav:achievements",
-    href: "/student/achievements",
+    href: "/learner/achievements",
     icon: Trophy,
-    roles: ["student"],
+    roles: ["learner"],
   },
   {
     labelKey: "nav:leaderboard",
-    href: "/student/leaderboard",
+    href: "/learner/leaderboard",
     icon: Medal,
-    roles: ["student"],
+    roles: ["learner"],
   },
   {
     labelKey: "nav:profile",
-    href: "/student/profile",
+    href: "/learner/profile",
     icon: UserCircle,
-    roles: ["student"],
+    roles: ["learner"],
   },
 
   // Admin (Content Manager) items
@@ -144,7 +144,7 @@ export function Sidebar({
   );
 
   const roleLabels: Record<UserRole, string> = {
-    student: t("auth:student"),
+    learner: t("auth:learner"),
     admin: t("auth:admin"),
   };
 

@@ -4,7 +4,7 @@
  * Authentication-related types.
  * 
  * 2-Role Model:
- * - student: Self-registration allowed
+ * - learner: Self-registration allowed
  * - admin: Created by existing admin only
  */
 
@@ -18,7 +18,7 @@ export interface RegisterData {
   password: string
   firstName: string
   lastName: string
-  // Only students can self-register; admin accounts created by existing admins
+  // Only learners can self-register; admin accounts created by existing admins
 }
 
 export interface AuthTokens {

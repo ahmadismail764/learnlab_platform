@@ -57,7 +57,7 @@ def apply_fractional_update(mastery, rating_val: int, fraction: float):
     mastery.save()
     return mastery
 
-def process_interaction(student, question, is_correct, session):
+def process_interaction(learner, question, is_correct, session):
     """
     Core function for Fractional Implicit Repetition (FIRe).
     Logs the interaction, updates the primary topic, and walks the knowledge graph.
@@ -74,7 +74,7 @@ def process_interaction(student, question, is_correct, session):
     topic = question.knowledge_point.topic
     
     # 2. Update Immediate TopicMastery
-    mastery, _ = TopicMastery.objects.get_or_create(student=student, topic=topic)
+    mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=topic)
     base_rating = 3 if is_correct else 1
     
     # Explicit full update
@@ -102,7 +102,7 @@ def process_interaction(student, question, is_correct, session):
             for enc_topic in curr_topic.encompassings.all():
                 if enc_topic.id not in visited:
                     visited.add(enc_topic.id)
-                    enc_mastery, _ = TopicMastery.objects.get_or_create(student=student, topic=enc_topic)
+                    enc_mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=enc_topic)
                     
                     # Apply weak positive rating (2 = Hard, representing partial/implicit review)
                     apply_fractional_update(enc_mastery, rating_val=2, fraction=fraction)
@@ -113,7 +113,7 @@ def process_interaction(student, question, is_correct, session):
             for adv_topic in curr_topic.prerequisite_for.all():
                 if adv_topic.id not in visited:
                     visited.add(adv_topic.id)
-                    adv_mastery, _ = TopicMastery.objects.get_or_create(student=student, topic=adv_topic)
+                    adv_mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=adv_topic)
                     
                     # Apply fail rating (1 = Again)
                     apply_fractional_update(adv_mastery, rating_val=1, fraction=fraction)
@@ -121,18 +121,18 @@ def process_interaction(student, question, is_correct, session):
 
     # 4. Gamification / XP Logic
     if not is_correct:
-        student.streak_count = 0
+        learner.streak_count = 0
     else:
         base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
-        multiplier = min(2.0, 1.0 + (student.streak_count * 0.1))
+        multiplier = min(2.0, 1.0 + (learner.streak_count * 0.1))
         gained_xp = int(base_xp * multiplier)
         
-        student.streak_count += 1
-        student.total_xp += gained_xp
-        student.last_practice_date = datetime.now(timezone.utc).date()
+        learner.streak_count += 1
+        learner.total_xp += gained_xp
+        learner.last_practice_date = datetime.now(timezone.utc).date()
         
         if session:
             session.total_xp_earned += gained_xp
             session.save()
             
-    student.save()
+    learner.save()

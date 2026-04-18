@@ -4,7 +4,7 @@ from collections import defaultdict
 from questions.models import TopicMastery
 
 class Command(BaseCommand):
-    help = 'Sends practice sheet reminders to students with due FSRS topics.'
+    help = 'Sends practice sheet reminders to learners with due FSRS topics.'
 
     def handle(self, *args, **options):
         now = timezone.now()
@@ -12,23 +12,23 @@ class Command(BaseCommand):
         # Query all TopicMastery records due for review
         due_masteries = TopicMastery.objects.filter(
             next_review_date__lte=now
-        ).select_related('student__user')
+        ).select_related('learner__user')
         
-        # Group by student
-        student_due_counts = defaultdict(int)
+        # Group by learner
+        learner_due_counts = defaultdict(int)
         for mastery in due_masteries:
-            # Assumes Student model has a user relation
-            username = mastery.student.user.username
-            student_due_counts[username] += 1
+            # Assumes Learner model has a user relation
+            username = mastery.learner.user.username
+            learner_due_counts[username] += 1
             
-        if not student_due_counts:
-            self.stdout.write(self.style.SUCCESS("No students have topics due for review today."))
+        if not learner_due_counts:
+            self.stdout.write(self.style.SUCCESS("No learners have topics due for review today."))
             return
 
         # Print reminders
-        for username, count in student_due_counts.items():
+        for username, count in learner_due_counts.items():
             self.stdout.write(
                 self.style.WARNING(f"Reminder: {username} has {count} topics due for review today.")
             )
         
-        self.stdout.write(self.style.SUCCESS(f"Processed reminders for {len(student_due_counts)} students."))
+        self.stdout.write(self.style.SUCCESS(f"Processed reminders for {len(learner_due_counts)} learners."))

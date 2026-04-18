@@ -3,13 +3,13 @@ import { AuthLayout, DashboardLayout } from "@/components/layout";
 import {
   LoginPage,
   RegisterPage,
-  StudentDashboard,
+  LearnerDashboard,
   AdminDashboard,
   PracticePage,
   TopicsPage,
   ProgressPage,
   AchievementsPage,
-  StudentProfilePage,
+  LearnerProfilePage,
   QuestionsPage,
   AnalyticsPage,
   SettingsPage,
@@ -26,7 +26,7 @@ import type { User } from "@/types";
  * Protected routes are handled by checking auth state.
  *
  * Roles:
- * - student: Primary learner - solves problems, views progress
+ * - learner: Primary learner - solves problems, views progress
  * - admin: Content manager - manages questions, monitors analytics
  */
 
@@ -83,18 +83,18 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
       ],
     },
 
-    // Student routes
+    // Learner routes
     {
-      path: "/student",
+      path: "/learner",
       element: createDashboardElement(user, onLogout),
       children: [
-        { index: true, element: <StudentDashboard /> },
+        { index: true, element: <LearnerDashboard /> },
         { path: "topics", element: <TopicsPage /> },
         { path: "practice", element: <PracticePage /> },
         { path: "progress", element: <ProgressPage /> },
         { path: "achievements", element: <AchievementsPage /> },
         { path: "leaderboard", element: <LeaderboardPage /> },
-        { path: "profile", element: <StudentProfilePage /> },
+        { path: "profile", element: <LearnerProfilePage /> },
       ],
     },
 
@@ -136,7 +136,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
 // Get default route based on user role
 function getDefaultRoute(role: User["role"]): string {
   const routes: Record<User["role"], string> = {
-    student: "/student",
+    learner: "/learner",
     admin: "/admin",
   };
   return routes[role];

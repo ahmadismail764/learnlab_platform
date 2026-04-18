@@ -32,7 +32,7 @@ export function createMockUser(overrides: Partial<User> = {}): User {
     email: 'test@example.com',
     firstName: 'Test',
     lastName: 'User',
-    role: 'student',
+    role: 'learner',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...overrides,
@@ -40,13 +40,13 @@ export function createMockUser(overrides: Partial<User> = {}): User {
 }
 
 /**
- * Create a mock student user
+ * Create a mock learner user
  */
-export function createMockStudent(overrides: Partial<User> = {}): User {
+export function createMockLearner(overrides: Partial<User> = {}): User {
   return createMockUser({
-    role: 'student',
-    email: 'student@example.com',
-    firstName: 'Student',
+    role: 'learner',
+    email: 'learner@example.com',
+    firstName: 'Learner',
     ...overrides,
   })
 }

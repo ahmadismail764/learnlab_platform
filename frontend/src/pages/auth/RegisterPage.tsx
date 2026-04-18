@@ -15,11 +15,11 @@ import {
  * RegisterPage — UC-01
  *
  * Flow:
- * 1. Student opens LearnLab → system shows registration form
- * 2. Student enters unique email and password
+ * 1. Learner opens LearnLab → system shows registration form
+ * 2. Learner enters unique email and password
  * 3. System validates inputs (client-side: email format, password strength, match, terms)
  * 4. System calls backend register API
- * 5. System authenticates and redirects to student dashboard
+ * 5. System authenticates and redirects to learner dashboard
  */
 
 type PasswordStrength = "weak" | "medium" | "strong";
@@ -171,7 +171,7 @@ export function RegisterPage() {
       });
       setBackendStatus("ok");
       setSuccess(true);
-      const nextRoute = user.role === "admin" ? "/admin" : "/student";
+      const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       setTimeout(() => navigate(nextRoute, { replace: true }), 700);
     } catch (err: unknown) {
       setBackendStatus("error");

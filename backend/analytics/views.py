@@ -6,7 +6,7 @@ from users.models import Student
 from questions.models import TopicMastery, PracticeSession
 from datetime import timedelta
 from django.utils import timezone
-
+import math
 class AggregatedMetricsView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
@@ -17,7 +17,7 @@ class AggregatedMetricsView(APIView):
         if review_count < 10:
             return Response(
                 {"error": "Insufficient data for analysis", "review_count": review_count},
-                status=status.HTTP_400_BAD_REQ
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # 2. Get Active Users (7 & 30 days)
@@ -36,7 +36,7 @@ class AggregatedMetricsView(APIView):
         # Since retrievability is a formula, we can't easily aggregate it in SQL
         # We'll take a sample or average stability to estimate
         avg_stability = mastery_stats['avg_stability'] or 0
-        import math
+
         # R = e^(t/s * ln(0.9)), assuming t=1 (1 day since last review)
         retention_rate = math.exp(1 / max(avg_stability, 1) * math.log(0.9)) if avg_stability > 0 else 0
 

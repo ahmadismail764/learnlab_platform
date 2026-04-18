@@ -24,3 +24,7 @@ frontEnd/.env.local
 
 # Python
 staticfiles/
+
+*.sqlite3
+*.log
+.env.example

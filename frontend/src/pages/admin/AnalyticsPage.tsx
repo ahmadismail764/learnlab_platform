@@ -17,10 +17,10 @@ import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/component
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 
 /**
- * AnalyticsPage - Admin Student Analytics Dashboard
+ * AnalyticsPage - Admin Learner Analytics Dashboard
  * 
  * Features:
- * - Aggregate student metrics
+ * - Aggregate learner metrics
  * - Topic performance overview
  * - Activity trends
  * - Achievement statistics
@@ -32,7 +32,7 @@ export function AnalyticsPage() {
 
   // Mock analytics data
   const overviewStats = {
-    totalStudents: 1150,
+    totalLearners: 1150,
     activeThisWeek: 892,
     avgAccuracy: 73,
     avgSessionTime: 24, // minutes
@@ -67,23 +67,23 @@ export function AnalyticsPage() {
   }
 
   const weeklyActivity = [
-    { day: 'Sat', students: 420, questions: 2100 },
-    { day: 'Sun', students: 380, questions: 1850 },
-    { day: 'Mon', students: 520, questions: 2800 },
-    { day: 'Tue', students: 490, questions: 2650 },
-    { day: 'Wed', students: 510, questions: 2750 },
-    { day: 'Thu', students: 470, questions: 2400 },
-    { day: 'Fri', students: 350, questions: 1700 },
+    { day: 'Sat', learners: 420, questions: 2100 },
+    { day: 'Sun', learners: 380, questions: 1850 },
+    { day: 'Mon', learners: 520, questions: 2800 },
+    { day: 'Tue', learners: 490, questions: 2650 },
+    { day: 'Wed', learners: 510, questions: 2750 },
+    { day: 'Thu', learners: 470, questions: 2400 },
+    { day: 'Fri', learners: 350, questions: 1700 },
   ]
 
   const achievementStats = {
     totalUnlocked: 3240,
-    averagePerStudent: 2.8,
+    averagePerLearner: 2.8,
     mostCommon: 'First Steps',
     rarest: 'Perfect Master',
   }
 
-  const topStudents = [
+  const topLearners = [
     { name: 'أحمد محمد', accuracy: 94, questionsAnswered: 342, xp: 4520 },
     { name: 'فاطمة علي', accuracy: 91, questionsAnswered: 298, xp: 3980 },
     { name: 'يوسف حسن', accuracy: 89, questionsAnswered: 276, xp: 3650 },
@@ -96,8 +96,8 @@ export function AnalyticsPage() {
     [topicPerformance]
   )
 
-  const maxDailyStudents = useMemo(() =>
-    Math.max(...weeklyActivity.map(d => d.students)),
+  const maxDailyLearners = useMemo(() =>
+    Math.max(...weeklyActivity.map(d => d.learners)),
     [weeklyActivity]
   )
 
@@ -120,7 +120,7 @@ export function AnalyticsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {t('admin:studentAnalytics')}
+            {t('admin:learnerAnalytics')}
           </h1>
           <p className="text-neutral-600 dark:text-neutral-400 mt-1">
             {t('admin:analyticsDescription')}
@@ -175,8 +175,8 @@ export function AnalyticsPage() {
               <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.totalStudents}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalStudents')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.totalLearners}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalLearners')}</p>
             </div>
           </div>
         </Card>
@@ -371,8 +371,8 @@ export function AnalyticsPage() {
                   <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.totalUnlocked}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:avgPerStudent')}</span>
-                  <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.averagePerStudent}</span>
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:avgPerLearner')}</span>
+                  <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.averagePerLearner}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:mostCommon')}</span>
@@ -388,7 +388,7 @@ export function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Weekly Activity & Top Students */}
+      {/* Weekly Activity & Top Learners */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Weekly Activity */}
         <Card>
@@ -402,8 +402,8 @@ export function AnalyticsPage() {
                 <div key={day.day} className="flex-1 flex flex-col items-center gap-2">
                   <div 
                     className="w-full bg-primary-500 rounded-t transition-all"
-                    style={{ height: `${(day.students / maxDailyStudents) * 100}%` }}
-                    title={`${day.students} students, ${day.questions} questions`}
+                    style={{ height: `${(day.learners / maxDailyLearners) * 100}%` }}
+                    title={`${day.learners} learners, ${day.questions} questions`}
                   />
                   <span className="text-xs text-neutral-500 dark:text-neutral-400">{day.day}</span>
                 </div>
@@ -412,22 +412,22 @@ export function AnalyticsPage() {
             <div className="mt-4 flex justify-center gap-6 text-xs text-neutral-500 dark:text-neutral-400">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-primary-500 rounded" />
-                {t('admin:activeStudents')}
+                {t('admin:activeLearners')}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Top Students */}
+        {/* Top Learners */}
         <Card>
           <CardHeader 
-            title={t('admin:topStudents')}
+            title={t('admin:topLearners')}
             subtitle={t('admin:byAccuracy')}
           />
           <CardContent>
             <div className="space-y-3">
-              {topStudents.map((student, index) => (
-                <div key={student.name} className="flex items-center gap-3">
+              {topLearners.map((learner, index) => (
+                <div key={learner.name} className="flex items-center gap-3">
                   <div className={`
                     w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
                     ${index === 0 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' : ''}
@@ -438,16 +438,16 @@ export function AnalyticsPage() {
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-neutral-800 dark:text-neutral-100 truncate">{student.name}</p>
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100 truncate">{learner.name}</p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {student.questionsAnswered} {t('admin:questionsAnswered')} • {student.xp} XP
+                      {learner.questionsAnswered} {t('admin:questionsAnswered')} • {learner.xp} XP
                     </p>
                   </div>
                   <Badge 
-                    variant={student.accuracy >= 90 ? 'success' : 'primary'}
+                    variant={learner.accuracy >= 90 ? 'success' : 'primary'}
                     size="sm"
                   >
-                    {student.accuracy}%
+                    {learner.accuracy}%
                   </Badge>
                 </div>
               ))}
@@ -478,9 +478,9 @@ export function AnalyticsPage() {
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BarChart3 className="w-8 h-8 text-secondary-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalStudents)}
+                {Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalLearners)}
               </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:avgPerStudent')}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:avgPerLearner')}</p>
             </div>
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <Award className="w-8 h-8 text-accent-500 mx-auto mb-2" />

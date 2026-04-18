@@ -77,7 +77,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           email: userDate.email,
           firstName: userDate.first_name,
           lastName: userDate.last_name,
-          role: userDate.is_staff ? "admin" : "student",
+          role: userDate.is_staff ? "admin" : "learner",
           createdAt: userDate.date_joined,
           updatedAt: userDate.date_joined, // backend doesn't send updated_at yet
         };
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email: userDate.email,
         firstName: userDate.first_name,
         lastName: userDate.last_name,
-        role: userDate.is_staff ? "admin" : "student",
+        role: userDate.is_staff ? "admin" : "learner",
         createdAt: userDate.date_joined,
         updatedAt: userDate.date_joined,
       };

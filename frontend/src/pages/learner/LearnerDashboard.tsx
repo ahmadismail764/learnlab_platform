@@ -12,9 +12,9 @@ import { Card, Button, Badge, ProgressBar } from "@/components/ui";
 import { useCurrentUser } from "@/contexts";
 
 /**
- * StudentDashboard
+ * LearnerDashboard
  *
- * Main landing page for students showing:
+ * Main landing page for learners showing:
  * - Welcome message with brand-gradient hero card
  * - Progress overview with branded stat cards
  * - Topics due for review
@@ -22,8 +22,8 @@ import { useCurrentUser } from "@/contexts";
  * RTL-aware with full i18n support.
  */
 
-export function StudentDashboard() {
-  const { t } = useTranslation(["student", "common", "topics", "gamification"]);
+export function LearnerDashboard() {
+  const { t } = useTranslation(["learner", "common", "topics", "gamification"]);
   const user = useCurrentUser();
 
   // Mock data - will come from API
@@ -146,29 +146,29 @@ export function StudentDashboard() {
             <div className="flex items-center gap-2 mb-1">
               <Sparkles className="w-4 h-4 text-accent-300" />
               <p className="text-white/70 text-sm">
-                {t("student:todaysProgress")}
+                {t("learner:todaysProgress")}
               </p>
             </div>
             <h1 className="text-2xl font-bold font-display">
-              {t("student:welcomeBack", { name: user.firstName })}
+              {t("learner:welcomeBack", { name: user.firstName })}
             </h1>
             <p className="text-3xl font-bold mt-2 font-display">
-              {t("student:questionsAnsweredToday", {
+              {t("learner:questionsAnsweredToday", {
                 count: stats.questionsToday,
               })}
             </p>
             <p className="text-white/70 text-sm mt-1">
-              {t("student:topicsProgress", { due: stats.topicsDue })}
+              {t("learner:topicsProgress", { due: stats.topicsDue })}
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/student/practice">
+            <Link to="/learner/practice">
               <Button
                 variant="outline"
                 className="border-white/50 dark:border-white/50 text-white hover:bg-white/20 hover:border-white/70 dark:hover:bg-white/20 dark:hover:border-white/70 backdrop-blur-sm"
                 rightIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
               >
-                {t("student:startSession")}
+                {t("learner:startSession")}
               </Button>
             </Link>
           </div>
@@ -187,7 +187,7 @@ export function StudentDashboard() {
                 {stats.totalMastered}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("student:questionsMastered")}
+                {t("learner:questionsMastered")}
               </p>
             </div>
           </div>
@@ -203,7 +203,7 @@ export function StudentDashboard() {
                 {stats.topicsInProgress}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("student:activeTopics")}
+                {t("learner:activeTopics")}
               </p>
             </div>
           </div>
@@ -235,7 +235,7 @@ export function StudentDashboard() {
                 2.5h
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("student:thisWeek")}
+                {t("learner:thisWeek")}
               </p>
             </div>
           </div>
@@ -248,10 +248,10 @@ export function StudentDashboard() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold font-display text-neutral-800 dark:text-neutral-100">
-              {t("student:todaysQueue")}
+              {t("learner:todaysQueue")}
             </h2>
             <Link
-              to="/student/topics"
+              to="/learner/topics"
               className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
             >
               {t("common:viewAll")}
@@ -262,7 +262,7 @@ export function StudentDashboard() {
             {topicsDueForReview.map((topic) => (
               <Link
                 key={topic.id}
-                to={`/student/practice?topic=${topic.id}`}
+                to={`/learner/practice?topic=${topic.id}`}
                 className="block group"
               >
                 <Card
@@ -280,7 +280,7 @@ export function StudentDashboard() {
                           {t(topic.nameKey)}
                         </h3>
                         <Badge variant="primary" size="sm">
-                          {t("student:topicsLeft", {
+                          {t("learner:topicsLeft", {
                             count: topic.questionsLeft,
                           })}
                         </Badge>
@@ -303,10 +303,10 @@ export function StudentDashboard() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold font-display text-neutral-800 dark:text-neutral-100">
-              {t("student:achievements")}
+              {t("learner:achievements")}
             </h2>
             <Link
-              to="/student/achievements"
+              to="/learner/achievements"
               className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
             >
               {t("common:viewAll")}

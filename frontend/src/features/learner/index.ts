@@ -1,7 +1,7 @@
 /**
- * Student Feature Module
+ * Learner Feature Module
  * 
- * Contains all student-specific functionality:
+ * Contains all learner-specific functionality:
  * - Dashboard
  * - Question practice
  * - Progress tracking
@@ -10,10 +10,10 @@
  */
 
 // Structure to create:
-// ./components/ - Student UI components
-// ./hooks/ - Student-specific hooks
-// ./services/ - Student API services
-// ./types/ - Student types
+// ./components/ - Learner UI components
+// ./hooks/ - Learner-specific hooks
+// ./services/ - Learner API services
+// ./types/ - Learner types
 
 // export * from './components'
 // export * from './hooks'

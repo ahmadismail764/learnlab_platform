@@ -84,7 +84,7 @@ const topicProgressList: TopicProgress[] = [
 ]
 
 export function ProgressPage() {
-  // const { t } = useTranslation(['student', 'topics', 'common', 'gamification'])
+  // const { t } = useTranslation(['learner', 'topics', 'common', 'gamification'])
 
   return (
     <div className="stagger-in space-y-12 pb-20 pt-4">
@@ -219,7 +219,7 @@ export function ProgressPage() {
               <h2 className="text-2xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">Sector Stability</h2>
               <p className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em]">Individual Specimen Performance</p>
            </div>
-           <Link to="/student/topics">
+           <Link to="/learner/topics">
               <Button variant="outline" className="h-12 px-6 rounded-2xl border-neutral-200 dark:border-neutral-800 font-black uppercase tracking-widest text-[10px]">
                  Access Inventory
               </Button>

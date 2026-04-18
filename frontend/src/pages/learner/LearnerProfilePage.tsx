@@ -24,12 +24,12 @@ import { useCurrentUser } from '@/contexts'
 import { cn } from '@/utils/cn'
 
 /**
- * StudentProfilePage (Researcher Dossier)
+ * LearnerProfilePage (Researcher Dossier)
  * Re-imagined as a high-fidelity data dossier for the researcher.
  */
 
-export function StudentProfilePage() {
-  const { t: _t } = useTranslation(['student', 'common'])
+export function LearnerProfilePage() {
+  const { t: _t } = useTranslation(['learner', 'common'])
   const user = useCurrentUser()
   const [isEditing, setIsEditing] = useState(false)
 

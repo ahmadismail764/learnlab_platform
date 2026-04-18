@@ -11,7 +11,7 @@
 
 export const APP_NAME = 'Learn Lab'
 export const APP_VERSION = '0.1.0'
-export const APP_DESCRIPTION = 'Discrete Mathematics Learning Platform for College Students'
+export const APP_DESCRIPTION = 'Discrete Mathematics Learning Platform for College Learners'
 
 // ============================================
 // API Configuration
@@ -43,12 +43,12 @@ export const ROUTES = {
   REGISTER: '/register',
   FORGOT_PASSWORD: '/forgot-password',
   
-  // Student
-  STUDENT_DASHBOARD: '/student',
-  STUDENT_PRACTICE: '/student/practice',
-  STUDENT_PROGRESS: '/student/progress',
-  STUDENT_TOPICS: '/student/topics',
-  STUDENT_ACHIEVEMENTS: '/student/achievements',
+  // Learner
+  LEARNER_DASHBOARD: '/learner',
+  LEARNER_PRACTICE: '/learner/practice',
+  LEARNER_PROGRESS: '/learner/progress',
+  LEARNER_TOPICS: '/learner/topics',
+  LEARNER_ACHIEVEMENTS: '/learner/achievements',
   
   // Admin (Content Manager)
   ADMIN_DASHBOARD: '/admin',

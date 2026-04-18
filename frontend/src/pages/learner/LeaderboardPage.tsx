@@ -15,7 +15,8 @@ import {
   Dna
 } from 'lucide-react'
 import { Card, Badge, Avatar, Button, ProgressBar } from '@/components/ui'
-import { studentsService } from '@/services/students'
+import { learnersService } from '@/services/learners'
+import { topicsService } from '@/services/topics'
 import { cn } from '@/utils/cn'
 
 /**
@@ -38,16 +39,46 @@ interface LeaderboardEntry {
 export function LeaderboardPage() {
   const { t: _t } = useTranslation(['gamification', 'common'])
   const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'allTime'>('week')
+  const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
+  const [topics, setTopics] = useState<any[]>([])
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('')
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<LeaderboardEntry | null>(null)
 
   useEffect(() => {
     let isMounted = true
+    const fetchTopics = async () => {
+      try {
+        const data = await topicsService.getTopics()
+        const results = Array.isArray(data) ? data : (data.results || [])
+        if (isMounted) {
+            setTopics(results)
+            if (results.length > 0) setSelectedTopicId(results[0].id.toString())
+        }
+      } catch (err) {
+        console.error("Failed to fetch topics", err)
+      }
+    }
+    fetchTopics()
+    return () => { isMounted = false }
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
     const fetchData = async () => {
       setIsLoading(true)
       try {
-        const data = await studentsService.getLeaderboard()
+        let data;
+        if (leaderboardType === 'global') {
+            data = await learnersService.getLeaderboard()
+        } else {
+            if (!selectedTopicId) {
+                setIsLoading(false);
+                return;
+            }
+            data = await learnersService.getTopicLeaderboard(selectedTopicId)
+        }
         const results = Array.isArray(data) ? data : (data.results || [])
         
         const mappedResults: LeaderboardEntry[] = results.map((e: any, index: number) => ({
@@ -74,7 +105,7 @@ export function LeaderboardPage() {
     }
     fetchData()
     return () => { isMounted = false }
-  }, [timeFilter])
+  }, [timeFilter, leaderboardType, selectedTopicId])
 
   const displayEntries = useMemo(() => {
     return leaderboard.slice(0, 10).sort((a, b) => a.rank - b.rank)
@@ -114,21 +145,35 @@ export function LeaderboardPage() {
           </p>
         </div>
 
-        <div className="flex gap-4 p-2 bg-neutral-100 dark:bg-neutral-900 rounded-3xl border border-neutral-200/50 dark:border-neutral-800">
-           {(['week', 'month', 'all'] as const).map(f => (
-              <button
-                 key={f}
-                 onClick={() => setTimeFilter(f === 'all' ? 'allTime' : f as any)}
-                 className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                    (timeFilter === 'allTime' ? 'all' : timeFilter) === f 
-                       ? 'bg-neutral-950 text-white shadow-xl scale-105' 
-                       : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-                 }`}
-              >
-                 {f}
-              </button>
-           ))}
-        </div>
+          <div className="flex flex-col gap-4 items-end">
+              <div className="flex gap-4 p-2 bg-neutral-100 dark:bg-neutral-900 rounded-3xl border border-neutral-200/50 dark:border-neutral-800">
+                 {(['global', 'topic'] as const).map(type => (
+                    <button
+                       key={type}
+                       onClick={() => setLeaderboardType(type)}
+                       className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                          leaderboardType === type 
+                             ? 'bg-neutral-950 text-white shadow-xl scale-105' 
+                             : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                       }`}
+                    >
+                       {type}
+                    </button>
+                 ))}
+              </div>
+              
+              {leaderboardType === 'topic' && (
+                  <select 
+                      value={selectedTopicId}
+                      onChange={(e) => setSelectedTopicId(e.target.value)}
+                      className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2 text-sm font-bold text-neutral-700 dark:text-neutral-300 outline-hidden"
+                  >
+                      {topics.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+              )}
+          </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">

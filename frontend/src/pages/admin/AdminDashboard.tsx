@@ -23,15 +23,15 @@ export function AdminDashboard() {
   // Mock data
   const stats = {
     totalUsers: 1247,
-    students: 1150,
+    learners: 1150,
     admins: 8,
     activeToday: 423,
     newThisWeek: 34,
   }
 
   const recentUsers = [
-    { id: '1', name: 'يوسف محمد', email: 'youssef@school.com', roleKey: 'auth:student', hoursAgo: 2 },
-    { id: '3', name: 'زينب  السيد', email: 'zainab@school.com', roleKey: 'auth:student', daysAgo: 1 },
+    { id: '1', name: 'يوسف محمد', email: 'youssef@school.com', roleKey: 'auth:learner', hoursAgo: 2 },
+    { id: '3', name: 'زينب  السيد', email: 'zainab@school.com', roleKey: 'auth:learner', daysAgo: 1 },
   ]
 
   const systemHealth = [
@@ -114,8 +114,8 @@ export function AdminDashboard() {
               <BookOpen className="w-5 h-5 text-secondary-700 dark:text-secondary-300" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{stats.students}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:students')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{stats.learners}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:learners')}</p>
             </div>
           </div>
         </Card>
@@ -131,8 +131,8 @@ export function AdminDashboard() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
-                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.students}</p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:students')}</p>
+                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.learners}</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:learners')}</p>
                 </div>
                 <div className="text-center p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl">
                   <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.totalUsers}</p>

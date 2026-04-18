@@ -22,7 +22,7 @@ const mockUser: User = {
   email: 'mock@example.com',
   firstName: 'Mock',
   lastName: 'User',
-  role: 'student',
+  role: 'learner',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 }
@@ -38,7 +38,7 @@ export const mockAuthContext = {
     updateUser: vi.fn(),
   },
   
-  /** Authenticated student state */
+  /** Authenticated learner state */
   authenticated: {
     user: mockUser,
     isAuthenticated: true,

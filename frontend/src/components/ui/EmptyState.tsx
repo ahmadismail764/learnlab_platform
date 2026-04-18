@@ -9,7 +9,7 @@ import { cn } from '@/utils/cn'
  * Display meaningful empty states with icons and actions.
  */
 
-type EmptyStatePreset = 'default' | 'search' | 'students' | 'content' | 'noResults'
+type EmptyStatePreset = 'default' | 'search' | 'learners' | 'content' | 'noResults'
 
 interface EmptyStateProps {
   /** Preset type for common empty states */
@@ -45,10 +45,10 @@ const presets: Record<EmptyStatePreset, { icon: typeof Inbox; title: string; des
     title: 'No results found',
     description: 'Try adjusting your search or filters to find what you\'re looking for.',
   },
-  students: {
+  learners: {
     icon: Users,
-    title: 'No students yet',
-    description: 'Students will appear here once they join your class.',
+    title: 'No learners yet',
+    description: 'Learners will appear here once they join your class.',
   },
   content: {
     icon: BookOpen,

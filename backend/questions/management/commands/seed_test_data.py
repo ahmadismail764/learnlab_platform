@@ -1,31 +1,31 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from users.models import Student
+from users.models import Learner
 from questions.models import Topic, Question
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Seeds the database with test data (topics, questions, and a test student) for development'
+    help = 'Seeds the database with test data (topics, questions, and a test learner) for development'
 
     def handle(self, *args, **kwargs):
-        # 1. Create or get user and student
+        # 1. Create or get user and learner
         user, user_created = User.objects.get_or_create(
-            username='teststudent',
+            username='testlearner',
             defaults={
-                'email': 'teststudent@example.com'
+                'email': 'testlearner@example.com'
             }
         )
         if user_created:
             user.set_password('testpass123')
             user.save()
-            self.stdout.write(self.style.SUCCESS('Created User: teststudent'))
+            self.stdout.write(self.style.SUCCESS('Created User: testlearner'))
         else:
-            self.stdout.write('User teststudent already exists.')
+            self.stdout.write('User testlearner already exists.')
 
-        student, student_created = Student.objects.get_or_create(user=user)
-        if student_created:
-            self.stdout.write(self.style.SUCCESS('Created Student profile for teststudent'))
+        learner, learner_created = Learner.objects.get_or_create(user=user)
+        if learner_created:
+            self.stdout.write(self.style.SUCCESS('Created Learner profile for testlearner'))
             
         # 2. Create topics
         discrete_math, dm_created = Topic.objects.get_or_create(

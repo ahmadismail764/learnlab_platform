@@ -3,5 +3,5 @@ export * from './auth';
 export * from './topics';
 export * from './questions';
 export * from './practice';
-export * from './students';
+export * from './learners';
 export * from './analytics';

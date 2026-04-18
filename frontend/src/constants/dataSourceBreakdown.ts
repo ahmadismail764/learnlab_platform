@@ -13,8 +13,8 @@ const authItems: DataSourceItem[] = [
   { aspect: 'Forgot password flow', source: 'static', note: 'UI placeholder only' },
 ]
 
-const studentItems: DataSourceItem[] = [
-  { aspect: 'Student dashboard metrics', source: 'static', note: 'Mock cards and summary values' },
+const learnerItems: DataSourceItem[] = [
+  { aspect: 'Learner dashboard metrics', source: 'static', note: 'Mock cards and summary values' },
   { aspect: 'Topics list/progress', source: 'static', note: 'Page-level mock content still used' },
   { aspect: 'Practice sessions', source: 'partial', note: 'Service wired to /sessions/, page still partly static' },
   { aspect: 'Progress analytics', source: 'static', note: 'Mock charts/series' },
@@ -38,8 +38,8 @@ export function getDataSourceBreakdown(pathname: string): DataSourceItem[] {
   if (pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password')) {
     return authItems
   }
-  if (pathname.startsWith('/student')) {
-    return studentItems
+  if (pathname.startsWith('/learner')) {
+    return learnerItems
   }
   if (pathname.startsWith('/admin')) {
     return adminItems

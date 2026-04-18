@@ -6,7 +6,7 @@ import LanguageDetector from 'i18next-browser-languagedetector'
 import enCommon from './locales/en/common.json'
 import enAuth from './locales/en/auth.json'
 import enNav from './locales/en/nav.json'
-import enStudent from './locales/en/student.json'
+import enLearner from './locales/en/learner.json'
 import enAdmin from './locales/en/admin.json'
 import enPractice from './locales/en/practice.json'
 import enGamification from './locales/en/gamification.json'
@@ -19,7 +19,7 @@ import enProfile from './locales/en/profile.json'
 import arCommon from './locales/ar/common.json'
 import arAuth from './locales/ar/auth.json'
 import arNav from './locales/ar/nav.json'
-import arStudent from './locales/ar/student.json'
+import arLearner from './locales/ar/learner.json'
 import arAdmin from './locales/ar/admin.json'
 import arPractice from './locales/ar/practice.json'
 import arGamification from './locales/ar/gamification.json'
@@ -41,7 +41,7 @@ import arProfile from './locales/ar/profile.json'
  * - common: Shared UI elements (buttons, labels, errors)
  * - auth: Authentication related (login, register, etc.)
  * - nav: Navigation menu items
- * - student: Student dashboard and features
+ * - learner: Learner dashboard and features
  * - admin: Admin/System admin features
  * - practice: Practice session and questions
  * - gamification: XP, streaks, achievements
@@ -58,7 +58,7 @@ export const namespaces = [
   'common',
   'auth', 
   'nav',
-  'student',
+  'learner',
   'admin',
   'practice',
   'gamification',
@@ -94,7 +94,7 @@ const resources = {
     common: enCommon,
     auth: enAuth,
     nav: enNav,
-    student: enStudent,
+    learner: enLearner,
     admin: enAdmin,
     practice: enPractice,
     gamification: enGamification,
@@ -107,7 +107,7 @@ const resources = {
     common: arCommon,
     auth: arAuth,
     nav: arNav,
-    student: arStudent,
+    learner: arLearner,
     admin: arAdmin,
     practice: arPractice,
     gamification: arGamification,

@@ -5,11 +5,11 @@
  * Feature-specific types live in their feature folders.
  * 
  * Domain: Learn Lab - Discrete Mathematics Learning Platform
- * Target: First-year college students
+ * Target: First-year college learners
  * 
  * Stakeholders:
- * - Student: Primary user - solves problems, views leaderboard, progresses as learner
- * - Admin: Content manager - manages question bank, monitors student analytics
+ * - Learner: Primary user - solves problems, views leaderboard, progresses as learner
+ * - Admin: Content manager - manages question bank, monitors learner analytics
  */
 
 // ============================================
@@ -18,10 +18,10 @@
 
 /**
  * User roles in the system
- * - student: Primary learner
+ * - learner: Primary learner
  * - admin: Content manager / System administrator
  */
-export type UserRole = 'student' | 'admin'
+export type UserRole = 'learner' | 'admin'
 
 export interface User {
   id: string
@@ -34,9 +34,9 @@ export interface User {
   updatedAt: string
 }
 
-/** Extended user profile for students */
-export interface StudentProfile extends User {
-  role: 'student'
+/** Extended user profile for learners */
+export interface LearnerProfile extends User {
+  role: 'learner'
   totalXP: number
   level: number
   lastActiveAt: string

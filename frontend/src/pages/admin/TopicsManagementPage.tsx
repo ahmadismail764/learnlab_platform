@@ -38,7 +38,7 @@ interface Topic {
   description: string
   parentModuleId: string
   questionsCount: number
-  studentsEnrolled: number
+  learnersEnrolled: number
   icon: string
 }
 
@@ -73,10 +73,10 @@ const mockModules: Module[] = [
     name: 'Logic',
     icon: '🔢',
     topics: [
-      { id: 'propositional', nameKey: 'topics:logic.propositional', name: 'Propositional Logic', description: 'Truth tables, logical connectives, compound statements', parentModuleId: 'logic', questionsCount: 20, studentsEnrolled: 45, icon: '→' },
-      { id: 'predicates', nameKey: 'topics:logic.predicates', name: 'Predicate Logic', description: 'Predicates, quantified statements, logical equivalences', parentModuleId: 'logic', questionsCount: 15, studentsEnrolled: 38, icon: '∀' },
-      { id: 'quantifiers', nameKey: 'topics:logic.quantifiers', name: 'Quantifiers', description: 'Universal and existential quantification, nested quantifiers', parentModuleId: 'logic', questionsCount: 12, studentsEnrolled: 30, icon: '∃' },
-      { id: 'proofs', nameKey: 'topics:logic.proofTechniques', name: 'Proof Techniques', description: 'Direct proof, contradiction, contrapositive, induction', parentModuleId: 'logic', questionsCount: 18, studentsEnrolled: 25, icon: '⊢' },
+      { id: 'propositional', nameKey: 'topics:logic.propositional', name: 'Propositional Logic', description: 'Truth tables, logical connectives, compound statements', parentModuleId: 'logic', questionsCount: 20, learnersEnrolled: 45, icon: '→' },
+      { id: 'predicates', nameKey: 'topics:logic.predicates', name: 'Predicate Logic', description: 'Predicates, quantified statements, logical equivalences', parentModuleId: 'logic', questionsCount: 15, learnersEnrolled: 38, icon: '∀' },
+      { id: 'quantifiers', nameKey: 'topics:logic.quantifiers', name: 'Quantifiers', description: 'Universal and existential quantification, nested quantifiers', parentModuleId: 'logic', questionsCount: 12, learnersEnrolled: 30, icon: '∃' },
+      { id: 'proofs', nameKey: 'topics:logic.proofTechniques', name: 'Proof Techniques', description: 'Direct proof, contradiction, contrapositive, induction', parentModuleId: 'logic', questionsCount: 18, learnersEnrolled: 25, icon: '⊢' },
     ],
   },
   {
@@ -85,10 +85,10 @@ const mockModules: Module[] = [
     name: 'Set Theory',
     icon: '∪',
     topics: [
-      { id: 'operations', nameKey: 'topics:sets.operations', name: 'Set Operations', description: 'Union, intersection, complement, difference', parentModuleId: 'sets', questionsCount: 16, studentsEnrolled: 48, icon: '∩' },
-      { id: 'venn', nameKey: 'topics:sets.vennDiagrams', name: 'Venn Diagrams', description: 'Visual representation of set relationships', parentModuleId: 'sets', questionsCount: 10, studentsEnrolled: 42, icon: '◯' },
-      { id: 'power', nameKey: 'topics:sets.powerSets', name: 'Power Sets', description: 'Power set construction, cardinality properties', parentModuleId: 'sets', questionsCount: 12, studentsEnrolled: 28, icon: 'P' },
-      { id: 'cartesian', nameKey: 'topics:sets.cartesianProduct', name: 'Cartesian Product', description: 'Ordered pairs, product sets, relation construction', parentModuleId: 'sets', questionsCount: 14, studentsEnrolled: 22, icon: '×' },
+      { id: 'operations', nameKey: 'topics:sets.operations', name: 'Set Operations', description: 'Union, intersection, complement, difference', parentModuleId: 'sets', questionsCount: 16, learnersEnrolled: 48, icon: '∩' },
+      { id: 'venn', nameKey: 'topics:sets.vennDiagrams', name: 'Venn Diagrams', description: 'Visual representation of set relationships', parentModuleId: 'sets', questionsCount: 10, learnersEnrolled: 42, icon: '◯' },
+      { id: 'power', nameKey: 'topics:sets.powerSets', name: 'Power Sets', description: 'Power set construction, cardinality properties', parentModuleId: 'sets', questionsCount: 12, learnersEnrolled: 28, icon: 'P' },
+      { id: 'cartesian', nameKey: 'topics:sets.cartesianProduct', name: 'Cartesian Product', description: 'Ordered pairs, product sets, relation construction', parentModuleId: 'sets', questionsCount: 14, learnersEnrolled: 22, icon: '×' },
     ],
   },
   {
@@ -97,10 +97,10 @@ const mockModules: Module[] = [
     name: 'Relations',
     icon: '≡',
     topics: [
-      { id: 'properties', nameKey: 'topics:relations.properties', name: 'Relation Properties', description: 'Reflexive, symmetric, transitive, antisymmetric', parentModuleId: 'relations', questionsCount: 18, studentsEnrolled: 35, icon: 'R' },
-      { id: 'equivalence', nameKey: 'topics:relations.equivalence', name: 'Equivalence Relations', description: 'Equivalence classes, partitions, quotient sets', parentModuleId: 'relations', questionsCount: 14, studentsEnrolled: 28, icon: '~' },
-      { id: 'partial', nameKey: 'topics:relations.partialOrders', name: 'Partial Orders', description: 'Hasse diagrams, lattices, total orders', parentModuleId: 'relations', questionsCount: 16, studentsEnrolled: 20, icon: '≤' },
-      { id: 'functions', nameKey: 'topics:relations.functions', name: 'Functions', description: 'Injective, surjective, bijective, composition', parentModuleId: 'relations', questionsCount: 20, studentsEnrolled: 32, icon: 'f' },
+      { id: 'properties', nameKey: 'topics:relations.properties', name: 'Relation Properties', description: 'Reflexive, symmetric, transitive, antisymmetric', parentModuleId: 'relations', questionsCount: 18, learnersEnrolled: 35, icon: 'R' },
+      { id: 'equivalence', nameKey: 'topics:relations.equivalence', name: 'Equivalence Relations', description: 'Equivalence classes, partitions, quotient sets', parentModuleId: 'relations', questionsCount: 14, learnersEnrolled: 28, icon: '~' },
+      { id: 'partial', nameKey: 'topics:relations.partialOrders', name: 'Partial Orders', description: 'Hasse diagrams, lattices, total orders', parentModuleId: 'relations', questionsCount: 16, learnersEnrolled: 20, icon: '≤' },
+      { id: 'functions', nameKey: 'topics:relations.functions', name: 'Functions', description: 'Injective, surjective, bijective, composition', parentModuleId: 'relations', questionsCount: 20, learnersEnrolled: 32, icon: 'f' },
     ],
   },
   {
@@ -109,10 +109,10 @@ const mockModules: Module[] = [
     name: 'Combinatorics',
     icon: '📊',
     topics: [
-      { id: 'counting', nameKey: 'topics:combinatorics.counting', name: 'Counting Principles', description: 'Sum rule, product rule, inclusion-exclusion', parentModuleId: 'combinatorics', questionsCount: 14, studentsEnrolled: 40, icon: '#' },
-      { id: 'permutations', nameKey: 'topics:combinatorics.permutations', name: 'Permutations', description: 'Arrangements, r-permutations, circular permutations', parentModuleId: 'combinatorics', questionsCount: 12, studentsEnrolled: 36, icon: 'P' },
-      { id: 'combinations', nameKey: 'topics:combinatorics.combinations', name: 'Combinations', description: 'Selections, binomial coefficients, Pascals triangle', parentModuleId: 'combinatorics', questionsCount: 12, studentsEnrolled: 30, icon: 'C' },
-      { id: 'pigeonhole', nameKey: 'topics:combinatorics.pigeonhole', name: 'Pigeonhole Principle', description: 'Basic and generalized pigeonhole principle', parentModuleId: 'combinatorics', questionsCount: 8, studentsEnrolled: 18, icon: '🕊' },
+      { id: 'counting', nameKey: 'topics:combinatorics.counting', name: 'Counting Principles', description: 'Sum rule, product rule, inclusion-exclusion', parentModuleId: 'combinatorics', questionsCount: 14, learnersEnrolled: 40, icon: '#' },
+      { id: 'permutations', nameKey: 'topics:combinatorics.permutations', name: 'Permutations', description: 'Arrangements, r-permutations, circular permutations', parentModuleId: 'combinatorics', questionsCount: 12, learnersEnrolled: 36, icon: 'P' },
+      { id: 'combinations', nameKey: 'topics:combinatorics.combinations', name: 'Combinations', description: 'Selections, binomial coefficients, Pascals triangle', parentModuleId: 'combinatorics', questionsCount: 12, learnersEnrolled: 30, icon: 'C' },
+      { id: 'pigeonhole', nameKey: 'topics:combinatorics.pigeonhole', name: 'Pigeonhole Principle', description: 'Basic and generalized pigeonhole principle', parentModuleId: 'combinatorics', questionsCount: 8, learnersEnrolled: 18, icon: '🕊' },
     ],
   },
   {
@@ -121,10 +121,10 @@ const mockModules: Module[] = [
     name: 'Graph Theory',
     icon: '🔗',
     topics: [
-      { id: 'basics', nameKey: 'topics:graphTheory.basics', name: 'Graph Basics', description: 'Vertices, edges, degree, adjacency, graph types', parentModuleId: 'graphTheory', questionsCount: 16, studentsEnrolled: 34, icon: 'G' },
-      { id: 'paths', nameKey: 'topics:graphTheory.paths', name: 'Paths & Circuits', description: 'Euler paths, Hamilton circuits, shortest paths', parentModuleId: 'graphTheory', questionsCount: 14, studentsEnrolled: 26, icon: '→' },
-      { id: 'trees', nameKey: 'topics:graphTheory.trees', name: 'Trees', description: 'Spanning trees, binary trees, tree traversal', parentModuleId: 'graphTheory', questionsCount: 12, studentsEnrolled: 22, icon: '🌳' },
-      { id: 'planarity', nameKey: 'topics:graphTheory.planarity', name: 'Planarity', description: 'Planar graphs, Eulers formula, graph coloring', parentModuleId: 'graphTheory', questionsCount: 10, studentsEnrolled: 16, icon: '◇' },
+      { id: 'basics', nameKey: 'topics:graphTheory.basics', name: 'Graph Basics', description: 'Vertices, edges, degree, adjacency, graph types', parentModuleId: 'graphTheory', questionsCount: 16, learnersEnrolled: 34, icon: 'G' },
+      { id: 'paths', nameKey: 'topics:graphTheory.paths', name: 'Paths & Circuits', description: 'Euler paths, Hamilton circuits, shortest paths', parentModuleId: 'graphTheory', questionsCount: 14, learnersEnrolled: 26, icon: '→' },
+      { id: 'trees', nameKey: 'topics:graphTheory.trees', name: 'Trees', description: 'Spanning trees, binary trees, tree traversal', parentModuleId: 'graphTheory', questionsCount: 12, learnersEnrolled: 22, icon: '🌳' },
+      { id: 'planarity', nameKey: 'topics:graphTheory.planarity', name: 'Planarity', description: 'Planar graphs, Eulers formula, graph coloring', parentModuleId: 'graphTheory', questionsCount: 10, learnersEnrolled: 16, icon: '◇' },
     ],
   },
   {
@@ -133,10 +133,10 @@ const mockModules: Module[] = [
     name: 'Number Theory',
     icon: '🔢',
     topics: [
-      { id: 'divisibility', nameKey: 'topics:numberTheory.divisibility', name: 'Divisibility', description: 'Division algorithm, divisibility rules, factors', parentModuleId: 'numberTheory', questionsCount: 14, studentsEnrolled: 38, icon: '|' },
-      { id: 'modular', nameKey: 'topics:numberTheory.modularArithmetic', name: 'Modular Arithmetic', description: 'Congruences, modular operations, applications', parentModuleId: 'numberTheory', questionsCount: 16, studentsEnrolled: 30, icon: '%' },
-      { id: 'gcd', nameKey: 'topics:numberTheory.gcd', name: 'GCD & LCM', description: 'Euclidean algorithm, properties of GCD and LCM', parentModuleId: 'numberTheory', questionsCount: 10, studentsEnrolled: 35, icon: '÷' },
-      { id: 'primes', nameKey: 'topics:numberTheory.primes', name: 'Prime Numbers', description: 'Sieve of Eratosthenes, prime factorization, FTA', parentModuleId: 'numberTheory', questionsCount: 12, studentsEnrolled: 24, icon: 'p' },
+      { id: 'divisibility', nameKey: 'topics:numberTheory.divisibility', name: 'Divisibility', description: 'Division algorithm, divisibility rules, factors', parentModuleId: 'numberTheory', questionsCount: 14, learnersEnrolled: 38, icon: '|' },
+      { id: 'modular', nameKey: 'topics:numberTheory.modularArithmetic', name: 'Modular Arithmetic', description: 'Congruences, modular operations, applications', parentModuleId: 'numberTheory', questionsCount: 16, learnersEnrolled: 30, icon: '%' },
+      { id: 'gcd', nameKey: 'topics:numberTheory.gcd', name: 'GCD & LCM', description: 'Euclidean algorithm, properties of GCD and LCM', parentModuleId: 'numberTheory', questionsCount: 10, learnersEnrolled: 35, icon: '÷' },
+      { id: 'primes', nameKey: 'topics:numberTheory.primes', name: 'Prime Numbers', description: 'Sieve of Eratosthenes, prime factorization, FTA', parentModuleId: 'numberTheory', questionsCount: 12, learnersEnrolled: 24, icon: 'p' },
     ],
   },
 ]
@@ -412,7 +412,7 @@ export function TopicsManagementPage() {
                           </p>
                           <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                             <span>{topic.questionsCount} {t('admin:topicsManagement.questionsLabel')}</span>
-                            <span>{topic.studentsEnrolled} {t('admin:topicsManagement.studentsLabel')}</span>
+                            <span>{topic.learnersEnrolled} {t('admin:topicsManagement.learnersLabel')}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">

@@ -15,7 +15,7 @@ import {
 import { Card, Button, Badge, ProgressBar } from "@/components/ui";
 
 /**
- * TopicsPage (UC-08 — View Topics: Student Dashboard & Progress)
+ * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
  *
  * Browse Discrete Mathematics topics organized by category.
  * Shows FSRS-based progress and review status for each topic.
@@ -400,7 +400,7 @@ const TIER_BADGE: Record<number, string> = {
 };
 
 export function TopicsPage() {
-  const { t } = useTranslation(["topics", "student", "common"]);
+  const { t } = useTranslation(["topics", "learner", "common"]);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(["logic", "sets"]),
   );
@@ -434,13 +434,13 @@ export function TopicsPage() {
   const getStateLabel = (state: TopicItem["state"]) => {
     switch (state) {
       case "mastered":
-        return t("student:stateMastered");
+        return t("learner:stateMastered");
       case "review":
-        return t("student:stateReview");
+        return t("learner:stateReview");
       case "learning":
-        return t("student:stateLearning");
+        return t("learner:stateLearning");
       case "new":
-        return t("student:stateNew");
+        return t("learner:stateNew");
     }
   };
 
@@ -503,7 +503,7 @@ export function TopicsPage() {
           {t("topics:discreteMath")}
         </h1>
         <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          {t("student:browseTopics")}
+          {t("learner:browseTopics")}
         </p>
       </div>
 
@@ -519,7 +519,7 @@ export function TopicsPage() {
                 {totalTopics}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("student:totalTopics")}
+                {t("learner:totalTopics")}
               </p>
             </div>
           </div>
@@ -535,7 +535,7 @@ export function TopicsPage() {
                 {topicsDue}
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("student:dueForReview")}
+                {t("learner:dueForReview")}
               </p>
             </div>
           </div>
@@ -551,7 +551,7 @@ export function TopicsPage() {
                 {avgProgress}%
               </p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("student:avgProgress")}
+                {t("learner:avgProgress")}
               </p>
             </div>
           </div>
@@ -565,7 +565,7 @@ export function TopicsPage() {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("student:searchTopics")}
+          placeholder={t("learner:searchTopics")}
           className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
         />
       </div>
@@ -576,26 +576,26 @@ export function TopicsPage() {
           <div className="flex flex-col items-center gap-3">
             <PartyPopper className="w-12 h-12 text-primary-500" />
             <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
-              {t("student:allCaughtUp")}
+              {t("learner:allCaughtUp")}
             </h2>
             <p className="text-neutral-500 dark:text-neutral-400 max-w-md">
-              {t("student:allCaughtUpDescription")}
+              {t("learner:allCaughtUpDescription")}
             </p>
             <div className="flex items-center gap-3 mt-2">
               {futureReviewTopics.length > 0 && (
-                <Link to="/student/practice">
+                <Link to="/learner/practice">
                   <Button
                     variant="outline"
                     leftIcon={<Sparkles className="w-4 h-4" />}
                   >
-                    {t("student:studyAhead")}
+                    {t("learner:studyAhead")}
                   </Button>
                 </Link>
               )}
               {newTopics.length > 0 && (
-                <Link to="/student/practice">
+                <Link to="/learner/practice">
                   <Button leftIcon={<BookOpen className="w-4 h-4" />}>
-                    {t("student:exploreNewTopics", { count: newTopics.length })}
+                    {t("learner:exploreNewTopics", { count: newTopics.length })}
                   </Button>
                 </Link>
               )}
@@ -608,19 +608,19 @@ export function TopicsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold">
-                {t("student:topicsProgress", { due: topicsDue })}
+                {t("learner:topicsProgress", { due: topicsDue })}
               </p>
               <p className="text-sm text-primary-100">
-                {t("student:keepKnowledgeFresh")}
+                {t("learner:keepKnowledgeFresh")}
               </p>
             </div>
-            <Link to="/student/practice">
+            <Link to="/learner/practice">
               <Button
                 variant="outline"
                 className="border-white/50 dark:border-white/50 text-white hover:bg-white/20 hover:border-white/70 dark:hover:bg-white/20 dark:hover:border-white/70"
                 leftIcon={<Play className="w-4 h-4" />}
               >
-                {t("student:startSession")}
+                {t("learner:startSession")}
               </Button>
             </Link>
           </div>
@@ -632,7 +632,7 @@ export function TopicsPage() {
         <div>
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
             <Clock className="w-5 h-5 text-primary-500" />
-            {t("student:dueToday")}
+            {t("learner:dueToday")}
             <Badge variant="primary" size="sm">
               {dueTodayTopics.length}
             </Badge>
@@ -656,7 +656,7 @@ export function TopicsPage() {
                       {/* Tier badge (UC-08 Step 5) */}
                       <span
                         className="text-sm"
-                        title={t("student:tier", { level: topic.tier })}
+                        title={t("learner:tier", { level: topic.tier })}
                       >
                         {TIER_BADGE[topic.tier]}
                       </span>
@@ -669,18 +669,18 @@ export function TopicsPage() {
                         variant="primary"
                         className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 animate-pulse"
                       >
-                        {t("student:reviewCue")}
+                        {t("learner:reviewCue")}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                       <span>
-                        {topic.questionsTotal} {t("student:questions")}
+                        {topic.questionsTotal} {t("learner:questions")}
                       </span>
                       <span className="text-primary-600 dark:text-primary-400 font-medium">
-                        {topic.questionsDue} {t("student:due")}
+                        {topic.questionsDue} {t("learner:due")}
                       </span>
                       <span>
-                        {t("student:retrievabilityLabel")}:{" "}
+                        {t("learner:retrievabilityLabel")}:{" "}
                         {Math.round(topic.retrievability * 100)}%
                       </span>
                     </div>
@@ -696,7 +696,7 @@ export function TopicsPage() {
                         {topic.progress}%
                       </p>
                     </div>
-                    <Link to={`/student/practice?topic=${topic.id}`}>
+                    <Link to={`/learner/practice?topic=${topic.id}`}>
                       <Button variant="ghost" size="sm">
                         <Play className="w-4 h-4" />
                       </Button>
@@ -714,7 +714,7 @@ export function TopicsPage() {
         <div>
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-500" />
-            {t("student:futureReviews")}
+            {t("learner:futureReviews")}
             <Badge variant="default" size="sm">
               {futureReviewTopics.length}
             </Badge>
@@ -737,7 +737,7 @@ export function TopicsPage() {
                       </h4>
                       <span
                         className="text-sm"
-                        title={t("student:tier", { level: topic.tier })}
+                        title={t("learner:tier", { level: topic.tier })}
                       >
                         {TIER_BADGE[topic.tier]}
                       </span>
@@ -747,10 +747,10 @@ export function TopicsPage() {
                     </div>
                     <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                       <span>
-                        {topic.questionsTotal} {t("student:questions")}
+                        {topic.questionsTotal} {t("learner:questions")}
                       </span>
                       <span>
-                        {t("student:nextReviewIn")}: {topic.nextReview}
+                        {t("learner:nextReviewIn")}: {topic.nextReview}
                       </span>
                     </div>
                   </div>
@@ -765,7 +765,7 @@ export function TopicsPage() {
                         {topic.progress}%
                       </p>
                     </div>
-                    <Link to={`/student/practice?topic=${topic.id}`}>
+                    <Link to={`/learner/practice?topic=${topic.id}`}>
                       <Button variant="ghost" size="sm">
                         <Play className="w-4 h-4" />
                       </Button>
@@ -781,7 +781,7 @@ export function TopicsPage() {
       {/* ═══ Browse by category (with search filtering) ═══ */}
       <div>
         <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3">
-          {t("student:browseByCategory")}
+          {t("learner:browseByCategory")}
         </h2>
         <div className="space-y-4">
           {filteredCategories.length === 0 ? (
@@ -817,13 +817,13 @@ export function TopicsPage() {
                         {t(category.nameKey)}
                       </h3>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                        {t("student:categoryInfo", {
+                        {t("learner:categoryInfo", {
                           count: category.topics.length,
                           progress: categoryProgress,
                         })}
                         {categoryDue > 0 && (
                           <span className="text-primary-600 dark:text-primary-400 ms-2">
-                            · {t("student:categoryDue", { count: categoryDue })}
+                            · {t("learner:categoryDue", { count: categoryDue })}
                           </span>
                         )}
                       </p>
@@ -864,7 +864,7 @@ export function TopicsPage() {
                               {/* Tier badge (UC-08 Step 5) */}
                               <span
                                 className="text-sm"
-                                title={t("student:tier", { level: topic.tier })}
+                                title={t("learner:tier", { level: topic.tier })}
                               >
                                 {TIER_BADGE[topic.tier]}
                               </span>
@@ -880,22 +880,22 @@ export function TopicsPage() {
                                   size="sm"
                                   className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px]"
                                 >
-                                  {t("student:reviewCue")}
+                                  {t("learner:reviewCue")}
                                 </Badge>
                               )}
                             </div>
                             <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                               <span>
-                                {topic.questionsTotal} {t("student:questions")}
+                                {topic.questionsTotal} {t("learner:questions")}
                               </span>
                               {topic.questionsDue > 0 && (
                                 <span className="text-primary-600 dark:text-primary-400 font-medium">
-                                  {topic.questionsDue} {t("student:due")}
+                                  {topic.questionsDue} {t("learner:due")}
                                 </span>
                               )}
                               {topic.lastReviewed && (
                                 <span>
-                                  {t("student:lastReviewed")}:{" "}
+                                  {t("learner:lastReviewed")}:{" "}
                                   {topic.lastReviewed}
                                 </span>
                               )}
@@ -912,7 +912,7 @@ export function TopicsPage() {
                                 {topic.progress}%
                               </p>
                             </div>
-                            <Link to={`/student/practice?topic=${topic.id}`}>
+                            <Link to={`/learner/practice?topic=${topic.id}`}>
                               <Button variant="ghost" size="sm">
                                 <Play className="w-4 h-4" />
                               </Button>

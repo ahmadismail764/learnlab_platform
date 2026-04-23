@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
                 ('start_time', models.DateTimeField(auto_now_add=True)),
                 ('end_time', models.DateTimeField(blank=True, null=True)),
                 ('total_xp_earned', models.IntegerField(default=0)),
-                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='practice_sessions', to='users.student')),
+                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='practice_sessions', to='users.learner')),
             ],
         ),
         migrations.CreateModel(

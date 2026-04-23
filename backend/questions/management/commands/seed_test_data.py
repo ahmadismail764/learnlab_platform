@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from users.models import Learner
-from questions.models import Topic, Question
+from questions.models import Topic, KnowledgePoint, Question
 
 User = get_user_model()
 
@@ -42,7 +42,19 @@ class Command(BaseCommand):
         if pb_created:
             self.stdout.write(self.style.SUCCESS('Created Topic: Python Basics'))
 
-        # 3. Create questions for Discrete Math
+        # 3. Create KnowledgePoints for each topic
+        dm_kp, _ = KnowledgePoint.objects.get_or_create(
+            topic=discrete_math,
+            name='Logic & Sets',
+            defaults={'description': 'Foundational concepts of logic and set theory'}
+        )
+        pb_kp, _ = KnowledgePoint.objects.get_or_create(
+            topic=python_basics,
+            name='Core Syntax',
+            defaults={'description': 'Core Python syntax and data structures'}
+        )
+
+        # 4. Create questions for Discrete Math
         dm_questions = [
             # Tier 1
             {'text': 'Which of the following represents a logical AND operation?', 'choices': ['^', 'v', '!', '->'], 'correct_index': 0, 'tier': 1},
@@ -55,7 +67,7 @@ class Command(BaseCommand):
             {'text': 'Construct a truth table for ~(P v Q). Which of the following is logically equivalent?', 'choices': ['~P ^ ~Q', '~P v ~Q', 'P ^ Q', 'P v Q'], 'correct_index': 0, 'tier': 3},
         ]
 
-        # 4. Create questions for Python Basics
+        # 5. Create questions for Python Basics
         pb_questions = [
             # Tier 1
             {'text': 'How do you create a list in Python?', 'choices': ['[]', '{}', '()', '<>'], 'correct_index': 0, 'tier': 1},
@@ -69,10 +81,10 @@ class Command(BaseCommand):
         ]
 
         # Helper function to safely create questions
-        def create_q(topic, qd):
+        def create_q(knowledge_point, qd):
             # Use text as the unique identifier for the question to avoid duplicates 
             q, created = Question.objects.get_or_create(
-                topic=topic,
+                knowledge_point=knowledge_point,
                 text=qd['text'],
                 defaults={
                     'choices': qd['choices'],
@@ -81,12 +93,13 @@ class Command(BaseCommand):
                 }
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f"Created Question for {topic.name} (Tier {qd['tier']})"))
+                topic_name = knowledge_point.topic.name
+                self.stdout.write(self.style.SUCCESS(f"Created Question for {topic_name} (Tier {qd['tier']})"))
 
         for qd in dm_questions:
-            create_q(discrete_math, qd)
+            create_q(dm_kp, qd)
 
         for qd in pb_questions:
-            create_q(python_basics, qd)
+            create_q(pb_kp, qd)
 
         self.stdout.write(self.style.SUCCESS('\nSuccessfully seeded development data!'))

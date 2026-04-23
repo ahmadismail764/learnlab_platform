@@ -35,8 +35,8 @@ The platform implements a mathematically optimized FSRS algorithm for spaced rep
 
 1. **Test Seed Data**  
    Run `python manage.py seed_test_data` to auto-populate the database.
-   - **Credentials**: Username `teststudent` (Password: `testpass123`)
+   - **Credentials**: Username `testlearner` (Password: `testpass123`)
    - **Environment**: Automatically seeds topics like Discrete Math and Python Basics with varying Tiers.
 
 2. **Reminders Generation**  
-   Run `python manage.py send_reminders` to query for due practice reviews across the student base and send system-level reminder alerts.
+   Run `python manage.py send_reminders` to query for due practice reviews across the learner base and send system-level reminder alerts.

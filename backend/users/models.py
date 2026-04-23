@@ -40,18 +40,20 @@ class Learner(models.Model):
     last_practice_date = models.DateField(null=True, blank=True)
     
     def add_xp(self, amount):
+        """Add XP to the learner. Does NOT auto-save — caller must save."""
         self.total_xp += amount
-        self.save()
         
     def update_streak(self):
         """
         Updates the learner's streak based on the last practice date.
-        - If yesterday: increment.
-        - If today: do nothing.
-        - Otherwise: reset to 1.
+        - If yesterday: increment streak.
+        - If today: do nothing (already practiced).
+        - Otherwise (gap or first time): reset streak to 1.
+        Always saves the learner instance.
         """
         today = date.today()
         if self.last_practice_date == today:
+            self.save()
             return  # Already practiced today
         
         yesterday = today - timedelta(days=1)

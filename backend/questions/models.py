@@ -33,7 +33,8 @@ class Question(models.Model):
     explanation_video_url = models.URLField(null=True, blank=True)
     
     def __str__(self):
-        return f"[{self.knowledge_point.topic.name}] Tier {self.tier}: {self.text[:50]}..."
+        topic_name = self.knowledge_point.topic.name if self.knowledge_point else 'Unlinked'
+        return f"[{topic_name}] Tier {self.tier}: {self.text[:50]}..."
 
 # ... Practice Session Models ...
 
@@ -70,8 +71,8 @@ class TopicMastery(models.Model):
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
 
-    # FSRS Card Fields
-    state = models.IntegerField(default=0)                              # 0=New, 1=Learning, 2=Review, 3=Relearning
+    # FSRS Card Fields (matches fsrs.State: 1=Learning, 2=Review, 3=Relearning)
+    state = models.IntegerField(default=1)
     difficulty = models.FloatField(default=0.0)
     stability = models.FloatField(default=0.0)
     reps = models.IntegerField(default=0)

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from datetime import date, timedelta
 
 class User(AbstractUser):
     """
@@ -42,8 +43,24 @@ class Learner(models.Model):
         self.total_xp += amount
         self.save()
         
-    def increment_streak(self):
-        self.streak_count += 1
+    def update_streak(self):
+        """
+        Updates the learner's streak based on the last practice date.
+        - If yesterday: increment.
+        - If today: do nothing.
+        - Otherwise: reset to 1.
+        """
+        today = date.today()
+        if self.last_practice_date == today:
+            return  # Already practiced today
+        
+        yesterday = today - timedelta(days=1)
+        if self.last_practice_date == yesterday:
+            self.streak_count += 1
+        else:
+            self.streak_count = 1
+        
+        self.last_practice_date = today
         self.save()
         
     def __str__(self):

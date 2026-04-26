@@ -66,19 +66,12 @@ class SingleQuestionInteraction(models.Model):
 
 class TopicMastery(models.Model):
     """
-    Represents an FSRS 'Card' for spaced repetition per learner/topic.
+    Tracks a learner's mastery of a specific topic.
     """
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
 
-    # FSRS Card Fields (matches fsrs.State: 1=Learning, 2=Review, 3=Relearning)
-    state = models.IntegerField(default=1)
-    difficulty = models.FloatField(default=0.0)
-    stability = models.FloatField(default=0.0)
-    reps = models.IntegerField(default=0)
-    lapses = models.IntegerField(default=0)
-    last_review_date = models.DateTimeField(null=True, blank=True)
-    next_review_date = models.DateTimeField(null=True, blank=True)
+    mastery_level = models.FloatField(default=0.0, help_text="Mastery level from 0.0 to 100.0")
 
     class Meta:
         unique_together = ('learner', 'topic')  # One mastery record per learner/topic

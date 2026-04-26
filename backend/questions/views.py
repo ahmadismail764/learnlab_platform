@@ -8,7 +8,6 @@ from .serializers import (
     TopicMasterySerializer
 )
 from django_filters.rest_framework import DjangoFilterBackend
-from .fsrs_engine import process_topic_review
 from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
@@ -35,7 +34,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             from users.models import Learner
             learners = Learner.objects.all()
             masteries = [
-                TopicMastery(learner=l, topic=topic, state=1, stability=0, difficulty=5.0)
+                TopicMastery(learner=l, topic=topic, mastery_level=0.0)
                 for l in learners
             ]
             TopicMastery.objects.bulk_create(masteries, ignore_conflicts=True)
@@ -75,11 +74,10 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         learner = request.user.learner_profile
         now = timezone.now()
 
-        # 1. Identify due topic masteries (max 5)
+        # 1. Identify due topic masteries (max 5) by lowest mastery level
         due_masteries = list(TopicMastery.objects.filter(
-            learner=learner, 
-            next_review_date__lte=now
-        ).select_related('topic').order_by('next_review_date')[:5])
+            learner=learner
+        ).select_related('topic').order_by('mastery_level')[:5])
 
         selected_topics = [m.topic for m in due_masteries]
         slots_needed = 5 - len(selected_topics)
@@ -140,7 +138,7 @@ class TopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = TopicMastery.objects.filter(learner=self.request.user.learner_profile).select_related('topic')
         due_only = self.request.query_params.get('due_only')
         if due_only == 'true':
-            queryset = queryset.filter(next_review_date__lte=timezone.now())
+            queryset = queryset.filter(mastery_level__lt=80.0)
         return queryset
 
 class InteractionViewSet(viewsets.ViewSet):

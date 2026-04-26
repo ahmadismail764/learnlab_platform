@@ -4,31 +4,30 @@ from collections import defaultdict
 from questions.models import TopicMastery
 
 class Command(BaseCommand):
-    help = 'Sends practice sheet reminders to learners with due FSRS topics.'
+    help = 'Sends practice sheet reminders to learners with topics needing practice.'
 
     def handle(self, *args, **options):
         now = timezone.now()
         
-        # Query all TopicMastery records due for review
+        # Query all TopicMastery records with low mastery level
         due_masteries = TopicMastery.objects.filter(
-            next_review_date__lte=now
+            mastery_level__lt=50.0
         ).select_related('learner__user')
         
         # Group by learner
         learner_due_counts = defaultdict(int)
         for mastery in due_masteries:
-            # Assumes Learner model has a user relation
             username = mastery.learner.user.username
             learner_due_counts[username] += 1
             
         if not learner_due_counts:
-            self.stdout.write(self.style.SUCCESS("No learners have topics due for review today."))
+            self.stdout.write(self.style.SUCCESS("No learners have topics needing practice today."))
             return
 
         # Print reminders
         for username, count in learner_due_counts.items():
             self.stdout.write(
-                self.style.WARNING(f"Reminder: {username} has {count} topics due for review today.")
+                self.style.WARNING(f"Reminder: {username} has {count} topics needing practice today.")
             )
         
         self.stdout.write(self.style.SUCCESS(f"Processed reminders for {len(learner_due_counts)} learners."))

@@ -68,5 +68,12 @@ class Learner(models.Model):
     def __str__(self):
         return f"{self.user.username} (XP: {self.total_xp})"
 
-# Note: Admin is handled by Django's built-in is_staff/is_superuser flags,
-# so we don't strictly need a separate Admin model unless you have specific admin-only fields.
+class AdminProfile(models.Model):
+    """
+    The Admin profile.
+    Linked 1-to-1 with the User.
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
+    
+    def __str__(self):
+        return f"Admin: {self.user.username}"

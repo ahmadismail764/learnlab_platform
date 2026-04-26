@@ -30,6 +30,6 @@ class SingleQuestionInteractionAdmin(admin.ModelAdmin):
 
 @admin.register(TopicMastery)
 class TopicMasteryAdmin(admin.ModelAdmin):
-    list_display = ('learner', 'topic', 'difficulty', 'stability', 'last_review_date', 'next_review_date')
-    list_filter = ('topic', 'last_review_date')
+    list_display = ('learner', 'topic', 'mastery_level')
+    list_filter = ('topic',)
     search_fields = ('learner__user__username', 'topic__name')

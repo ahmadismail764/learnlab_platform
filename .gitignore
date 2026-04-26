@@ -14,7 +14,7 @@ frontend/.env.local
 # Environments
 .env
 backend/.env
-!backend/.env.example
+backend/.env.example
 
 # IDE / Editors
 .vscode/

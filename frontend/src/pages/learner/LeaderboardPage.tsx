@@ -10,11 +10,10 @@ import {
   Sparkles,
   Search,
   LayoutGrid,
-  Activity,
-  Binary,
   Dna
 } from 'lucide-react'
-import { Card, Badge, Avatar, Button, ProgressBar } from '@/components/ui'
+import { Card, Badge, Avatar, ProgressBar } from '@/components/ui'
+import { useCurrentUser } from '@/contexts'
 import { learnersService } from '@/services/learners'
 import { topicsService } from '@/services/topics'
 import { cn } from '@/utils/cn'
@@ -38,13 +37,13 @@ interface LeaderboardEntry {
 
 export function LeaderboardPage() {
   const { t: _t } = useTranslation(['gamification', 'common'])
-  const [timeFilter, setTimeFilter] = useState<'week' | 'month' | 'allTime'>('week')
+   const currentUser = useCurrentUser()
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
   const [topics, setTopics] = useState<any[]>([])
   const [selectedTopicId, setSelectedTopicId] = useState<string>('')
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [currentUser, setCurrentUser] = useState<LeaderboardEntry | null>(null)
+   const [currentUserEntry, setCurrentUserEntry] = useState<LeaderboardEntry | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -79,7 +78,7 @@ export function LeaderboardPage() {
             }
             data = await learnersService.getTopicLeaderboard(selectedTopicId)
         }
-        const results = Array.isArray(data) ? data : (data.results || [])
+      const results = data
         
         const mappedResults: LeaderboardEntry[] = results.map((e: any, index: number) => ({
           id: e.id,
@@ -89,13 +88,13 @@ export function LeaderboardPage() {
           accuracy: e.accuracy || 100,
           rank: index + 1,
           rank_change: e.rank_change || 0,
-          is_current_user: e.is_current_user
+               is_current_user: String(e.user?.id) === String(currentUser.id)
         }))
 
         if (isMounted) {
           setLeaderboard(mappedResults)
-          const current = mappedResults.find((e: any) => e.is_current_user) || null
-          setCurrentUser(current)
+               const current = mappedResults.find((e: any) => e.is_current_user) || null
+               setCurrentUserEntry(current)
         }
       } catch (err) {
         if (isMounted) console.error("Failed to fetch leaderboard", err)
@@ -105,7 +104,7 @@ export function LeaderboardPage() {
     }
     fetchData()
     return () => { isMounted = false }
-  }, [timeFilter, leaderboardType, selectedTopicId])
+   }, [leaderboardType, selectedTopicId, currentUser.id])
 
   const displayEntries = useMemo(() => {
     return leaderboard.slice(0, 10).sort((a, b) => a.rank - b.rank)
@@ -186,29 +185,29 @@ export function LeaderboardPage() {
 
            <Card className="glass border-0 rounded-[3rem] p-10 bg-neutral-900 text-white relative overflow-hidden group shadow-2xl">
               <div className="absolute inset-0 bg-scanline opacity-10" />
-              {currentUser ? (
+              {currentUserEntry ? (
                 <div className="relative z-10 space-y-10">
                   <div className="flex flex-col items-center gap-4 text-center">
                      <div className="w-24 h-24 rounded-[2rem] border-2 border-primary-500/30 flex items-center justify-center p-2 relative">
                         <div className="absolute inset-0 bg-primary-500 blur-2xl opacity-10" />
-                        <Avatar name={currentUser.name} size="xl" className="shadow-2xl" />
+                        <Avatar name={currentUserEntry.name} size="xl" className="shadow-2xl" />
                      </div>
                      <div>
-                        <p className="text-2xl font-black tracking-tight">{currentUser.name}</p>
+                        <p className="text-2xl font-black tracking-tight">{currentUserEntry.name}</p>
                         <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Operator State: ACTIVE</p>
                      </div>
                   </div>
 
                   <div className="flex flex-col items-center py-6 bg-white/5 rounded-[2rem] border border-white/5 shadow-inner">
                      <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Rank index</p>
-                     <p className="text-6xl font-black tracking-tighter text-amber-500">#{currentUser.rank}</p>
+                     <p className="text-6xl font-black tracking-tighter text-amber-500">#{currentUserEntry.rank}</p>
                      <div className="flex items-center gap-2 mt-4 px-4 py-1.5 bg-neutral-950 rounded-full shadow-lg border border-white/5">
-                        {currentUser.rank_change >= 0 ? <ChevronUp className="w-4 h-4 text-emerald-500" /> : <ChevronDown className="w-4 h-4 text-rose-500" />}
+                        {currentUserEntry.rank_change >= 0 ? <ChevronUp className="w-4 h-4 text-emerald-500" /> : <ChevronDown className="w-4 h-4 text-rose-500" />}
                         <span className={cn(
                            "text-[9px] font-black uppercase tracking-widest",
-                           currentUser.rank_change >= 0 ? "text-emerald-500" : "text-rose-500"
+                           currentUserEntry.rank_change >= 0 ? "text-emerald-500" : "text-rose-500"
                         )}>
-                           {Math.abs(currentUser.rank_change)} Pos Change
+                           {Math.abs(currentUserEntry.rank_change)} Pos Change
                         </span>
                      </div>
                   </div>
@@ -216,12 +215,12 @@ export function LeaderboardPage() {
                   <div className="grid grid-cols-2 gap-4">
                      <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
                         <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Synaptic XP</p>
-                        <p className="text-xl font-black">{currentUser.xp.toLocaleString()}</p>
+                        <p className="text-xl font-black">{currentUserEntry.xp.toLocaleString()}</p>
                      </div>
                      <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
                         <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Streak</p>
                         <p className="text-xl font-black text-orange-500 flex items-center gap-2">
-                           <Flame className="w-5 h-5 fill-current" /> {currentUser.streak}
+                           <Flame className="w-5 h-5 fill-current" /> {currentUserEntry.streak}
                         </p>
                      </div>
                   </div>
@@ -229,9 +228,9 @@ export function LeaderboardPage() {
                   <div className="space-y-3">
                      <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest mb-1">
                         <span className="text-neutral-500">Accuracy Vector</span>
-                        <span className="text-emerald-500">{currentUser.accuracy}%</span>
+                        <span className="text-emerald-500">{currentUserEntry.accuracy}%</span>
                      </div>
-                     <ProgressBar value={currentUser.accuracy} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
+                     <ProgressBar value={currentUserEntry.accuracy} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
                   </div>
                 </div>
               ) : (

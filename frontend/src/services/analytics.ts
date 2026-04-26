@@ -18,7 +18,7 @@ export interface TopicAnalyticsResponse {
   metrics: {
     avg_stability: number | null;
     avg_difficulty: number | null;
-    student_count: number;
+    learner_count: number;
   };
   distribution: {
     low_stability: number;
@@ -40,7 +40,7 @@ async function parseApiError(response: Response, fallback: string): Promise<stri
 
 export const analyticsService = {
   getAggregatedMetrics: async () => {
-    const response = await api.getFromRoot('/analytics/aggregated/');
+    const response = await api.get('/analytics/aggregated/');
     if (!response.ok) {
       throw new Error(await parseApiError(response, 'Failed to fetch aggregated analytics'));
     }
@@ -48,7 +48,7 @@ export const analyticsService = {
   },
 
   getTopicAnalytics: async (topicId: number) => {
-    const response = await api.getFromRoot(`/analytics/topic/${topicId}/`);
+    const response = await api.get(`/analytics/topic/${topicId}/`);
     if (!response.ok) {
       throw new Error(await parseApiError(response, 'Failed to fetch topic analytics'));
     }

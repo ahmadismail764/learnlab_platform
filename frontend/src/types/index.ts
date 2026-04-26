@@ -24,7 +24,8 @@
 export type UserRole = 'learner' | 'admin'
 
 export interface User {
-  id: string
+  id: string | number
+  username?: string
   email: string
   firstName: string
   lastName: string

@@ -7,8 +7,13 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import type { User } from "@/types";
-import { authService } from "@/services/auth";
+import type { User, UserRole } from "@/types";
+import {
+  authService,
+  type BackendAuthUser,
+  type LoginCredentials,
+  type RegisterPayload,
+} from "@/services/auth";
 
 /**
  * AuthContext
@@ -24,14 +29,8 @@ interface AuthState {
 }
 
 interface AuthContextValue extends AuthState {
-  login: (credentials: { email: string; password: string }) => Promise<User>;
-  register: (userData: {
-    email: string;
-    username: string;
-    password: string;
-    first_name: string;
-    last_name: string;
-  }) => Promise<User>;
+  login: (credentials: LoginCredentials) => Promise<User>;
+  register: (userData: RegisterPayload) => Promise<User>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
@@ -50,37 +49,55 @@ interface AuthProviderProps {
   initialUser?: User | null;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [state, setState] = useState<AuthState>(initialState);
+function resolveRole(userData: BackendAuthUser): UserRole {
+  if (userData.role === "admin" || userData.role === "learner") {
+    return userData.role;
+  }
+  return userData.is_staff ? "admin" : "learner";
+}
+
+function mapBackendUser(userData: BackendAuthUser): User {
+  return {
+    id: userData.id,
+    username: userData.username,
+    email: userData.email,
+    firstName: userData.first_name,
+    lastName: userData.last_name,
+    role: resolveRole(userData),
+    createdAt: userData.date_joined,
+    updatedAt: userData.date_joined,
+  };
+}
+
+export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
+  const [state, setState] = useState<AuthState>(() => {
+    if (!initialUser) {
+      return initialState;
+    }
+
+    return {
+      user: initialUser,
+      isAuthenticated: true,
+      isLoading: false,
+    };
+  });
 
   // Hydrate user on mount
   useEffect(() => {
     const hydrate = async () => {
+      if (initialUser) {
+        return;
+      }
+
       const token = localStorage.getItem("learnlab_auth_token");
       if (!token) {
         setState((prev) => ({ ...prev, isLoading: false }));
         return;
       }
 
-      // Check if we already have a user (to avoid redundant 'me' call on fast clicks/remounts)
-      if (state.user && state.isAuthenticated) {
-        setState((prev) => ({ ...prev, isLoading: false }));
-        return;
-      }
-
       try {
-        // Optimization: Use a local variable to prevent race conditions
-        const userDate = await authService.getCurrentUser();
-        // Map backend user to frontend user
-        const user: User = {
-          id: userDate.id,
-          email: userDate.email,
-          firstName: userDate.first_name,
-          lastName: userDate.last_name,
-          role: userDate.is_staff ? "admin" : "learner",
-          createdAt: userDate.date_joined,
-          updatedAt: userDate.date_joined, // backend doesn't send updated_at yet
-        };
+        const backendUser = await authService.getCurrentUser();
+        const user = mapBackendUser(backendUser);
 
         setState({
           user,
@@ -100,23 +117,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     hydrate();
-  }, []);
+  }, [initialUser]);
 
-  const login = useCallback(async (credentials: any) => {
+  const login = useCallback(async (credentials: LoginCredentials) => {
     setState((prev) => ({ ...prev, isLoading: true }));
     try {
       await authService.login(credentials);
-      const userDate = await authService.getCurrentUser();
-
-      const user: User = {
-        id: userDate.id,
-        email: userDate.email,
-        firstName: userDate.first_name,
-        lastName: userDate.last_name,
-        role: userDate.is_staff ? "admin" : "learner",
-        createdAt: userDate.date_joined,
-        updatedAt: userDate.date_joined,
-      };
+      const backendUser = await authService.getCurrentUser();
+      const user = mapBackendUser(backendUser);
 
       setState({
         user,
@@ -131,7 +139,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   const register = useCallback(
-    async (userData: any) => {
+    async (userData: RegisterPayload) => {
       setState((prev) => ({ ...prev, isLoading: true }));
       try {
         await authService.register(userData);

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   User,
@@ -17,7 +17,8 @@ import {
   CheckCircle,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
-import { useCurrentUser } from '@/contexts'
+import { useAuth, useCurrentUser } from '@/contexts'
+import { analyticsService, authService, learnersService } from '@/services'
 
 /**
  * AdminProfilePage
@@ -33,15 +34,96 @@ import { useCurrentUser } from '@/contexts'
 export function AdminProfilePage() {
   const { t } = useTranslation(['profile', 'common', 'auth', 'admin'])
   const user = useCurrentUser()
+  const { updateUser } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState('')
 
-  // Mock system stats
-  const systemStats = {
+  const [profileForm, setProfileForm] = useState({
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+  })
+
+  const [systemStats, setSystemStats] = useState({
     totalLearners: 245,
     totalQuestions: 1280,
     activeToday: 42,
     systemUptime: '99.9%',
+  })
+  const [statsError, setStatsError] = useState('')
+
+  useEffect(() => {
+    setProfileForm({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    })
+  }, [user.firstName, user.lastName, user.email])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadStats = async () => {
+      try {
+        const [leaderboard, aggregated] = await Promise.all([
+          learnersService.getLeaderboard(),
+          analyticsService.getAggregatedMetrics(),
+        ])
+
+        if (!isMounted) return
+
+        setSystemStats({
+          totalLearners: leaderboard.length,
+          totalQuestions: aggregated.review_count,
+          activeToday: aggregated.active_users['7_days'],
+          systemUptime: 'Live',
+        })
+      } catch (error) {
+        if (!isMounted) return
+        const message = error instanceof Error ? error.message : 'Failed to load admin metrics'
+        setStatsError(message)
+      }
+    }
+
+    loadStats()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true)
+    setProfileError('')
+
+    try {
+      const updated = await authService.updateCurrentUser({
+        first_name: profileForm.firstName.trim(),
+        last_name: profileForm.lastName.trim(),
+        email: profileForm.email.trim(),
+      })
+
+      updateUser({
+        firstName: updated.first_name,
+        lastName: updated.last_name,
+        email: updated.email,
+        username: updated.username,
+        role: updated.role === 'admin' || updated.role === 'learner'
+          ? updated.role
+          : updated.is_staff
+            ? 'admin'
+            : 'learner',
+      })
+
+      setIsEditing(false)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile'
+      setProfileError(message)
+    } finally {
+      setIsSavingProfile(false)
+    }
   }
 
   // Mock recent admin actions
@@ -68,6 +150,18 @@ export function AdminProfilePage() {
       <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
         {t('profile:myProfile')}
       </h1>
+
+      {profileError && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+          {profileError}
+        </div>
+      )}
+
+      {statsError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+          {statsError}
+        </div>
+      )}
 
       {/* Profile Card */}
       <Card>
@@ -116,29 +210,47 @@ export function AdminProfilePage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Input
                     label={t('profile:firstName')}
-                    defaultValue={user.firstName}
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))}
                     leftIcon={<User className="w-4 h-4" />}
+                    disabled={isSavingProfile}
                   />
                   <Input
                     label={t('profile:lastName')}
-                    defaultValue={user.lastName}
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))}
                     leftIcon={<User className="w-4 h-4" />}
+                    disabled={isSavingProfile}
                   />
                   <div className="sm:col-span-2">
                     <Input
                       label={t('profile:email')}
-                      defaultValue={user.email}
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))}
                       leftIcon={<Mail className="w-4 h-4" />}
                       type="email"
+                      disabled={isSavingProfile}
                     />
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 mt-4">
-                  <Button variant="ghost" onClick={() => setIsEditing(false)}>
+                  <Button
+                    variant="ghost"
+                    disabled={isSavingProfile}
+                    onClick={() => {
+                      setIsEditing(false)
+                      setProfileError('')
+                      setProfileForm({
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        email: user.email,
+                      })
+                    }}
+                  >
                     {t('common:cancel')}
                   </Button>
-                  <Button variant="primary" onClick={() => setIsEditing(false)}>
-                    {t('common:saveChanges')}
+                  <Button variant="primary" disabled={isSavingProfile} onClick={handleSaveProfile}>
+                    {isSavingProfile ? t('common:loading') : t('common:saveChanges')}
                   </Button>
                 </div>
               </CardContent>

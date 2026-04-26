@@ -18,19 +18,19 @@ export interface LeaderboardStudent {
 
 export const studentsService = {
   getProfile: async () => {
-    const response = await api.get('/students/me/');
+    const response = await api.get('/auth/learners/me/');
     if (!response.ok) throw new Error('Failed to fetch profile');
     return await response.json();
   },
 
   updateProfile: async (data: any) => {
-    const response = await api.patch('/students/me/', data);
+    const response = await api.patch('/auth/learners/me/', data);
     if (!response.ok) throw new Error('Failed to update profile');
     return await response.json();
   },
 
   getLeaderboard: async () => {
-    const response = await api.get('/leaderboard/');
+    const response = await api.get('/auth/leaderboard/global/');
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
     return await response.json() as LeaderboardStudent[];
   },

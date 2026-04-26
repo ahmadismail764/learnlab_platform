@@ -1,21 +1,32 @@
 import { api } from './api';
+import type { BackendAuthUser } from './auth';
+
+export interface LearnerProfile {
+  id: number;
+  user: BackendAuthUser;
+  total_xp: number;
+  streak_count: number;
+  last_practice_date: string | null;
+}
+
+export type LeaderboardLearner = LearnerProfile;
 
 export const learnersService = {
+  getCurrentProfile: async () => {
+    const response = await api.get('/auth/learners/me/');
+    if (!response.ok) throw new Error('Failed to fetch learner profile');
+    return await response.json() as LearnerProfile;
+  },
+
   getLeaderboard: async () => {
-    const response = await api.get('/leaderboard/global/');
+    const response = await api.get('/auth/leaderboard/global/');
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
-    return await response.json();
+    return await response.json() as LeaderboardLearner[];
   },
 
   getTopicLeaderboard: async (topicId: string | number) => {
-    const response = await api.get(`/leaderboard/topic/${topicId}/`);
+    const response = await api.get(`/auth/leaderboard/topic/${topicId}/`);
     if (!response.ok) throw new Error('Failed to fetch topic leaderboard');
-    return await response.json();
-  },
-
-  getMastery: async () => {
-    const response = await api.get('/mastery/');
-    if (!response.ok) throw new Error('Failed to fetch mastery');
-    return await response.json();
+    return await response.json() as LeaderboardLearner[];
   }
 };

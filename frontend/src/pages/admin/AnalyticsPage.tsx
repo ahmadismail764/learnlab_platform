@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
-import { analyticsService, studentsService } from '@/services'
+import { analyticsService, learnersService } from '@/services'
 
 /**
  * AnalyticsPage - Admin Learner Analytics Dashboard
@@ -29,12 +29,20 @@ import { analyticsService, studentsService } from '@/services'
 
 export function AnalyticsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
+  const fallbackTopLearners = useMemo(() => [
+    { name: 'أحمد محمد', accuracy: 94, questionsAnswered: 342, xp: 4520 },
+    { name: 'فاطمة علي', accuracy: 91, questionsAnswered: 298, xp: 3980 },
+    { name: 'يوسف حسن', accuracy: 89, questionsAnswered: 276, xp: 3650 },
+    { name: 'نور الدين', accuracy: 88, questionsAnswered: 265, xp: 3420 },
+    { name: 'سارة أحمد', accuracy: 87, questionsAnswered: 254, xp: 3280 },
+  ], [])
   const [topicSearch, setTopicSearch] = useState('')
   const [overviewMetrics, setOverviewMetrics] = useState<{
-    totalStudents: number
+    totalLearners: number
     activeThisWeek: number
     totalReviews: number
   } | null>(null)
+  const [topLearners, setTopLearners] = useState(fallbackTopLearners)
   const [isLoadingOverview, setIsLoadingOverview] = useState(false)
   const [overviewError, setOverviewError] = useState<string | null>(null)
 
@@ -48,21 +56,31 @@ export function AnalyticsPage() {
       try {
         const [aggregated, leaderboard] = await Promise.all([
           analyticsService.getAggregatedMetrics(),
-          studentsService.getLeaderboard(),
+          learnersService.getLeaderboard(),
         ])
 
         if (!isMounted) return
 
         setOverviewMetrics({
-          totalStudents: leaderboard.length,
+          totalLearners: leaderboard.length,
           activeThisWeek: aggregated.active_users['7_days'],
           totalReviews: aggregated.review_count,
         })
+
+        setTopLearners(
+          leaderboard.slice(0, 5).map((entry) => ({
+            name: `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username,
+            accuracy: 0,
+            questionsAnswered: 0,
+            xp: entry.total_xp,
+          })),
+        )
       } catch (error) {
         if (!isMounted) return
         const message = error instanceof Error ? error.message : 'Failed to fetch analytics overview'
         setOverviewError(message)
         setOverviewMetrics(null)
+        setTopLearners(fallbackTopLearners)
       } finally {
         if (isMounted) {
           setIsLoadingOverview(false)
@@ -75,11 +93,11 @@ export function AnalyticsPage() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [fallbackTopLearners])
 
   // Mock analytics data
   const overviewStats = useMemo(() => ({
-    totalLearners: overviewMetrics?.totalStudents ?? 1150,
+    totalLearners: overviewMetrics?.totalLearners ?? 1150,
     activeThisWeek: overviewMetrics?.activeThisWeek ?? 892,
     avgAccuracy: 73,
     avgSessionTime: 24, // minutes
@@ -129,14 +147,6 @@ export function AnalyticsPage() {
     mostCommon: 'First Steps',
     rarest: 'Perfect Master',
   }
-
-  const topLearners = [
-    { name: 'أحمد محمد', accuracy: 94, questionsAnswered: 342, xp: 4520 },
-    { name: 'فاطمة علي', accuracy: 91, questionsAnswered: 298, xp: 3980 },
-    { name: 'يوسف حسن', accuracy: 89, questionsAnswered: 276, xp: 3650 },
-    { name: 'نور الدين', accuracy: 88, questionsAnswered: 265, xp: 3420 },
-    { name: 'سارة أحمد', accuracy: 87, questionsAnswered: 254, xp: 3280 },
-  ]
 
   const maxAttempts = useMemo(() => 
     Math.max(...topicPerformance.map(t => t.attempts)),
@@ -500,14 +510,16 @@ export function AnalyticsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-neutral-800 dark:text-neutral-100 truncate">{learner.name}</p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {learner.questionsAnswered} {t('admin:questionsAnswered')} • {learner.xp} XP
+                      {learner.questionsAnswered > 0
+                        ? `${learner.questionsAnswered} ${t('admin:questionsAnswered')}`
+                        : `${t('admin:questionsAnswered')}: --`} • {learner.xp} XP
                     </p>
                   </div>
                   <Badge 
                     variant={learner.accuracy >= 90 ? 'success' : 'primary'}
                     size="sm"
                   >
-                    {learner.accuracy}%
+                    {learner.accuracy > 0 ? `${learner.accuracy}%` : '--'}
                   </Badge>
                 </div>
               ))}

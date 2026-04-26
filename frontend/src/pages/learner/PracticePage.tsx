@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { 
   CheckCircle, 
   XCircle, 
@@ -12,7 +11,6 @@ import {
   Atom,
   TestTube2,
   Lightbulb,
-  Keyboard,
   CheckCircle2,
   Activity,
   Binary,
@@ -56,7 +54,6 @@ interface QuestionState {
 }
 
 export function PracticePage() {
-  // const { t } = useTranslation(['learner', 'common', 'practice'])
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)

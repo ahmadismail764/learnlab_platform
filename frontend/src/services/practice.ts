@@ -43,4 +43,30 @@ export const practiceService = {
   getSubmissionHistory: async () => {
     return practiceService.getSessions();
   },
+
+  submitInteraction: async (data: {
+    session: number;
+    question: number;
+    is_correct: boolean;
+    user_response?: string;
+    time_taken_seconds?: number;
+    confidence_rating?: number;
+  }) => {
+    const response = await api.post('/interactions/', {
+      session_id: data.session,
+      question_id: data.question,
+      is_correct: data.is_correct,
+    });
+    if (!response.ok) throw new Error('Failed to submit interaction');
+    return await response.json();
+  },
+
+  completeSession: async (sessionId: number, earnedXp: number) => {
+    const response = await api.patch(`/sessions/${sessionId}/`, {
+      end_time: new Date().toISOString(),
+      total_xp_earned: earnedXp,
+    });
+    if (!response.ok) throw new Error('Failed to complete session');
+    return await response.json();
+  },
 };

@@ -39,9 +39,17 @@ import type { User } from "@/types";
  * 2. Clear tokens from storage
  * 3. React Router will auto-redirect via the user check
  */
-function createDashboardElement(user: User | null, onLogout?: () => void) {
+function createDashboardElement(
+  user: User | null,
+  requiredRole: User["role"],
+  onLogout?: () => void,
+) {
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== requiredRole) {
+    return <Navigate to={getDefaultRoute(user.role)} replace />;
   }
 
   return (
@@ -86,7 +94,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
     // Learner routes
     {
       path: "/learner",
-      element: createDashboardElement(user, onLogout),
+      element: createDashboardElement(user, "learner", onLogout),
       children: [
         { index: true, element: <LearnerDashboard /> },
         { path: "topics", element: <TopicsPage /> },
@@ -101,7 +109,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
     // Admin (Content Manager) routes
     {
       path: "/admin",
-      element: createDashboardElement(user, onLogout),
+      element: createDashboardElement(user, "admin", onLogout),
       children: [
         { index: true, element: <AdminDashboard /> },
         { path: "topics", element: <TopicsManagementPage /> },

@@ -1,15 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, GraduationCap } from "lucide-react";
+import { Button, Card, Input } from "@/components/ui";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/contexts";
-import {
-  addAdminOverrideEmail,
-  removeAdminOverrideEmail,
-} from "@/utils/adminOverride";
 
 /**
  * LoginPage — UC-02
@@ -37,31 +33,18 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [useAdminTestingMode, setUseAdminTestingMode] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<
-    "idle" | "requesting" | "ok" | "error"
-  >("idle");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setBackendStatus("requesting");
 
     setIsLoading(true);
 
     try {
-      if (useAdminTestingMode) {
-        addAdminOverrideEmail(email);
-      } else {
-        removeAdminOverrideEmail(email);
-      }
-
       const user = await login({ email, password });
-      setBackendStatus("ok");
       const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       navigate(nextRoute, { replace: true });
     } catch (err: unknown) {
-      setBackendStatus("error");
       const message =
         err instanceof Error ? err.message : t("auth:invalidCredentials");
       setError(message);
@@ -71,31 +54,37 @@ export function LoginPage() {
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Language Switcher & Theme Toggle - top right */}
       <div className="absolute top-4 end-4 flex items-center gap-1">
         <ThemeToggle />
         <LanguageSwitcher variant="globe" />
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-        {t("auth:welcomeBack")}
-      </h2>
-      <p className="text-neutral-600 dark:text-neutral-400 mb-8">
-        {t("auth:enterCredentials")}
-      </p>
-
-      <div className="mb-4 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 text-xs text-neutral-600 dark:text-neutral-300">
-        <p className="font-medium">Backend Auth Status</p>
-        {backendStatus === "idle" && <p>Ready to send login request.</p>}
-        {backendStatus === "requesting" && (
-          <p>Sending login request to backend...</p>
-        )}
-        {backendStatus === "ok" && <p>Login successful. Redirecting...</p>}
-        {backendStatus === "error" && (
-          <p>Backend returned an error. See details below.</p>
-        )}
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+          {t("auth:welcomeBack")}
+        </h2>
+        <p className="text-neutral-600 dark:text-neutral-400">
+          {t("auth:loginFlowDescription")}
+        </p>
       </div>
+
+      <Card
+        className="border-primary-100 bg-primary-50/80 dark:border-primary-900/60 dark:bg-primary-950/30"
+        padding="sm"
+      >
+        <div className="space-y-3 text-sm text-neutral-700 dark:text-neutral-200">
+          <div className="flex items-start gap-3">
+            <GraduationCap className="mt-0.5 h-4 w-4 text-primary-600 dark:text-primary-400" />
+            <p>{t("auth:learnerLoginHint")}</p>
+          </div>
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-4 w-4 text-primary-600 dark:text-primary-400" />
+            <p>{t("auth:adminLoginHint")}</p>
+          </div>
+        </div>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
@@ -161,18 +150,6 @@ export function LoginPage() {
           </Link>
         </div>
 
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={useAdminTestingMode}
-            onChange={(e) => setUseAdminTestingMode(e.target.checked)}
-            className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 mt-0.5"
-          />
-          <span className="text-amber-700 dark:text-amber-300">
-            Enable temporary admin access for this email (frontend testing mode)
-          </span>
-        </label>
-
         <Button type="submit" fullWidth isLoading={isLoading}>
           {t("auth:signIn")}
         </Button>
@@ -188,16 +165,9 @@ export function LoginPage() {
         </Link>
       </p>
 
-      {/* Development helper */}
-      <div className="mt-8 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm">
-        <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-          🧪 {t("auth:testAccounts")}:
-        </p>
-        <div className="space-y-1 text-neutral-600 dark:text-neutral-400">
-          <p>{t("auth:learner")}: learner@learnlab.com / Learner123!</p>
-          <p>{t("auth:admin")}: admin@learnlab.com / Admin123!</p>
-        </div>
-      </div>
+      <p className="rounded-xl border border-dashed border-neutral-300 px-4 py-3 text-sm text-neutral-600 dark:border-neutral-700 dark:text-neutral-400">
+        {t("auth:seededLearnerHint")}
+      </p>
     </div>
   );
 }

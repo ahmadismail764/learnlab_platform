@@ -1,15 +1,20 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff, CheckCircle } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button, Input } from "@/components/ui";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts";
 import {
-  addAdminOverrideEmail,
-  removeAdminOverrideEmail,
-} from "@/utils/adminOverride";
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  AtSign,
+  GraduationCap,
+  ShieldAlert,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button, Card, Input } from "@/components/ui";
+import { useAuth } from "@/contexts";
+import { AuthRequestError } from "@/services/auth";
 
 /**
  * RegisterPage — UC-01
@@ -41,6 +46,7 @@ function getPasswordStrength(password: string): PasswordStrength {
 interface FieldErrors {
   firstName?: string;
   lastName?: string;
+  username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -55,6 +61,7 @@ export function RegisterPage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -65,10 +72,6 @@ export function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<
-    "idle" | "requesting" | "ok" | "error"
-  >("idle");
-  const [grantAdminTestingAccess, setGrantAdminTestingAccess] = useState(false);
 
   // Live password strength
   const passwordStrength = useMemo<PasswordStrength | null>(
@@ -118,6 +121,11 @@ export function RegisterPage() {
 
     if (!formData.firstName.trim()) errors.firstName = t("auth:fieldRequired");
     if (!formData.lastName.trim()) errors.lastName = t("auth:fieldRequired");
+    if (!formData.username.trim()) {
+      errors.username = t("auth:fieldRequired");
+    } else if (!/^[\w.@+-]{3,150}$/.test(formData.username)) {
+      errors.username = t("auth:invalidUsername");
+    }
 
     if (!formData.email.trim()) {
       errors.email = t("auth:fieldRequired");
@@ -149,37 +157,42 @@ export function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError("");
-    setBackendStatus("requesting");
 
     if (!validate()) return;
 
     setIsLoading(true);
 
     try {
-      if (grantAdminTestingAccess) {
-        addAdminOverrideEmail(formData.email);
-      } else {
-        removeAdminOverrideEmail(formData.email);
-      }
-
       const user = await register({
         email: formData.email,
-        username: formData.email.split("@")[0],
+        username: formData.username.trim(),
         password: formData.password,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
       });
-      setBackendStatus("ok");
       setSuccess(true);
       const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       setTimeout(() => navigate(nextRoute, { replace: true }), 700);
     } catch (err: unknown) {
-      setBackendStatus("error");
+      if (err instanceof AuthRequestError && err.fieldErrors) {
+        setFieldErrors((prev) => ({
+          ...prev,
+          firstName: err.fieldErrors?.first_name,
+          lastName: err.fieldErrors?.last_name,
+          username: err.fieldErrors?.username,
+          email: err.fieldErrors?.email,
+          password: err.fieldErrors?.password,
+        }));
+      }
+
       const message =
         err instanceof Error ? err.message : t("auth:registrationFailed");
-      if (message.toLowerCase().includes("email")) {
-        setFieldErrors((prev) => ({ ...prev, email: message }));
-      } else {
+      const fieldBoundMessage =
+        err instanceof AuthRequestError && err.fieldErrors
+          ? Object.values(err.fieldErrors)[0]
+          : "";
+
+      if (message !== fieldBoundMessage) {
         setGeneralError(message);
       }
     } finally {
@@ -198,7 +211,7 @@ export function RegisterPage() {
           {t("auth:registrationSuccess")}
         </h2>
         <p className="text-neutral-600 dark:text-neutral-400">
-          Synchronizing neural profile...
+          {t("auth:redirectingToLearnerSpace")}
         </p>
       </div>
     );
@@ -211,33 +224,32 @@ export function RegisterPage() {
           {t("auth:createAccount")}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          {t("auth:startLearning")}
+          {t("auth:learnerSignupDescription")}
         </p>
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-        {t("auth:createAccount")}
-      </h2>
-      <p className="text-neutral-600 dark:text-neutral-400 mb-8">
-        {t("auth:startLearning")}
-      </p>
+      <Card
+        className="border-emerald-100 bg-emerald-50/80 dark:border-emerald-900/60 dark:bg-emerald-950/20"
+        padding="sm"
+      >
+        <div className="flex items-start gap-3 text-sm text-neutral-700 dark:text-neutral-200">
+          <GraduationCap className="mt-0.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <p>{t("auth:learnerSignupOnly")}</p>
+        </div>
+      </Card>
 
-      <div className="mb-4 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 text-xs text-neutral-600 dark:text-neutral-300">
-        <p className="font-medium">Backend Auth Status</p>
-        {backendStatus === "idle" && <p>Ready to send registration request.</p>}
-        {backendStatus === "requesting" && (
-          <p>Sending registration request to backend...</p>
-        )}
-        {backendStatus === "ok" && (
-          <p>Registration successful. Auto-login and redirect in progress...</p>
-        )}
-        {backendStatus === "error" && (
-          <p>Backend returned an error. See details below.</p>
-        )}
-      </div>
+      <Card
+        className="border-amber-100 bg-amber-50/80 dark:border-amber-900/60 dark:bg-amber-950/20"
+        padding="sm"
+      >
+        <div className="flex items-start gap-3 text-sm text-neutral-700 dark:text-neutral-200">
+          <ShieldAlert className="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <p>{t("auth:adminSignupNotice")}</p>
+        </div>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label={t("auth:firstName")}
             name="firstName"
@@ -260,6 +272,19 @@ export function RegisterPage() {
             className="glass"
           />
         </div>
+
+        <Input
+          label={t("auth:username")}
+          name="username"
+          placeholder={t("auth:usernamePlaceholder")}
+          value={formData.username}
+          onChange={handleChange}
+          leftIcon={<AtSign className="w-4 h-4" />}
+          error={fieldErrors.username}
+          helperText={t("auth:usernameHelper")}
+          required
+          className="glass"
+        />
 
         <Input
           label={t("auth:email")}
@@ -374,19 +399,6 @@ export function RegisterPage() {
             </p>
           )}
         </div>
-
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={grantAdminTestingAccess}
-            onChange={(e) => setGrantAdminTestingAccess(e.target.checked)}
-            className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 mt-0.5"
-          />
-          <span className="text-amber-700 dark:text-amber-300">
-            Grant temporary admin access for this account (frontend testing
-            mode)
-          </span>
-        </label>
 
         <Button type="submit" fullWidth isLoading={isLoading}>
           {isLoading ? t("auth:creatingAccount") : t("auth:createAccount")}

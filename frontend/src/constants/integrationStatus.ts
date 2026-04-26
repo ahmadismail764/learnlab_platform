@@ -15,7 +15,7 @@ const routeStatusMap: Array<{
     info: {
       status: 'backend',
       label: 'Backend Integrated',
-      detail: 'Auth requests are connected to backend endpoints.',
+      detail: 'Auth requests are connected to /api/v1/auth/* endpoints.',
     },
   },
   {
@@ -23,15 +23,15 @@ const routeStatusMap: Array<{
     info: {
       status: 'partial',
       label: 'Partially Integrated',
-      detail: 'User identity is backend-backed, while some page metrics are still static.',
+      detail: 'Profile identity/edits use backend users endpoints, while some visual sections remain static.',
     },
   },
   {
-    match: (p) => p === '/student/leaderboard',
+    match: (p) => p === '/learner/leaderboard',
     info: {
       status: 'partial',
       label: 'Partially Integrated',
-      detail: 'All-time leaderboard now loads from backend; week/month views remain static demo slices.',
+      detail: 'Leaderboard rankings load from backend learner endpoints; some display metrics are still demo placeholders.',
     },
   },
   {
@@ -43,7 +43,7 @@ const routeStatusMap: Array<{
     },
   },
   {
-    match: (p) => p.startsWith('/student') || p.startsWith('/admin'),
+    match: (p) => p.startsWith('/learner') || p.startsWith('/admin'),
     info: {
       status: 'static',
       label: 'Static Demo Data',

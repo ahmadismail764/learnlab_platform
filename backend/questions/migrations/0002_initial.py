@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='submission',
             name='student',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='users.student'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='submissions', to='users.learner'),
         ),
         migrations.AddField(
             model_name='answer',
@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='topicmastery',
             name='student',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='masteries', to='users.student'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='masteries', to='users.learner'),
         ),
         migrations.AddField(
             model_name='topicmastery',

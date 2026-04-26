@@ -35,7 +35,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             from users.models import Learner
             learners = Learner.objects.all()
             masteries = [
-                TopicMastery(learner=l, topic=topic, stability=0, difficulty=5.0)
+                TopicMastery(learner=l, topic=topic, state=1, stability=0, difficulty=5.0)
                 for l in learners
             ]
             TopicMastery.objects.bulk_create(masteries, ignore_conflicts=True)
@@ -55,7 +55,9 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
             return self.queryset.none()
-        return PracticeSession.objects.filter(learner=self.request.user.learner_profile)
+        return PracticeSession.objects.filter(
+            learner=self.request.user.learner_profile
+        ).select_related('learner__user').prefetch_related('interactions')
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -63,7 +65,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         return PracticeSessionSerializer
 
     def perform_create(self, serializer):
-        session = serializer.save(learner=self.request.user.learner_profile, end_time=timezone.now())
+        serializer.save(learner=self.request.user.learner_profile)
 
     @action(detail=False, methods=['get'], url_path='generate-adaptive')
     def generate_adaptive(self, request):
@@ -97,14 +99,26 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         if not selected_topics:
             return Response({"status": "All caught up", "message": "No topics available!"})
 
-        # 3. Pick 1 random question for each selected topic
+        # 3. Pick 1 random question for each selected topic (batch fetch to avoid N+1)
         selected_questions = []
-        for topic in selected_topics:
-            # We don't bother with 'tier' mapping here for a general practice sheet, 
-            # just grab any question from the topic.
-            topic_questions = list(Question.objects.filter(knowledge_point__topic=topic))
-            if topic_questions:
-                selected_questions.append(random.choice(topic_questions))
+        if selected_topics:
+            from django.db.models import Q as DjangoQ
+            topic_ids = [t.id for t in selected_topics]
+            all_questions = list(
+                Question.objects.filter(
+                    knowledge_point__topic_id__in=topic_ids
+                ).select_related('knowledge_point__topic')
+            )
+            # Group by topic
+            questions_by_topic = {}
+            for q in all_questions:
+                tid = q.knowledge_point.topic_id
+                questions_by_topic.setdefault(tid, []).append(q)
+            
+            for topic in selected_topics:
+                topic_qs = questions_by_topic.get(topic.id, [])
+                if topic_qs:
+                    selected_questions.append(random.choice(topic_qs))
 
         # 4. Return serialized questions
         from .serializers import QuestionSerializer

@@ -20,14 +20,19 @@ class LearnerProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user.learner_profile
+        # Safely handle users without a learner profile (e.g., admins)
+        try:
+            return self.request.user.learner_profile
+        except Learner.DoesNotExist:
+            from rest_framework.exceptions import NotFound
+            raise NotFound("No learner profile found for this user.")
 
 class GlobalLeaderboardView(generics.ListAPIView):
     serializer_class = LearnerSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Learner.objects.all().order_by('-total_xp')[:10]
+        return Learner.objects.select_related('user').all().order_by('-total_xp')[:10]
 
 class TopicLeaderboardView(generics.ListAPIView):
     serializer_class = LearnerSerializer
@@ -35,8 +40,11 @@ class TopicLeaderboardView(generics.ListAPIView):
 
     def get_queryset(self):
         topic_id = self.kwargs.get('topic_id')
-        # Query TopicMastery for the given topic, order by stability descending, limit to 10
-        # Then extract the Learner objects
-        masteries = TopicMastery.objects.filter(topic_id=topic_id).select_related('learner').order_by('-stability')[:10]
-        # Since generics.ListAPIView iterates over the queryset to serialize, we can just return a list of learners
-        return [m.learner for m in masteries]
+        # Get learner IDs from TopicMastery, ordered by stability, then return
+        # a proper QuerySet (not a list) to preserve DRF pagination support.
+        top_learner_ids = list(
+            TopicMastery.objects.filter(topic_id=topic_id)
+            .order_by('-stability')
+            .values_list('learner_id', flat=True)[:10]
+        )
+        return Learner.objects.filter(id__in=top_learner_ids).select_related('user')

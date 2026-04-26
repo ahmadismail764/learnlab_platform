@@ -38,10 +38,11 @@ def process_topic_review(mastery, rating: int):
     fsrs_rating = _RATING_MAP[rating]
 
     # --- 1. Reconstruct the fsrs.Card from the stored Django fields ---
+    # FSRS expects None for uninitialized values; 0.0 causes ZeroDivisionError.
     card = Card(
         state=State(mastery.state),                    # int → State enum
-        stability=mastery.stability or None,           # 0.0 stored as None for new cards
-        difficulty=mastery.difficulty or None,         # same treatment
+        stability=mastery.stability or None,           # 0.0 → None (new card)
+        difficulty=mastery.difficulty or None,          # 0.0 → None (new card)
         last_review=mastery.last_review_date,          # already a UTC-aware datetime or None
     )
 

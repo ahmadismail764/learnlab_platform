@@ -17,7 +17,9 @@ import {
   CheckCircle,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
+import { PageIntro, PageStatCard } from '@/components/common'
 import { useAuth, useCurrentUser } from '@/contexts'
+import { useToast } from '@/contexts/ToastContext'
 import { analyticsService, authService, learnersService } from '@/services'
 
 /**
@@ -35,6 +37,7 @@ export function AdminProfilePage() {
   const { t } = useTranslation(['profile', 'common', 'auth', 'admin'])
   const user = useCurrentUser()
   const { updateUser } = useAuth()
+  const { showSuccess, showError } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [isSavingProfile, setIsSavingProfile] = useState(false)
@@ -82,8 +85,13 @@ export function AdminProfilePage() {
         })
       } catch (error) {
         if (!isMounted) return
+        // Analytics returns 400 when there's insufficient data — this is expected
         const message = error instanceof Error ? error.message : 'Failed to load admin metrics'
-        setStatsError(message)
+        if (message.includes('Insufficient data')) {
+          setStatsError('Insufficient practice data for full analytics (< 10 sessions). Stats show available data.')
+        } else {
+          setStatsError(message)
+        }
       }
     }
 
@@ -118,9 +126,11 @@ export function AdminProfilePage() {
       })
 
       setIsEditing(false)
+      showSuccess('Profile updated successfully.')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update profile'
       setProfileError(message)
+      showError(message)
     } finally {
       setIsSavingProfile(false)
     }
@@ -146,10 +156,23 @@ export function AdminProfilePage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Page Header */}
-      <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-        {t('profile:myProfile')}
-      </h1>
+      <PageIntro
+        eyebrow="Admin profile"
+        title={t('profile:myProfile')}
+        description={t('profile:personalInfoDescription')}
+        icon={<Shield className="h-6 w-6" />}
+        tone="secondary"
+        actions={(
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Edit3 className="w-4 h-4" />}
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            {t('profile:editProfile')}
+          </Button>
+        )}
+      />
 
       {profileError && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
@@ -188,14 +211,6 @@ export function AdminProfilePage() {
               </span>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Edit3 className="w-4 h-4" />}
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            {t('profile:editProfile')}
-          </Button>
         </div>
       </Card>
 
@@ -265,34 +280,30 @@ export function AdminProfilePage() {
             />
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
-                  <div className="p-2 bg-primary-100 dark:bg-primary-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.totalLearners}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:totalLearners')}</p>
-                </div>
-                <div className="text-center p-3 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl">
-                  <div className="p-2 bg-secondary-100 dark:bg-secondary-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <FileQuestion className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.totalQuestions}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:totalQuestions')}</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                  <div className="p-2 bg-green-100 dark:bg-green-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.activeToday}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:activeToday')}</p>
-                </div>
-                <div className="text-center p-3 bg-accent-50 dark:bg-accent-900/20 rounded-xl">
-                  <div className="p-2 bg-accent-100 dark:bg-accent-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <Clock className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.systemUptime}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:systemUptime')}</p>
-                </div>
+                <PageStatCard
+                  icon={<Users className="h-5 w-5" />}
+                  label={t('profile:totalLearners')}
+                  value={systemStats.totalLearners}
+                  tone="primary"
+                />
+                <PageStatCard
+                  icon={<FileQuestion className="h-5 w-5" />}
+                  label={t('profile:totalQuestions')}
+                  value={systemStats.totalQuestions}
+                  tone="secondary"
+                />
+                <PageStatCard
+                  icon={<Activity className="h-5 w-5" />}
+                  label={t('profile:activeToday')}
+                  value={systemStats.activeToday}
+                  tone="success"
+                />
+                <PageStatCard
+                  icon={<Clock className="h-5 w-5" />}
+                  label={t('profile:systemUptime')}
+                  value={systemStats.systemUptime}
+                  tone="accent"
+                />
               </div>
             </CardContent>
           </Card>

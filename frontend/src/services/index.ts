@@ -6,3 +6,4 @@ export * from './practice';
 export * from './learners';
 export * from './students';
 export * from './analytics';
+export * from './admins';

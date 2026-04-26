@@ -31,13 +31,8 @@ import type { User } from "@/types";
  */
 
 /**
- * Helper to create dashboard layout with user
- *
- * Note: onLogout is a placeholder that will be replaced when AuthContext
- * is integrated. The actual logout flow should:
- * 1. Call logout() from AuthContext
- * 2. Clear tokens from storage
- * 3. React Router will auto-redirect via the user check
+ * Helper to create dashboard layout with user.
+ * onLogout is provided by App.tsx from AuthContext.
  */
 function createDashboardElement(
   user: User | null,
@@ -55,14 +50,7 @@ function createDashboardElement(
   return (
     <DashboardLayout
       user={user}
-      onLogout={
-        onLogout ??
-        (() => {
-          // Placeholder: Will be replaced by AuthContext.logout() in App.tsx
-          // This causes full reload - acceptable for demo, replace for production
-          window.location.href = "/login";
-        })
-      }
+      onLogout={onLogout ?? (() => {})}
     />
   );
 }

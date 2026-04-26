@@ -18,11 +18,11 @@ import { Card, Button, Badge, ProgressBar } from "@/components/ui";
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
  *
  * Browse Discrete Mathematics topics organized by category.
- * Shows FSRS-based progress and review status for each topic.
+ * Shows FIRe-based progress and review status for each topic.
  *
  * UC-08 Features:
  * - "Due Today" vs "Future Reviews" categorization (Step 3)
- * - FSRS retrievability-based sorting — lowest = highest priority (Step 4)
+ * - FIRe memory-based sorting — lowest = highest priority (Step 4)
  * - Tier badges: 🥉 Tier 1 / 🥈 Tier 2 / 🥇 Tier 3 (Step 5)
  * - "Review!" visual cue for due topics (Step 5)
  * - Search / filter bar (Alt Flow 5a)
@@ -38,8 +38,8 @@ interface TopicItem {
   questionsDue: number;
   lastReviewed?: string;
   state: "new" | "learning" | "review" | "mastered";
-  /** FSRS retrievability 0–1 — lower = more urgent (UC-08 Step 4) */
-  retrievability: number;
+  /** FIRe memory 0–1 — lower = more urgent (UC-08 Step 4) */
+  memory: number;
   /** Scaffolding tier 1–3 (UC-08 Step 5) */
   tier: 1 | 2 | 3;
   /** Next scheduled review date label */
@@ -53,7 +53,7 @@ interface TopicCategory {
   topics: TopicItem[];
 }
 
-// Mock topic data — includes retrievability & tier for UC-08
+// Mock topic data — includes memory & tier for UC-08
 const topicCategories: TopicCategory[] = [
   {
     id: "logic",
@@ -69,7 +69,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 3,
         lastReviewed: "2 days ago",
         state: "review",
-        retrievability: 0.62,
+        memory: 0.62,
         tier: 2,
         nextReview: "today",
       },
@@ -82,7 +82,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 5,
         lastReviewed: "1 week ago",
         state: "learning",
-        retrievability: 0.38,
+        memory: 0.38,
         tier: 1,
         nextReview: "today",
       },
@@ -94,7 +94,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 12,
         questionsDue: 8,
         state: "learning",
-        retrievability: 0.25,
+        memory: 0.25,
         tier: 1,
         nextReview: "today",
       },
@@ -106,7 +106,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 18,
         questionsDue: 0,
         state: "new",
-        retrievability: 1.0,
+        memory: 1.0,
         tier: 3,
       },
     ],
@@ -125,7 +125,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 1,
         lastReviewed: "1 day ago",
         state: "mastered",
-        retrievability: 0.92,
+        memory: 0.92,
         tier: 2,
         nextReview: "in 5 days",
       },
@@ -138,7 +138,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 2,
         lastReviewed: "3 days ago",
         state: "review",
-        retrievability: 0.55,
+        memory: 0.55,
         tier: 1,
         nextReview: "today",
       },
@@ -150,7 +150,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 12,
         questionsDue: 6,
         state: "learning",
-        retrievability: 0.3,
+        memory: 0.3,
         tier: 2,
         nextReview: "today",
       },
@@ -162,7 +162,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 14,
         questionsDue: 0,
         state: "new",
-        retrievability: 1.0,
+        memory: 1.0,
         tier: 1,
       },
     ],
@@ -181,7 +181,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 4,
         lastReviewed: "4 days ago",
         state: "review",
-        retrievability: 0.48,
+        memory: 0.48,
         tier: 2,
         nextReview: "today",
       },
@@ -193,7 +193,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 14,
         questionsDue: 7,
         state: "learning",
-        retrievability: 0.22,
+        memory: 0.22,
         tier: 2,
         nextReview: "today",
       },
@@ -205,7 +205,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 16,
         questionsDue: 0,
         state: "new",
-        retrievability: 1.0,
+        memory: 1.0,
         tier: 3,
       },
       {
@@ -216,7 +216,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 20,
         questionsDue: 10,
         state: "learning",
-        retrievability: 0.15,
+        memory: 0.15,
         tier: 1,
         nextReview: "today",
       },
@@ -236,7 +236,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 2,
         lastReviewed: "2 days ago",
         state: "review",
-        retrievability: 0.7,
+        memory: 0.7,
         tier: 1,
         nextReview: "tomorrow",
       },
@@ -249,7 +249,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 3,
         lastReviewed: "5 days ago",
         state: "review",
-        retrievability: 0.5,
+        memory: 0.5,
         tier: 2,
         nextReview: "tomorrow",
       },
@@ -261,7 +261,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 12,
         questionsDue: 5,
         state: "learning",
-        retrievability: 0.35,
+        memory: 0.35,
         tier: 2,
         nextReview: "in 2 days",
       },
@@ -273,7 +273,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 8,
         questionsDue: 0,
         state: "new",
-        retrievability: 1.0,
+        memory: 1.0,
         tier: 3,
       },
     ],
@@ -292,7 +292,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 4,
         lastReviewed: "3 days ago",
         state: "review",
-        retrievability: 0.52,
+        memory: 0.52,
         tier: 1,
         nextReview: "today",
       },
@@ -304,7 +304,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 14,
         questionsDue: 6,
         state: "learning",
-        retrievability: 0.28,
+        memory: 0.28,
         tier: 2,
         nextReview: "today",
       },
@@ -316,7 +316,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 12,
         questionsDue: 8,
         state: "learning",
-        retrievability: 0.18,
+        memory: 0.18,
         tier: 2,
         nextReview: "today",
       },
@@ -328,7 +328,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 10,
         questionsDue: 0,
         state: "new",
-        retrievability: 1.0,
+        memory: 1.0,
         tier: 3,
       },
     ],
@@ -347,7 +347,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 2,
         lastReviewed: "1 day ago",
         state: "review",
-        retrievability: 0.78,
+        memory: 0.78,
         tier: 1,
         nextReview: "in 3 days",
       },
@@ -359,7 +359,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 16,
         questionsDue: 5,
         state: "learning",
-        retrievability: 0.33,
+        memory: 0.33,
         tier: 2,
         nextReview: "today",
       },
@@ -372,7 +372,7 @@ const topicCategories: TopicCategory[] = [
         questionsDue: 1,
         lastReviewed: "2 days ago",
         state: "mastered",
-        retrievability: 0.88,
+        memory: 0.88,
         tier: 1,
         nextReview: "in 7 days",
       },
@@ -384,7 +384,7 @@ const topicCategories: TopicCategory[] = [
         questionsTotal: 12,
         questionsDue: 7,
         state: "learning",
-        retrievability: 0.2,
+        memory: 0.2,
         tier: 1,
         nextReview: "today",
       },
@@ -468,7 +468,7 @@ export function TopicsPage() {
     () =>
       allTopics
         .filter((t) => t.nextReview === "today")
-        .sort((a, b) => a.retrievability - b.retrievability), // UC-08 Step 4: lowest retrievability first
+        .sort((a, b) => a.memory - b.memory), // UC-08 Step 4: lowest memory first
     [allTopics],
   );
 
@@ -627,7 +627,7 @@ export function TopicsPage() {
         </Card>
       )}
 
-      {/* ═══ Due Today section (UC-08 Step 3) — sorted by retrievability ═══ */}
+      {/* ═══ Due Today section (UC-08 Step 3) — sorted by memory ═══ */}
       {dueTodayTopics.length > 0 && !searchQuery && (
         <div>
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
@@ -680,8 +680,8 @@ export function TopicsPage() {
                         {topic.questionsDue} {t("learner:due")}
                       </span>
                       <span>
-                        {t("learner:retrievabilityLabel")}:{" "}
-                        {Math.round(topic.retrievability * 100)}%
+                        {t("learner:memoryLabel")}:{" "}
+                        {Math.round(topic.memory * 100)}%
                       </span>
                     </div>
                   </div>

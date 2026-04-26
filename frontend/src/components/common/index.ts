@@ -14,3 +14,4 @@
 
 export { IntegrationStatusBadge } from './IntegrationStatusBadge'
 export { DataSourceBreakdown } from './DataSourceBreakdown'
+export { PageIntro, PageStatCard, SectionHeading } from './PageShell'

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -12,42 +12,39 @@ import {
   Save,
   X,
   AlertTriangle,
-  CheckCircle,
   FileText,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, Button, Badge, Input, EmptyState } from '@/components/ui'
+import { topicsService } from '@/services/topics'
+import { useToast } from '@/contexts/ToastContext'
 
 /**
  * TopicsManagementPage - Admin Curriculum Structure (UC-07)
- * 
- * Features:
- * - View all topics organized by parent module hierarchy (Step 1-2)
- * - Create new topic with Name + Description + Parent Module (Steps 3-4)
- * - Validation: duplicate name check within module (Alt Flow 3a)
- * - Success confirmation: "Topic created successfully. Ready to add questions." (Step 8)
- * - Edit existing topic — pre-fills form (Alt Flow 2a)
- * - Delete with cascade warning (Alt Flow 5a)
+ *
+ * Backend-integrated:
+ * - List all topics via GET /api/v1/practice/topics/
+ * - Create topic via POST /api/v1/practice/topics/
+ * - Edit topic via PUT /api/v1/practice/topics/:id/
+ * - Delete topic via DELETE /api/v1/practice/topics/:id/
+ *
+ * Topics are grouped by `parent_module` field.
  */
 
-// --- Interfaces ---
+// --- Interfaces matching backend serializer ---
 
-interface Topic {
-  id: string
-  nameKey: string
+interface BackendTopic {
+  id: number
   name: string
   description: string
-  parentModuleId: string
-  questionsCount: number
-  learnersEnrolled: number
-  icon: string
+  parent_module: string
+  question_count: number
 }
 
-interface Module {
-  id: string
-  nameKey: string
-  name: string
-  icon: string
-  topics: Topic[]
+interface ModuleGroup {
+  parentModule: string
+  topics: BackendTopic[]
 }
 
 type FormMode = 'create' | 'edit'
@@ -55,142 +52,114 @@ type FormMode = 'create' | 'edit'
 interface TopicFormData {
   name: string
   description: string
-  parentModuleId: string
+  parent_module: string
 }
 
 const EMPTY_FORM: TopicFormData = {
   name: '',
   description: '',
-  parentModuleId: '',
+  parent_module: '',
 }
-
-// --- Mock Data ---
-
-const mockModules: Module[] = [
-  {
-    id: 'logic',
-    nameKey: 'topics:logic.title',
-    name: 'Logic',
-    icon: '🔢',
-    topics: [
-      { id: 'propositional', nameKey: 'topics:logic.propositional', name: 'Propositional Logic', description: 'Truth tables, logical connectives, compound statements', parentModuleId: 'logic', questionsCount: 20, learnersEnrolled: 45, icon: '→' },
-      { id: 'predicates', nameKey: 'topics:logic.predicates', name: 'Predicate Logic', description: 'Predicates, quantified statements, logical equivalences', parentModuleId: 'logic', questionsCount: 15, learnersEnrolled: 38, icon: '∀' },
-      { id: 'quantifiers', nameKey: 'topics:logic.quantifiers', name: 'Quantifiers', description: 'Universal and existential quantification, nested quantifiers', parentModuleId: 'logic', questionsCount: 12, learnersEnrolled: 30, icon: '∃' },
-      { id: 'proofs', nameKey: 'topics:logic.proofTechniques', name: 'Proof Techniques', description: 'Direct proof, contradiction, contrapositive, induction', parentModuleId: 'logic', questionsCount: 18, learnersEnrolled: 25, icon: '⊢' },
-    ],
-  },
-  {
-    id: 'sets',
-    nameKey: 'topics:sets.title',
-    name: 'Set Theory',
-    icon: '∪',
-    topics: [
-      { id: 'operations', nameKey: 'topics:sets.operations', name: 'Set Operations', description: 'Union, intersection, complement, difference', parentModuleId: 'sets', questionsCount: 16, learnersEnrolled: 48, icon: '∩' },
-      { id: 'venn', nameKey: 'topics:sets.vennDiagrams', name: 'Venn Diagrams', description: 'Visual representation of set relationships', parentModuleId: 'sets', questionsCount: 10, learnersEnrolled: 42, icon: '◯' },
-      { id: 'power', nameKey: 'topics:sets.powerSets', name: 'Power Sets', description: 'Power set construction, cardinality properties', parentModuleId: 'sets', questionsCount: 12, learnersEnrolled: 28, icon: 'P' },
-      { id: 'cartesian', nameKey: 'topics:sets.cartesianProduct', name: 'Cartesian Product', description: 'Ordered pairs, product sets, relation construction', parentModuleId: 'sets', questionsCount: 14, learnersEnrolled: 22, icon: '×' },
-    ],
-  },
-  {
-    id: 'relations',
-    nameKey: 'topics:relations.title',
-    name: 'Relations',
-    icon: '≡',
-    topics: [
-      { id: 'properties', nameKey: 'topics:relations.properties', name: 'Relation Properties', description: 'Reflexive, symmetric, transitive, antisymmetric', parentModuleId: 'relations', questionsCount: 18, learnersEnrolled: 35, icon: 'R' },
-      { id: 'equivalence', nameKey: 'topics:relations.equivalence', name: 'Equivalence Relations', description: 'Equivalence classes, partitions, quotient sets', parentModuleId: 'relations', questionsCount: 14, learnersEnrolled: 28, icon: '~' },
-      { id: 'partial', nameKey: 'topics:relations.partialOrders', name: 'Partial Orders', description: 'Hasse diagrams, lattices, total orders', parentModuleId: 'relations', questionsCount: 16, learnersEnrolled: 20, icon: '≤' },
-      { id: 'functions', nameKey: 'topics:relations.functions', name: 'Functions', description: 'Injective, surjective, bijective, composition', parentModuleId: 'relations', questionsCount: 20, learnersEnrolled: 32, icon: 'f' },
-    ],
-  },
-  {
-    id: 'combinatorics',
-    nameKey: 'topics:combinatorics.title',
-    name: 'Combinatorics',
-    icon: '📊',
-    topics: [
-      { id: 'counting', nameKey: 'topics:combinatorics.counting', name: 'Counting Principles', description: 'Sum rule, product rule, inclusion-exclusion', parentModuleId: 'combinatorics', questionsCount: 14, learnersEnrolled: 40, icon: '#' },
-      { id: 'permutations', nameKey: 'topics:combinatorics.permutations', name: 'Permutations', description: 'Arrangements, r-permutations, circular permutations', parentModuleId: 'combinatorics', questionsCount: 12, learnersEnrolled: 36, icon: 'P' },
-      { id: 'combinations', nameKey: 'topics:combinatorics.combinations', name: 'Combinations', description: 'Selections, binomial coefficients, Pascals triangle', parentModuleId: 'combinatorics', questionsCount: 12, learnersEnrolled: 30, icon: 'C' },
-      { id: 'pigeonhole', nameKey: 'topics:combinatorics.pigeonhole', name: 'Pigeonhole Principle', description: 'Basic and generalized pigeonhole principle', parentModuleId: 'combinatorics', questionsCount: 8, learnersEnrolled: 18, icon: '🕊' },
-    ],
-  },
-  {
-    id: 'graphTheory',
-    nameKey: 'topics:graphTheory.title',
-    name: 'Graph Theory',
-    icon: '🔗',
-    topics: [
-      { id: 'basics', nameKey: 'topics:graphTheory.basics', name: 'Graph Basics', description: 'Vertices, edges, degree, adjacency, graph types', parentModuleId: 'graphTheory', questionsCount: 16, learnersEnrolled: 34, icon: 'G' },
-      { id: 'paths', nameKey: 'topics:graphTheory.paths', name: 'Paths & Circuits', description: 'Euler paths, Hamilton circuits, shortest paths', parentModuleId: 'graphTheory', questionsCount: 14, learnersEnrolled: 26, icon: '→' },
-      { id: 'trees', nameKey: 'topics:graphTheory.trees', name: 'Trees', description: 'Spanning trees, binary trees, tree traversal', parentModuleId: 'graphTheory', questionsCount: 12, learnersEnrolled: 22, icon: '🌳' },
-      { id: 'planarity', nameKey: 'topics:graphTheory.planarity', name: 'Planarity', description: 'Planar graphs, Eulers formula, graph coloring', parentModuleId: 'graphTheory', questionsCount: 10, learnersEnrolled: 16, icon: '◇' },
-    ],
-  },
-  {
-    id: 'numberTheory',
-    nameKey: 'topics:numberTheory.title',
-    name: 'Number Theory',
-    icon: '🔢',
-    topics: [
-      { id: 'divisibility', nameKey: 'topics:numberTheory.divisibility', name: 'Divisibility', description: 'Division algorithm, divisibility rules, factors', parentModuleId: 'numberTheory', questionsCount: 14, learnersEnrolled: 38, icon: '|' },
-      { id: 'modular', nameKey: 'topics:numberTheory.modularArithmetic', name: 'Modular Arithmetic', description: 'Congruences, modular operations, applications', parentModuleId: 'numberTheory', questionsCount: 16, learnersEnrolled: 30, icon: '%' },
-      { id: 'gcd', nameKey: 'topics:numberTheory.gcd', name: 'GCD & LCM', description: 'Euclidean algorithm, properties of GCD and LCM', parentModuleId: 'numberTheory', questionsCount: 10, learnersEnrolled: 35, icon: '÷' },
-      { id: 'primes', nameKey: 'topics:numberTheory.primes', name: 'Prime Numbers', description: 'Sieve of Eratosthenes, prime factorization, FTA', parentModuleId: 'numberTheory', questionsCount: 12, learnersEnrolled: 24, icon: 'p' },
-    ],
-  },
-]
 
 export function TopicsManagementPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
+  const { showSuccess, showError } = useToast()
+
+  // Data state
+  const [topics, setTopics] = useState<BackendTopic[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set(['logic', 'sets']))
+  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
 
   // Form state
   const [showForm, setShowForm] = useState(false)
   const [formMode, setFormMode] = useState<FormMode>('create')
   const [formData, setFormData] = useState<TopicFormData>({ ...EMPTY_FORM })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [editingTopicId, setEditingTopicId] = useState<string | null>(null)
+  const [editingTopicId, setEditingTopicId] = useState<number | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // Delete confirmation state (UC-07 Alt Flow 5a)
-  const [deleteTarget, setDeleteTarget] = useState<Topic | null>(null)
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<BackendTopic | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
-  // Success message (UC-07 Step 8)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  // --- Data fetching ---
 
-  // Toggle module expansion
-  const toggleModule = (moduleId: string) => {
-    setExpandedModules(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(moduleId)) {
-        newSet.delete(moduleId)
-      } else {
-        newSet.add(moduleId)
-      }
-      return newSet
-    })
-  }
+  const fetchTopics = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError('')
+    try {
+      const data = await topicsService.getTopics()
+      // Handle both paginated and unpaginated responses
+      const items: BackendTopic[] = Array.isArray(data) ? data : (data.results ?? [])
+      setTopics(items)
+      // Auto-expand first two modules
+      const modules = [...new Set(items.map(t => t.parent_module || 'Uncategorized'))]
+      setExpandedModules(new Set(modules.slice(0, 2)))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load topics'
+      setLoadError(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
 
-  // Compute stats
-  const totalTopics = mockModules.reduce((sum, m) => sum + m.topics.length, 0)
-  const totalQuestions = mockModules.reduce((sum, m) => sum + m.topics.reduce((s, t) => s + t.questionsCount, 0), 0)
+  useEffect(() => {
+    fetchTopics()
+  }, [fetchTopics])
+
+  // --- Computed data ---
+
+  // Group topics by parent_module
+  const moduleGroups = useMemo<ModuleGroup[]>(() => {
+    const grouped: Record<string, BackendTopic[]> = {}
+    for (const topic of topics) {
+      const key = topic.parent_module || 'Uncategorized'
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(topic)
+    }
+    return Object.entries(grouped)
+      .map(([parentModule, topicList]) => ({ parentModule, topics: topicList }))
+      .sort((a, b) => a.parentModule.localeCompare(b.parentModule))
+  }, [topics])
+
+  // Get all unique parent modules for the form dropdown
+  const parentModuleOptions = useMemo(() => {
+    return [...new Set(topics.map(t => t.parent_module).filter(Boolean))].sort()
+  }, [topics])
+
+  const totalTopics = topics.length
+  const totalQuestions = topics.reduce((sum, t) => sum + t.question_count, 0)
 
   // Filtered modules by search
   const filteredModules = useMemo(() => {
-    if (!searchQuery.trim()) return mockModules
+    if (!searchQuery.trim()) return moduleGroups
     const q = searchQuery.toLowerCase()
-    return mockModules
+    return moduleGroups
       .map(mod => ({
         ...mod,
         topics: mod.topics.filter(
           t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
         ),
       }))
-      .filter(mod => mod.topics.length > 0 || mod.name.toLowerCase().includes(q))
-  }, [searchQuery])
+      .filter(mod => mod.topics.length > 0 || mod.parentModule.toLowerCase().includes(q))
+  }, [searchQuery, moduleGroups])
+
+  // Toggle module expansion
+  const toggleModule = (moduleKey: string) => {
+    setExpandedModules(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(moduleKey)) {
+        newSet.delete(moduleKey)
+      } else {
+        newSet.add(moduleKey)
+      }
+      return newSet
+    })
+  }
 
   // --- Form handlers ---
 
@@ -202,11 +171,11 @@ export function TopicsManagementPage() {
     setShowForm(true)
   }, [])
 
-  const openEditForm = useCallback((topic: Topic) => {
+  const openEditForm = useCallback((topic: BackendTopic) => {
     setFormData({
       name: topic.name,
       description: topic.description,
-      parentModuleId: topic.parentModuleId,
+      parent_module: topic.parent_module,
     })
     setFormErrors({})
     setFormMode('edit')
@@ -221,7 +190,6 @@ export function TopicsManagementPage() {
     setEditingTopicId(null)
   }, [])
 
-  // UC-07 Alt Flow 3a: Validate uniqueness
   const validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {}
 
@@ -229,65 +197,96 @@ export function TopicsManagementPage() {
       errors.name = t('admin:topicsManagement.form.errorName')
     }
 
-    if (!formData.parentModuleId) {
-      errors.parentModuleId = t('admin:topicsManagement.form.errorModule')
-    }
-
-    // Check duplicate name within same module
-    if (formData.name.trim() && formData.parentModuleId) {
-      const parentModule = mockModules.find(m => m.id === formData.parentModuleId)
-      if (parentModule) {
-        const duplicate = parentModule.topics.find(
-          t => t.name.toLowerCase() === formData.name.trim().toLowerCase()
-            && t.id !== editingTopicId
-        )
-        if (duplicate) {
-          errors.name = t('admin:topicsManagement.form.errorDuplicate')
-        }
+    // Check duplicate name within same module (client-side, backend also validates)
+    if (formData.name.trim()) {
+      const duplicate = topics.find(
+        t => t.name.toLowerCase() === formData.name.trim().toLowerCase()
+          && t.id !== editingTopicId
+      )
+      if (duplicate) {
+        errors.name = t('admin:topicsManagement.form.errorDuplicate')
       }
     }
 
     setFormErrors(errors)
     return Object.keys(errors).length === 0
-  }, [formData, editingTopicId, t])
+  }, [formData, editingTopicId, topics, t])
 
-  // UC-07 Steps 5-8: Save
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!validateForm()) return
 
-    // Static: just show success toast
-    const msg = formMode === 'create'
-      ? t('admin:topicsManagement.form.createSuccess')
-      : t('admin:topicsManagement.form.updateSuccess')
+    setIsSaving(true)
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        parent_module: formData.parent_module.trim(),
+      }
 
-    setSuccessMessage(msg)
-    closeForm()
+      if (formMode === 'create') {
+        await topicsService.createTopic(payload)
+        showSuccess(t('admin:topicsManagement.form.createSuccess'))
+      } else if (editingTopicId !== null) {
+        await topicsService.updateTopic(editingTopicId, payload)
+        showSuccess(t('admin:topicsManagement.form.updateSuccess'))
+      }
 
-    // Auto-hide success
-    setTimeout(() => setSuccessMessage(null), 4000)
-  }, [validateForm, formMode, t, closeForm])
+      closeForm()
+      await fetchTopics() // Refresh data
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Save failed'
+      showError(message)
+      // Try to extract field errors from the message
+      if (message.includes('name')) {
+        setFormErrors(prev => ({ ...prev, name: message }))
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }, [validateForm, formMode, formData, editingTopicId, closeForm, fetchTopics, showSuccess, showError, t])
 
-  // UC-07 Alt Flow 5a: Delete
-  const handleDelete = useCallback(() => {
+  const handleDelete = useCallback(async () => {
     if (!deleteTarget) return
-    setSuccessMessage(t('admin:topicsManagement.form.deleteSuccess'))
-    setDeleteTarget(null)
-    setTimeout(() => setSuccessMessage(null), 4000)
-  }, [deleteTarget, t])
+
+    setIsDeleting(true)
+    try {
+      await topicsService.deleteTopic(deleteTarget.id)
+      showSuccess(t('admin:topicsManagement.form.deleteSuccess'))
+      setDeleteTarget(null)
+      await fetchTopics()
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Delete failed'
+      showError(message)
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [deleteTarget, fetchTopics, showSuccess, showError, t])
+
+  // --- Loading & Error states ---
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
+        <p className="text-sm font-medium text-neutral-500">Loading topics from backend...</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <AlertTriangle className="w-8 h-8 text-rose-500" />
+        <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
+        <Button variant="outline" onClick={fetchTopics} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          Retry
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
-      {/* Success toast */}
-      {successMessage && (
-        <div className="fixed top-4 end-4 z-50 flex items-center gap-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-4 py-3 rounded-xl shadow-lg border border-green-200 dark:border-green-800 animate-in slide-in-from-top">
-          <CheckCircle className="w-5 h-5 shrink-0" />
-          <span className="text-sm font-medium">{successMessage}</span>
-          <button onClick={() => setSuccessMessage(null)} className="ms-2 p-0.5">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -298,9 +297,14 @@ export function TopicsManagementPage() {
             {t('admin:topicsManagement.subtitle')}
           </p>
         </div>
-        <Button leftIcon={<Plus className="w-4 h-4" />} onClick={openCreateForm}>
-          {t('admin:topicsManagement.addTopic')}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={fetchTopics} leftIcon={<RefreshCw className="w-4 h-4" />}>
+            {t('common:refresh')}
+          </Button>
+          <Button leftIcon={<Plus className="w-4 h-4" />} onClick={openCreateForm}>
+            {t('admin:topicsManagement.addTopic')}
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -311,7 +315,7 @@ export function TopicsManagementPage() {
               <FolderTree className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{mockModules.length}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{moduleGroups.length}</p>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:topicsManagement.stats.modules')}</p>
             </div>
           </div>
@@ -354,27 +358,38 @@ export function TopicsManagementPage() {
       {/* Module hierarchy */}
       <div className="space-y-4">
         {filteredModules.length === 0 ? (
-          <EmptyState
-            icon={<Search className="w-8 h-8" />}
-            title={t('common:noResults')}
-            description={t('admin:tryDifferentFilters')}
-          />
+          topics.length === 0 ? (
+            <EmptyState
+              icon={<BookOpen className="w-8 h-8" />}
+              title="No topics yet"
+              description="Create your first topic to get started. Topics are the building blocks of the curriculum."
+              action={{ label: t('admin:topicsManagement.addTopic'), onClick: openCreateForm }}
+            />
+          ) : (
+            <EmptyState
+              icon={<Search className="w-8 h-8" />}
+              title={t('common:noResults')}
+              description={t('admin:tryDifferentFilters')}
+            />
+          )
         ) : (
           filteredModules.map((mod) => {
-            const isExpanded = expandedModules.has(mod.id)
-            const moduleQuestions = mod.topics.reduce((sum, t) => sum + t.questionsCount, 0)
+            const isExpanded = expandedModules.has(mod.parentModule)
+            const moduleQuestions = mod.topics.reduce((sum, t) => sum + t.question_count, 0)
 
             return (
-              <Card key={mod.id} className="overflow-hidden">
+              <Card key={mod.parentModule} className="overflow-hidden">
                 {/* Module header */}
                 <button
-                  onClick={() => toggleModule(mod.id)}
+                  onClick={() => toggleModule(mod.parentModule)}
                   className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
                 >
-                  <span className="text-2xl">{mod.icon}</span>
+                  <span className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
+                    {mod.parentModule.charAt(0).toUpperCase()}
+                  </span>
                   <div className="flex-1 text-start">
                     <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                      {t(mod.nameKey)}
+                      {mod.parentModule || 'Uncategorized'}
                     </h3>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">
                       {t('admin:topicsManagement.topicCount', { count: mod.topics.length })} · {t('admin:topicsManagement.questionCount', { count: moduleQuestions })}
@@ -400,19 +415,20 @@ export function TopicsManagementPage() {
                           index !== mod.topics.length - 1 ? 'border-b border-neutral-100 dark:border-neutral-700' : ''
                         }`}
                       >
-                        <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono shrink-0">
-                          {topic.icon}
+                        <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-sm font-mono font-bold text-neutral-500 shrink-0">
+                          {topic.id}
                         </span>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                            {t(topic.nameKey)}
+                            {topic.name}
                           </h4>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
-                            {topic.description}
-                          </p>
+                          {topic.description && (
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
+                              {topic.description}
+                            </p>
+                          )}
                           <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                            <span>{topic.questionsCount} {t('admin:topicsManagement.questionsLabel')}</span>
-                            <span>{topic.learnersEnrolled} {t('admin:topicsManagement.learnersLabel')}</span>
+                            <span>{topic.question_count} {t('admin:topicsManagement.questionsLabel')}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
@@ -433,7 +449,7 @@ export function TopicsManagementPage() {
         )}
       </div>
 
-      {/* ═══════ Create / Edit Form Modal (UC-07 Steps 3-7) ═══════ */}
+      {/* ═══════ Create / Edit Form Modal ═══════ */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
@@ -469,6 +485,7 @@ export function TopicsManagementPage() {
                   }}
                   placeholder={t('admin:topicsManagement.form.namePlaceholder')}
                   className={formErrors.name ? 'border-red-500 dark:border-red-500' : ''}
+                  disabled={isSaving}
                 />
                 {formErrors.name && (
                   <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -488,58 +505,56 @@ export function TopicsManagementPage() {
                   onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder={t('admin:topicsManagement.form.descriptionPlaceholder')}
                   rows={3}
+                  disabled={isSaving}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors resize-none"
                 />
               </div>
 
-              {/* Parent Module */}
+              {/* Parent Module — now a combobox: select existing or type new */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  {t('admin:topicsManagement.form.parentModule')} <span className="text-red-500">*</span>
+                  {t('admin:topicsManagement.form.parentModule')} <span className="text-neutral-400 text-xs">({t('common:optional')})</span>
                 </label>
-                <select
-                  value={formData.parentModuleId}
-                  onChange={e => {
-                    setFormData(prev => ({ ...prev, parentModuleId: e.target.value }))
-                    if (formErrors.parentModuleId) setFormErrors(prev => ({ ...prev, parentModuleId: '' }))
-                  }}
-                  className={`w-full px-3 py-2 rounded-lg border bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors ${
-                    formErrors.parentModuleId ? 'border-red-500 dark:border-red-500' : 'border-neutral-300 dark:border-neutral-600'
-                  }`}
-                  aria-label={t('admin:topicsManagement.form.parentModule')}
-                >
-                  <option value="">{t('admin:topicsManagement.form.selectModule')}</option>
-                  {mockModules.map(mod => (
-                    <option key={mod.id} value={mod.id}>
-                      {mod.icon} {t(mod.nameKey)}
-                    </option>
+                <Input
+                  value={formData.parent_module}
+                  onChange={e => setFormData(prev => ({ ...prev, parent_module: e.target.value }))}
+                  placeholder="e.g. Discrete Math > Logic"
+                  disabled={isSaving}
+                  list="parent-module-options"
+                />
+                <datalist id="parent-module-options">
+                  {parentModuleOptions.map(mod => (
+                    <option key={mod} value={mod} />
                   ))}
-                </select>
-                {formErrors.parentModuleId && (
-                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    {formErrors.parentModuleId}
-                  </p>
-                )}
+                </datalist>
+                <p className="text-xs text-neutral-400 mt-1">
+                  Select an existing module or type a new one. Leave empty for uncategorized.
+                </p>
               </div>
             </div>
 
             {/* Form footer */}
             <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-neutral-700">
-              <Button variant="outline" onClick={closeForm}>
+              <Button variant="outline" onClick={closeForm} disabled={isSaving}>
                 {t('common:cancel')}
               </Button>
-              <Button leftIcon={<Save className="w-4 h-4" />} onClick={handleSave}>
-                {formMode === 'create'
-                  ? t('admin:topicsManagement.form.saveTopic')
-                  : t('admin:topicsManagement.form.updateTopic')}
+              <Button
+                leftIcon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving
+                  ? t('common:loading')
+                  : formMode === 'create'
+                    ? t('admin:topicsManagement.form.saveTopic')
+                    : t('admin:topicsManagement.form.updateTopic')}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ═══════ Delete Confirmation Dialog (UC-07 Alt Flow 5a) ═══════ */}
+      {/* ═══════ Delete Confirmation Dialog ═══════ */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-md mx-4">
@@ -563,21 +578,22 @@ export function TopicsManagementPage() {
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
                     {t('admin:topicsManagement.delete.topicLabel')}: <strong>{deleteTarget.name}</strong>
                     <br />
-                    {t('admin:topicsManagement.delete.questionsAffected', { count: deleteTarget.questionsCount })}
+                    {t('admin:topicsManagement.delete.questionsAffected', { count: deleteTarget.question_count })}
                   </p>
                 </div>
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-neutral-700">
-              <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
                 {t('common:cancel')}
               </Button>
               <Button
                 className="bg-red-600 hover:bg-red-700 text-white"
-                leftIcon={<Trash2 className="w-4 h-4" />}
+                leftIcon={isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 onClick={handleDelete}
+                disabled={isDeleting}
               >
-                {t('common:delete')}
+                {isDeleting ? t('common:loading') : t('common:delete')}
               </Button>
             </div>
           </div>

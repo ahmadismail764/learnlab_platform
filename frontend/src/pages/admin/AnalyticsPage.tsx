@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
+import { PageIntro, PageStatCard } from '@/components/common'
 import { analyticsService, learnersService } from '@/services'
 
 /**
@@ -106,14 +107,14 @@ export function AnalyticsPage() {
     totalReviews: overviewMetrics?.totalReviews ?? 45320, // For insufficient-data check (UC-04 alt flow 2a)
   }), [overviewMetrics])
 
-  // UC-04 Step 3: FSRS-specific metrics per topic (mock data)
+  // UC-04 Step 3: FIRe-specific metrics per topic (mock data)
   const fsrsMetrics = [
-    { topic: 'logic', stability: 14.2, retention: 92 },
-    { topic: 'sets', stability: 11.5, retention: 88 },
-    { topic: 'relations', stability: 8.7, retention: 82 },
-    { topic: 'combinatorics', stability: 6.3, retention: 76 },
-    { topic: 'graphs', stability: 9.8, retention: 85 },
-    { topic: 'numtheory', stability: 7.1, retention: 79 },
+    { topic: 'logic', speed: 14.2, retention: 92 },
+    { topic: 'sets', speed: 11.5, retention: 88 },
+    { topic: 'relations', speed: 8.7, retention: 82 },
+    { topic: 'combinatorics', speed: 6.3, retention: 76 },
+    { topic: 'graphs', speed: 9.8, retention: 85 },
+    { topic: 'numtheory', speed: 7.1, retention: 79 },
   ]
 
   const topicPerformance = [
@@ -173,36 +174,33 @@ export function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with export button */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {t('admin:learnerAnalytics')}
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-            {t('admin:analyticsDescription')}
-          </p>
-        </div>
-        {/* UC-04 Step 6: Export option */}
-        <div className="flex gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={() => { /* Export CSV — backend integration */ }}
-          >
-            {t('admin:exportCSV')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Download className="w-4 h-4" />}
-            onClick={() => { /* Export PDF — backend integration */ }}
-          >
-            {t('admin:exportPDF')}
-          </Button>
-        </div>
-      </div>
+      <PageIntro
+        eyebrow="Admin analytics"
+        title={t('admin:learnerAnalytics')}
+        description={t('admin:analyticsDescription')}
+        icon={<BarChart3 className="h-6 w-6" />}
+        tone="secondary"
+        actions={(
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={() => { /* Export CSV — backend integration */ }}
+            >
+              {t('admin:exportCSV')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={() => { /* Export PDF — backend integration */ }}
+            >
+              {t('admin:exportPDF')}
+            </Button>
+          </>
+        )}
+      />
 
       {isLoadingOverview && (
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('common:loading')}</p>
@@ -237,58 +235,34 @@ export function AnalyticsPage() {
         </Card>
       ) : (
       <>
-      {/* Overview Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary-100 dark:bg-secondary-900/30 rounded-lg">
-              <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.totalLearners}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalLearners')}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-              <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.activeThisWeek}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:activeThisWeek')}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-              <Target className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.avgAccuracy}%</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:avgAccuracy')}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
-              <Clock className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{overviewStats.avgSessionTime}m</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:avgSessionTime')}</p>
-            </div>
-          </div>
-        </Card>
+        <PageStatCard
+          icon={<Users className="h-5 w-5" />}
+          label={t('admin:totalLearners')}
+          value={overviewStats.totalLearners}
+          tone="secondary"
+        />
+        <PageStatCard
+          icon={<Activity className="h-5 w-5" />}
+          label={t('admin:activeThisWeek')}
+          value={overviewStats.activeThisWeek}
+          tone="success"
+        />
+        <PageStatCard
+          icon={<Target className="h-5 w-5" />}
+          label={t('admin:avgAccuracy')}
+          value={`${overviewStats.avgAccuracy}%`}
+          tone="primary"
+        />
+        <PageStatCard
+          icon={<Clock className="h-5 w-5" />}
+          label={t('admin:avgSessionTime')}
+          value={`${overviewStats.avgSessionTime}m`}
+          tone="accent"
+        />
       </div>
 
-      {/* UC-04 Step 3: FSRS Metrics Section */}
+      {/* UC-04 Step 3: FIRe Metrics Section */}
       <Card>
         <CardHeader
           title={t('admin:fsrsMetrics')}
@@ -304,10 +278,10 @@ export function AnalyticsPage() {
                 <div className="flex items-baseline justify-between">
                   <div>
                     <p className="text-lg font-bold text-primary-600 dark:text-primary-400">
-                      {item.stability}d
+                      {item.speed}d
                     </p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {t('admin:stability')}
+                      {t('admin:speed')}
                     </p>
                   </div>
                   <div className="text-end">

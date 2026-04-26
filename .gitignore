@@ -13,7 +13,13 @@ frontend/.env.local
 
 # Environments
 .env
+backend/.env
+!backend/.env.example
 
 # IDE / Editors
 .vscode/
 .cursor/
+
+# Local database binaries archives
+pg_binaries.zip
+

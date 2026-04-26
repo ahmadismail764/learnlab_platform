@@ -7,21 +7,16 @@ import {
   ChevronUp,
   ChevronDown,
   WifiOff,
-  Sparkles,
   Search,
-  LayoutGrid,
-  Dna
+  Users,
+  TrendingUp,
 } from 'lucide-react'
-import { Card, Badge, Avatar, ProgressBar } from '@/components/ui'
+import { Card, Badge, Avatar, ProgressBar, Button, Input } from '@/components/ui'
+import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
 import { learnersService } from '@/services/learners'
 import { topicsService } from '@/services/topics'
 import { cn } from '@/utils/cn'
-
-/**
- * LeaderboardPage (Hall of Fame)
- * Re-imagined as a global ranking metrics display with clinical laboratory visuals.
- */
 
 interface LeaderboardEntry {
   id: number | string
@@ -35,15 +30,21 @@ interface LeaderboardEntry {
   is_current_user?: boolean
 }
 
+interface TopicOption {
+  id: number | string
+  name: string
+}
+
 export function LeaderboardPage() {
   const { t: _t } = useTranslation(['gamification', 'common'])
-   const currentUser = useCurrentUser()
+  const currentUser = useCurrentUser()
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
-  const [topics, setTopics] = useState<any[]>([])
+  const [topics, setTopics] = useState<TopicOption[]>([])
   const [selectedTopicId, setSelectedTopicId] = useState<string>('')
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
-   const [currentUserEntry, setCurrentUserEntry] = useState<LeaderboardEntry | null>(null)
+  const [currentUserEntry, setCurrentUserEntry] = useState<LeaderboardEntry | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -52,11 +53,11 @@ export function LeaderboardPage() {
         const data = await topicsService.getTopics()
         const results = Array.isArray(data) ? data : (data.results || [])
         if (isMounted) {
-            setTopics(results)
-            if (results.length > 0) setSelectedTopicId(results[0].id.toString())
+          setTopics(results)
+          if (results.length > 0) setSelectedTopicId(results[0].id.toString())
         }
-      } catch (err) {
-        console.error("Failed to fetch topics", err)
+      } catch (error) {
+        console.error('Failed to fetch topics', error)
       }
     }
     fetchTopics()
@@ -68,36 +69,37 @@ export function LeaderboardPage() {
     const fetchData = async () => {
       setIsLoading(true)
       try {
-        let data;
+        let data
         if (leaderboardType === 'global') {
-            data = await learnersService.getLeaderboard()
+          data = await learnersService.getLeaderboard()
         } else {
-            if (!selectedTopicId) {
-                setIsLoading(false);
-                return;
-            }
-            data = await learnersService.getTopicLeaderboard(selectedTopicId)
+          if (!selectedTopicId) {
+            setIsLoading(false)
+            return
+          }
+          data = await learnersService.getTopicLeaderboard(selectedTopicId)
         }
-      const results = data
+        const results = data
         
-        const mappedResults: LeaderboardEntry[] = results.map((e: any, index: number) => ({
-          id: e.id,
-          name: e.user ? `${e.user.first_name} ${e.user.last_name}`.trim() || e.user.username : 'Unknown Researcher',
-          xp: e.total_xp || 0,
-          streak: e.streak_count || 0,
-          accuracy: e.accuracy || 100,
+        const mappedResults: LeaderboardEntry[] = results.map((entry: any, index: number) => ({
+          id: entry.id,
+          name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
+          xp: entry.total_xp || 0,
+          streak: entry.streak_count || 0,
+          accuracy: entry.accuracy || 100,
           rank: index + 1,
-          rank_change: e.rank_change || 0,
-               is_current_user: String(e.user?.id) === String(currentUser.id)
+          rank_change: entry.rank_change || 0,
+          is_current_user: String(entry.user?.id) === String(currentUser.id),
         }))
 
         if (isMounted) {
           setLeaderboard(mappedResults)
-               const current = mappedResults.find((e: any) => e.is_current_user) || null
-               setCurrentUserEntry(current)
+          setCurrentUserEntry(
+            mappedResults.find((entry) => entry.is_current_user) || null,
+          )
         }
-      } catch (err) {
-        if (isMounted) console.error("Failed to fetch leaderboard", err)
+      } catch (error) {
+        if (isMounted) console.error('Failed to fetch leaderboard', error)
       } finally {
         if (isMounted) setIsLoading(false)
       }
@@ -107,232 +109,306 @@ export function LeaderboardPage() {
    }, [leaderboardType, selectedTopicId, currentUser.id])
 
   const displayEntries = useMemo(() => {
-    return leaderboard.slice(0, 10).sort((a, b) => a.rank - b.rank)
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const filteredEntries = normalizedQuery
+      ? leaderboard.filter((entry) => {
+          return (
+            entry.name.toLowerCase().includes(normalizedQuery)
+            || String(entry.id).toLowerCase().includes(normalizedQuery)
+          )
+        })
+      : leaderboard
+
+    return filteredEntries.slice(0, 10).sort((a, b) => a.rank - b.rank)
+  }, [leaderboard, searchQuery])
+
+  const selectedTopicName = useMemo(() => {
+    return topics.find((topic) => String(topic.id) === selectedTopicId)?.name ?? 'Selected topic'
+  }, [topics, selectedTopicId])
+
+  const averageAccuracy = useMemo(() => {
+    if (displayEntries.length === 0) return 0
+
+    return Math.round(
+      displayEntries.reduce((sum, entry) => sum + entry.accuracy, 0) / displayEntries.length,
+    )
+  }, [displayEntries])
+
+  const longestStreak = useMemo(() => {
+    return leaderboard.reduce((highest, entry) => Math.max(highest, entry.streak), 0)
   }, [leaderboard])
 
   const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="w-8 h-8 text-amber-500 animate-bounce" />
-    if (rank === 2) return <Medal className="w-8 h-8 text-neutral-400" />
-    if (rank === 3) return <Medal className="w-8 h-8 text-orange-600" />
+    if (rank === 1) return <Crown className="h-5 w-5 text-amber-500" />
+    if (rank === 2) return <Medal className="h-5 w-5 text-neutral-400" />
+    if (rank === 3) return <Medal className="h-5 w-5 text-orange-600" />
     return null
   }
 
-  if (isLoading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-6">
-      <div className="relative">
-         <Dna className="w-16 h-16 text-primary-600 animate-spin" />
-         <div className="absolute inset-0 bg-primary-500 blur-2xl opacity-20 animate-pulse" />
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card className="py-14 text-center">
+          <div className="space-y-3">
+            <Crown className="mx-auto h-10 w-10 text-accent-500" />
+            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
+              Loading leaderboard standings...
+            </p>
+          </div>
+        </Card>
       </div>
-      <p className="text-[10px] font-black uppercase tracking-[0.5em] text-neutral-400">Verifying Rankings...</p>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div className="stagger-in space-y-12 pb-20 pt-4">
-      {/* Editorial Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-neutral-200 dark:border-neutral-800 pb-10">
-        <div className="space-y-4 max-w-2xl">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-1 bg-amber-500 rounded-full" />
-             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400">Global Standings // HALL OF FAME</span>
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black font-display tracking-tight text-neutral-950 dark:text-white leading-none">
-            Hall of <br/>Fame<span className="text-amber-500">.</span>
-          </h1>
-          <p className="text-lg text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed">
-            Synthesized list of paramount researchers. Rankings are recalibrated every 24 hours based on synaptic XP gains.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageIntro
+        eyebrow="Leaderboard"
+        title="Hall of fame"
+        description="A cleaner ranking view that keeps the competitive feel without the oversized full-screen layout."
+        icon={<Crown className="h-6 w-6" />}
+        tone="accent"
+        actions={(
+          <div className="flex flex-wrap items-center gap-2">
+            {(['global', 'topic'] as const).map((type) => (
+              <Button
+                key={type}
+                size="sm"
+                variant={leaderboardType === type ? 'accent' : 'outline'}
+                onClick={() => setLeaderboardType(type)}
+              >
+                {type === 'global' ? 'Global' : 'By topic'}
+              </Button>
+            ))}
 
-          <div className="flex flex-col gap-4 items-end">
-              <div className="flex gap-4 p-2 bg-neutral-100 dark:bg-neutral-900 rounded-3xl border border-neutral-200/50 dark:border-neutral-800">
-                 {(['global', 'topic'] as const).map(type => (
-                    <button
-                       key={type}
-                       onClick={() => setLeaderboardType(type)}
-                       className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                          leaderboardType === type 
-                             ? 'bg-neutral-950 text-white shadow-xl scale-105' 
-                             : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-                       }`}
-                    >
-                       {type}
-                    </button>
-                 ))}
-              </div>
-              
-              {leaderboardType === 'topic' && (
-                  <select 
-                      value={selectedTopicId}
-                      onChange={(e) => setSelectedTopicId(e.target.value)}
-                      className="bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl px-4 py-2 text-sm font-bold text-neutral-700 dark:text-neutral-300 outline-hidden"
-                  >
-                      {topics.map(t => (
-                          <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                  </select>
-              )}
+            {leaderboardType === 'topic' && (
+              <select
+                value={selectedTopicId}
+                onChange={(event) => setSelectedTopicId(event.target.value)}
+                className="h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-700 outline-hidden dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+              >
+                {topics.map((topic) => (
+                  <option key={topic.id} value={topic.id}>
+                    {topic.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+        )}
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <PageStatCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label="Your rank"
+          value={currentUserEntry ? `#${currentUserEntry.rank}` : '--'}
+          helper={currentUserEntry ? `${currentUserEntry.xp.toLocaleString()} XP` : 'Join a session to appear'}
+          tone="accent"
+        />
+        <PageStatCard
+          icon={<Users className="h-5 w-5" />}
+          label="Visible entries"
+          value={displayEntries.length}
+          helper={leaderboardType === 'topic' ? selectedTopicName : 'Current top results'}
+          tone="primary"
+        />
+        <PageStatCard
+          icon={<Search className="h-5 w-5" />}
+          label="Average accuracy"
+          value={`${averageAccuracy}%`}
+          helper="Across the current result set"
+          tone="success"
+        />
+        <PageStatCard
+          icon={<Flame className="h-5 w-5" />}
+          label="Longest streak"
+          value={longestStreak}
+          helper="Best streak in the fetched standings"
+          tone="secondary"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* User Standing - Sidebar */}
-        <div className="lg:col-span-4 space-y-8">
-           <div className="flex items-center gap-3 px-2">
-              <Sparkles className="w-5 h-5 text-amber-500" />
-              <h2 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">Your Position</h2>
-           </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="space-y-4 lg:col-span-4">
+          <SectionHeading
+            title="Your position"
+            description="A compact summary of how you compare with the current board."
+          />
 
-           <Card className="glass border-0 rounded-[3rem] p-10 bg-neutral-900 text-white relative overflow-hidden group shadow-2xl">
-              <div className="absolute inset-0 bg-scanline opacity-10" />
-              {currentUserEntry ? (
-                <div className="relative z-10 space-y-10">
-                  <div className="flex flex-col items-center gap-4 text-center">
-                     <div className="w-24 h-24 rounded-[2rem] border-2 border-primary-500/30 flex items-center justify-center p-2 relative">
-                        <div className="absolute inset-0 bg-primary-500 blur-2xl opacity-10" />
-                        <Avatar name={currentUserEntry.name} size="xl" className="shadow-2xl" />
-                     </div>
-                     <div>
-                        <p className="text-2xl font-black tracking-tight">{currentUserEntry.name}</p>
-                        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Operator State: ACTIVE</p>
-                     </div>
-                  </div>
-
-                  <div className="flex flex-col items-center py-6 bg-white/5 rounded-[2rem] border border-white/5 shadow-inner">
-                     <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Rank index</p>
-                     <p className="text-6xl font-black tracking-tighter text-amber-500">#{currentUserEntry.rank}</p>
-                     <div className="flex items-center gap-2 mt-4 px-4 py-1.5 bg-neutral-950 rounded-full shadow-lg border border-white/5">
-                        {currentUserEntry.rank_change >= 0 ? <ChevronUp className="w-4 h-4 text-emerald-500" /> : <ChevronDown className="w-4 h-4 text-rose-500" />}
-                        <span className={cn(
-                           "text-[9px] font-black uppercase tracking-widest",
-                           currentUserEntry.rank_change >= 0 ? "text-emerald-500" : "text-rose-500"
-                        )}>
-                           {Math.abs(currentUserEntry.rank_change)} Pos Change
-                        </span>
-                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                     <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
-                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Synaptic XP</p>
-                        <p className="text-xl font-black">{currentUserEntry.xp.toLocaleString()}</p>
-                     </div>
-                     <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
-                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1">Streak</p>
-                        <p className="text-xl font-black text-orange-500 flex items-center gap-2">
-                           <Flame className="w-5 h-5 fill-current" /> {currentUserEntry.streak}
-                        </p>
-                     </div>
-                  </div>
-
-                  <div className="space-y-3">
-                     <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest mb-1">
-                        <span className="text-neutral-500">Accuracy Vector</span>
-                        <span className="text-emerald-500">{currentUserEntry.accuracy}%</span>
-                     </div>
-                     <ProgressBar value={currentUserEntry.accuracy} className="h-1 bg-white/5" indicatorClassName="bg-emerald-500" />
+          <Card className="h-full">
+            {currentUserEntry ? (
+              <div className="space-y-5">
+                <div className="flex items-center gap-4">
+                  <Avatar name={currentUserEntry.name} size="xl" />
+                  <div className="min-w-0">
+                    <p className="truncate text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                      {currentUserEntry.name}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge variant="accent" size="sm">
+                        Rank #{currentUserEntry.rank}
+                      </Badge>
+                      <Badge variant="outline" size="sm">
+                        {currentUserEntry.xp.toLocaleString()} XP
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <div className="relative z-10 h-96 flex flex-col items-center justify-center text-center p-6 space-y-6">
-                   <div className="w-20 h-20 rounded-[2rem] bg-white/5 flex items-center justify-center text-neutral-500">
-                      <WifiOff className="w-10 h-10" />
-                   </div>
-                   <div className="space-y-2">
-                      <h3 className="text-xl font-black uppercase tracking-tight">Index Null</h3>
-                      <p className="text-neutral-500 text-sm font-medium leading-relaxed">
-                         Complete simulations to establish your position in the hall of fame.
-                      </p>
-                   </div>
+
+                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                      Streak
+                    </p>
+                    <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
+                      <Flame className="h-4 w-4 text-orange-500" />
+                      {currentUserEntry.streak}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                      Rank change
+                    </p>
+                    <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
+                      {currentUserEntry.rank_change >= 0 ? (
+                        <ChevronUp className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-rose-500" />
+                      )}
+                      {Math.abs(currentUserEntry.rank_change)}
+                    </p>
+                  </div>
                 </div>
-              )}
-           </Card>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-500 dark:text-neutral-400">Accuracy</span>
+                    <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                      {currentUserEntry.accuracy}%
+                    </span>
+                  </div>
+                  <ProgressBar value={currentUserEntry.accuracy} variant="success" />
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+                <WifiOff className="h-8 w-8 text-neutral-400" />
+                <div className="space-y-1">
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                    No current rank yet
+                  </p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Complete more practice to appear in the leaderboard.
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
 
-        {/* Global Standings Table */}
-        <div className="lg:col-span-8 space-y-8">
-           <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-3">
-                 <LayoutGrid className="w-5 h-5 text-primary-500" />
-                 <h2 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">Global Operators</h2>
+        <div className="space-y-4 lg:col-span-8">
+          <SectionHeading
+            title={leaderboardType === 'global' ? 'Top learners' : `${selectedTopicName} leaderboard`}
+            description="Search by learner name or visible entry id."
+            action={(
+              <div className="w-full sm:w-64">
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search learners"
+                  leftIcon={<Search className="h-4 w-4" />}
+                  size="sm"
+                />
               </div>
-              <div className="relative group max-w-[240px]">
-                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 group-focus-within:text-primary-500 transition-colors" />
-                 <input 
-                    type="text" 
-                    placeholder="Search by ID or name..." 
-                    className="h-12 w-full pl-12 pr-4 bg-neutral-100 dark:bg-neutral-900 rounded-[1.2rem] text-xs font-bold border-0 ring-1 ring-neutral-200/50 dark:ring-neutral-800 transition-all outline-hidden focus:ring-2 focus:ring-primary-500/30" 
-                 />
-              </div>
-           </div>
+            )}
+          />
 
-           <Card className="glass border-0 rounded-[3rem] shadow-xl overflow-hidden min-h-[600px]">
-              <div className="overflow-x-auto">
-                 <table className="w-full text-left border-collapse">
-                    <thead>
-                       <tr className="bg-neutral-50/50 dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-800">
-                          <th className="px-10 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Idx</th>
-                          <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Specimen Name</th>
-                          <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">XP Metrics</th>
-                          <th className="px-6 py-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Streak</th>
-                          <th className="px-10 py-6 text-right text-[10px] font-black uppercase tracking-widest text-neutral-400">Status</th>
-                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800/50">
-                       {displayEntries.map((entry) => (
-                          <tr 
-                             key={entry.id} 
-                             className={cn(
-                                "group transition-all hover:bg-neutral-50 dark:hover:bg-neutral-800/20",
-                                entry.is_current_user && "bg-primary-500/5"
-                             )}
-                          >
-                             <td className="px-10 py-8">
-                                <div className="flex items-center justify-center w-12 h-12">
-                                   {getRankIcon(entry.rank) || (
-                                      <span className="text-2xl font-black text-neutral-300 dark:text-neutral-700 tracking-tighter">#{entry.rank.toString().padStart(2, '0')}</span>
-                                   )}
-                                </div>
-                             </td>
-                             <td className="px-6 py-8">
-                                <div className="flex items-center gap-5">
-                                   <div className="relative shrink-0">
-                                      <Avatar name={entry.name} size="lg" className="rounded-2xl shadow-xl group-hover:scale-110 transition-transform duration-500" />
-                                      {entry.is_current_user && (
-                                         <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-neutral-900" />
-                                      )}
-                                   </div>
-                                   <div>
-                                      <p className="font-black text-neutral-900 dark:text-white text-lg tracking-tight uppercase leading-none">
-                                         {entry.name}
-                                      </p>
-                                      <p className="text-[9px] font-bold text-neutral-400 uppercase mt-2 tracking-widest">Operator-ID: {String(entry.id).padStart(5, '0')}</p>
-                                   </div>
-                                </div>
-                             </td>
-                             <td className="px-6 py-8">
-                                <p className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter">{(entry.xp || 0).toLocaleString()}</p>
-                             </td>
-                             <td className="px-6 py-8">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 bg-orange-500/10 rounded-lg">
-                                   <Flame className="w-4 h-4 text-orange-500 fill-current" />
-                                   <span className="font-black text-orange-600 dark:text-orange-400 text-sm font-mono">{entry.streak}</span>
-                                </div>
-                             </td>
-                             <td className="px-10 py-8 text-right">
-                                <Badge className={cn(
-                                   "font-black text-[9px] px-3 py-1 rounded-full uppercase tracking-widest border-0",
-                                   entry.is_current_user ? 'bg-primary-500 text-white' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400'
-                                )}>
-                                   {entry.is_current_user ? 'Self' : 'Linked'}
-                                </Badge>
-                             </td>
-                          </tr>
-                       ))}
-                    </tbody>
-                 </table>
+          <Card padding="none" className="overflow-hidden">
+            {displayEntries.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                <Search className="h-8 w-8 text-neutral-400" />
+                <div className="space-y-1">
+                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                    No matching entries
+                  </p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    Try a different learner name or clear the search filter.
+                  </p>
+                </div>
               </div>
-           </Card>
+            ) : (
+              <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
+                {displayEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className={cn(
+                      'flex flex-col gap-4 px-4 py-4 sm:px-6',
+                      'md:flex-row md:items-center md:justify-between',
+                      entry.is_current_user && 'bg-primary-50/70 dark:bg-primary-950/20',
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                        {getRankIcon(entry.rank) || (
+                          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+                            #{entry.rank}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar name={entry.name} size="lg" />
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-neutral-900 dark:text-neutral-100">
+                            {entry.name}
+                          </p>
+                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                            Entry ID {entry.id}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 md:min-w-[320px]">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                          XP
+                        </p>
+                        <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
+                          {entry.xp.toLocaleString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                          Streak
+                        </p>
+                        <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
+                          <Flame className="h-4 w-4 text-orange-500" />
+                          {entry.streak}
+                        </p>
+                      </div>
+                      <div className="text-left md:text-right">
+                        <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                          Accuracy
+                        </p>
+                        <div className="mt-1 flex items-center gap-2 md:justify-end">
+                          <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                            {entry.accuracy}%
+                          </span>
+                          {entry.is_current_user && (
+                            <Badge variant="primary" size="sm">
+                              You
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </div>

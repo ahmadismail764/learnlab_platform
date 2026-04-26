@@ -66,10 +66,10 @@ async function fetchWithAuth(
         console.error("Token refresh failed", error);
       }
     }
-    // Refresh failed — clear auth and redirect
+    // Refresh failed — clear auth. 
+    // The AuthContext will detect missing token and redirect to login.
     localStorage.removeItem("learnlab_auth_token");
     localStorage.removeItem("learnlab_refresh_token");
-    window.location.href = "/login";
   }
 
   return response;

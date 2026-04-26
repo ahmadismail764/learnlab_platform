@@ -1,5 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { LogoMark, LogoFull } from "@/components/brand";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   DataSourceBreakdown,
   IntegrationStatusBadge,
@@ -152,11 +154,10 @@ export function AuthLayout() {
 
       {/* Right side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 relative">
-        {/* Theme & Language Controls */}
-        {/* <div className="absolute top-4 end-4 flex items-center gap-1">
+        <div className="absolute top-4 end-4 flex items-center gap-1">
           <ThemeToggle />
           <LanguageSwitcher variant="globe" />
-        </div> */}
+        </div>
 
         <div className="w-full max-w-md">
           <div className="mb-4 flex justify-end">

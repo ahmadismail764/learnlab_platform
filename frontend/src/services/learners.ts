@@ -13,7 +13,7 @@ export type LeaderboardLearner = LearnerProfile;
 
 export const learnersService = {
   getCurrentProfile: async () => {
-    const response = await api.get('/auth/learners/me/');
+    const response = await api.get('/auth/learner/me/');
     if (!response.ok) throw new Error('Failed to fetch learner profile');
     return await response.json() as LearnerProfile;
   },

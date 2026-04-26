@@ -21,9 +21,9 @@ const routeStatusMap: Array<{
   {
     match: (p) => p === '/learner/profile' || p === '/admin/profile',
     info: {
-      status: 'partial',
-      label: 'Partially Integrated',
-      detail: 'Profile identity/edits use backend users endpoints, while some visual sections remain static.',
+      status: 'backend',
+      label: 'Backend Integrated',
+      detail: 'Profile identity uses /api/v1/auth/users/me/, learner stats from /api/v1/auth/learner/me/, topic mastery from /api/v1/practice/mastery/. Password change is not yet wired.',
     },
   },
   {
@@ -40,6 +40,30 @@ const routeStatusMap: Array<{
       status: 'partial',
       label: 'Partially Integrated',
       detail: 'Overview cards read backend metrics, while detailed charts remain mock/static.',
+    },
+  },
+  {
+    match: (p) => p === '/admin/curriculum',
+    info: {
+      status: 'backend',
+      label: 'Backend Integrated',
+      detail: 'Full CRUD via /api/v1/practice/topics/. Topics are fetched, created, edited, and deleted through the backend API.',
+    },
+  },
+  {
+    match: (p) => p === '/admin/questions',
+    info: {
+      status: 'partial',
+      label: 'Partially Integrated',
+      detail: 'Questions list and preview load from GET /api/v1/practice/questions/. Create/edit/delete are disabled because the backend uses ReadOnlyModelViewSet.',
+    },
+  },
+  {
+    match: (p) => p === '/learner/notifications' || p === '/admin/notifications',
+    info: {
+      status: 'static',
+      label: 'UI Pending',
+      detail: 'Backend Notification model exists, but no API endpoint is exposed yet. UI is pending.',
     },
   },
   {

@@ -6,15 +6,13 @@ import {
   User,
   Eye,
   EyeOff,
-  CheckCircle,
   AtSign,
   GraduationCap,
   ShieldAlert,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button, Card, Input } from "@/components/ui";
-import { useAuth } from "@/contexts";
-import { AuthRequestError } from "@/services/auth";
+import { authService, AuthRequestError } from "@/services/auth";
 
 /**
  * RegisterPage — UC-01
@@ -24,7 +22,10 @@ import { AuthRequestError } from "@/services/auth";
  * 2. Learner enters unique email and password
  * 3. System validates inputs (client-side: email format, password strength, match, terms)
  * 4. System calls backend register API
- * 5. System authenticates and redirects to learner dashboard
+ * 5. On success → redirect to /login?registered=true so they can sign in
+ *
+ * We do NOT auto-login after registration. This gives the user clean feedback
+ * and avoids double-request complexity. The login page will show a success banner.
  */
 
 type PasswordStrength = "weak" | "medium" | "strong";
@@ -56,7 +57,6 @@ interface FieldErrors {
 export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register } = useAuth();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -71,7 +71,6 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState("");
-  const [success, setSuccess] = useState(false);
 
   // Live password strength
   const passwordStrength = useMemo<PasswordStrength | null>(
@@ -146,8 +145,7 @@ export function RegisterPage() {
     }
 
     if (!formData.agreedToTerms) {
-      errors.agreedToTerms =
-        t("auth:agreeToTermsRequired") || "You must agree to the terms";
+      errors.agreedToTerms = t("auth:agreeToTermsRequired");
     }
 
     setFieldErrors(errors);
@@ -163,59 +161,49 @@ export function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const user = await register({
-        email: formData.email,
+      await authService.register({
+        email: formData.email.trim(),
         username: formData.username.trim(),
         password: formData.password,
         first_name: formData.firstName.trim(),
         last_name: formData.lastName.trim(),
       });
-      setSuccess(true);
-      const nextRoute = user.role === "admin" ? "/admin" : "/learner";
-      setTimeout(() => navigate(nextRoute, { replace: true }), 700);
+
+      // On success → redirect to login page with success banner
+      navigate("/login?registered=true", { replace: true });
     } catch (err: unknown) {
-      if (err instanceof AuthRequestError && err.fieldErrors) {
-        setFieldErrors((prev) => ({
-          ...prev,
-          firstName: err.fieldErrors?.first_name,
-          lastName: err.fieldErrors?.last_name,
-          username: err.fieldErrors?.username,
-          email: err.fieldErrors?.email,
-          password: err.fieldErrors?.password,
-        }));
-      }
+      if (err instanceof AuthRequestError) {
+        // Map backend field errors to our form fields
+        if (err.fieldErrors) {
+          const mapped: FieldErrors = {};
+          if (err.fieldErrors.first_name) mapped.firstName = err.fieldErrors.first_name;
+          if (err.fieldErrors.last_name) mapped.lastName = err.fieldErrors.last_name;
+          if (err.fieldErrors.username) mapped.username = err.fieldErrors.username;
+          if (err.fieldErrors.email) mapped.email = err.fieldErrors.email;
+          if (err.fieldErrors.password) mapped.password = err.fieldErrors.password;
+          setFieldErrors((prev) => ({ ...prev, ...mapped }));
 
-      const message =
-        err instanceof Error ? err.message : t("auth:registrationFailed");
-      const fieldBoundMessage =
-        err instanceof AuthRequestError && err.fieldErrors
-          ? Object.values(err.fieldErrors)[0]
-          : "";
-
-      if (message !== fieldBoundMessage) {
-        setGeneralError(message);
+          // Only show general error if it's not just a field-level duplication
+          const fieldCount = Object.keys(mapped).length;
+          if (fieldCount === 0) {
+            setGeneralError(err.message);
+          }
+        } else {
+          setGeneralError(err.message);
+        }
+      } else if (err instanceof Error) {
+        if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+          setGeneralError(t("auth:serverUnreachable"));
+        } else {
+          setGeneralError(err.message);
+        }
+      } else {
+        setGeneralError(t("auth:registrationFailed"));
       }
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Show success state briefly before redirect
-  if (success) {
-    return (
-      <div className="text-center py-12 animate-in fade-in duration-500">
-        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/10">
-          <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
-        </div>
-        <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-          {t("auth:registrationSuccess")}
-        </h2>
-        <p className="text-neutral-600 dark:text-neutral-400">
-          {t("auth:redirectingToLearnerSpace")}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="stagger-in space-y-6">
@@ -362,7 +350,7 @@ export function RegisterPage() {
         />
 
         {generalError && (
-          <div className="text-sm text-error bg-error/10 border border-error/20 px-4 py-3 rounded-2xl animate-in slide-in-from-top-2">
+          <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 px-4 py-3 rounded-xl animate-in slide-in-from-top-2 fade-in duration-300">
             {generalError}
           </div>
         )}
@@ -394,7 +382,7 @@ export function RegisterPage() {
             </span>
           </label>
           {fieldErrors.agreedToTerms && (
-            <p className="text-xs text-error font-medium px-8">
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium px-8">
               {fieldErrors.agreedToTerms}
             </p>
           )}

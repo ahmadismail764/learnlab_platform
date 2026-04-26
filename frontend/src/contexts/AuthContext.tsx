@@ -20,6 +20,11 @@ import {
  *
  * Manages authentication state across the application.
  * Single Responsibility: Only handles auth state, not API calls directly (delegates to service).
+ *
+ * Key decisions:
+ * - isLoading is ONLY true during initial hydration (checking if a stored token is still valid)
+ * - Login/register do NOT set isLoading on context — the calling component handles its own loading state
+ *   to avoid the auth provider rendering a blocking "Loading..." overlay during auth requests
  */
 
 interface AuthState {
@@ -120,7 +125,10 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
   }, [initialUser]);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
-    setState((prev) => ({ ...prev, isLoading: true }));
+    // NOTE: We do NOT set isLoading here.
+    // The calling page (LoginPage) manages its own button/loading state.
+    // Setting isLoading on the context would render the global "Loading..." screen
+    // which blocks the login form and hides any error messages.
     try {
       await authService.login(credentials);
       const backendUser = await authService.getCurrentUser();
@@ -133,23 +141,22 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
       });
       return user;
     } catch (error) {
-      setState((prev) => ({ ...prev, isLoading: false }));
+      // Don't change auth state on login failure — just re-throw
       throw error;
     }
   }, []);
 
   const register = useCallback(
     async (userData: RegisterPayload) => {
-      setState((prev) => ({ ...prev, isLoading: true }));
+      // Same as login — calling page handles its own loading state
       try {
         await authService.register(userData);
-        // Auto login
+        // Auto login after successful registration
         return await login({
           email: userData.email,
           password: userData.password,
         });
       } catch (error) {
-        setState((prev) => ({ ...prev, isLoading: false }));
         throw error;
       }
     },

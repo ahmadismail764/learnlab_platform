@@ -80,14 +80,14 @@ export interface Topic {
 }
 
 // ============================================
-// FSRS (Free Spaced Repetition Scheduler) Types
+// FIRe (Fast Interval Repetition Engine (FIRe)) Types
 // ============================================
 
 /**
- * FSRS scheduling data for a topic
- * Based on the FSRS-4.5 algorithm
+ * FIRe scheduling data for a topic
+ * Based on the FIRe-4.5 algorithm
  */
-export interface FSRSData {
+export interface FIReData {
   /** Stability: Expected retention period (days) */
   stability: number
   /** Difficulty: How hard the topic is for this user (0-10) */
@@ -105,11 +105,11 @@ export interface FSRSData {
 }
 
 /**
- * Topic with user's FSRS scheduling data
+ * Topic with user's FIRe scheduling data
  */
 export interface UserTopic {
   topic: Topic
-  fsrs: FSRSData
+  fire: FIReData
   /** User's mastery percentage (0-100) */
   mastery: number
 }

@@ -158,7 +158,7 @@ export const authService = {
   register: async (userData: RegisterPayload) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/auth/register/`,
+        `${API_BASE_URL}/auth/learner/register/`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

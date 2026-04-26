@@ -7,7 +7,7 @@ export interface AggregatedMetricsResponse {
     '30_days': number;
   };
   mastery_averages: {
-    avg_stability: number | null;
+    avg_speed: number | null;
     avg_difficulty: number | null;
   };
   estimated_retention: number;
@@ -16,14 +16,14 @@ export interface AggregatedMetricsResponse {
 export interface TopicAnalyticsResponse {
   topic_id: number;
   metrics: {
-    avg_stability: number | null;
+    avg_speed: number | null;
     avg_difficulty: number | null;
     learner_count: number;
   };
   distribution: {
-    low_stability: number;
-    medium_stability: number;
-    high_stability: number;
+    low_speed: number;
+    medium_speed: number;
+    high_speed: number;
   };
 }
 

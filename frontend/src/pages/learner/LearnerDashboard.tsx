@@ -35,7 +35,7 @@ export function LearnerDashboard() {
     totalXP: 1250,
   };
 
-  // Discrete Mathematics topics - FSRS due for review
+  // Discrete Mathematics topics - FIRe due for review
   const topicsDueForReview = [
     {
       id: "1",

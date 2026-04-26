@@ -1,16 +1,9 @@
-venv/
-.venv/
-.vscode/
+# Python / Django
 __pycache__/
 *.pyc
-.env
-.agent*
-.kilocode
-skills-lock.*
-venv
-*.sqlite3
-*.log
-.env.example
+venv/
+.venv/
+staticfiles/
 
 # Frontend
 frontend/node_modules/
@@ -18,11 +11,9 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 
-frontEnd/node_modules/
-frontEnd/dist/
-frontEnd/.env
-frontEnd/.env.local
+# Environments
+.env
 
-# Python
-staticfiles/
-
+# IDE / Editors
+.vscode/
+.cursor/

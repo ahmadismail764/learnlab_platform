@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery, KnowledgePoint
+from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery, KnowledgePoint, Encompassing, Notification
 
 @admin.register(Topic)
 class TopicAdmin(admin.ModelAdmin):
@@ -30,6 +30,16 @@ class SingleQuestionInteractionAdmin(admin.ModelAdmin):
 
 @admin.register(TopicMastery)
 class TopicMasteryAdmin(admin.ModelAdmin):
-    list_display = ('learner', 'topic', 'mastery_level')
-    list_filter = ('topic',)
+    list_display = ('learner', 'topic', 'status', 'rep_num', 'memory', 'speed')
+    list_filter = ('topic', 'status')
     search_fields = ('learner__user__username', 'topic__name')
+
+@admin.register(Encompassing)
+class EncompassingAdmin(admin.ModelAdmin):
+    list_display = ('advanced_topic', 'simple_topic', 'weight')
+    search_fields = ('advanced_topic__name', 'simple_topic__name')
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('learner', 'sent_at', 'responded_at')
+    search_fields = ('learner__user__username',)

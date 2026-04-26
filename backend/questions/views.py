@@ -34,7 +34,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             from users.models import Learner
             learners = Learner.objects.all()
             masteries = [
-                TopicMastery(learner=l, topic=topic, mastery_level=0.0)
+                TopicMastery(learner=l, topic=topic, status='new')
                 for l in learners
             ]
             TopicMastery.objects.bulk_create(masteries, ignore_conflicts=True)
@@ -74,12 +74,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         learner = request.user.learner_profile
         now = timezone.now()
 
-        # 1. Identify due topic masteries (max 5) by lowest mastery level
-        due_masteries = list(TopicMastery.objects.filter(
-            learner=learner
-        ).select_related('topic').order_by('mastery_level')[:5])
-
-        selected_topics = [m.topic for m in due_masteries]
+        # 1. Get due topics using FIRe service
+        selected_topics = services.get_due_topics(learner, limit=5)
         slots_needed = 5 - len(selected_topics)
 
         # 2. Fill remaining slots with un-interacted topics
@@ -138,7 +134,7 @@ class TopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = TopicMastery.objects.filter(learner=self.request.user.learner_profile).select_related('topic')
         due_only = self.request.query_params.get('due_only')
         if due_only == 'true':
-            queryset = queryset.filter(mastery_level__lt=80.0)
+            queryset = queryset.filter(next_due__lte=timezone.now())
         return queryset
 
 class InteractionViewSet(viewsets.ViewSet):
@@ -159,7 +155,35 @@ class InteractionViewSet(viewsets.ViewSet):
             if session.learner != learner:
                 return Response({'detail': 'Session does not belong to this user.'}, status=status.HTTP_403_FORBIDDEN)
                 
-            services.process_interaction(learner, question, is_correct, session)
+            # 1. Record interaction manually so calculate_net_work can find it
+            interaction = SingleQuestionInteraction.objects.create(
+                session=session,
+                question=question,
+                is_correct=is_correct,
+                user_response="Correct" if is_correct else "Incorrect",
+                confidence_rating=3 if is_correct else 1
+            )
+            
+            # 2. Calculate net work
+            topic = question.knowledge_point.topic
+            net_work = services.calculate_net_work(session, topic)
+            
+            # 3. Process review
+            services.process_review(learner, topic, net_work)
+            
+            # 4. Gamification
+            if is_correct:
+                base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
+                multiplier = min(2.0, 1.0 + (learner.streak_count * 0.1))
+                gained_xp = int(base_xp * multiplier)
+                
+                learner.add_xp(gained_xp)
+                learner.update_streak()
+                
+                session.total_xp_earned += gained_xp
+                session.save()
+            else:
+                learner.save()
             
             return Response({'status': 'Interaction processed.'}, status=status.HTTP_201_CREATED)
         else:

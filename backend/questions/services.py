@@ -1,101 +1,111 @@
 import math
-from collections import deque
-from datetime import datetime, timezone, timedelta
-
+from datetime import timedelta
+from django.utils import timezone
 from django.db import transaction
+from django.db.models import Count, F
 
-from .models import SingleQuestionInteraction, TopicMastery
+from .models import SingleQuestionInteraction, TopicMastery, Topic
 
-def apply_fractional_update(mastery, is_correct: bool, fraction: float):
+def calculate_net_work(session, topic):
     """
-    Simulates a fractional review by adding or subtracting from mastery_level.
+    Aggregates interactions in a session for a specific topic to yield +1.0, +0.5, or -1.0.
+    For simplicity, if they got the last question correct, it's +1.0. If incorrect, -1.0.
+    If multiple attempts or low confidence, we can yield +0.5.
+    We will just look at the most recent interaction for the topic in the session.
     """
-    base_change = 10.0 if is_correct else -5.0
-    change = base_change * fraction
+    latest_interaction = SingleQuestionInteraction.objects.filter(
+        session=session,
+        question__knowledge_point__topic=topic
+    ).order_by('-id').first()
+
+    if not latest_interaction:
+        return 0.0
+
+    if latest_interaction.is_correct:
+        if latest_interaction.confidence_rating < 3:
+            return 0.5  # Correct but guessed
+        return 1.0
+    else:
+        return -1.0
+
+def time_discount(mastery):
+    """
+    Returns a multiplier based on recency/due dates.
+    0.3 if reviewed in last 7 days, 0.7 if due soon, 1.0 if due/overdue.
+    """
+    if not mastery.last_reviewed:
+        return 1.0
     
-    mastery.mastery_level += change
+    now = timezone.now()
+    days_since_review = (now - mastery.last_reviewed).days
+
+    if days_since_review <= 7:
+        return 0.3
     
-    if mastery.mastery_level > 100.0:
-        mastery.mastery_level = 100.0
-    elif mastery.mastery_level < 0.0:
-        mastery.mastery_level = 0.0
-        
-    mastery.save()
-    return mastery
+    if mastery.next_due:
+        days_until_due = (mastery.next_due - now).days
+        if days_until_due <= 3: # "Due soon"
+            return 0.7
+
+    return 1.0
 
 @transaction.atomic
-def process_interaction(learner, question, is_correct, session):
+def process_review(learner, topic, net_work):
     """
-    Core function for Fractional Implicit Repetition (FIRe) simplified.
-    Logs the interaction, updates the primary topic, and walks the knowledge graph.
+    Updates the topic mastery and flows fractional credit down and penalties up.
     """
-    # 1. Record the interaction
-    SingleQuestionInteraction.objects.create(
-        session=session,
-        question=question,
-        is_correct=is_correct,
-        user_response="Correct" if is_correct else "Incorrect",
-        confidence_rating=3 if is_correct else 1
-    )
-    
-    topic = question.knowledge_point.topic
-    
-    # 2. Update Immediate TopicMastery
     mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=topic)
     
-    # Explicit full update
-    apply_fractional_update(mastery, is_correct, fraction=1.0)
-    
-    # 3. Graph Walk / FIRe Traversal
-    visited = {topic.id}
-    queue = deque([(topic, 1)]) # (topic_node, depth)
-    
-    # Exponential decay rate for fractional updates per edge distance
-    DECAY_RATE = 0.5 
-    MAX_DEPTH = 3
-    
-    while queue:
-        curr_topic, depth = queue.popleft()
-        
-        if depth > MAX_DEPTH:
-            continue
-            
-        fraction = DECAY_RATE ** depth
-        
-        if is_correct:
-            # Trickle Down Credit: Traverse encompassings (simpler topics)
-            # You proved mastery of a complex topic, so you implicitly practiced its dependencies.
-            for enc_topic in curr_topic.encompassings.all():
-                if enc_topic.id not in visited:
-                    visited.add(enc_topic.id)
-                    enc_mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=enc_topic)
-                    
-                    apply_fractional_update(enc_mastery, is_correct=True, fraction=fraction)
-                    queue.append((enc_topic, depth + 1))
-        else:
-            # Ripple Forward Penalty: Traverse advanced topics
-            # You failed a foundational topic, so you are structurally weaker in advanced topics that rely on it.
-            for adv_topic in curr_topic.prerequisite_for.all():
-                if adv_topic.id not in visited:
-                    visited.add(adv_topic.id)
-                    adv_mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=adv_topic)
-                    
-                    apply_fractional_update(adv_mastery, is_correct=False, fraction=fraction)
-                    queue.append((adv_topic, depth + 1))
+    discount = time_discount(mastery)
+    discounted_work = net_work * discount
 
-    # 4. Gamification — delegate to Learner model methods for consistency
-    if is_correct:
-        base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
-        multiplier = min(2.0, 1.0 + (learner.streak_count * 0.1))
-        gained_xp = int(base_xp * multiplier)
-        
-        learner.add_xp(gained_xp)
-        learner.update_streak()
-        
-        if session:
-            session.total_xp_earned += gained_xp
-            session.save()
-    else:
-        # On incorrect: just save learner (streak is not broken by wrong answers;
-        # streaks are daily-level, meaning "did you practice today?")
-        learner.save()
+    # Update immediate topic
+    mastery.update_after_review(discounted_work)
+
+    if net_work > 0:
+        # Flow fractional credit DOWN
+        for encompassing in topic.encompasses.all():
+            fractional_work = discounted_work * encompassing.weight
+            simple_topic = encompassing.simple_topic
+            simple_mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=simple_topic)
+            simple_mastery.update_after_review(fractional_work)
+            # Math Academy doesn't recursively trickle down infinitely, but we could.
+            # To prevent infinite loops or over-engineering, we'll do just 1 level deep for now.
+    
+    elif net_work < 0:
+        # Flow penalties UP
+        # We flow up to topics that encompass this failed topic.
+        for encompassing in topic.encompassed_by.all():
+            fractional_work = net_work * encompassing.weight
+            advanced_topic = encompassing.advanced_topic
+            adv_mastery, _ = TopicMastery.objects.get_or_create(learner=learner, topic=advanced_topic)
+            adv_mastery.update_after_review(fractional_work)
+
+def get_due_topics(learner, limit=5):
+    """
+    Find learned topics where next_due <= now, sort by "knockout power".
+    Knockout power = how many other due topics each encompasses.
+    """
+    now = timezone.now()
+    due_masteries = TopicMastery.objects.filter(
+        learner=learner,
+        status='learned',
+        next_due__lte=now
+    ).select_related('topic')
+
+    due_topic_ids = [m.topic_id for m in due_masteries]
+    
+    if not due_topic_ids:
+        return []
+
+    # Calculate knockout power
+    topics_with_power = []
+    for mastery in due_masteries:
+        topic = mastery.topic
+        knockout_power = topic.encompasses.filter(simple_topic_id__in=due_topic_ids).count()
+        topics_with_power.append((knockout_power, topic))
+
+    # Sort descending by knockout power
+    topics_with_power.sort(key=lambda x: x[0], reverse=True)
+
+    return [t[1] for t in topics_with_power[:limit]]

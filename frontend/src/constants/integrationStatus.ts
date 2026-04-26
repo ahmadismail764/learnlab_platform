@@ -27,7 +27,23 @@ const routeStatusMap: Array<{
     },
   },
   {
-    match: (p) => p.startsWith('/learner') || p.startsWith('/admin'),
+    match: (p) => p === '/student/leaderboard',
+    info: {
+      status: 'partial',
+      label: 'Partially Integrated',
+      detail: 'All-time leaderboard now loads from backend; week/month views remain static demo slices.',
+    },
+  },
+  {
+    match: (p) => p === '/admin/analytics',
+    info: {
+      status: 'partial',
+      label: 'Partially Integrated',
+      detail: 'Overview cards read backend metrics, while detailed charts remain mock/static.',
+    },
+  },
+  {
+    match: (p) => p.startsWith('/student') || p.startsWith('/admin'),
     info: {
       status: 'static',
       label: 'Static Demo Data',

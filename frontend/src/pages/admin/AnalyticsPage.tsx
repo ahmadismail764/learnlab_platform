@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
+import { analyticsService, studentsService } from '@/services'
 
 /**
  * AnalyticsPage - Admin Learner Analytics Dashboard
@@ -29,17 +30,63 @@ import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 export function AnalyticsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
   const [topicSearch, setTopicSearch] = useState('')
+  const [overviewMetrics, setOverviewMetrics] = useState<{
+    totalStudents: number
+    activeThisWeek: number
+    totalReviews: number
+  } | null>(null)
+  const [isLoadingOverview, setIsLoadingOverview] = useState(false)
+  const [overviewError, setOverviewError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadOverview = async () => {
+      setIsLoadingOverview(true)
+      setOverviewError(null)
+
+      try {
+        const [aggregated, leaderboard] = await Promise.all([
+          analyticsService.getAggregatedMetrics(),
+          studentsService.getLeaderboard(),
+        ])
+
+        if (!isMounted) return
+
+        setOverviewMetrics({
+          totalStudents: leaderboard.length,
+          activeThisWeek: aggregated.active_users['7_days'],
+          totalReviews: aggregated.review_count,
+        })
+      } catch (error) {
+        if (!isMounted) return
+        const message = error instanceof Error ? error.message : 'Failed to fetch analytics overview'
+        setOverviewError(message)
+        setOverviewMetrics(null)
+      } finally {
+        if (isMounted) {
+          setIsLoadingOverview(false)
+        }
+      }
+    }
+
+    loadOverview()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Mock analytics data
-  const overviewStats = {
-    totalLearners: 1150,
-    activeThisWeek: 892,
+  const overviewStats = useMemo(() => ({
+    totalLearners: overviewMetrics?.totalStudents ?? 1150,
+    activeThisWeek: overviewMetrics?.activeThisWeek ?? 892,
     avgAccuracy: 73,
     avgSessionTime: 24, // minutes
     totalQuestionsAnswered: 45320,
     questionsThisWeek: 3420,
-    totalReviews: 45320, // For insufficient-data check (UC-04 alt flow 2a)
-  }
+    totalReviews: overviewMetrics?.totalReviews ?? 45320, // For insufficient-data check (UC-04 alt flow 2a)
+  }), [overviewMetrics])
 
   // UC-04 Step 3: FSRS-specific metrics per topic (mock data)
   const fsrsMetrics = [
@@ -146,6 +193,19 @@ export function AnalyticsPage() {
           </Button>
         </div>
       </div>
+
+      {isLoadingOverview && (
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('common:loading')}</p>
+      )}
+
+      {overviewError && (
+        <div className="rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
+          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{overviewError}</p>
+          <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-1">
+            Showing fallback demo values for unavailable analytics fields.
+          </p>
+        </div>
+      )}
 
       {/* UC-04 Alternate Flow 2a: Insufficient data empty state */}
       {hasInsufficientData ? (

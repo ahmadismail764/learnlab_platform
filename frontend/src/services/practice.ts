@@ -25,9 +25,15 @@ export const practiceService = {
     return await response.json();
   },
 
+  generateAdaptiveSession: async () => {
+    const response = await api.get('/sessions/generate-adaptive/');
+    if (!response.ok) throw new Error('Failed to generate adaptive session');
+    return await response.json();
+  },
+
   // Backward-compatibility aliases
   generateSheet: async () => {
-    return practiceService.createSession({});
+    return practiceService.generateAdaptiveSession();
   },
 
   submitSheet: async (sessionId: number, data: any) => {

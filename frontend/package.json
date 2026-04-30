@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "i18n:sync": "bun run scripts/sync-translations.ts",
+    "i18n:check": "bun run scripts/sync-translations.ts --check",
     "backend": "powershell -ExecutionPolicy Bypass -File scripts/start-backend.ps1"
   },
   "dependencies": {

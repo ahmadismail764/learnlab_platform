@@ -27,11 +27,27 @@ const routeStatusMap: Array<{
     },
   },
   {
+    match: (p) => p === '/learner/topics',
+    info: {
+      status: 'backend',
+      label: 'Backend Integrated',
+      detail: 'Topic list from /api/v1/practice/topics/, mastery data from /api/v1/practice/mastery/ with FIRe scheduling.',
+    },
+  },
+  {
+    match: (p) => p === '/learner/practice',
+    info: {
+      status: 'backend',
+      label: 'Backend Integrated',
+      detail: 'Adaptive session generation via /api/v1/practice/sessions/generate-adaptive/, interaction submission via /api/v1/practice/interactions/, session lifecycle via /api/v1/practice/sessions/.',
+    },
+  },
+  {
     match: (p) => p === '/learner/leaderboard',
     info: {
-      status: 'partial',
-      label: 'Partially Integrated',
-      detail: 'Leaderboard rankings load from backend learner endpoints; some display metrics are still demo placeholders.',
+      status: 'backend',
+      label: 'Backend Integrated',
+      detail: 'Global rankings from /api/v1/auth/leaderboard/global/, topic rankings from /api/v1/auth/leaderboard/topic/{id}/.',
     },
   },
   {
@@ -39,11 +55,11 @@ const routeStatusMap: Array<{
     info: {
       status: 'partial',
       label: 'Partially Integrated',
-      detail: 'Overview cards read backend metrics, while detailed charts remain mock/static.',
+      detail: 'Overview cards read /api/v1/analytics/aggregated/ + /api/v1/auth/leaderboard/global/. Detailed charts remain mock/static.',
     },
   },
   {
-    match: (p) => p === '/admin/curriculum',
+    match: (p) => p === '/admin/topics',
     info: {
       status: 'backend',
       label: 'Backend Integrated',

@@ -9,7 +9,6 @@ import {
   FileQuestion,
   LogOut,
   ChevronLeft,
-  Trophy,
   Medal,
   UserCircle,
   type LucideIcon,
@@ -71,12 +70,7 @@ const navItems: NavItem[] = [
     icon: BarChart3,
     roles: ["learner"],
   },
-  {
-    labelKey: "nav:achievements",
-    href: "/learner/achievements",
-    icon: Trophy,
-    roles: ["learner"],
-  },
+
   {
     labelKey: "nav:leaderboard",
     href: "/learner/leaderboard",

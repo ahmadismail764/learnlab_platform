@@ -19,7 +19,7 @@ const learnerItems: DataSourceItem[] = [
   { aspect: 'Topics list/progress', source: 'backend', note: 'GET /api/v1/practice/mastery/ via FIRe data' },
   { aspect: 'Practice sessions', source: 'backend', note: 'CRUD via /api/v1/practice/sessions/ and /sessions/generate-adaptive/' },
   { aspect: 'Progress analytics', source: 'static', note: 'Mock charts/series' },
-  { aspect: 'Achievements', source: 'static', note: 'Mock achievement feed' },
+
   { aspect: 'Leaderboard', source: 'backend', note: 'Global/topic rankings via /api/v1/auth/leaderboard/*' },
   { aspect: 'Profile identity', source: 'backend', note: 'Auth user from /api/v1/auth/users/me/, editable via PATCH' },
   { aspect: 'Profile learning stats', source: 'backend', note: 'XP/streak from /api/v1/auth/learner/me/, mastery from /api/v1/practice/mastery/' },

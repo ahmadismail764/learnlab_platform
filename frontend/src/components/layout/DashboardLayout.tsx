@@ -83,7 +83,7 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
           'overflow-y-auto'
         )}>
           <div className="mb-6">
-            <DataSourceBreakdown compact defaultOpen />
+            <DataSourceBreakdown compact />
           </div>
           <Outlet />
         </main>

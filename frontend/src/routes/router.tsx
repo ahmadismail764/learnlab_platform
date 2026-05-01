@@ -8,7 +8,6 @@ import {
   PracticePage,
   TopicsPage,
   ProgressPage,
-  AchievementsPage,
   LearnerProfilePage,
   QuestionsPage,
   AnalyticsPage,
@@ -88,7 +87,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
         { path: "topics", element: <TopicsPage /> },
         { path: "practice", element: <PracticePage /> },
         { path: "progress", element: <ProgressPage /> },
-        { path: "achievements", element: <AchievementsPage /> },
+
         { path: "leaderboard", element: <LeaderboardPage /> },
         { path: "profile", element: <LearnerProfilePage /> },
       ],

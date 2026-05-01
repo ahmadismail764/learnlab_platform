@@ -48,7 +48,7 @@ export const ROUTES = {
   LEARNER_PRACTICE: '/learner/practice',
   LEARNER_PROGRESS: '/learner/progress',
   LEARNER_TOPICS: '/learner/topics',
-  LEARNER_ACHIEVEMENTS: '/learner/achievements',
+
   
   // Admin (Content Manager)
   ADMIN_DASHBOARD: '/admin',

@@ -46,7 +46,6 @@ export function SettingsPage() {
     // Notifications
     emailNotifications: true,
     practiceReminders: true,
-    achievementAlerts: true,
     weeklyDigest: false,
     
     // Security
@@ -275,17 +274,6 @@ export function SettingsPage() {
                   <ToggleSwitch 
                     checked={settings.practiceReminders}
                     onChange={(checked) => updateSetting('practiceReminders', checked)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
-                  <div>
-                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:achievementAlerts')}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:achievementAlertsDescription')}</p>
-                  </div>
-                  <ToggleSwitch 
-                    checked={settings.achievementAlerts}
-                    onChange={(checked) => updateSetting('achievementAlerts', checked)}
                   />
                 </div>
                 

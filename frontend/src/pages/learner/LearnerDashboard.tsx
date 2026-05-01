@@ -18,12 +18,11 @@ import { useCurrentUser } from "@/contexts";
  * - Welcome message with brand-gradient hero card
  * - Progress overview with branded stat cards
  * - Topics due for review
- * - Recent achievements
  * RTL-aware with full i18n support.
  */
 
 export function LearnerDashboard() {
-  const { t } = useTranslation(["learner", "common", "topics", "gamification"]);
+  const { t } = useTranslation(["learner", "common", "topics"]);
   const user = useCurrentUser();
 
   // Mock data - will come from API
@@ -60,26 +59,7 @@ export function LearnerDashboard() {
     },
   ];
 
-  const achievements = [
-    {
-      id: "1",
-      nameKey: "gamification:achievements.firstSteps",
-      icon: "🎯",
-      earned: true,
-    },
-    {
-      id: "2",
-      nameKey: "gamification:achievements.mathWhiz",
-      icon: "🧮",
-      earned: true,
-    },
-    {
-      id: "3",
-      nameKey: "gamification:achievements.perfectScore",
-      icon: "⭐",
-      earned: false,
-    },
-  ];
+
 
   return (
     <div className="space-y-6">
@@ -243,9 +223,9 @@ export function LearnerDashboard() {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="space-y-6">
         {/* Topics Due for Review */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold font-display text-neutral-800 dark:text-neutral-100">
               {t("learner:todaysQueue")}
@@ -299,46 +279,6 @@ export function LearnerDashboard() {
           </div>
         </div>
 
-        {/* Achievements */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold font-display text-neutral-800 dark:text-neutral-100">
-              {t("learner:achievements")}
-            </h2>
-            <Link
-              to="/learner/achievements"
-              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
-            >
-              {t("common:viewAll")}
-            </Link>
-          </div>
-
-          <Card>
-            <div className="grid grid-cols-2 gap-3">
-              {achievements.map((achievement) => (
-                <div
-                  key={achievement.id}
-                  className={`flex flex-col items-center p-3 rounded-xl transition-transform hover:scale-[1.02] ${
-                    achievement.earned
-                      ? "bg-accent-50 dark:bg-accent-900/20 ring-1 ring-accent-200/50 dark:ring-accent-800/30"
-                      : "bg-neutral-100 dark:bg-neutral-800 opacity-50"
-                  }`}
-                >
-                  <span className="text-2xl mb-1">{achievement.icon}</span>
-                  <span
-                    className={`text-xs text-center font-medium ${
-                      achievement.earned
-                        ? "text-neutral-700 dark:text-neutral-300"
-                        : "text-neutral-500 dark:text-neutral-400"
-                    }`}
-                  >
-                    {t(achievement.nameKey)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );

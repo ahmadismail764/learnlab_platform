@@ -6,7 +6,6 @@ import {
   Target,
   Clock,
   BookOpen,
-  Award,
   BarChart3,
   Activity,
   Search,
@@ -25,7 +24,6 @@ import { analyticsService, learnersService } from '@/services'
  * - Aggregate learner metrics
  * - Topic performance overview
  * - Activity trends
- * - Achievement statistics
  */
 
 export function AnalyticsPage() {
@@ -142,12 +140,7 @@ export function AnalyticsPage() {
     { day: 'Fri', learners: 350, questions: 1700 },
   ]
 
-  const achievementStats = {
-    totalUnlocked: 3240,
-    averagePerLearner: 2.8,
-    mostCommon: 'First Steps',
-    rarest: 'Perfect Master',
-  }
+
 
   const maxAttempts = useMemo(() => 
     Math.max(...topicPerformance.map(t => t.attempts)),
@@ -405,30 +398,6 @@ export function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          {/* Achievement Stats */}
-          <Card>
-            <CardHeader title={t('admin:achievementStats')} />
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:totalUnlocked')}</span>
-                  <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.totalUnlocked}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:avgPerLearner')}</span>
-                  <span className="font-medium text-neutral-800 dark:text-neutral-100">{achievementStats.averagePerLearner}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:mostCommon')}</span>
-                  <Badge variant="primary" size="sm">{achievementStats.mostCommon}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">{t('admin:rarest')}</span>
-                  <Badge variant="accent" size="sm">{achievementStats.rarest}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
@@ -529,11 +498,11 @@ export function AnalyticsPage() {
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:avgPerLearner')}</p>
             </div>
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-              <Award className="w-8 h-8 text-accent-500 mx-auto mb-2" />
+              <BarChart3 className="w-8 h-8 text-accent-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {achievementStats.totalUnlocked.toLocaleString()}
+                {overviewStats.totalReviews.toLocaleString()}
               </p>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:achievementsUnlocked')}</p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:retention')}</p>
             </div>
           </div>
         </CardContent>

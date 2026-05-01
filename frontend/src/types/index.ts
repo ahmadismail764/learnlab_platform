@@ -198,25 +198,10 @@ export interface XPTransaction {
   userId: string
   amount: number
   /** Source of XP */
-  source: 'question' | 'achievement' | 'challenge' | 'bonus'
+  source: 'question' | 'challenge' | 'bonus'
   /** Multiplier applied (consistency, etc.) */
   multiplier: number
   createdAt: string
-}
-
-export interface Achievement {
-  id: string
-  nameKey: string
-  descriptionKey: string
-  icon: string
-  /** Condition to unlock (for display) */
-  conditionKey: string
-  xpReward: number
-}
-
-export interface UserAchievement {
-  achievementId: string
-  unlockedAt: string
 }
 
 // ============================================

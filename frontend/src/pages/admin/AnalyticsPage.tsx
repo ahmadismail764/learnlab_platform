@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -15,7 +15,7 @@ import {
 import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 import { PageIntro, PageStatCard } from '@/components/common'
-import { analyticsService, learnersService } from '@/services'
+import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
 
 /**
  * AnalyticsPage - Admin Learner Analytics Dashboard
@@ -36,74 +36,34 @@ export function AnalyticsPage() {
     { name: 'سارة أحمد', accuracy: 87, questionsAnswered: 254, xp: 3280 },
   ], [])
   const [topicSearch, setTopicSearch] = useState('')
-  const [overviewMetrics, setOverviewMetrics] = useState<{
-    totalLearners: number
-    activeThisWeek: number
-    totalReviews: number
-  } | null>(null)
-  const [topLearners, setTopLearners] = useState(fallbackTopLearners)
-  const [isLoadingOverview, setIsLoadingOverview] = useState(false)
-  const [overviewError, setOverviewError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let isMounted = true
+  const { data: aggregated, isLoading: metricsLoading } = useAggregatedMetrics()
+  const { data: leaderboard, isLoading: lbLoading } = useGlobalLeaderboard()
 
-    const loadOverview = async () => {
-      setIsLoadingOverview(true)
-      setOverviewError(null)
+  const isLoadingOverview = metricsLoading || lbLoading
 
-      try {
-        const [aggregated, leaderboard] = await Promise.all([
-          analyticsService.getAggregatedMetrics(),
-          learnersService.getLeaderboard(),
-        ])
 
-        if (!isMounted) return
 
-        setOverviewMetrics({
-          totalLearners: leaderboard.length,
-          activeThisWeek: aggregated.active_users['7_days'],
-          totalReviews: aggregated.review_count,
-        })
-
-        setTopLearners(
-          leaderboard.slice(0, 5).map((entry) => ({
-            name: `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username,
-            accuracy: 0,
-            questionsAnswered: 0,
-            xp: entry.total_xp,
-          })),
-        )
-      } catch (error) {
-        if (!isMounted) return
-        const message = error instanceof Error ? error.message : 'Failed to fetch analytics overview'
-        setOverviewError(message)
-        setOverviewMetrics(null)
-        setTopLearners(fallbackTopLearners)
-      } finally {
-        if (isMounted) {
-          setIsLoadingOverview(false)
-        }
-      }
-    }
-
-    loadOverview()
-
-    return () => {
-      isMounted = false
-    }
-  }, [fallbackTopLearners])
-
-  // Mock analytics data
+  // Mock analytics data mixed with real dashboard overview metrics
   const overviewStats = useMemo(() => ({
-    totalLearners: overviewMetrics?.totalLearners ?? 1150,
-    activeThisWeek: overviewMetrics?.activeThisWeek ?? 892,
+    totalLearners: leaderboard?.length ?? 1150,
+    activeThisWeek: aggregated?.active_users['7_days'] ?? 892,
     avgAccuracy: 73,
     avgSessionTime: 24, // minutes
     totalQuestionsAnswered: 45320,
     questionsThisWeek: 3420,
-    totalReviews: overviewMetrics?.totalReviews ?? 45320, // For insufficient-data check (UC-04 alt flow 2a)
-  }), [overviewMetrics])
+    totalReviews: aggregated?.review_count ?? 45320, // For insufficient-data check (UC-04 alt flow 2a)
+  }), [aggregated, leaderboard])
+
+  const topLearners = useMemo(() => {
+    if (!leaderboard) return fallbackTopLearners
+    return leaderboard.slice(0, 5).map((entry) => ({
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown',
+      accuracy: 0,
+      questionsAnswered: 0,
+      xp: entry.total_xp,
+    }))
+  }, [leaderboard, fallbackTopLearners])
 
   // UC-04 Step 3: FIRe-specific metrics per topic (mock data)
   const fsrsMetrics = [
@@ -199,14 +159,7 @@ export function AnalyticsPage() {
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('common:loading')}</p>
       )}
 
-      {overviewError && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{overviewError}</p>
-          <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-1">
-            Showing fallback demo values for unavailable analytics fields.
-          </p>
-        </div>
-      )}
+      
 
       {/* UC-04 Alternate Flow 2a: Insufficient data empty state */}
       {hasInsufficientData ? (

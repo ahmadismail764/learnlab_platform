@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -19,8 +19,9 @@ import {
   Info,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState } from '@/components/ui'
-import { questionsService, type BackendQuestion } from '@/services/questions'
-import { useToast } from '@/contexts/ToastContext'
+import { type BackendQuestion } from '@/services/questions'
+import { useQuestions } from '@/hooks'
+
 
 /**
  * QuestionsPage - Admin Question Bank Management (UC-05)
@@ -39,12 +40,12 @@ type FilterTier = 'all' | 1 | 2 | 3
 
 export function QuestionsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
-  const { showError } = useToast()
 
-  // Data state
-  const [questions, setQuestions] = useState<BackendQuestion[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+
+  // Data fetching via React Query
+  const { data: rawQuestions, isLoading, error: queryError, refetch: fetchQuestions } = useQuestions()
+  const questions = (rawQuestions ?? []) as BackendQuestion[]
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load questions') : ''
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,26 +55,6 @@ export function QuestionsPage() {
   // Selected question for preview
   const [selectedQuestion, setSelectedQuestion] = useState<BackendQuestion | null>(null)
 
-  // --- Data fetching ---
-
-  const fetchQuestions = useCallback(async () => {
-    setIsLoading(true)
-    setLoadError('')
-    try {
-      const data = await questionsService.getQuestions()
-      setQuestions(data)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load questions'
-      setLoadError(message)
-      showError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [showError])
-
-  useEffect(() => {
-    fetchQuestions()
-  }, [fetchQuestions])
 
   // --- Computed data ---
 
@@ -148,7 +129,7 @@ export function QuestionsPage() {
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
-        <Button variant="outline" onClick={fetchQuestions} leftIcon={<RefreshCw className="w-4 h-4" />}>
+        <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
           Retry
         </Button>
       </div>
@@ -164,7 +145,7 @@ export function QuestionsPage() {
           <p className="mt-1 text-neutral-600 dark:text-neutral-400">{t('admin:questions.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchQuestions} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             {t('common:refresh')}
           </Button>
           <Button className="gap-2" disabled title="Backend API is read-only for questions (ReadOnlyModelViewSet)">

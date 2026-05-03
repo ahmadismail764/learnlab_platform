@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   Users,
   BookOpen,
@@ -10,8 +10,8 @@ import { useTranslation } from 'react-i18next'
 import { Card, CardHeader, CardContent, Button, Badge, Avatar } from '@/components/ui'
 import { Skeleton } from '@/components/ui/Loading'
 import { useCurrentUser } from '@/contexts'
-import { analyticsService, type AggregatedMetricsResponse } from '@/services/analytics'
-import { learnersService, type LearnerProfile } from '@/services/learners'
+import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
+import type { LearnerProfile } from '@/services/learners'
 
 /**
  * AdminDashboard
@@ -26,47 +26,10 @@ export function AdminDashboard() {
   const { t } = useTranslation(['admin', 'common', 'auth', 'time'])
   const user = useCurrentUser()
 
-  const [metrics, setMetrics] = useState<AggregatedMetricsResponse | null>(null)
-  const [leaderboard, setLeaderboard] = useState<LearnerProfile[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let isMounted = true
-
-    const load = async () => {
-      setIsLoading(true)
-      setError(null)
-
-      try {
-        const [metricsRes, leaderboardRes] = await Promise.allSettled([
-          analyticsService.getAggregatedMetrics(),
-          learnersService.getLeaderboard(),
-        ])
-
-        if (!isMounted) return
-
-        if (metricsRes.status === 'fulfilled') {
-          setMetrics(metricsRes.value)
-        }
-        if (leaderboardRes.status === 'fulfilled') {
-          setLeaderboard(leaderboardRes.value)
-        }
-
-        // If both failed, show error
-        if (metricsRes.status === 'rejected' && leaderboardRes.status === 'rejected') {
-          setError('Could not load dashboard data. Showing fallback values.')
-        }
-      } catch {
-        if (isMounted) setError('Failed to fetch dashboard data.')
-      } finally {
-        if (isMounted) setIsLoading(false)
-      }
-    }
-
-    load()
-    return () => { isMounted = false }
-  }, [])
+  const { data: metrics, isLoading: metricsLoading } = useAggregatedMetrics()
+  const { data: leaderboardRaw, isLoading: lbLoading } = useGlobalLeaderboard()
+  const leaderboard = (leaderboardRaw ?? []) as LearnerProfile[]
+  const isLoading = metricsLoading || lbLoading
 
   // Derive stats from real data with fallbacks
   const stats = useMemo(() => ({
@@ -126,11 +89,7 @@ export function AdminDashboard() {
         </div>
       </Card>
 
-      {error && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{error}</p>
-        </div>
-      )}
+
 
       {/* Stats Grid — branded */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

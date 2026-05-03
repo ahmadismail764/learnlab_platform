@@ -21,6 +21,9 @@ import { Spinner } from "@/components/ui/Loading";
 import { LoginPage, RegisterPage } from "@/pages/auth";
 
 // ── Lazily loaded (split into separate chunks) ─────────────────────
+const OnboardingPage = lazy(() =>
+  import("@/pages/learner/OnboardingPage").then((m) => ({ default: m.OnboardingPage }))
+);
 const LearnerDashboard = lazy(() =>
   import("@/pages/learner/LearnerDashboard").then((m) => ({ default: m.LearnerDashboard }))
 );
@@ -129,6 +132,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
       element: createDashboardElement(user, "learner", onLogout),
       children: [
         { index: true, element: <LazyRoute><LearnerDashboard /></LazyRoute> },
+        { path: "onboarding", element: <LazyRoute><OnboardingPage /></LazyRoute> },
         { path: "topics", element: <LazyRoute><TopicsPage /></LazyRoute> },
         { path: "practice", element: <LazyRoute><PracticePage /></LazyRoute> },
         { path: "progress", element: <LazyRoute><ProgressPage /></LazyRoute> },

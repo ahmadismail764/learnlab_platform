@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Card, Button, Badge, Input, EmptyState } from '@/components/ui'
 import { topicsService } from '@/services/topics'
+import { useTopics } from '@/hooks'
 import { useToast } from '@/contexts/ToastContext'
 
 /**
@@ -65,10 +66,10 @@ export function TopicsManagementPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
   const { showSuccess, showError } = useToast()
 
-  // Data state
-  const [topics, setTopics] = useState<BackendTopic[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+  // Data fetching via React Query
+  const { data: rawTopics, isLoading, error: queryError, refetch: fetchTopics } = useTopics()
+  const topics = (rawTopics ?? []) as BackendTopic[]
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load topics') : ''
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
@@ -86,30 +87,6 @@ export function TopicsManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<BackendTopic | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // --- Data fetching ---
-
-  const fetchTopics = useCallback(async () => {
-    setIsLoading(true)
-    setLoadError('')
-    try {
-      const data = await topicsService.getTopics()
-      // Handle both paginated and unpaginated responses
-      const items: BackendTopic[] = Array.isArray(data) ? data : (data.results ?? [])
-      setTopics(items)
-      // Auto-expand first two modules
-      const modules = [...new Set(items.map(t => t.parent_module || 'Uncategorized'))]
-      setExpandedModules(new Set(modules.slice(0, 2)))
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load topics'
-      setLoadError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchTopics()
-  }, [fetchTopics])
 
   // --- Computed data ---
 
@@ -278,7 +255,7 @@ export function TopicsManagementPage() {
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
-        <Button variant="outline" onClick={fetchTopics} leftIcon={<RefreshCw className="w-4 h-4" />}>
+        <Button variant="outline" onClick={() => fetchTopics()} leftIcon={<RefreshCw className="w-4 h-4" />}>
           Retry
         </Button>
       </div>
@@ -298,7 +275,7 @@ export function TopicsManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchTopics} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          <Button variant="outline" onClick={() => fetchTopics()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             {t('common:refresh')}
           </Button>
           <Button leftIcon={<Plus className="w-4 h-4" />} onClick={openCreateForm}>

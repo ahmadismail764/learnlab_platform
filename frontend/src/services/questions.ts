@@ -52,6 +52,7 @@ export const questionsService = {
   deleteQuestion: async (id: number) => {
     const response = await api.delete(`/practice/questions/${id}/`);
     if (!response.ok) throw new Error('Failed to delete question');
+    if (response.status === 204) return null;
     return await response.json();
   }
 };

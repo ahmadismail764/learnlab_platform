@@ -7,8 +7,10 @@ import {
   useAuth,
 } from "@/contexts";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { QueryProvider } from "@/contexts/QueryProvider";
 import { PageLoader } from "@/components/ui";
 import { createAppRouter } from "@/routes";
+import { useApiErrorInterceptor } from "@/hooks/useApiErrorInterceptor";
 
 /**
  * App Root Component
@@ -18,6 +20,7 @@ import { createAppRouter } from "@/routes";
 
 function AppRouter() {
   const { user, logout } = useAuth();
+  useApiErrorInterceptor();
 
   const router = useMemo(() => createAppRouter(user, logout), [user, logout]);
 
@@ -29,11 +32,13 @@ export default function App() {
     <Suspense fallback={<PageLoader text="Loading..." />}>
       <ErrorBoundary>
         <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <AppRouter />
-            </ToastProvider>
-          </AuthProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <ToastProvider>
+                <AppRouter />
+              </ToastProvider>
+            </AuthProvider>
+          </QueryProvider>
         </ThemeProvider>
       </ErrorBoundary>
     </Suspense>

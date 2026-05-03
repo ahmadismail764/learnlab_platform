@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   BookOpen,
   Target,
@@ -7,13 +7,12 @@ import {
   Sparkles,
   Flame,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, Button, Badge, ProgressBar } from "@/components/ui";
 import { Skeleton } from "@/components/ui/Loading";
 import { useCurrentUser } from "@/contexts";
-import { learnersService, type LearnerProfile } from "@/services/learners";
-import { topicsService } from "@/services/topics";
+import { useLearnerProfile, useTopicMastery } from "@/hooks";
 
 /**
  * LearnerDashboard
@@ -41,48 +40,16 @@ export function LearnerDashboard() {
   const { t } = useTranslation(["learner", "common", "topics"]);
   const user = useCurrentUser();
 
-  const [profile, setProfile] = useState<LearnerProfile | null>(null);
-  const [masteries, setMasteries] = useState<TopicMastery[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const load = async () => {
-      setIsLoading(true);
-      try {
-        const [profileData, masteryData] = await Promise.allSettled([
-          learnersService.getCurrentProfile(),
-          topicsService.getTopicMastery(),
-        ]);
-
-        if (!isMounted) return;
-
-        if (profileData.status === "fulfilled") {
-          setProfile(profileData.value);
-        }
-
-        if (masteryData.status === "fulfilled") {
-          const raw = masteryData.value;
-          const items: TopicMastery[] = Array.isArray(raw)
-            ? raw
-            : raw.results ?? [];
-          setMasteries(items);
-        }
-      } catch {
-        // Silently fall back to empty state
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    load();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { data: profile, isLoading: profileLoading } = useLearnerProfile();
+  const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery();
+  const masteries = (rawMasteries ?? []) as TopicMastery[];
+  const isLoading = profileLoading || masteryLoading;
 
   // Derive stats from real data
+  if (user && !localStorage.getItem(`onboarding_done_${user.id}`)) {
+    return <Navigate to="/learner/onboarding" replace />;
+  }
+
   const stats = useMemo(() => {
     const mastered = masteries.filter((m) => m.status === "learned").length;
     const inProgress = masteries.filter(

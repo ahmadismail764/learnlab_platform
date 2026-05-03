@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -14,8 +14,7 @@ import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/Progress'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
-import { learnersService, type LearnerProfile } from '@/services/learners'
-import { topicsService } from '@/services/topics'
+import { useLearnerProfile, useTopicMastery } from '@/hooks'
 
 /**
  * ProgressPage
@@ -49,38 +48,10 @@ const stateBadgeVariant: Record<string, 'success' | 'warning' | 'primary' | 'out
 export function ProgressPage() {
   const { t: _t } = useTranslation(['learner', 'topics', 'common', 'gamification'])
 
-  const [profile, setProfile] = useState<LearnerProfile | null>(null)
-  const [masteries, setMasteries] = useState<TopicMastery[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    let isMounted = true
-
-    const load = async () => {
-      setIsLoading(true)
-      try {
-        const [profileRes, masteryRes] = await Promise.allSettled([
-          learnersService.getCurrentProfile(),
-          topicsService.getTopicMastery(),
-        ])
-
-        if (!isMounted) return
-
-        if (profileRes.status === 'fulfilled') setProfile(profileRes.value)
-        if (masteryRes.status === 'fulfilled') {
-          const raw = masteryRes.value
-          setMasteries(Array.isArray(raw) ? raw : raw.results ?? [])
-        }
-      } catch {
-        // Graceful degradation
-      } finally {
-        if (isMounted) setIsLoading(false)
-      }
-    }
-
-    load()
-    return () => { isMounted = false }
-  }, [])
+  const { data: profile, isLoading: profileLoading } = useLearnerProfile()
+  const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
+  const masteries = (rawMasteries ?? []) as TopicMastery[]
+  const isLoading = profileLoading || masteryLoading
 
   // Derive weekly-style stats from real data
   const weeklyStats = useMemo(() => {

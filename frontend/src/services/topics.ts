@@ -41,6 +41,7 @@ export const topicsService = {
   deleteTopic: async (id: number) => {
     const response = await api.delete(`/practice/topics/${id}/`);
     if (!response.ok) throw new Error('Failed to delete topic');
+    if (response.status === 204) return null;
     return await response.json();
   }
 };

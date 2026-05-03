@@ -11,11 +11,14 @@ import {
   ChevronLeft,
   Medal,
   UserCircle,
+  Moon,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { LogoMark, LogoFull } from "@/components/brand";
 import type { User, UserRole } from "@/types";
+import { useTheme } from "@/contexts";
 
 /**
  * Sidebar Component
@@ -131,6 +134,7 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation("auth");
   const location = useLocation();
+  const { isDark, toggleTheme } = useTheme();
 
   // Filter nav items based on user role
   const visibleItems = navItems.filter((item) =>
@@ -264,6 +268,15 @@ export function Sidebar({
               </div>
             )}
           </Link>
+          {!isCollapsed && (
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+              title={isDark ? t('nav:lightMode', 'Light mode') : t('nav:darkMode', 'Dark mode')}
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          )}
           {!isCollapsed && onLogout && (
             <button
               onClick={onLogout}
@@ -274,6 +287,15 @@ export function Sidebar({
             </button>
           )}
         </div>
+        {isCollapsed && (
+          <button
+            onClick={toggleTheme}
+            className="mt-2 mx-auto p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors flex items-center justify-center"
+            title={isDark ? t('nav:lightMode', 'Light mode') : t('nav:darkMode', 'Dark mode')}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        )}
       </div>
     </aside>
   );

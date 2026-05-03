@@ -27,12 +27,30 @@ function buildUrl(baseUrl: string, path: string): string {
   return `${baseUrl}/${path}`;
 }
 
+/**
+ * Resolve which storage backend holds auth tokens.
+ * On login the user's "remember me" choice writes a flag to localStorage.
+ * - present & "1" → tokens live in localStorage (persist across sessions)
+ * - absent         → tokens live in sessionStorage (cleared on tab close)
+ */
+export function getTokenStorage(): Storage {
+  return localStorage.getItem("learnlab_persist") === "1"
+    ? localStorage
+    : sessionStorage;
+}
+
+/** Read a token from whichever storage currently holds it. */
+export function getToken(key: string): string | null {
+  // Check both storages — during migration the token might be in either.
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {},
   baseUrl: string = API_BASE,
 ) {
-  const token = localStorage.getItem("learnlab_auth_token");
+  const token = getToken("learnlab_auth_token");
   const headers: HeadersInit = {
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -43,7 +61,7 @@ async function fetchWithAuth(
 
   if (response.status === 401) {
     // Try refresh token
-    const refreshToken = localStorage.getItem("learnlab_refresh_token");
+    const refreshToken = getToken("learnlab_refresh_token");
     if (refreshToken) {
       try {
         const refreshResponse = await fetch(buildUrl(API_BASE, "/auth/refresh/"), {
@@ -53,7 +71,8 @@ async function fetchWithAuth(
         });
         if (refreshResponse.ok) {
           const { access } = await refreshResponse.json();
-          localStorage.setItem("learnlab_auth_token", access);
+          const storage = getTokenStorage();
+          storage.setItem("learnlab_auth_token", access);
           // Retry original request
           const newHeaders = { ...headers, Authorization: `Bearer ${access}` };
           response = await fetch(buildUrl(baseUrl, url), {
@@ -66,10 +85,12 @@ async function fetchWithAuth(
         console.error("Token refresh failed", error);
       }
     }
-    // Refresh failed — clear auth. 
+    // Refresh failed — clear auth from both storages.
     // The AuthContext will detect missing token and redirect to login.
     localStorage.removeItem("learnlab_auth_token");
     localStorage.removeItem("learnlab_refresh_token");
+    sessionStorage.removeItem("learnlab_auth_token");
+    sessionStorage.removeItem("learnlab_refresh_token");
   }
 
   return response;

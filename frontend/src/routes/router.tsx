@@ -1,33 +1,78 @@
+import { Suspense, lazy } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthLayout, DashboardLayout } from "@/components/layout";
-import {
-  LoginPage,
-  RegisterPage,
-  LearnerDashboard,
-  AdminDashboard,
-  PracticePage,
-  TopicsPage,
-  ProgressPage,
-  LearnerProfilePage,
-  QuestionsPage,
-  AnalyticsPage,
-  SettingsPage,
-  AdminProfilePage,
-  LeaderboardPage,
-  TopicsManagementPage,
-} from "@/pages";
 import type { User } from "@/types";
+import { Spinner } from "@/components/ui/Loading";
 
 /**
  * Application Router
  *
- * Defines all routes and their associated layouts.
- * Protected routes are handled by checking auth state.
+ * Route-level code splitting via React.lazy() keeps the initial bundle
+ * small. Heavy pages (especially PracticePage with mathlive) are loaded
+ * on demand. Each lazy chunk is wrapped in Suspense with a spinner.
  *
  * Roles:
  * - learner: Primary learner - solves problems, views progress
  * - admin: Content manager - manages questions, monitors analytics
  */
+
+// ── Eagerly loaded (part of initial bundle) ────────────────────────
+// Auth pages load fast and are the first thing users see
+import { LoginPage, RegisterPage } from "@/pages/auth";
+
+// ── Lazily loaded (split into separate chunks) ─────────────────────
+const LearnerDashboard = lazy(() =>
+  import("@/pages/learner/LearnerDashboard").then((m) => ({ default: m.LearnerDashboard }))
+);
+const TopicsPage = lazy(() =>
+  import("@/pages/learner/TopicsPage").then((m) => ({ default: m.TopicsPage }))
+);
+const PracticePage = lazy(() =>
+  import("@/pages/learner/PracticePage").then((m) => ({ default: m.PracticePage }))
+);
+const ProgressPage = lazy(() =>
+  import("@/pages/learner/ProgressPage").then((m) => ({ default: m.ProgressPage }))
+);
+const LeaderboardPage = lazy(() =>
+  import("@/pages/learner/LeaderboardPage").then((m) => ({ default: m.LeaderboardPage }))
+);
+const LearnerProfilePage = lazy(() =>
+  import("@/pages/learner/LearnerProfilePage").then((m) => ({ default: m.LearnerProfilePage }))
+);
+
+const AdminDashboard = lazy(() =>
+  import("@/pages/admin/AdminDashboard").then((m) => ({ default: m.AdminDashboard }))
+);
+const TopicsManagementPage = lazy(() =>
+  import("@/pages/admin/TopicsManagementPage").then((m) => ({ default: m.TopicsManagementPage }))
+);
+const QuestionsPage = lazy(() =>
+  import("@/pages/admin/QuestionsPage").then((m) => ({ default: m.QuestionsPage }))
+);
+const AnalyticsPage = lazy(() =>
+  import("@/pages/admin/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/admin/SettingsPage").then((m) => ({ default: m.SettingsPage }))
+);
+const AdminProfilePage = lazy(() =>
+  import("@/pages/admin/AdminProfilePage").then((m) => ({ default: m.AdminProfilePage }))
+);
+
+// ── Suspense wrapper for lazy routes ──────────────────────────────
+function LazyRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[300px]">
+          <Spinner size="lg" />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 /**
  * Helper to create dashboard layout with user.
@@ -83,13 +128,12 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
       path: "/learner",
       element: createDashboardElement(user, "learner", onLogout),
       children: [
-        { index: true, element: <LearnerDashboard /> },
-        { path: "topics", element: <TopicsPage /> },
-        { path: "practice", element: <PracticePage /> },
-        { path: "progress", element: <ProgressPage /> },
-
-        { path: "leaderboard", element: <LeaderboardPage /> },
-        { path: "profile", element: <LearnerProfilePage /> },
+        { index: true, element: <LazyRoute><LearnerDashboard /></LazyRoute> },
+        { path: "topics", element: <LazyRoute><TopicsPage /></LazyRoute> },
+        { path: "practice", element: <LazyRoute><PracticePage /></LazyRoute> },
+        { path: "progress", element: <LazyRoute><ProgressPage /></LazyRoute> },
+        { path: "leaderboard", element: <LazyRoute><LeaderboardPage /></LazyRoute> },
+        { path: "profile", element: <LazyRoute><LearnerProfilePage /></LazyRoute> },
       ],
     },
 
@@ -98,12 +142,12 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
       path: "/admin",
       element: createDashboardElement(user, "admin", onLogout),
       children: [
-        { index: true, element: <AdminDashboard /> },
-        { path: "topics", element: <TopicsManagementPage /> },
-        { path: "questions", element: <QuestionsPage /> },
-        { path: "analytics", element: <AnalyticsPage /> },
-        { path: "settings", element: <SettingsPage /> },
-        { path: "profile", element: <AdminProfilePage /> },
+        { index: true, element: <LazyRoute><AdminDashboard /></LazyRoute> },
+        { path: "topics", element: <LazyRoute><TopicsManagementPage /></LazyRoute> },
+        { path: "questions", element: <LazyRoute><QuestionsPage /></LazyRoute> },
+        { path: "analytics", element: <LazyRoute><AnalyticsPage /></LazyRoute> },
+        { path: "settings", element: <LazyRoute><SettingsPage /></LazyRoute> },
+        { path: "profile", element: <LazyRoute><AdminProfilePage /></LazyRoute> },
       ],
     },
 

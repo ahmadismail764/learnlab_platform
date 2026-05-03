@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar, type SidebarProps } from './Sidebar'
 import { Header } from './Header'
-import { DataSourceBreakdown } from '@/components/common'
+import { DataSourceBreakdown, ErrorBoundary } from '@/components/common'
 import { cn } from '@/utils/cn'
 
 /**
@@ -85,7 +85,9 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
           <div className="mb-6">
             <DataSourceBreakdown compact />
           </div>
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

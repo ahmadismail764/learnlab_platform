@@ -14,6 +14,7 @@ import {
   type LoginCredentials,
   type RegisterPayload,
 } from "@/services/auth";
+import { getToken } from "@/services/api";
 
 /**
  * AuthContext
@@ -94,7 +95,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         return;
       }
 
-      const token = localStorage.getItem("learnlab_auth_token");
+      const token = getToken("learnlab_auth_token");
       if (!token) {
         setState((prev) => ({ ...prev, isLoading: false }));
         return;

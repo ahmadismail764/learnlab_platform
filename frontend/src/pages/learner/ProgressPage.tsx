@@ -1,3 +1,4 @@
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
@@ -12,92 +13,135 @@ import {
 import { Card, CardHeader, CardContent, Badge, Button } from '@/components/ui'
 import { ProgressBar } from '@/components/ui/Progress'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
+import { Skeleton } from '@/components/ui/Loading'
+import { learnersService, type LearnerProfile } from '@/services/learners'
+import { topicsService } from '@/services/topics'
 
-interface TopicProgress {
-  id: string
-  nameKey: string
-  icon: string
-  mastery: number
-  questionsAnswered: number
-  questionsTotal: number
+/**
+ * ProgressPage
+ *
+ * Backend-integrated progress view:
+ * - Stats derived from learner profile (XP, streak) and topic mastery
+ * - Topic breakdown cards with FIRe memory/speed metrics
+ * - Review goal progress
+ * RTL-aware with full i18n support.
+ */
+
+interface TopicMastery {
+  id: number
+  topic: number
+  topic_name: string
+  rep_num: number
+  memory: number
   speed: number
-  nextReview: string
-  state: 'new' | 'learning' | 'review' | 'mastered'
+  status: 'new' | 'learning' | 'learned' | 'struggling'
+  last_reviewed: string | null
+  next_due: string | null
 }
 
-const weeklyStats = {
-  questionsAnswered: 87,
-  questionsCorrect: 72,
-  timeSpent: '4h 32m',
-  xpEarned: 1850,
-  topicsReviewed: 12,
-  averageAccuracy: 83,
-}
-
-const monthlyProgress = [
-  { week: 'Week 1', questions: 45, accuracy: 78 },
-  { week: 'Week 2', questions: 62, accuracy: 81 },
-  { week: 'Week 3', questions: 58, accuracy: 85 },
-  { week: 'Week 4', questions: 87, accuracy: 83 },
-]
-
-const topicProgressList: TopicProgress[] = [
-  {
-    id: '1',
-    nameKey: 'Propositional Logic',
-    icon: '→',
-    mastery: 85,
-    questionsAnswered: 45,
-    questionsTotal: 50,
-    speed: 14.5,
-    nextReview: 'In 3 days',
-    state: 'mastered',
-  },
-  {
-    id: '2',
-    nameKey: 'Set Operations',
-    icon: '∩',
-    mastery: 72,
-    questionsAnswered: 32,
-    questionsTotal: 45,
-    speed: 7.2,
-    nextReview: 'Tomorrow',
-    state: 'review',
-  },
-  {
-    id: '3',
-    nameKey: 'Equivalence Relations',
-    icon: '~',
-    mastery: 45,
-    questionsAnswered: 18,
-    questionsTotal: 40,
-    speed: 2.1,
-    nextReview: 'Today',
-    state: 'learning',
-  },
-]
-
-const stateBadgeVariant: Record<TopicProgress['state'], 'success' | 'warning' | 'primary' | 'outline'> = {
+const stateBadgeVariant: Record<string, 'success' | 'warning' | 'primary' | 'outline'> = {
   new: 'outline',
   learning: 'primary',
-  review: 'warning',
-  mastered: 'success',
+  struggling: 'warning',
+  learned: 'success',
 }
 
 export function ProgressPage() {
   const { t: _t } = useTranslation(['learner', 'topics', 'common', 'gamification'])
 
-  const reviewGoalProgress = Math.min(
-    100,
-    Math.round((weeklyStats.questionsAnswered / 100) * 100),
-  )
+  const [profile, setProfile] = useState<LearnerProfile | null>(null)
+  const [masteries, setMasteries] = useState<TopicMastery[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const load = async () => {
+      setIsLoading(true)
+      try {
+        const [profileRes, masteryRes] = await Promise.allSettled([
+          learnersService.getCurrentProfile(),
+          topicsService.getTopicMastery(),
+        ])
+
+        if (!isMounted) return
+
+        if (profileRes.status === 'fulfilled') setProfile(profileRes.value)
+        if (masteryRes.status === 'fulfilled') {
+          const raw = masteryRes.value
+          setMasteries(Array.isArray(raw) ? raw : raw.results ?? [])
+        }
+      } catch {
+        // Graceful degradation
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    load()
+    return () => { isMounted = false }
+  }, [])
+
+  // Derive weekly-style stats from real data
+  const weeklyStats = useMemo(() => {
+    const topicsReviewed = masteries.filter((m) => m.last_reviewed).length
+    const avgMemory =
+      masteries.length > 0
+        ? Math.round(
+            (masteries.reduce((s, m) => s + Math.min(1, m.memory || 0), 0) /
+              masteries.length) *
+              100
+          )
+        : 0
+
+    return {
+      xpEarned: profile?.total_xp ?? 0,
+      streak: profile?.streak_count ?? 0,
+      topicsReviewed,
+      averageAccuracy: avgMemory,
+      totalTopics: masteries.length,
+    }
+  }, [profile, masteries])
+
+  // Overall mastery percentage
+  const overallMastery = useMemo(() => {
+    if (masteries.length === 0) return 0
+    return Math.round(
+      (masteries.reduce((s, m) => s + Math.min(1, m.memory || 0), 0) /
+        masteries.length) *
+        100
+    )
+  }, [masteries])
+
+  // Topic cards sorted by status priority: struggling → learning → new → learned
+  const topicCards = useMemo(() => {
+    const priority: Record<string, number> = {
+      struggling: 0,
+      learning: 1,
+      new: 2,
+      learned: 3,
+    }
+    return [...masteries].sort(
+      (a, b) => (priority[a.status] ?? 2) - (priority[b.status] ?? 2)
+    )
+  }, [masteries])
+
+  // Format next_due as relative text
+  const formatDue = (nextDue: string | null): string => {
+    if (!nextDue) return 'Not scheduled'
+    const diff = new Date(nextDue).getTime() - Date.now()
+    if (diff <= 0) return 'Due now'
+    const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
+    if (days === 1) return 'Tomorrow'
+    return `In ${days} days`
+  }
 
   return (
     <div className="space-y-6">
       <PageIntro
         eyebrow="Learning analytics"
         title="Progress"
-        description="A focused view of your recent practice, topic mastery, and upcoming reviews without the oversized dashboard treatment."
+        description="A focused view of your recent practice, topic mastery, and upcoming reviews powered by FIRe data."
         icon={<Activity className="h-6 w-6" />}
         tone="secondary"
         actions={(
@@ -113,68 +157,105 @@ export function ProgressPage() {
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <PageStatCard
-          icon={<Target className="h-5 w-5" />}
-          label="Questions answered"
-          value={weeklyStats.questionsAnswered}
-          helper={`${weeklyStats.questionsCorrect} correct this week`}
-          tone="primary"
-        />
-        <PageStatCard
-          icon={<Clock className="h-5 w-5" />}
-          label="Study time"
-          value={weeklyStats.timeSpent}
-          helper="Tracked across recent sessions"
-          tone="accent"
-        />
-        <PageStatCard
-          icon={<Zap className="h-5 w-5" />}
-          label="XP earned"
-          value={weeklyStats.xpEarned.toLocaleString()}
-          helper="From review and practice sessions"
-          tone="secondary"
-        />
-        <PageStatCard
-          icon={<Activity className="h-5 w-5" />}
-          label="Topics reviewed"
-          value={weeklyStats.topicsReviewed}
-          helper={`${weeklyStats.averageAccuracy}% average accuracy`}
-          tone="success"
-        />
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} padding="sm">
+              <div className="flex items-center gap-3">
+                <Skeleton variant="rectangular" width={44} height={44} className="rounded-xl" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton width="50%" />
+                  <Skeleton width="70%" height={12} />
+                </div>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <>
+            <PageStatCard
+              icon={<Target className="h-5 w-5" />}
+              label="Topics tracked"
+              value={weeklyStats.totalTopics}
+              helper={`${weeklyStats.topicsReviewed} reviewed at least once`}
+              tone="primary"
+            />
+            <PageStatCard
+              icon={<Clock className="h-5 w-5" />}
+              label="Practice streak"
+              value={`${weeklyStats.streak} days`}
+              helper="Keep it going!"
+              tone="accent"
+            />
+            <PageStatCard
+              icon={<Zap className="h-5 w-5" />}
+              label="XP earned"
+              value={weeklyStats.xpEarned.toLocaleString()}
+              helper="From review and practice sessions"
+              tone="secondary"
+            />
+            <PageStatCard
+              icon={<Activity className="h-5 w-5" />}
+              label="Overall mastery"
+              value={`${weeklyStats.averageAccuracy}%`}
+              helper="Average FIRe memory score"
+              tone="success"
+            />
+          </>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-12">
+        {/* Mastery overview */}
         <Card className="lg:col-span-8">
           <CardHeader
-            title="Monthly activity"
-            subtitle="A simple snapshot of how much practice you completed each week."
+            title="Topic mastery overview"
+            subtitle="Your FIRe memory score across all tracked topics."
           />
           <CardContent className="space-y-5">
-            {monthlyProgress.map((week) => (
-              <div key={week.week} className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                      {week.week}
-                    </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {week.questions} questions completed
-                    </p>
+            {isLoading ? (
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between">
+                    <Skeleton width="40%" />
+                    <Skeleton width={40} />
                   </div>
-                  <Badge variant="secondary" size="sm">
-                    {week.accuracy}% accuracy
-                  </Badge>
+                  <Skeleton height={8} />
                 </div>
-                <ProgressBar value={week.questions} max={90} variant="secondary" />
-              </div>
-            ))}
+              ))
+            ) : masteries.length === 0 ? (
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
+                Complete some practice sessions and your mastery data will appear here.
+              </p>
+            ) : (
+              topicCards.slice(0, 8).map((m) => {
+                const progress = Math.round(Math.min(1, m.memory || 0) * 100)
+                return (
+                  <div key={m.id} className="space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                          {m.topic_name}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {m.rep_num} review{m.rep_num !== 1 ? 's' : ''} • {formatDue(m.next_due)}
+                        </p>
+                      </div>
+                      <Badge variant={stateBadgeVariant[m.status] ?? 'outline'} size="sm">
+                        {m.status} — {progress}%
+                      </Badge>
+                    </div>
+                    <ProgressBar value={progress} variant="secondary" />
+                  </div>
+                )
+              })
+            )}
           </CardContent>
         </Card>
 
+        {/* FIRe model sidebar */}
         <Card className="lg:col-span-4">
           <CardHeader
             title="FIRe model"
-            subtitle="Your review schedule is being adjusted from recent performance and recall speed."
+            subtitle="Your review schedule is adjusted from recent performance and recall speed."
           />
           <CardContent className="space-y-5">
             <div className="rounded-2xl bg-secondary-50 p-4 dark:bg-secondary-950/20">
@@ -182,25 +263,29 @@ export function ProgressPage() {
                 <div className="flex items-center gap-2">
                   <Brain className="h-5 w-5 text-secondary-600 dark:text-secondary-300" />
                   <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                    Weekly review goal
+                    Overall mastery
                   </span>
                 </div>
                 <span className="text-sm font-semibold text-secondary-700 dark:text-secondary-300">
-                  {reviewGoalProgress}%
+                  {isLoading ? '--' : `${overallMastery}%`}
                 </span>
               </div>
-              <ProgressBar value={reviewGoalProgress} variant="secondary" />
+              <ProgressBar value={overallMastery} variant="secondary" />
             </div>
 
             <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900/60">
               <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                Accuracy trend
+                Memory index
               </p>
               <p className="mt-1 text-3xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                {weeklyStats.averageAccuracy}%
+                {isLoading ? '--' : `${overallMastery}%`}
               </p>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                You are staying above your recent baseline, so upcoming intervals can stretch a little further.
+                {overallMastery >= 70
+                  ? 'Strong recall — upcoming intervals can stretch further.'
+                  : overallMastery >= 40
+                    ? 'Good progress — consistent review will solidify your memory.'
+                    : 'Early stage — keep practising to build long-term retention.'}
               </p>
             </div>
 
@@ -217,73 +302,113 @@ export function ProgressPage() {
         </Card>
       </div>
 
+      {/* Topic breakdown cards */}
       <section className="space-y-4">
         <SectionHeading
           title="Topic breakdown"
-          description="The same topic cards, but sized closer to the rest of the product."
+          description="Detailed mastery cards powered by FIRe review data."
         />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {topicProgressList.map((topic) => (
-            <Card key={topic.id} className="h-full">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary-100 text-lg text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300">
-                    {topic.icon}
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <Card key={i}>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton variant="rectangular" width={40} height={40} className="rounded-xl" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton width="60%" />
+                      <Skeleton width="40%" height={12} />
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                      {topic.nameKey}
-                    </h3>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      Topic #{topic.id}
-                    </p>
+                  <Skeleton height={8} />
+                  <div className="grid grid-cols-3 gap-3">
+                    <Skeleton height={48} variant="rectangular" className="rounded-xl" />
+                    <Skeleton height={48} variant="rectangular" className="rounded-xl" />
+                    <Skeleton height={48} variant="rectangular" className="rounded-xl" />
                   </div>
                 </div>
-                <Badge variant={stateBadgeVariant[topic.state]} size="sm">
-                  {topic.state}
-                </Badge>
-              </div>
+              </Card>
+            ))}
+          </div>
+        ) : topicCards.length === 0 ? (
+          <Card className="border-dashed">
+            <div className="text-center py-6 space-y-2">
+              <Brain className="w-8 h-8 text-neutral-300 mx-auto" />
+              <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                No mastery data yet
+              </p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                Complete a few practice sessions and your topic strengths will show up here.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            {topicCards.map((topic) => {
+              const progress = Math.round(Math.min(1, topic.memory || 0) * 100)
+              return (
+                <Card key={topic.id} className="h-full">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary-100 text-lg text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300">
+                        📚
+                      </div>
+                      <div>
+                        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                          {topic.topic_name}
+                        </h3>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                          {topic.rep_num} review{topic.rep_num !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant={stateBadgeVariant[topic.status] ?? 'outline'} size="sm">
+                      {topic.status}
+                    </Badge>
+                  </div>
 
-              <div className="mt-5 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Mastery</span>
-                  <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                    {topic.mastery}%
-                  </span>
-                </div>
-                <ProgressBar value={topic.mastery} variant="secondary" />
-              </div>
+                  <div className="mt-5 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-neutral-500 dark:text-neutral-400">Mastery</span>
+                      <span className="font-semibold text-neutral-900 dark:text-neutral-100">
+                        {progress}%
+                      </span>
+                    </div>
+                    <ProgressBar value={progress} variant="secondary" />
+                  </div>
 
-              <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-neutral-50 p-4 text-sm dark:bg-neutral-900/60">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Answered
-                  </p>
-                  <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    {topic.questionsAnswered}/{topic.questionsTotal}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Review speed
-                  </p>
-                  <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    {topic.speed}d
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Next review
-                  </p>
-                  <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    {topic.nextReview}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+                  <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl bg-neutral-50 p-4 text-sm dark:bg-neutral-900/60">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                        Memory
+                      </p>
+                      <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
+                        {progress}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                        Speed
+                      </p>
+                      <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
+                        {(topic.speed || 0).toFixed(1)}d
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                        Next review
+                      </p>
+                      <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
+                        {formatDue(topic.next_due)}
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        )}
       </section>
 
       <Card className="border-secondary-200 bg-secondary-50/70 dark:border-secondary-900/40 dark:bg-secondary-950/20">

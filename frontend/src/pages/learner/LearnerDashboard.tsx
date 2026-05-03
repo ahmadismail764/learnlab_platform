@@ -1,65 +1,145 @@
+import { useEffect, useState, useMemo } from "react";
 import {
   BookOpen,
   Target,
-  Clock,
   ChevronRight,
   Zap,
   Sparkles,
+  Flame,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Card, Button, Badge, ProgressBar } from "@/components/ui";
+import { Skeleton } from "@/components/ui/Loading";
 import { useCurrentUser } from "@/contexts";
+import { learnersService, type LearnerProfile } from "@/services/learners";
+import { topicsService } from "@/services/topics";
 
 /**
  * LearnerDashboard
  *
- * Main landing page for learners showing:
+ * Main landing page for learners showing real data from the backend:
  * - Welcome message with brand-gradient hero card
- * - Progress overview with branded stat cards
- * - Topics due for review
+ * - Progress overview with branded stat cards (XP, streak, mastery, topics)
+ * - Topics due for review (from FIRe mastery data)
  * RTL-aware with full i18n support.
  */
+
+interface TopicMastery {
+  id: number;
+  topic: number;
+  topic_name: string;
+  rep_num: number;
+  memory: number;
+  speed: number;
+  status: "new" | "learning" | "learned" | "struggling";
+  last_reviewed: string | null;
+  next_due: string | null;
+}
 
 export function LearnerDashboard() {
   const { t } = useTranslation(["learner", "common", "topics"]);
   const user = useCurrentUser();
 
-  // Mock data - will come from API
-  const stats = {
-    questionsToday: 12,
-    totalMastered: 156,
-    topicsInProgress: 6,
-    topicsDue: 3,
-    totalXP: 1250,
+  const [profile, setProfile] = useState<LearnerProfile | null>(null);
+  const [masteries, setMasteries] = useState<TopicMastery[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        const [profileData, masteryData] = await Promise.allSettled([
+          learnersService.getCurrentProfile(),
+          topicsService.getTopicMastery(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (profileData.status === "fulfilled") {
+          setProfile(profileData.value);
+        }
+
+        if (masteryData.status === "fulfilled") {
+          const raw = masteryData.value;
+          const items: TopicMastery[] = Array.isArray(raw)
+            ? raw
+            : raw.results ?? [];
+          setMasteries(items);
+        }
+      } catch {
+        // Silently fall back to empty state
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Derive stats from real data
+  const stats = useMemo(() => {
+    const mastered = masteries.filter((m) => m.status === "learned").length;
+    const inProgress = masteries.filter(
+      (m) => m.status === "learning" || m.status === "struggling"
+    ).length;
+    const due = masteries.filter((m) => {
+      if (!m.next_due) return false;
+      return new Date(m.next_due) <= new Date();
+    }).length;
+
+    return {
+      totalMastered: mastered,
+      topicsInProgress: inProgress,
+      topicsDue: due,
+      totalXP: profile?.total_xp ?? 0,
+      streak: profile?.streak_count ?? 0,
+    };
+  }, [masteries, profile]);
+
+  // Topics due for review — sorted by next_due ascending (most urgent first)
+  const topicsDueForReview = useMemo(() => {
+    const now = new Date();
+    return masteries
+      .filter((m) => m.next_due && new Date(m.next_due) <= now)
+      .sort(
+        (a, b) =>
+          new Date(a.next_due!).getTime() - new Date(b.next_due!).getTime()
+      )
+      .slice(0, 5)
+      .map((m) => ({
+        id: String(m.topic),
+        name: m.topic_name,
+        progress: Math.round(Math.min(1, m.memory || 0) * 100),
+        status: m.status,
+      }));
+  }, [masteries]);
+
+  // If no topics are due, show learning / new topics instead
+  const displayTopics = useMemo(() => {
+    if (topicsDueForReview.length > 0) return topicsDueForReview;
+    return masteries
+      .filter((m) => m.status !== "learned")
+      .slice(0, 3)
+      .map((m) => ({
+        id: String(m.topic),
+        name: m.topic_name,
+        progress: Math.round(Math.min(1, m.memory || 0) * 100),
+        status: m.status,
+      }));
+  }, [topicsDueForReview, masteries]);
+
+  const statusIcons: Record<string, string> = {
+    new: "🆕",
+    learning: "📖",
+    learned: "✅",
+    struggling: "⚠️",
   };
-
-  // Discrete Mathematics topics - FIRe due for review
-  const topicsDueForReview = [
-    {
-      id: "1",
-      nameKey: "topics:logic.propositional",
-      progress: 68,
-      icon: "🔢",
-      questionsLeft: 8,
-    },
-    {
-      id: "2",
-      nameKey: "topics:sets.operations",
-      progress: 45,
-      icon: "∪",
-      questionsLeft: 15,
-    },
-    {
-      id: "3",
-      nameKey: "topics:relations.equivalence",
-      progress: 82,
-      icon: "≡",
-      questionsLeft: 4,
-    },
-  ];
-
-
 
   return (
     <div className="space-y-6">
@@ -78,46 +158,11 @@ export function LearnerDashboard() {
             <circle cx="460" cy="100" r="5" fill="white" />
             <circle cx="520" cy="150" r="7" fill="white" />
             <circle cx="400" cy="60" r="3" fill="white" />
-            <line
-              x1="500"
-              y1="30"
-              x2="540"
-              y2="80"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="540"
-              y1="80"
-              x2="520"
-              y2="150"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="460"
-              y1="100"
-              x2="520"
-              y2="150"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="400"
-              y1="60"
-              x2="460"
-              y2="100"
-              stroke="white"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="500"
-              y1="30"
-              x2="400"
-              y2="60"
-              stroke="white"
-              strokeWidth="1.5"
-            />
+            <line x1="500" y1="30" x2="540" y2="80" stroke="white" strokeWidth="1.5" />
+            <line x1="540" y1="80" x2="520" y2="150" stroke="white" strokeWidth="1.5" />
+            <line x1="460" y1="100" x2="520" y2="150" stroke="white" strokeWidth="1.5" />
+            <line x1="400" y1="60" x2="460" y2="100" stroke="white" strokeWidth="1.5" />
+            <line x1="500" y1="30" x2="400" y2="60" stroke="white" strokeWidth="1.5" />
           </svg>
         </div>
 
@@ -132,14 +177,18 @@ export function LearnerDashboard() {
             <h1 className="text-2xl font-bold font-display">
               {t("learner:welcomeBack", { name: user.firstName })}
             </h1>
-            <p className="text-3xl font-bold mt-2 font-display">
-              {t("learner:questionsAnsweredToday", {
-                count: stats.questionsToday,
-              })}
-            </p>
-            <p className="text-white/70 text-sm mt-1">
-              {t("learner:topicsProgress", { due: stats.topicsDue })}
-            </p>
+            {isLoading ? (
+              <Skeleton width="60%" height={36} className="mt-2 bg-white/20" />
+            ) : (
+              <>
+                <p className="text-3xl font-bold mt-2 font-display">
+                  {stats.totalXP.toLocaleString()} XP
+                </p>
+                <p className="text-white/70 text-sm mt-1">
+                  {t("learner:topicsProgress", { due: stats.topicsDue })}
+                </p>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-4">
             <Link to="/learner/practice">
@@ -163,9 +212,13 @@ export function LearnerDashboard() {
               <Target className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
-                {stats.totalMastered}
-              </p>
+              {isLoading ? (
+                <Skeleton width={48} height={28} />
+              ) : (
+                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
+                  {stats.totalMastered}
+                </p>
+              )}
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {t("learner:questionsMastered")}
               </p>
@@ -179,9 +232,13 @@ export function LearnerDashboard() {
               <BookOpen className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
-                {stats.topicsInProgress}
-              </p>
+              {isLoading ? (
+                <Skeleton width={48} height={28} />
+              ) : (
+                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
+                  {stats.topicsInProgress}
+                </p>
+              )}
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {t("learner:activeTopics")}
               </p>
@@ -195,11 +252,15 @@ export function LearnerDashboard() {
               <Zap className="w-5 h-5 text-accent-600 dark:text-accent-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
-                {stats.totalXP}
-              </p>
+              {isLoading ? (
+                <Skeleton width={48} height={28} />
+              ) : (
+                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
+                  {stats.totalXP.toLocaleString()}
+                </p>
+              )}
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("gamification:totalXP")}
+                {t("common:totalXP", "Total XP")}
               </p>
             </div>
           </div>
@@ -208,38 +269,75 @@ export function LearnerDashboard() {
         <Card padding="sm" className="group hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-primary-50 dark:bg-primary-900/20 rounded-xl group-hover:scale-105 transition-transform">
-              <Clock className="w-5 h-5 text-primary-700 dark:text-primary-300" />
+              <Flame className="w-5 h-5 text-primary-700 dark:text-primary-300" />
             </div>
             <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
-                2.5h
-              </p>
+              {isLoading ? (
+                <Skeleton width={48} height={28} />
+              ) : (
+                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">
+                  {stats.streak} {t("common:days", "days")}
+                </p>
+              )}
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("learner:thisWeek")}
+                {t("learner:thisWeek", "Streak")}
               </p>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="space-y-6">
-        {/* Topics Due for Review */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold font-display text-neutral-800 dark:text-neutral-100">
-              {t("learner:todaysQueue")}
-            </h2>
-            <Link
-              to="/learner/topics"
-              className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
-            >
-              {t("common:viewAll")}
-            </Link>
-          </div>
+      {/* Topics Due for Review */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold font-display text-neutral-800 dark:text-neutral-100">
+            {t("learner:todaysQueue")}
+          </h2>
+          <Link
+            to="/learner/topics"
+            className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+          >
+            {t("common:viewAll")}
+          </Link>
+        </div>
 
+        {isLoading ? (
           <div className="space-y-3">
-            {topicsDueForReview.map((topic) => (
+            {[1, 2, 3].map((i) => (
+              <Card key={i} padding="sm">
+                <div className="flex items-center gap-4">
+                  <Skeleton variant="rectangular" width={48} height={48} className="rounded-xl" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton width="50%" />
+                    <Skeleton width="100%" height={8} />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : displayTopics.length === 0 ? (
+          <Card className="border-dashed">
+            <div className="text-center py-6 space-y-2">
+              <Sparkles className="w-8 h-8 text-neutral-300 mx-auto" />
+              <p className="font-medium text-neutral-800 dark:text-neutral-100">
+                {t("learner:allCaughtUp", "All caught up!")}
+              </p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                {masteries.length === 0
+                  ? t(
+                    "learner:startFirstSession",
+                    "Start a practice session to begin tracking your progress."
+                  )
+                  : t(
+                    "learner:noTopicsDue",
+                    "No topics are due for review right now. Great work!"
+                  )}
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {displayTopics.map((topic) => (
               <Link
                 key={topic.id}
                 to={`/learner/practice?topic=${topic.id}`}
@@ -252,17 +350,15 @@ export function LearnerDashboard() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center text-2xl shrink-0">
-                      {topic.icon}
+                      {statusIcons[topic.status] || "📖"}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1.5">
                         <h3 className="font-medium text-neutral-800 dark:text-neutral-100">
-                          {t(topic.nameKey)}
+                          {topic.name}
                         </h3>
                         <Badge variant="primary" size="sm">
-                          {t("learner:topicsLeft", {
-                            count: topic.questionsLeft,
-                          })}
+                          {topic.progress}%
                         </Badge>
                       </div>
                       <ProgressBar
@@ -277,8 +373,7 @@ export function LearnerDashboard() {
               </Link>
             ))}
           </div>
-        </div>
-
+        )}
       </div>
     </div>
   );

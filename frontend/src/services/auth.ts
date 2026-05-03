@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, getTokenStorage, getToken } from "./api";
 
 const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1"
@@ -7,6 +7,7 @@ const API_BASE_URL = (
 export interface LoginCredentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterPayload {
@@ -143,8 +144,24 @@ export const authService = {
         );
       }
       const data = await response.json();
-      localStorage.setItem("learnlab_auth_token", data.access);
-      localStorage.setItem("learnlab_refresh_token", data.refresh);
+
+      // Determine storage based on "remember me" preference
+      const persist = credentials.rememberMe !== false; // default true
+      // Write the preference flag to localStorage (always — it's the source of truth)
+      if (persist) {
+        localStorage.setItem("learnlab_persist", "1");
+      } else {
+        localStorage.removeItem("learnlab_persist");
+      }
+
+      const storage = getTokenStorage();
+      // Clear the other storage to avoid stale tokens
+      const otherStorage = persist ? sessionStorage : localStorage;
+      otherStorage.removeItem("learnlab_auth_token");
+      otherStorage.removeItem("learnlab_refresh_token");
+
+      storage.setItem("learnlab_auth_token", data.access);
+      storage.setItem("learnlab_refresh_token", data.refresh);
       return data;
     } catch (error) {
       if (error instanceof AuthRequestError) {
@@ -187,12 +204,16 @@ export const authService = {
   },
 
   logout: () => {
+    // Clear tokens from both storages
     localStorage.removeItem("learnlab_auth_token");
     localStorage.removeItem("learnlab_refresh_token");
+    localStorage.removeItem("learnlab_persist");
+    sessionStorage.removeItem("learnlab_auth_token");
+    sessionStorage.removeItem("learnlab_refresh_token");
   },
 
   refreshToken: async () => {
-    const refresh = localStorage.getItem("learnlab_refresh_token");
+    const refresh = getToken("learnlab_refresh_token");
     if (!refresh) throw new Error("No refresh token");
     const response = await fetch(
       `${API_BASE_URL}/auth/refresh/`,

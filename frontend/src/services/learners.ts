@@ -21,12 +21,15 @@ export const learnersService = {
   getLeaderboard: async () => {
     const response = await api.get('/auth/leaderboard/global/');
     if (!response.ok) throw new Error('Failed to fetch leaderboard');
-    return await response.json() as LeaderboardLearner[];
+    const data = await response.json();
+    // Handle both paginated ({ results: [...] }) and plain array responses
+    return (Array.isArray(data) ? data : data.results ?? []) as LeaderboardLearner[];
   },
 
   getTopicLeaderboard: async (topicId: string | number) => {
     const response = await api.get(`/auth/leaderboard/topic/${topicId}/`);
     if (!response.ok) throw new Error('Failed to fetch topic leaderboard');
-    return await response.json() as LeaderboardLearner[];
+    const data = await response.json();
+    return (Array.isArray(data) ? data : data.results ?? []) as LeaderboardLearner[];
   }
 };

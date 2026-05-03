@@ -53,6 +53,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -71,7 +72,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const user = await login({ email: email.trim(), password });
+      const user = await login({ email: email.trim(), password, rememberMe });
       showSuccess(t("auth:loginSuccess", { name: user.firstName || user.username }));
       const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       navigate(nextRoute, { replace: true });
@@ -208,6 +209,8 @@ export function LoginPage() {
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
               className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800"
             />
             <span className="text-neutral-600 dark:text-neutral-400">

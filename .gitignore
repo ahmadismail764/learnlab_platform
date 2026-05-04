@@ -23,3 +23,6 @@ backend/.env.example
 # Local database binaries archives
 pg_binaries.zip
 
+# SQLite
+db.sqlite3
+backend/db.sqlite3

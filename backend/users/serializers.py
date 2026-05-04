@@ -1,31 +1,28 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from django.db import transaction
-from .models import Learner, AdminProfile
+from .models import LearnerUser, AdminUser
 
 User = get_user_model()
 
-class UserSerializer(serializers.ModelSerializer):
+class DynamicUserSerializer(serializers.ModelSerializer):
+    profile_data = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'role', 'is_staff', 'date_joined']
-        read_only_fields = ['id', 'is_staff', 'date_joined']
+        fields = ['id', 'email', 'username', 'first_name', 'last_name', 'role', 'is_staff', 'date_joined', 'profile_data']
+        read_only_fields = ['id', 'role', 'is_staff', 'date_joined', 'profile_data']
 
-class LearnerSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = Learner
-        fields = ['id', 'user', 'total_xp', 'streak_count', 'last_practice_date']
-        read_only_fields = ['id', 'total_xp', 'streak_count', 'last_practice_date']
-
-class AdminProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    class Meta:
-        model = AdminProfile
-        fields = ['id', 'user']
-        read_only_fields = ['id']
+    def get_profile_data(self, obj):
+        if obj.role == 'learner' and hasattr(obj, 'learner_profile'):
+            profile = obj.learner_profile
+            return {
+                'total_xp': profile.total_xp,
+                'streak_count': profile.streak_count,
+                'last_practice_date': profile.last_practice_date,
+            }
+        elif obj.role == 'admin' and hasattr(obj, 'admin_profile'):
+            return {'is_admin': True}
+        return None
 
 class BaseRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -40,33 +37,18 @@ class BaseRegisterSerializer(serializers.ModelSerializer):
         return value
 
 class LearnerRegisterSerializer(BaseRegisterSerializer):
+    class Meta(BaseRegisterSerializer.Meta):
+        model = LearnerUser
+
     def create(self, validated_data):
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password=validated_data['password'],
-                first_name=validated_data.get('first_name', ''),
-                last_name=validated_data.get('last_name', ''),
-                role='learner'
-            )
-            Learner.objects.create(user=user)
-        return user
+        return LearnerUser.objects.create_user(**validated_data)
 
 class AdminRegisterSerializer(BaseRegisterSerializer):
+    class Meta(BaseRegisterSerializer.Meta):
+        model = AdminUser
+
     def create(self, validated_data):
-        with transaction.atomic():
-            user = User.objects.create_user(
-                username=validated_data['username'],
-                email=validated_data['email'],
-                password=validated_data['password'],
-                first_name=validated_data.get('first_name', ''),
-                last_name=validated_data.get('last_name', ''),
-                role='admin',
-                is_staff=True
-            )
-            AdminProfile.objects.create(user=user)
-        return user
+        return AdminUser.objects.create_user(**validated_data)
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()

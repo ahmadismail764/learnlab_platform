@@ -1,12 +1,17 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.db import models
+from django.db.models.signals import post_save
 from datetime import date, timedelta
 
+class LearnerManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role='learner')
+
+class AdminManager(UserManager):
+    def get_queryset(self):
+        return super().get_queryset().filter(role='admin')
+
 class User(AbstractUser):
-    """
-    Custom User model.
-    Extends AbstractUser to allow future customization (e.g. login by email).
-    """
     ROLE_CHOICES = (
         ('learner', 'Learner'),
         ('admin', 'Admin'),
@@ -21,40 +26,59 @@ class User(AbstractUser):
 
     def is_locked(self):
         from django.utils import timezone
-        if self.account_locked_until and self.account_locked_until > timezone.now():
-            return True
-        return False
+        return bool(self.account_locked_until and self.account_locked_until > timezone.now())
 
-    # You can add the 'updateEmail' logic as a method here or in a serializer later
     def __str__(self):
-        return self.username
+        return self.email
+
+class LearnerUser(User):
+    objects = LearnerManager()
+    
+    class Meta:
+        proxy = True
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.role = 'learner'
+        super().save(*args, **kwargs)
+
+    @property
+    def profile(self):
+        return self.learner_profile
+
+
+class AdminUser(User):
+    objects = AdminManager()
+    
+    class Meta:
+        proxy = True
+
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.role = 'admin'
+            self.is_staff = True
+            self.is_superuser = True
+        super().save(*args, **kwargs)
+        
+    @property
+    def profile(self):
+        return self.admin_profile
+
 
 class Learner(models.Model):
-    """
-    The Learner profile. Holds gamification data.
-    Linked 1-to-1 with the User.
-    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='learner_profile')
     total_xp = models.IntegerField(default=0)
     streak_count = models.IntegerField(default=0)
     last_practice_date = models.DateField(null=True, blank=True)
     
     def add_xp(self, amount):
-        """Add XP to the learner. Does NOT auto-save — caller must save."""
         self.total_xp += amount
         
     def update_streak(self):
-        """
-        Updates the learner's streak based on the last practice date.
-        - If yesterday: increment streak.
-        - If today: do nothing (already practiced).
-        - Otherwise (gap or first time): reset streak to 1.
-        Always saves the learner instance.
-        """
         today = date.today()
         if self.last_practice_date == today:
             self.save()
-            return  # Already practiced today
+            return
         
         yesterday = today - timedelta(days=1)
         if self.last_practice_date == yesterday:
@@ -69,11 +93,18 @@ class Learner(models.Model):
         return f"{self.user.username} (XP: {self.total_xp})"
 
 class AdminProfile(models.Model):
-    """
-    The Admin profile.
-    Linked 1-to-1 with the User.
-    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
     
     def __str__(self):
         return f"Admin: {self.user.username}"
+
+
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        if instance.role == 'learner':
+            Learner.objects.get_or_create(user=instance)
+        elif instance.role == 'admin':
+            AdminProfile.objects.get_or_create(user=instance)
+
+for model in [User, LearnerUser, AdminUser]:
+    post_save.connect(create_user_profile, sender=model)

@@ -16,6 +16,9 @@ import {
  */
 
 export function AuthLayout() {
+  const showIntegrationStatus = false
+  const showDataSourceBreakdown = false
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
       {/* Left side - Branding (hidden on mobile) */}
@@ -160,13 +163,17 @@ export function AuthLayout() {
         </div>
 
         <div className="w-full max-w-md">
-          <div className="mb-4 flex justify-end">
-            <IntegrationStatusBadge compact />
-          </div>
+          {showIntegrationStatus && (
+            <div className="mb-4 flex justify-end">
+              <IntegrationStatusBadge compact />
+            </div>
+          )}
 
-          <div className="mb-4">
-            <DataSourceBreakdown compact />
-          </div>
+          {showDataSourceBreakdown && (
+            <div className="mb-4">
+              <DataSourceBreakdown compact />
+            </div>
+          )}
 
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">

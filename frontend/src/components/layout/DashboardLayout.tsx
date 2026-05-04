@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar, type SidebarProps } from './Sidebar'
 import { Header } from './Header'
 import { DataSourceBreakdown, ErrorBoundary } from '@/components/common'
 import { cn } from '@/utils/cn'
+import type { UserRole } from '@/types'
 
 /**
  * DashboardLayout Component
@@ -16,18 +17,42 @@ import { cn } from '@/utils/cn'
 export interface DashboardLayoutProps {
   /** User info passed to sidebar */
   user: SidebarProps['user']
+  /** Dashboard role for role-specific layout treatment */
+  role?: UserRole
   /** Page title shown in header */
   pageTitle?: string
   /** Callback for logout */
   onLogout?: () => void
 }
 
-export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutProps) {
+export function DashboardLayout({
+  user,
+  role = user.role,
+  pageTitle,
+  onLogout,
+}: DashboardLayoutProps) {
+  const isLearner = role === 'learner'
+  const showDataSourceBreakdown = false
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  useEffect(() => {
+    const root = document.documentElement
+
+    root.setAttribute('data-dashboard-role', role)
+
+    return () => {
+      if (root.getAttribute('data-dashboard-role') === role) {
+        root.removeAttribute('data-dashboard-role')
+      }
+    }
+  }, [role])
+
   return (
-    <div className="h-screen bg-neutral-50 dark:bg-neutral-950 flex overflow-hidden">
+    <div
+      className="h-screen bg-neutral-50 dark:bg-neutral-950 flex overflow-hidden"
+      data-dashboard-role={role}
+    >
       {/* Desktop Sidebar */}
       <div className="hidden lg:block sticky top-0 h-screen">
         <Sidebar
@@ -69,7 +94,7 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
       )}
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={cn('flex-1 flex flex-col min-w-0', isLearner && 'learner-shell')}>
         <Header
           user={user}
           title={pageTitle}
@@ -79,15 +104,19 @@ export function DashboardLayout({ user, pageTitle, onLogout }: DashboardLayoutPr
         
         {/* Page content */}
         <main className={cn(
-          'flex-1 p-4 sm:p-6 lg:p-8',
-          'overflow-y-auto'
+          'flex-1 overflow-y-auto',
+          isLearner ? 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7' : 'p-4 sm:p-6 lg:p-8',
         )}>
-          <div className="mb-6">
-            <DataSourceBreakdown compact />
+          <div className={cn('w-full', isLearner && 'mx-auto max-w-[1380px] space-y-6 xl:space-y-7')}>
+            {showDataSourceBreakdown && (
+              <div className="mb-6">
+                <DataSourceBreakdown compact />
+              </div>
+            )}
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </div>
-          <ErrorBoundary>
-            <Outlet />
-          </ErrorBoundary>
         </main>
       </div>
     </div>

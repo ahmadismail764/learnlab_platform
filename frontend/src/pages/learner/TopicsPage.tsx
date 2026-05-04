@@ -406,6 +406,15 @@ export function TopicsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
+  const reducedCategories = useMemo(
+    () =>
+      topicCategories.slice(0, 2).map((category) => ({
+        ...category,
+        topics: category.topics.slice(0, 2),
+      })),
+    [],
+  );
+
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
       const newSet = new Set(prev);
@@ -446,9 +455,9 @@ export function TopicsPage() {
 
   // --- Search / filter (UC-08 Alt Flow 5a) ---
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return topicCategories;
+    if (!searchQuery.trim()) return reducedCategories;
     const q = searchQuery.toLowerCase();
-    return topicCategories
+    return reducedCategories
       .map((cat) => ({
         ...cat,
         topics: cat.topics.filter((topic) =>
@@ -456,12 +465,12 @@ export function TopicsPage() {
         ),
       }))
       .filter((cat) => cat.topics.length > 0);
-  }, [searchQuery, t]);
+  }, [searchQuery, t, reducedCategories]);
 
   // --- Due Today vs Future Reviews (UC-08 Step 3) ---
   const allTopics = useMemo(
-    () => topicCategories.flatMap((cat) => cat.topics),
-    [],
+    () => reducedCategories.flatMap((cat) => cat.topics),
+    [reducedCategories],
   );
 
   const dueTodayTopics = useMemo(

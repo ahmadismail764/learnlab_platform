@@ -7,6 +7,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { IntegrationStatusBadge } from '@/components/common'
 import { useAuth } from '@/contexts'
 import type { User } from '@/types'
+import { cn } from '@/utils/cn'
 
 /**
  * Header Component
@@ -77,6 +78,10 @@ export function Header({
   showMenuButton = false,
   onMenuClick,
 }: HeaderProps) {
+  const showIntegrationStatus = false
+  const isLearner = user?.role === 'learner'
+  const learnerControlButtonClass =
+    'rounded-full p-2.5 text-neutral-500 transition-colors hover:bg-white hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900/80 dark:hover:text-neutral-100'
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [notifications, setNotifications] = useState(mockNotifications)
@@ -118,13 +123,25 @@ export function Header({
   }
 
   return (
-    <header className="h-16 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 px-4 sm:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
+    <header
+      className={cn(
+        'sticky top-0 z-30 flex items-center justify-between gap-4 px-4 sm:px-6',
+        isLearner
+          ? 'h-[4.25rem] border-b border-neutral-200/70 bg-neutral-50/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/78'
+          : 'h-16 border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900',
+      )}
+    >
       {/* Start side (left in LTR, right in RTL) */}
       <div className="flex items-center gap-4">
         {showMenuButton && (
           <button
             onClick={onMenuClick}
-            className="p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors lg:hidden"
+            className={cn(
+              'transition-colors lg:hidden',
+              isLearner
+                ? learnerControlButtonClass
+                : 'rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800/50',
+            )}
             aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -132,30 +149,44 @@ export function Header({
         )}
         
         {title && (
-          <h1 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100 hidden sm:block">
-            {title}
-          </h1>
+          <div className="hidden sm:block">
+            <h1
+              className={cn(
+                'text-neutral-800 dark:text-neutral-100',
+                isLearner ? 'font-display text-lg font-semibold tracking-tight' : 'text-xl font-semibold',
+              )}
+            >
+              {title}
+            </h1>
+          </div>
         )}
-        <div className="hidden md:block">
-          <IntegrationStatusBadge compact />
-        </div>
+        {showIntegrationStatus && (
+          <div className="hidden md:block">
+            <IntegrationStatusBadge compact />
+          </div>
+        )}
       </div>
 
       {/* Center spacer */}
       <div className="flex-1" />
 
       {/* End side (right in LTR, left in RTL) */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         {/* Notifications */}
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}
-            className="relative p-2 rounded-lg text-neutral-500 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+            className={cn(
+              'relative transition-colors',
+              isLearner
+                ? learnerControlButtonClass
+                : 'rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800/50',
+            )}
             aria-label="Notifications"
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 end-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              <span className="absolute top-1 end-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white shadow-sm">
                 {unreadCount}
               </span>
             )}
@@ -171,7 +202,14 @@ export function Header({
               />
               
               {/* Panel */}
-              <div className="absolute end-0 top-full mt-2 w-80 sm:w-96 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800 z-50 overflow-hidden">
+              <div
+                className={cn(
+                  'absolute end-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl sm:w-96',
+                  isLearner
+                    ? 'learner-panel'
+                    : 'border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900',
+                )}
+              >
                 <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800">
                   <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Notifications</h3>
                   <div className="flex items-center gap-1">
@@ -240,17 +278,25 @@ export function Header({
         </div>
 
         {/* Theme Toggle */}
-        <ThemeToggle />
+        <ThemeToggle className={isLearner ? learnerControlButtonClass : undefined} />
 
         {/* Language Switcher */}
-        <LanguageSwitcher variant="globe" />
+        <LanguageSwitcher
+          variant="globe"
+          className={isLearner ? learnerControlButtonClass : undefined}
+        />
 
         {/* User avatar → Profile dropdown */}
         {user && (
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
+              className={cn(
+                'flex items-center gap-2 transition-colors',
+                isLearner
+                  ? 'rounded-full py-1 pe-2 ps-1 hover:bg-white dark:hover:bg-neutral-900/80'
+                  : 'rounded-lg p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800/50',
+              )}
             >
               <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
               <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
@@ -262,7 +308,14 @@ export function Header({
             {showProfileMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)} />
-                <div className="absolute end-0 top-full mt-2 w-56 bg-white dark:bg-neutral-900 rounded-xl shadow-lg border border-neutral-200 dark:border-neutral-800 z-50 overflow-hidden py-1">
+                <div
+                  className={cn(
+                    'absolute end-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-2xl py-1',
+                    isLearner
+                      ? 'learner-panel'
+                      : 'border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900',
+                  )}
+                >
                   {/* User info */}
                   <div className="px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
                     <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">

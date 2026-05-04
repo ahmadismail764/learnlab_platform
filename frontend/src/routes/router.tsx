@@ -96,6 +96,7 @@ function createDashboardElement(
 
   return (
     <DashboardLayout
+      role={requiredRole}
       user={user}
       onLogout={onLogout ?? (() => {})}
     />

@@ -1,26 +1,20 @@
 import { useMemo } from 'react'
 import {
-  Users,
-  BookOpen,
   Activity,
+  BarChart3,
+  BookOpen,
+  ChevronRight,
+  ShieldCheck,
   TrendingUp,
-  BarChart3
+  Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, CardHeader, CardContent, Button, Badge, Avatar } from '@/components/ui'
+import { Card, Button, Badge, Avatar } from '@/components/ui'
+import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
 import { useCurrentUser } from '@/contexts'
 import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
 import type { LearnerProfile } from '@/services/learners'
-
-/**
- * AdminDashboard
- * 
- * System overview for administrators with branded visual identity.
- * Backend-integrated:
- * - Overview stats from /api/v1/analytics/aggregated/
- * - Leaderboard/user list from /api/v1/auth/leaderboard/global/
- */
 
 export function AdminDashboard() {
   const { t } = useTranslation(['admin', 'common', 'auth', 'time'])
@@ -31,7 +25,6 @@ export function AdminDashboard() {
   const leaderboard = (leaderboardRaw ?? []) as LearnerProfile[]
   const isLoading = metricsLoading || lbLoading
 
-  // Derive stats from real data with fallbacks
   const stats = useMemo(() => ({
     totalLearners: leaderboard.length || 0,
     activeThisWeek: metrics?.active_users['7_days'] ?? 0,
@@ -41,7 +34,6 @@ export function AdminDashboard() {
       : 0,
   }), [metrics, leaderboard])
 
-  // Top learners for the "recent users" section
   const topLearners = useMemo(() =>
     leaderboard.slice(0, 5).map((entry) => ({
       id: String(entry.id),
@@ -58,185 +50,193 @@ export function AdminDashboard() {
     { nameKey: 'admin:database', value: '99.9%', status: 'good' },
     { nameKey: 'admin:storage', value: '67%', status: 'warning' },
     { nameKey: 'admin:activeSessions', value: String(stats.activeThisWeek), status: stats.activeThisWeek > 0 ? 'good' : 'warning' },
-  ]
+  ] as const
 
   return (
     <div className="space-y-6">
-      {/* Hero — branded gradient with admin context */}
-      <Card className="relative overflow-hidden bg-linear-to-br from-secondary-600 via-secondary-500 to-primary-600 text-white border-0">
-        {/* Decorative graph nodes */}
-        <div className="absolute inset-0 opacity-[0.06] pointer-events-none">
-          <svg className="w-full h-full" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <circle cx="480" cy="30" r="5" fill="white" />
-            <circle cx="530" cy="70" r="4" fill="white" />
-            <circle cx="440" cy="90" r="6" fill="white" />
-            <circle cx="510" cy="130" r="5" fill="white" />
-            <line x1="480" y1="30" x2="530" y2="70" stroke="white" strokeWidth="1.5" />
-            <line x1="530" y1="70" x2="510" y2="130" stroke="white" strokeWidth="1.5" />
-            <line x1="440" y1="90" x2="510" y2="130" stroke="white" strokeWidth="1.5" />
-            <line x1="480" y1="30" x2="440" y2="90" stroke="white" strokeWidth="1.5" />
-          </svg>
-        </div>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <PageIntro
+          eyebrow={t('admin:adminDashboard')}
+          title={t('admin:welcomeBackAdmin', { name: user.firstName })}
+          description="Keep an eye on learner activity, review volume, and system health without digging through noisy dashboards."
+          icon={<BarChart3 className="h-6 w-6" />}
+          tone="secondary"
+        />
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-4 h-4 text-accent-300" />
-            <p className="text-white/70 text-sm">{t('admin:adminDashboard')}</p>
-          </div>
-          <h1 className="text-2xl font-bold font-display">
-            {t('admin:welcomeBackAdmin', { name: user.firstName })}
-          </h1>
-        </div>
-      </Card>
+        <Card className="dashboard-panel">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
+            System snapshot
+          </p>
 
+          {isLoading ? (
+            <div className="mt-4 space-y-3">
+              <Skeleton width="58%" height={34} />
+              <Skeleton width="100%" height={14} />
+              <Skeleton width="100%" height={14} />
+            </div>
+          ) : (
+            <>
+              <p className="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
+                {stats.activeThisWeek} active this week
+              </p>
+              <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                Learner activity is the quickest signal for whether content and review flow are staying healthy.
+              </p>
 
-
-      {/* Stats Grid — branded */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-secondary-100 dark:bg-secondary-900/30 rounded-xl group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-            </div>
-            <div>
-              {isLoading ? (
-                <Skeleton width={48} height={28} />
-              ) : (
-                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.totalLearners}</p>
-              )}
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalLearners')}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary-100 dark:bg-primary-900/30 rounded-xl group-hover:scale-105 transition-transform">
-              <Activity className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              {isLoading ? (
-                <Skeleton width={48} height={28} />
-              ) : (
-                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.activeThisWeek}</p>
-              )}
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:activeThisWeek')}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-accent-100 dark:bg-accent-900/30 rounded-xl group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-            </div>
-            <div>
-              {isLoading ? (
-                <Skeleton width={48} height={28} />
-              ) : (
-                <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.totalReviews.toLocaleString()}</p>
-              )}
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalReviews', 'Total reviews')}</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5 text-secondary-700 dark:text-secondary-300" />
-            </div>
-            <div>
-              {isLoading ? (
-                <Skeleton width={48} height={28} />
-              ) : (
-                <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{stats.avgRetention}%</p>
-              )}
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:retention', 'Retention')}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Top Learners */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader
-              title={t('admin:topLearners')}
-              action={<Button variant="ghost" size="sm">{t('common:viewAll')}</Button>}
-            />
-            <CardContent>
-              {isLoading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3 py-3">
-                      <Skeleton variant="circular" width={36} height={36} />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton width="50%" />
-                        <Skeleton width="30%" height={12} />
-                      </div>
-                    </div>
-                  ))}
+              <div className="mt-5 space-y-3 border-t border-neutral-200/80 pt-4 dark:border-neutral-800">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">Reviews logged</span>
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
+                    {stats.totalReviews.toLocaleString()}
+                  </span>
                 </div>
-              ) : topLearners.length === 0 ? (
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 text-center py-6">
-                  No learner data available yet.
-                </p>
-              ) : (
-                <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                  {topLearners.map((u, index) => (
-                    <div key={u.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                      <div className="flex items-center gap-3">
-                        <Avatar name={u.name} size="sm" />
-                        <div>
-                          <p className="font-medium text-neutral-800 dark:text-neutral-100">{u.name}</p>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400">{u.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge
-                          variant={index < 3 ? 'primary' : 'secondary'}
-                          size="sm"
-                        >
-                          {u.xp.toLocaleString()} XP
-                        </Badge>
-                        <span className="text-sm text-neutral-400">
-                          🔥 {u.streak}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">Retention estimate</span>
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
+                    {stats.avgRetention}%
+                  </span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            </>
+          )}
+        </Card>
+      </section>
 
-        {/* System Health */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader title={t('admin:systemHealth')} />
-            <CardContent>
-              <div className="space-y-3">
-                {systemHealth.map((item) => (
-                  <div key={item.nameKey} className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">{t(item.nameKey)}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">{item.value}</span>
-                      <Badge
-                        dot
-                        variant={item.status === 'good' ? 'success' : 'warning'}
-                      />
+      <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <PageStatCard
+          icon={<Users className="h-5 w-5" />}
+          label={t('admin:totalLearners')}
+          value={isLoading ? '--' : stats.totalLearners}
+          helper="Tracked accounts"
+          tone="secondary"
+        />
+        <PageStatCard
+          icon={<Activity className="h-5 w-5" />}
+          label={t('admin:activeThisWeek')}
+          value={isLoading ? '--' : stats.activeThisWeek}
+          helper="Learners with recent activity"
+          tone="success"
+        />
+        <PageStatCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label={t('admin:totalReviews', 'Total reviews')}
+          value={isLoading ? '--' : stats.totalReviews.toLocaleString()}
+          helper="All recorded review events"
+          tone="primary"
+        />
+        <PageStatCard
+          icon={<BookOpen className="h-5 w-5" />}
+          label={t('admin:retention', 'Retention')}
+          value={isLoading ? '--' : `${stats.avgRetention}%`}
+          helper="Estimated recall health"
+          tone="accent"
+        />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_320px]">
+        <Card className="dashboard-panel">
+          <SectionHeading
+            title={t('admin:topLearners')}
+            description="A quick read on who is consistently converting practice into progress."
+            action={
+              <Button variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4 rtl:rotate-180" />}>
+                {t('common:viewAll')}
+              </Button>
+            }
+          />
+
+          <div className="mt-5">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 border-b border-neutral-100 pb-4 last:border-b-0 last:pb-0 dark:border-neutral-800"
+                  >
+                    <Skeleton variant="circular" width={36} height={36} />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton width="45%" />
+                      <Skeleton width="30%" height={12} />
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
+            ) : topLearners.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-neutral-200/80 bg-neutral-50/80 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  No learner data available yet.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {topLearners.map((entry, index) => (
+                  <div key={entry.id} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-100 text-sm font-semibold text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300">
+                        {index + 1}
+                      </div>
+                      <Avatar name={entry.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-neutral-800 dark:text-neutral-100">
+                          {entry.name}
+                        </p>
+                        <p className="truncate text-sm text-neutral-500 dark:text-neutral-400">
+                          {entry.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" size="sm">
+                        {entry.xp.toLocaleString()} XP
+                      </Badge>
+                      <Badge variant="outline" size="sm">
+                        {entry.streak} day streak
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <div className="space-y-6">
+          <Card className="dashboard-panel">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-secondary-600 dark:text-secondary-300" />
+              <h2 className="font-display text-xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
+                {t('admin:systemHealth')}
+              </h2>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {systemHealth.map((item) => (
+                <div key={item.nameKey} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200/70 bg-white/65 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900/60">
+                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {t(item.nameKey)}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
+                      {item.value}
+                    </span>
+                    <Badge dot variant={item.status === 'good' ? 'success' : 'warning'} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card className="dashboard-panel-soft border-0">
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              Admin note
+            </p>
+            <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
+              If active users stay healthy while retention drops, the problem is usually content quality or review pacing, not acquisition.
+            </p>
           </Card>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

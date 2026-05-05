@@ -79,8 +79,7 @@ export function Header({
   onMenuClick,
 }: HeaderProps) {
   const showIntegrationStatus = false
-  const isLearner = user?.role === 'learner'
-  const learnerControlButtonClass =
+  const dashboardControlButtonClass =
     'rounded-full p-2.5 text-neutral-500 transition-colors hover:bg-white hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900/80 dark:hover:text-neutral-100'
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
@@ -126,9 +125,7 @@ export function Header({
     <header
       className={cn(
         'sticky top-0 z-30 flex items-center justify-between gap-4 px-4 sm:px-6',
-        isLearner
-          ? 'h-[4.25rem] border-b border-neutral-200/70 bg-neutral-50/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/78'
-          : 'h-16 border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900',
+        'h-[4.25rem] border-b border-neutral-200/70 bg-neutral-50/90 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/78',
       )}
     >
       {/* Start side (left in LTR, right in RTL) */}
@@ -138,9 +135,7 @@ export function Header({
             onClick={onMenuClick}
             className={cn(
               'transition-colors lg:hidden',
-              isLearner
-                ? learnerControlButtonClass
-                : 'rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800/50',
+              dashboardControlButtonClass,
             )}
             aria-label="Open menu"
           >
@@ -153,7 +148,7 @@ export function Header({
             <h1
               className={cn(
                 'text-neutral-800 dark:text-neutral-100',
-                isLearner ? 'font-display text-lg font-semibold tracking-tight' : 'text-xl font-semibold',
+                'font-display text-lg font-semibold tracking-tight',
               )}
             >
               {title}
@@ -178,9 +173,7 @@ export function Header({
             onClick={() => setShowNotifications(!showNotifications)}
             className={cn(
               'relative transition-colors',
-              isLearner
-                ? learnerControlButtonClass
-                : 'rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800/50',
+              dashboardControlButtonClass,
             )}
             aria-label="Notifications"
           >
@@ -205,9 +198,7 @@ export function Header({
               <div
                 className={cn(
                   'absolute end-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl sm:w-96',
-                  isLearner
-                    ? 'learner-panel'
-                    : 'border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900',
+                  'dashboard-panel',
                 )}
               >
                 <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800">
@@ -278,12 +269,12 @@ export function Header({
         </div>
 
         {/* Theme Toggle */}
-        <ThemeToggle className={isLearner ? learnerControlButtonClass : undefined} />
+        <ThemeToggle className={dashboardControlButtonClass} />
 
         {/* Language Switcher */}
         <LanguageSwitcher
           variant="globe"
-          className={isLearner ? learnerControlButtonClass : undefined}
+          className={dashboardControlButtonClass}
         />
 
         {/* User avatar → Profile dropdown */}
@@ -293,9 +284,7 @@ export function Header({
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className={cn(
                 'flex items-center gap-2 transition-colors',
-                isLearner
-                  ? 'rounded-full py-1 pe-2 ps-1 hover:bg-white dark:hover:bg-neutral-900/80'
-                  : 'rounded-lg p-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800/50',
+                'rounded-full py-1 pe-2 ps-1 hover:bg-white dark:hover:bg-neutral-900/80',
               )}
             >
               <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
@@ -311,9 +300,7 @@ export function Header({
                 <div
                   className={cn(
                     'absolute end-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-2xl py-1',
-                    isLearner
-                      ? 'learner-panel'
-                      : 'border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900',
+                    'dashboard-panel',
                   )}
                 >
                   {/* User info */}

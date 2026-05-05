@@ -147,14 +147,17 @@ export function Sidebar({
     admin: t("auth:admin"),
   };
 
+  const activeIconClass = isLearner
+    ? 'text-primary-600 dark:text-primary-300'
+    : 'text-secondary-600 dark:text-secondary-300'
+  const activeIndicatorClass = isLearner ? 'bg-primary-500' : 'bg-secondary-500'
+
   return (
     <aside
       className={cn(
         "flex h-screen flex-col border-e overflow-hidden transition-[width] duration-300 ease-out",
-        isLearner
-          ? "border-neutral-200/70 bg-white/82 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-950/82"
-          : "border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900",
-        isCollapsed ? "w-20" : isLearner ? "w-[17.5rem] xl:w-[18rem]" : "w-64",
+        "border-neutral-200/70 bg-white/82 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/82",
+        isCollapsed ? "w-20" : isLearner ? "w-[17.5rem] xl:w-[18rem]" : "w-[17rem] xl:w-[17.5rem]",
       )}
     >
       {/* Logo + Collapse Toggle */}
@@ -162,7 +165,7 @@ export function Sidebar({
         className={cn(
           'relative flex h-[4.25rem] items-center border-b',
           isCollapsed ? 'justify-center px-3' : 'justify-between gap-3 px-5',
-          isLearner ? 'border-neutral-200/70 dark:border-neutral-800' : 'border-neutral-200 dark:border-neutral-800',
+          'border-neutral-200/70 dark:border-neutral-800',
         )}
       >
         {isCollapsed ? <LogoMark size={32} /> : <LogoFull iconSize={32} />}
@@ -203,25 +206,21 @@ export function Sidebar({
                     'group relative flex items-center rounded-xl text-sm transition-colors duration-200',
                     isCollapsed ? 'justify-center px-3 py-3' : 'gap-3 px-3.5 py-3',
                     isActive
-                      ? isLearner
-                        ? 'bg-white text-neutral-900 shadow-sm ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:text-white dark:ring-neutral-700'
-                        : 'bg-primary-50 font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400'
+                      ? 'bg-white text-neutral-900 shadow-sm ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:text-white dark:ring-neutral-700'
                       : isLearner
                         ? 'text-neutral-600 hover:bg-neutral-100/80 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-900/72 dark:hover:text-white'
                         : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800/50 dark:hover:text-neutral-200',
                   )}
                   title={isCollapsed ? label : undefined}
                 >
-                  {!isCollapsed && isLearner && isActive && (
-                    <span className="absolute inset-y-2 start-1 w-0.5 rounded-full bg-primary-500" />
+                  {!isCollapsed && isActive && (
+                    <span className={cn("absolute inset-y-2 start-1 w-0.5 rounded-full", activeIndicatorClass)} />
                   )}
                   <Icon
                     className={cn(
                       'h-4 w-4 shrink-0',
                       isActive
-                        ? isLearner
-                          ? 'text-primary-600 dark:text-primary-300'
-                          : 'text-primary-700 dark:text-primary-300'
+                        ? activeIconClass
                         : 'text-neutral-400 transition-colors group-hover:text-neutral-600 dark:text-neutral-500 dark:group-hover:text-neutral-300',
                     )}
                   />
@@ -235,9 +234,7 @@ export function Sidebar({
       {/* User section */}
       <div
         className={cn(
-          isLearner
-            ? 'border-t border-neutral-200/70 p-3 dark:border-neutral-800'
-            : 'border-t border-neutral-200 p-4 dark:border-neutral-800',
+          'border-t border-neutral-200/70 p-3 dark:border-neutral-800',
           isCollapsed && "px-2",
         )}
       >

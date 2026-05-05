@@ -204,17 +204,17 @@ export function ProgressPage() {
             </div>
           </div>
 
-          <div className="rounded-[1.75rem] bg-neutral-950 p-5 text-white shadow-[0_28px_50px_-30px_rgba(15,23,42,0.7)] dark:bg-white/10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/60">
+          <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/90 p-5 text-neutral-950 shadow-[0_18px_32px_-26px_rgba(15,23,42,0.22)] dark:border-neutral-700 dark:bg-neutral-900/72 dark:text-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 dark:text-white/60">
               Retention index
             </p>
 
             {isLoading ? (
               <div className="mt-4 flex items-center gap-4">
-                <Skeleton variant="circular" width={88} height={88} className="bg-white/15" />
+                <Skeleton variant="circular" width={88} height={88} />
                 <div className="flex-1 space-y-2">
-                  <Skeleton width="70%" className="bg-white/15" />
-                  <Skeleton width="100%" height={12} className="bg-white/12" />
+                  <Skeleton width="70%" />
+                  <Skeleton width="100%" height={12} />
                 </div>
               </div>
             ) : (
@@ -234,7 +234,7 @@ export function ProgressPage() {
                   <p className="text-2xl font-semibold tracking-tight">
                     {overallMastery}%
                   </p>
-                  <p className="mt-1 text-sm text-white/70">
+                  <p className="mt-1 text-sm text-neutral-600 dark:text-white/70">
                     {overallMastery >= 70
                       ? 'Strong recall across the course.'
                       : overallMastery >= 40

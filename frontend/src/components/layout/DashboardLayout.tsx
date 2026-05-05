@@ -31,7 +31,7 @@ export function DashboardLayout({
   pageTitle,
   onLogout,
 }: DashboardLayoutProps) {
-  const isLearner = role === 'learner'
+  const isDashboard = Boolean(role)
   const showDataSourceBreakdown = false
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -94,7 +94,7 @@ export function DashboardLayout({
       )}
 
       {/* Main content area */}
-      <div className={cn('flex-1 flex flex-col min-w-0', isLearner && 'learner-shell')}>
+      <div className={cn('flex-1 flex flex-col min-w-0', isDashboard && 'dashboard-shell')}>
         <Header
           user={user}
           title={pageTitle}
@@ -105,9 +105,9 @@ export function DashboardLayout({
         {/* Page content */}
         <main className={cn(
           'flex-1 overflow-y-auto',
-          isLearner ? 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7' : 'p-4 sm:p-6 lg:p-8',
+          isDashboard ? 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7' : 'p-4 sm:p-6 lg:p-8',
         )}>
-          <div className={cn('w-full', isLearner && 'mx-auto max-w-[1380px] space-y-6 xl:space-y-7')}>
+          <div className={cn('w-full', isDashboard && 'mx-auto max-w-[1420px] space-y-6 xl:space-y-7')}>
             {showDataSourceBreakdown && (
               <div className="mb-6">
                 <DataSourceBreakdown compact />

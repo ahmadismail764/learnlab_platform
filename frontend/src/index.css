@@ -110,31 +110,32 @@ html {
  * on desktop without shrinking mobile readability.
  */
 @media (min-width: 1024px) {
-  html[data-dashboard-role="learner"] {
+  html[data-dashboard-role] {
     font-size: 93.75%;
   }
 }
 
 @media (min-width: 1200px) {
-  html[data-dashboard-role="learner"] {
+  html[data-dashboard-role] {
     font-size: 90.625%;
   }
 }
 
 @media (min-width: 1536px) {
-  html[data-dashboard-role="learner"] {
+  html[data-dashboard-role] {
     font-size: 87.5%;
   }
 }
 
-html[data-dashboard-role="learner"] body {
+html[data-dashboard-role] body {
   background-color: #f6f8fb;
 }
 
-html.dark[data-dashboard-role="learner"] body {
-  background-color: #020617;
+html.dark[data-dashboard-role] body {
+  background-color: #0b1220;
 }
 
+.dashboard-shell,
 .learner-shell {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 248, 251, 0.78) 12rem, transparent 30rem),
@@ -142,13 +143,15 @@ html.dark[data-dashboard-role="learner"] body {
     radial-gradient(circle at top right, rgba(13, 148, 136, 0.05) 0%, transparent 20%);
 }
 
+html.dark .dashboard-shell,
 html.dark .learner-shell {
   background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.9) 0%, rgba(2, 6, 23, 0.76) 10rem, transparent 28rem),
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.12) 0%, transparent 24%),
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.08) 0%, transparent 20%);
+    linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.72) 10rem, transparent 28rem),
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.1) 0%, transparent 24%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.07) 0%, transparent 20%);
 }
 
+.dashboard-panel,
 .learner-panel {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(226, 232, 240, 0.88);
@@ -159,14 +162,16 @@ html.dark .learner-shell {
   -webkit-backdrop-filter: blur(10px);
 }
 
+html.dark .dashboard-panel,
 html.dark .learner-panel {
-  background: rgba(15, 23, 42, 0.84);
-  border: 1px solid rgba(51, 65, 85, 0.78);
+  background: rgba(30, 41, 59, 0.76);
+  border: 1px solid rgba(71, 85, 105, 0.68);
   box-shadow:
-    0 22px 40px -28px rgba(0, 0, 0, 0.5),
-    0 8px 18px -12px rgba(0, 0, 0, 0.28);
+    0 22px 40px -30px rgba(0, 0, 0, 0.42),
+    0 8px 18px -14px rgba(0, 0, 0, 0.22);
 }
 
+.dashboard-panel-soft,
 .learner-panel-soft {
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(226, 232, 240, 0.72);
@@ -177,12 +182,13 @@ html.dark .learner-panel {
   -webkit-backdrop-filter: blur(8px);
 }
 
+html.dark .dashboard-panel-soft,
 html.dark .learner-panel-soft {
-  background: rgba(15, 23, 42, 0.72);
-  border: 1px solid rgba(51, 65, 85, 0.64);
+  background: rgba(30, 41, 59, 0.58);
+  border: 1px solid rgba(71, 85, 105, 0.54);
   box-shadow:
-    0 16px 28px -22px rgba(0, 0, 0, 0.42),
-    0 6px 14px -10px rgba(0, 0, 0, 0.24);
+    0 16px 28px -24px rgba(0, 0, 0, 0.36),
+    0 6px 14px -12px rgba(0, 0, 0, 0.2);
 }
 
 /* RTL Support - Arabic */

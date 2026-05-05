@@ -163,7 +163,7 @@ export function AnalyticsPage() {
 
       {/* UC-04 Alternate Flow 2a: Insufficient data empty state */}
       {hasInsufficientData ? (
-        <Card className="text-center py-12">
+        <Card className="dashboard-panel text-center py-12">
           <CardContent>
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
@@ -209,7 +209,7 @@ export function AnalyticsPage() {
       </div>
 
       {/* UC-04 Step 3: FIRe Metrics Section */}
-      <Card>
+      <Card className="dashboard-panel">
         <CardHeader
           title={t('admin:fsrsMetrics')}
           subtitle={t('admin:fsrsMetricsDescription')}
@@ -249,7 +249,7 @@ export function AnalyticsPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Topic Performance */}
         <div className="lg:col-span-2">
-          <Card>
+          <Card className="dashboard-panel">
             <CardHeader 
               title={t('admin:topicPerformance')}
               subtitle={t('admin:accuracyByTopic')}
@@ -313,7 +313,7 @@ export function AnalyticsPage() {
 
         {/* Difficulty Breakdown */}
         <div className="space-y-6">
-          <Card>
+          <Card className="dashboard-panel">
             <CardHeader title={t('admin:difficultyBreakdown')} />
             <CardContent>
               <div className="flex justify-around">
@@ -357,7 +357,7 @@ export function AnalyticsPage() {
       {/* Weekly Activity & Top Learners */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Weekly Activity */}
-        <Card>
+        <Card className="dashboard-panel">
           <CardHeader 
             title={t('admin:weeklyActivity')}
             subtitle={t('admin:last7Days')}
@@ -385,7 +385,7 @@ export function AnalyticsPage() {
         </Card>
 
         {/* Top Learners */}
-        <Card>
+        <Card className="dashboard-panel">
           <CardHeader 
             title={t('admin:topLearners')}
             subtitle={t('admin:byAccuracy')}
@@ -425,7 +425,7 @@ export function AnalyticsPage() {
       </div>
 
       {/* Questions Stats */}
-      <Card>
+      <Card className="dashboard-panel">
         <CardHeader title={t('admin:questionStatistics')} />
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">

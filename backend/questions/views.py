@@ -1,4 +1,5 @@
 import random
+import uuid
 from collections import defaultdict
 
 from django.db import transaction
@@ -29,7 +30,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user and request.user.is_staff
 
 class TopicViewSet(viewsets.ModelViewSet):
-    queryset = Topic.objects.annotate(question_count=Count('knowledge_points__questions'))
+    queryset = Topic.objects.annotate(question_count=Count('questions'))
     serializer_class = TopicSerializer
     permission_classes = [IsAdminOrReadOnly]
 
@@ -40,7 +41,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             from users.models import Learner
             learners = Learner.objects.all()
             masteries = [
-                TopicMastery(learner=l, topic=topic, status='new')
+                TopicMastery(learner=l, topic=topic, state='new')
                 for l in learners
             ]
             TopicMastery.objects.bulk_create(masteries, ignore_conflicts=True)
@@ -49,7 +50,7 @@ class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Question.objects.all()
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['knowledge_point__topic', 'tier']
+    filterset_fields = ['topic', 'tier']
     serializer_class = QuestionSerializer
 
 class PracticeSessionViewSet(viewsets.ModelViewSet):
@@ -102,13 +103,13 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         topic_ids = [t.id for t in selected_topics]
         all_questions = list(
             Question.objects.filter(
-                knowledge_point__topic_id__in=topic_ids,
-            ).select_related('knowledge_point__topic')
+                topic_id__in=topic_ids,
+            ).select_related('topic')
         )
 
-        questions_by_topic: dict[int, list] = defaultdict(list)
+        questions_by_topic: dict[uuid.UUID, list] = defaultdict(list)
         for q in all_questions:
-            questions_by_topic[q.knowledge_point.topic_id].append(q)
+            questions_by_topic[q.topic_id].append(q)
 
         selected_questions = []
         for topic in selected_topics:
@@ -193,11 +194,10 @@ class InteractionViewSet(viewsets.ViewSet):
             question=question,
             is_correct=is_correct,
             user_response='Correct' if is_correct else 'Incorrect',
-            confidence_rating=request.data.get('confidence_rating', 3 if is_correct else 1),
         )
 
         # 2. FSRS review
-        topic = question.knowledge_point.topic
+        topic = question.topic
         services.process_review(learner, topic, interaction)
 
         # 3. Gamification

@@ -12,16 +12,16 @@ class TopicSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'description', 'parent_module', 'question_count']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    topic_name = serializers.CharField(source='knowledge_point.topic.name', read_only=True)
-
+    topic_name = serializers.CharField(source='topic.name', read_only=True)
+    id = serializers.UUIDField(source='topic.id', read_only=True)
     class Meta:
         model = Question
-        fields = ['id', 'knowledge_point', 'topic_name', 'text', 'choices', 'correct_answer_index', 'tier', 'explanation_video_url']
+        fields = ['id', 'topic', 'topic_name', 'text', 'choices', 'correct_answer_index', 'tier']
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['id', 'knowledge_point', 'text', 'choices', 'correct_answer_index', 'tier', 'explanation_video_url']
+        fields = ['id', 'topic', 'text', 'choices', 'correct_answer_index', 'tier']
 
 class SingleQuestionInteractionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,8 +61,8 @@ class TopicMasterySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TopicMastery
-        fields = ['id', 'learner', 'topic', 'topic_name', 'difficulty', 'stability', 'reps', 'lapses', 'state', 'last_review', 'next_review', 'retrievability']
-        read_only_fields = ['learner', 'topic', 'difficulty', 'stability', 'reps', 'lapses', 'last_review', 'retrievability']
+        fields = ['id', 'learner', 'topic', 'topic_name', 'difficulty', 'stability', 'reps', 'state', 'last_review', 'next_review', 'retrievability']
+        read_only_fields = ['learner', 'topic', 'difficulty', 'stability', 'reps', 'last_review', 'retrievability']
 
     def get_retrievability(self, obj) -> float:
         if obj.stability is None or obj.last_review is None:

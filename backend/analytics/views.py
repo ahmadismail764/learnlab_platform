@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Avg, Count
 from users.models import Learner
-from questions.models import TopicMastery, PracticeSession
+from questions.models import SubtopicMastery, PracticeSession
 from datetime import timedelta
 from django.utils import timezone
 import math
@@ -31,16 +31,13 @@ class AggregatedMetricsView(APIView):
         active_7_days = Learner.objects.filter(last_practice_date__gte=now.date() - timedelta(days=7)).count()
         active_30_days = Learner.objects.filter(last_practice_date__gte=now.date() - timedelta(days=30)).count()
 
-        # 3. Get Topic Mastery Averages
-        mastery_stats = TopicMastery.objects.aggregate(
+        # 3. Get Subtopic Mastery Averages
+        mastery_stats = SubtopicMastery.objects.aggregate(
             avg_stability=Avg('stability'),
             avg_difficulty=Avg('difficulty')
         )
 
         # 4. Calculate Retention Metrics (Simplified representation)
-        # Retention = Average Retrievability across all mastery items
-        # Since retrievability is a formula, we can't easily aggregate it in SQL
-        # We'll take a sample or average stability to estimate
         avg_stability = mastery_stats['avg_stability'] or 0
 
         # R = e^(t/s * ln(0.9)), assuming t=1 (1 day since last review)
@@ -59,29 +56,29 @@ class AggregatedMetricsView(APIView):
 
 """
     Retrieves specific performance analytics, mastery averages, 
-    and stability distribution for a given topic.
+    and stability distribution for a given subtopic.
 """
-class TopicAnalyticsView(APIView):
+class SubtopicAnalyticsView(APIView):
     permission_classes = [permissions.IsAdminUser]
 
     
-    def get(self, request, topic_id):
-        # Get specific analytics for a topic
-        stats = TopicMastery.objects.filter(topic_id=topic_id).aggregate(
+    def get(self, request, subtopic_id):
+        # Get specific analytics for a subtopic
+        stats = SubtopicMastery.objects.filter(subtopic_id=subtopic_id).aggregate(
             avg_stability=Avg('stability'),
             avg_difficulty=Avg('difficulty'),
             learner_count=Count('learner', distinct=True)
         )
         
-        # Performance distribution (e.g. how many learners in stability tiers)
+        # Performance distribution
         distribution = {
-            "low_stability": TopicMastery.objects.filter(topic_id=topic_id, stability__lt=5).count(),
-            "medium_stability": TopicMastery.objects.filter(topic_id=topic_id, stability__gte=5, stability__lt=20).count(),
-            "high_stability": TopicMastery.objects.filter(topic_id=topic_id, stability__gte=20).count()
+            "low_stability": SubtopicMastery.objects.filter(subtopic_id=subtopic_id, stability__lt=5).count(),
+            "medium_stability": SubtopicMastery.objects.filter(subtopic_id=subtopic_id, stability__gte=5, stability__lt=20).count(),
+            "high_stability": SubtopicMastery.objects.filter(subtopic_id=subtopic_id, stability__gte=20).count()
         }
 
         return Response({
-            "topic_id": topic_id,
+            "subtopic_id": subtopic_id,
             "metrics": stats,
             "distribution": distribution
         })

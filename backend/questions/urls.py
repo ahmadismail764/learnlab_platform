@@ -1,12 +1,20 @@
 from rest_framework.routers import DefaultRouter
 from django.urls import path, include
-from .views import TopicViewSet, QuestionViewSet, PracticeSessionViewSet, TopicMasteryViewSet, InteractionViewSet
+from .views import (
+    TopicViewSet, 
+    SubtopicViewSet,
+    QuestionViewSet, 
+    PracticeSessionViewSet, 
+    SubtopicMasteryViewSet, 
+    InteractionViewSet
+)
 
 router = DefaultRouter()
 router.register('topics', TopicViewSet)
+router.register('subtopics', SubtopicViewSet)
 router.register('questions', QuestionViewSet)
 router.register('sessions', PracticeSessionViewSet, basename='practicesession')
-router.register('mastery', TopicMasteryViewSet, basename='topicmastery')
+router.register('mastery', SubtopicMasteryViewSet, basename='subtopicmastery')
 router.register('interactions', InteractionViewSet, basename='interaction')
 
 urlpatterns = [

@@ -1,70 +1,93 @@
 from django.db import models
-from django.conf import settings
+from django.utils import timezone
 from users.models import Learner
 import uuid
+
 
 class Topic(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
-    description = models.TextField(blank=True, help_text="Short summary of the topic")
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Subtopic(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='subtopics')
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.topic.name} → {self.name}"
 
 
 class Question(models.Model):
+    TIER_CHOICES = [
+        (1, 'Concept'),
+        (2, 'Application'),
+        (3, 'Synthesis'),
+    ]
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='questions', null=True, blank=True)
-    text = models.TextField(help_text="The question string")
-    choices = models.JSONField(default=list) 
+    subtopic = models.ForeignKey(Subtopic, on_delete=models.CASCADE, related_name='questions')
+    text = models.TextField()
+    choices = models.JSONField(default=list)
     correct_answer_index = models.IntegerField()
-    
-    # Adaptive Scaffolding Field
-    tier = models.IntegerField(default=1, help_text="1=Concept, 2=Application, 3=Synthesis") # <--- NEW
-    # explanation_video_url = models.URLField(null=True, blank=True)
+    tier = models.IntegerField(default=1, choices=TIER_CHOICES, help_text="1=Concept, 2=Application, 3=Synthesis")
+
+    def __str__(self):
+        return f"[{self.subtopic.name}] T{self.tier}: {self.text[:60]}"
 
 
 class PracticeSession(models.Model):
-    SESSION_TYPES = (
-        ('adaptive', 'Adaptive'),
-        ('quiz', 'Quiz'),
-        ('review', 'Review')
-    )
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='practice_sessions')
-    # session_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='adaptive')
-    questions = models.ManyToManyField(Question, related_name='practice_sessions')
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     total_xp_earned = models.IntegerField(default=0)
 
+    def __str__(self):
+        return f"Session {self.id} — {self.learner}"
 
-class SingleQuestionInteraction(models.Model):
-    session = models.ForeignKey(PracticeSession, on_delete=models.CASCADE, related_name='interactions')
+
+class QuestionResponse(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session = models.ForeignKey(PracticeSession, on_delete=models.CASCADE, related_name='responses')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    user_response = models.CharField(max_length=255, null=True, blank=True)
     is_correct = models.BooleanField(default=False)
-
-class TopicMastery(models.Model):
-    STATE_CHOICES = (
-        ('new', 'New'),
-        ('learning', 'Learning'),
-        ('review', 'Review'),
-        ('relearning', 'Relearning'),
+    confidence_rating = models.IntegerField(
+        default=3,
+        help_text="1=Total guess, 5=Completely sure"
     )
-    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
+    time_taken_seconds = models.FloatField(default=0.0)
 
-    difficulty = models.FloatField(default=5.0, help_text="FSRS difficulty parameter (1-10)")
+    def __str__(self):
+        return f"Response to Q:{self.question.id} in Session:{self.session.id}"
+
+
+class SubtopicMastery(models.Model):
+    STATE_CHOICES = [
+        ('NEW', 'New'),
+        ('LEARNING', 'Learning'),
+        ('REVIEW', 'Review'),
+        ('RELEARNING', 'Relearning'),
+    ]
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
+    subtopic = models.ForeignKey(Subtopic, on_delete=models.CASCADE, related_name='masteries')
+
+    difficulty = models.FloatField(default=5.0, help_text="FSRS difficulty (1–10)")
     stability = models.FloatField(default=1.0, help_text="FSRS stability in days")
-    
     reps = models.IntegerField(default=0, help_text="Number of successful reviews")
-    state = models.CharField(max_length=20, choices=STATE_CHOICES, default='new')
+    lapses = models.IntegerField(default=0, help_text="Number of times forgotten")
+    state = models.CharField(max_length=20, choices=STATE_CHOICES, default='NEW')
 
     last_review = models.DateTimeField(null=True, blank=True)
     next_review = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('learner', 'topic')
+        unique_together = ('learner', 'subtopic')
 
-# class Notification(models.Model):
-#     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='notifications')
-#     topics = models.ManyToManyField(Topic)
-#     sent_at = models.DateTimeField(auto_now_add=True)
-#     responded_at = models.DateTimeField(null=True, blank=True)
+    def __str__(self):
+        return f"{self.learner} | {self.subtopic.name} | {self.state}"

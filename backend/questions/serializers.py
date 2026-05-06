@@ -1,68 +1,74 @@
 from rest_framework import serializers
-from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery
+from .models import Topic, Subtopic, Question, PracticeSession, QuestionResponse, SubtopicMastery
 from users.serializers import LearnerSerializer
 import math
 from datetime import datetime, timezone
 
 class TopicSerializer(serializers.ModelSerializer):
-    question_count = serializers.IntegerField(read_only=True)
-
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'description', 'parent_module', 'question_count']
+        fields = ['id', 'name', 'description']
+
+class SubtopicSerializer(serializers.ModelSerializer):
+    topic_name = serializers.CharField(source='topic.name', read_only=True)
+    question_count = serializers.IntegerField(source='questions.count', read_only=True)
+
+    class Meta:
+        model = Subtopic
+        fields = ['id', 'topic', 'topic_name', 'name', 'description', 'question_count']
 
 class QuestionSerializer(serializers.ModelSerializer):
-    topic_name = serializers.CharField(source='topic.name', read_only=True)
-    id = serializers.UUIDField(source='topic.id', read_only=True)
+    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
+
     class Meta:
         model = Question
-        fields = ['id', 'topic', 'topic_name', 'text', 'choices', 'correct_answer_index', 'tier']
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'correct_answer_index', 'tier']
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['id', 'topic', 'text', 'choices', 'correct_answer_index', 'tier']
+        fields = ['id', 'subtopic', 'text', 'choices', 'correct_answer_index', 'tier']
 
-class SingleQuestionInteractionSerializer(serializers.ModelSerializer):
+class QuestionResponseSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SingleQuestionInteraction
-        fields = ['id', 'question', 'user_response', 'is_correct', 'time_taken_seconds', 'confidence_rating']
+        model = QuestionResponse
+        fields = ['id', 'question', 'is_correct', 'time_taken_seconds', 'confidence_rating']
 
 class PracticeSessionSerializer(serializers.ModelSerializer):
     learner = LearnerSerializer(read_only=True)
-    interactions = SingleQuestionInteractionSerializer(many=True, read_only=True)
+    responses = QuestionResponseSerializer(many=True, read_only=True)
 
     class Meta:
         model = PracticeSession
-        fields = ['id', 'learner', 'session_type', 'start_time', 'end_time', 'total_xp_earned', 'interactions']
+        fields = ['id', 'learner', 'start_time', 'end_time', 'total_xp_earned', 'responses']
 
-class SingleQuestionInteractionCreateSerializer(serializers.ModelSerializer):
+class QuestionResponseCreateSerializer(serializers.ModelSerializer):
     class Meta:
-        model = SingleQuestionInteraction
-        fields = ['question', 'user_response', 'is_correct', 'time_taken_seconds', 'confidence_rating']
+        model = QuestionResponse
+        fields = ['question', 'is_correct', 'time_taken_seconds', 'confidence_rating']
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    interactions = SingleQuestionInteractionCreateSerializer(many=True)
+    responses = QuestionResponseCreateSerializer(many=True, required=False)
 
     class Meta:
         model = PracticeSession
-        fields = ['session_type', 'interactions']
+        fields = ['responses']
 
     def create(self, validated_data):
-        interactions_data = validated_data.pop('interactions', [])
+        responses_data = validated_data.pop('responses', [])
         session = PracticeSession.objects.create(**validated_data)
-        for interaction_data in interactions_data:
-            SingleQuestionInteraction.objects.create(session=session, **interaction_data)
+        for response_data in responses_data:
+            QuestionResponse.objects.create(session=session, **response_data)
         return session
 
-class TopicMasterySerializer(serializers.ModelSerializer):
+class SubtopicMasterySerializer(serializers.ModelSerializer):
     retrievability = serializers.SerializerMethodField()
-    topic_name = serializers.CharField(source='topic.name', read_only=True)
+    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
 
     class Meta:
-        model = TopicMastery
-        fields = ['id', 'learner', 'topic', 'topic_name', 'difficulty', 'stability', 'reps', 'state', 'last_review', 'next_review', 'retrievability']
-        read_only_fields = ['learner', 'topic', 'difficulty', 'stability', 'reps', 'last_review', 'retrievability']
+        model = SubtopicMastery
+        fields = ['id', 'learner', 'subtopic', 'subtopic_name', 'difficulty', 'stability', 'reps', 'lapses', 'state', 'last_review', 'next_review', 'retrievability']
+        read_only_fields = ['learner', 'subtopic', 'difficulty', 'stability', 'reps', 'lapses', 'last_review', 'retrievability']
 
     def get_retrievability(self, obj) -> float:
         if obj.stability is None or obj.last_review is None:
@@ -73,6 +79,8 @@ class TopicMasterySerializer(serializers.ModelSerializer):
         return round(math.exp(math.log(0.9) * elapsed_days / obj.stability), 4)
 
 class InteractionPayloadSerializer(serializers.Serializer):
-    question_id = serializers.IntegerField()
+    question_id = serializers.UUIDField()
     is_correct = serializers.BooleanField()
-    session_id = serializers.IntegerField()
+    session_id = serializers.UUIDField()
+    confidence_rating = serializers.IntegerField(required=False, default=3)
+    time_taken_seconds = serializers.FloatField(required=False, default=0.0)

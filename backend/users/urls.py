@@ -12,5 +12,5 @@ urlpatterns = [
     path('users/me/', CurrentUserView.as_view()),
     
     path('leaderboard/global/', GlobalLeaderboardView.as_view()),
-    path('leaderboard/topic/<int:topic_id>/', TopicLeaderboardView.as_view()),
+    path('leaderboard/topic/<uuid:topic_id>/', TopicLeaderboardView.as_view()),
 ]

@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions
 from .serializers import LearnerRegisterSerializer, AdminRegisterSerializer, DynamicUserSerializer
 from .models import LearnerUser
-from questions.models import TopicMastery
+from questions.models import SubtopicMastery
 
 class LearnerRegisterView(generics.CreateAPIView):
     serializer_class = LearnerRegisterSerializer
@@ -30,9 +30,9 @@ class TopicLeaderboardView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        topic_id = self.kwargs.get('topic_id')
+        subtopic_id = self.kwargs.get('topic_id')
         top_learner_ids = list(
-            TopicMastery.objects.filter(topic_id=topic_id)
+            SubtopicMastery.objects.filter(subtopic_id=subtopic_id)
             .order_by('-stability')
             .values_list('learner_id', flat=True)[:10]
         )

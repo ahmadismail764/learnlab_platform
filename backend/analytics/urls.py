@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import AggregatedMetricsView, TopicAnalyticsView
+from .views import AggregatedMetricsView, SubtopicAnalyticsView
 
 urlpatterns = [
     path('aggregated/', AggregatedMetricsView.as_view(), name='aggregated-metrics'),
-    path('topic/<int:topic_id>/', TopicAnalyticsView.as_view(), name='topic-analytics'),
+    path('subtopic/<uuid:subtopic_id>/', SubtopicAnalyticsView.as_view(), name='subtopic-analytics'),
 ]

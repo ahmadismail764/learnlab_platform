@@ -1,36 +1,36 @@
 from django.contrib import admin
-from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery # , Notification
+from .models import Topic, Subtopic, Question, PracticeSession, QuestionResponse, SubtopicMastery
 
 @admin.register(Topic)
 class TopicAdmin(admin.ModelAdmin):
     list_display = ('name', 'description')
     search_fields = ('name', 'description')
 
+@admin.register(Subtopic)
+class SubtopicAdmin(admin.ModelAdmin):
+    list_display = ('name', 'topic')
+    list_filter = ('topic',)
+    search_fields = ('name', 'topic__name')
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('text', 'topic', 'tier', 'correct_answer_index')
-    list_filter = ('topic', 'tier')
-    search_fields = ('text', 'topic__name')
+    list_display = ('text', 'subtopic', 'tier', 'correct_answer_index')
+    list_filter = ('subtopic', 'tier')
+    search_fields = ('text', 'subtopic__name')
 
 @admin.register(PracticeSession)
 class PracticeSessionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'learner', 'session_type', 'start_time', 'end_time', 'total_xp_earned')
-    list_filter = ('session_type', 'start_time')
+    list_display = ('id', 'learner', 'start_time', 'end_time', 'total_xp_earned')
+    list_filter = ('start_time',)
     search_fields = ('learner__user__username',)
 
-@admin.register(SingleQuestionInteraction)
-class SingleQuestionInteractionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'session', 'question', 'is_correct')
+@admin.register(QuestionResponse)
+class QuestionResponseAdmin(admin.ModelAdmin):
+    list_display = ('id', 'session', 'question', 'is_correct', 'confidence_rating')
+    list_filter = ('is_correct',)
 
-@admin.register(TopicMastery)
-class TopicMasteryAdmin(admin.ModelAdmin):
-    list_display = ('learner', 'topic', 'state', 'difficulty', 'stability', 'reps')
-    list_filter = ('topic', 'state')
-    search_fields = ('learner__user__username', 'topic__name')
-
-
-# @admin.register(Notification)
-# class NotificationAdmin(admin.ModelAdmin):
-#     list_display = ('learner', 'sent_at', 'responded_at')
-#     search_fields = ('learner__user__username',)
+@admin.register(SubtopicMastery)
+class SubtopicMasteryAdmin(admin.ModelAdmin):
+    list_display = ('learner', 'subtopic', 'state', 'difficulty', 'stability', 'reps', 'lapses')
+    list_filter = ('subtopic', 'state')
+    search_fields = ('learner__user__username', 'subtopic__name')

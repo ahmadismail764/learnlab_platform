@@ -10,8 +10,6 @@ urlpatterns = [
     path('admin/register/', AdminRegisterView.as_view()),
     
     path('users/me/', CurrentUserView.as_view()),
-    path('learner/me/', CurrentUserView.as_view()),
-    path('admin/me/', CurrentUserView.as_view()),
     
     path('leaderboard/global/', GlobalLeaderboardView.as_view()),
     path('leaderboard/topic/<int:topic_id>/', TopicLeaderboardView.as_view()),

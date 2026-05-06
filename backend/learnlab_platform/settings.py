@@ -67,15 +67,12 @@ WSGI_APPLICATION = 'learnlab_platform.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
-        # 'USER': os.getenv('DB_USER'),
-        # 'PASSWORD': os.getenv('DB_PASSWORD'),
-        # 'HOST': os.getenv('DB_HOST'),
-        # 'PORT': os.getenv('DB_PORT'),
-        # 'OPTIONS': {
-        #     'sslmode': os.getenv('DB_SSLMODE', 'prefer'),
-        # },
+        'ENGINE': os.getenv('DB_ENGINE'),
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
@@ -146,6 +143,6 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'LearnLab API',
-    'DESCRIPTION': 'Mastery-based learning backend powered by the FIRe framework',
+    'DESCRIPTION': 'Mastery-based learning backend',
     'VERSION': '1.0.0',
 }

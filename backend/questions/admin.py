@@ -30,8 +30,8 @@ class SingleQuestionInteractionAdmin(admin.ModelAdmin):
 
 @admin.register(TopicMastery)
 class TopicMasteryAdmin(admin.ModelAdmin):
-    list_display = ('learner', 'topic', 'status', 'rep_num', 'memory', 'speed')
-    list_filter = ('topic', 'status')
+    list_display = ('learner', 'topic', 'state', 'difficulty', 'stability', 'reps', 'lapses')
+    list_filter = ('topic', 'state')
     search_fields = ('learner__user__username', 'topic__name')
 
 @admin.register(Encompassing)

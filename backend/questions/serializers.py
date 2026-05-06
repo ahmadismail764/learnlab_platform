@@ -61,16 +61,16 @@ class TopicMasterySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TopicMastery
-        fields = ['id', 'learner', 'topic', 'topic_name', 'difficulty', 'stability', 'last_review_date', 'next_review_date', 'retrievability']
-        read_only_fields = ['learner', 'topic', 'difficulty', 'stability', 'last_review_date', 'retrievability']
+        fields = ['id', 'learner', 'topic', 'topic_name', 'difficulty', 'stability', 'reps', 'lapses', 'state', 'last_review', 'next_review', 'retrievability']
+        read_only_fields = ['learner', 'topic', 'difficulty', 'stability', 'reps', 'lapses', 'last_review', 'retrievability']
 
     def get_retrievability(self, obj) -> float:
-        if not obj.stability or not obj.last_review_date:
+        if obj.stability is None or obj.last_review is None:
             return 0.0
 
         now = datetime.now(timezone.utc)
-        elapsed_days = (now - obj.last_review_date).total_seconds() / 86400
-        return round(math.exp(elapsed_days / obj.stability * math.log(0.9)), 4)
+        elapsed_days = (now - obj.last_review).total_seconds() / 86400
+        return round(math.exp(math.log(0.9) * elapsed_days / obj.stability), 4)
 
 class InteractionPayloadSerializer(serializers.Serializer):
     question_id = serializers.IntegerField()

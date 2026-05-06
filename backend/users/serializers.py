@@ -1,8 +1,15 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import LearnerUser, AdminUser
+from .models import Learner, LearnerUser, AdminUser
 
 User = get_user_model()
+
+
+class LearnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Learner
+        fields = ['total_xp', 'streak_count', 'last_practice_date']
+
 
 class DynamicUserSerializer(serializers.ModelSerializer):
     profile_data = serializers.SerializerMethodField()

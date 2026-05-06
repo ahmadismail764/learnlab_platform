@@ -1,20 +1,26 @@
-from rest_framework import viewsets, permissions, status
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery
-from .serializers import (
-    TopicSerializer, QuestionSerializer, QuestionCreateSerializer,
-    PracticeSessionSerializer, PracticeSessionCreateSerializer,
-    TopicMasterySerializer
-)
-from django_filters.rest_framework import DjangoFilterBackend
+import random
+from collections import defaultdict
+
 from django.db import transaction
 from django.db.models import Count
-from django.utils import timezone
-from datetime import datetime
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
 from . import services
-from .serializers import InteractionPayloadSerializer
+from .models import Topic, Question, PracticeSession, SingleQuestionInteraction, TopicMastery
+from .serializers import (
+    InteractionPayloadSerializer,
+    PracticeSessionCreateSerializer,
+    PracticeSessionSerializer,
+    QuestionCreateSerializer,
+    QuestionSerializer,
+    TopicMasterySerializer,
+    TopicSerializer,
+)
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -66,62 +72,83 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(learner=self.request.user.learner_profile)
 
-    @action(detail=False, methods=['get'], url_path='generate-adaptive')
-    def generate_adaptive(self, request):
-        import random
-        from .models import Topic
-
+    @action(detail=False, methods=['post'], url_path='start')
+    def start(self, request):
+        """Create an adaptive session with up to 5 questions."""
         learner = request.user.learner_profile
-        now = timezone.now()
 
-        # 1. Get due topics using FIRe service
+        # 1. Due topics from FSRS scheduler
         selected_topics = services.get_due_topics(learner, limit=5)
         slots_needed = 5 - len(selected_topics)
 
-        # 2. Fill remaining slots with un-interacted topics
+        # 2. Fill remaining slots with truly new topics (no mastery entry at all)
         if slots_needed > 0:
-            interacted_topic_ids = TopicMastery.objects.filter(
-                learner=learner
+            existing_topic_ids = TopicMastery.objects.filter(
+                learner=learner,
             ).values_list('topic_id', flat=True)
 
-            new_topics = list(Topic.objects.exclude(
-                id__in=interacted_topic_ids
-            )[:slots_needed])
-
+            new_topics = list(
+                Topic.objects.exclude(id__in=existing_topic_ids)[:slots_needed]
+            )
             selected_topics.extend(new_topics)
 
         if not selected_topics:
-            return Response({"status": "All caught up", "message": "No topics available!"})
-
-        # 3. Pick 1 random question for each selected topic (batch fetch to avoid N+1)
-        selected_questions = []
-        if selected_topics:
-            from django.db.models import Q as DjangoQ
-            topic_ids = [t.id for t in selected_topics]
-            all_questions = list(
-                Question.objects.filter(
-                    knowledge_point__topic_id__in=topic_ids
-                ).select_related('knowledge_point__topic')
+            return Response(
+                {"status": "caught_up", "message": "No topics available right now."},
+                status=status.HTTP_200_OK,
             )
-            # Group by topic
-            questions_by_topic = {}
-            for q in all_questions:
-                tid = q.knowledge_point.topic_id
-                questions_by_topic.setdefault(tid, []).append(q)
-            
-            for topic in selected_topics:
-                topic_qs = questions_by_topic.get(topic.id, [])
-                if topic_qs:
-                    selected_questions.append(random.choice(topic_qs))
 
-        # 4. Return serialized questions
-        from .serializers import QuestionSerializer
-        serializer = QuestionSerializer(selected_questions, many=True)
+        # 3. Batch-fetch questions for all selected topics (avoids N+1)
+        topic_ids = [t.id for t in selected_topics]
+        all_questions = list(
+            Question.objects.filter(
+                knowledge_point__topic_id__in=topic_ids,
+            ).select_related('knowledge_point__topic')
+        )
+
+        questions_by_topic: dict[int, list] = defaultdict(list)
+        for q in all_questions:
+            questions_by_topic[q.knowledge_point.topic_id].append(q)
+
+        selected_questions = []
+        for topic in selected_topics:
+            candidates = questions_by_topic.get(topic.id, [])
+            if candidates:
+                selected_questions.append(random.choice(candidates))
+
+        if not selected_questions:
+            return Response(
+                {"status": "caught_up", "message": "No topics available right now."},
+                status=status.HTTP_200_OK,
+            )
+
+        # 4. Create session atomically
+        with transaction.atomic():
+            session = PracticeSession.objects.create(
+                learner=learner,
+                session_type='adaptive',
+            )
+
         return Response({
-            "status": "success",
-            "sheet_size": len(selected_questions),
-            "questions": serializer.data
+            "session_id": session.id,
+            "questions": QuestionSerializer(selected_questions, many=True).data,
         })
+
+    @action(detail=True, methods=['patch'], url_path='finish')
+    def finish(self, request, pk=None):
+        """Close a session by setting its end_time."""
+        session = get_object_or_404(PracticeSession, pk=pk)
+        learner = request.user.learner_profile
+
+        if session.learner != learner:
+            return Response(
+                {'detail': 'Session does not belong to this user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        session.end_time = timezone.now()
+        session.save()
+        return Response(PracticeSessionSerializer(session).data)
 
 class TopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TopicMastery.objects.none()
@@ -134,7 +161,7 @@ class TopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = TopicMastery.objects.filter(learner=self.request.user.learner_profile).select_related('topic')
         due_only = self.request.query_params.get('due_only')
         if due_only == 'true':
-            queryset = queryset.filter(next_due__lte=timezone.now())
+            queryset = queryset.filter(next_review__lte=timezone.now())
         return queryset
 
 class InteractionViewSet(viewsets.ViewSet):
@@ -143,48 +170,46 @@ class InteractionViewSet(viewsets.ViewSet):
 
     def create(self, request):
         serializer = InteractionPayloadSerializer(data=request.data)
-        if serializer.is_valid():
-            question_id = serializer.validated_data['question_id']
-            is_correct = serializer.validated_data['is_correct']
-            session_id = serializer.validated_data['session_id']
-            
-            learner = request.user.learner_profile
-            question = get_object_or_404(Question, id=question_id)
-            session = get_object_or_404(PracticeSession, id=session_id)
-            
-            if session.learner != learner:
-                return Response({'detail': 'Session does not belong to this user.'}, status=status.HTTP_403_FORBIDDEN)
-                
-            # 1. Record interaction manually so calculate_net_work can find it
-            interaction = SingleQuestionInteraction.objects.create(
-                session=session,
-                question=question,
-                is_correct=is_correct,
-                user_response="Correct" if is_correct else "Incorrect",
-                confidence_rating=3 if is_correct else 1
-            )
-            
-            # 2. Calculate net work
-            topic = question.knowledge_point.topic
-            net_work = services.calculate_net_work(session, topic)
-            
-            # 3. Process review
-            services.process_review(learner, topic, net_work)
-            
-            # 4. Gamification
-            if is_correct:
-                base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
-                multiplier = min(2.0, 1.0 + (learner.streak_count * 0.1))
-                gained_xp = int(base_xp * multiplier)
-                
-                learner.add_xp(gained_xp)
-                learner.update_streak()
-                
-                session.total_xp_earned += gained_xp
-                session.save()
-            else:
-                learner.save()
-            
-            return Response({'status': 'Interaction processed.'}, status=status.HTTP_201_CREATED)
-        else:
+        if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        question_id = serializer.validated_data['question_id']
+        is_correct = serializer.validated_data['is_correct']
+        session_id = serializer.validated_data['session_id']
+
+        learner = request.user.learner_profile
+        question = get_object_or_404(Question, id=question_id)
+        session = get_object_or_404(PracticeSession, id=session_id)
+
+        if session.learner != learner:
+            return Response(
+                {'detail': 'Session does not belong to this user.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # 1. Record interaction
+        interaction = SingleQuestionInteraction.objects.create(
+            session=session,
+            question=question,
+            is_correct=is_correct,
+            user_response='Correct' if is_correct else 'Incorrect',
+            confidence_rating=request.data.get('confidence_rating', 3 if is_correct else 1),
+        )
+
+        # 2. FSRS review
+        topic = question.knowledge_point.topic
+        services.process_review(learner, topic, interaction)
+
+        # 3. Gamification
+        if is_correct:
+            base_xp = {1: 10, 2: 25, 3: 50}.get(question.tier, 10)
+            multiplier = min(2.0, 1.0 + (learner.streak_count * 0.1))
+            gained_xp = int(base_xp * multiplier)
+
+            learner.add_xp(gained_xp)
+            learner.update_streak()
+
+            session.total_xp_earned += gained_xp
+            session.save()
+
+        return Response({'status': 'Interaction processed.'}, status=status.HTTP_201_CREATED)

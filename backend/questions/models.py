@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils import timezone
 from django.conf import settings
 from users.models import Learner
 
@@ -78,55 +77,28 @@ class SingleQuestionInteraction(models.Model):
 
 class TopicMastery(models.Model):
     """
-    Tracks a learner's mastery of a specific topic using FIRe.
+    Tracks a learner's mastery of a specific topic using FSRS.
     """
-    STATUS_CHOICES = (
+    STATE_CHOICES = (
         ('new', 'New'),
         ('learning', 'Learning'),
-        ('learned', 'Learned'),
-        ('struggling', 'Struggling')
+        ('review', 'Review'),
+        ('relearning', 'Relearning'),
     )
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
 
-    rep_num = models.FloatField(default=0.0, help_text="Repetition progress")
-    memory = models.FloatField(default=0.0, help_text="Memory strength")
-    speed = models.FloatField(default=1.0, help_text="Student-topic learning speed")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
-    
-    last_reviewed = models.DateTimeField(null=True, blank=True)
-    next_due = models.DateTimeField(null=True, blank=True)
+    difficulty = models.FloatField(default=5.0, help_text="FSRS difficulty parameter (1–10)")
+    stability = models.FloatField(default=1.0, help_text="FSRS stability in days")
+    reps = models.IntegerField(default=0, help_text="Number of successful reviews")
+    lapses = models.IntegerField(default=0, help_text="Number of times forgotten")
+    state = models.CharField(max_length=20, choices=STATE_CHOICES, default='new')
+
+    last_review = models.DateTimeField(null=True, blank=True)
+    next_review = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ('learner', 'topic')
-
-    def calculate_interval(self):
-        """Returns the next interval in days."""
-        return max(1, int(2 ** self.rep_num / self.speed))
-
-    def is_due(self):
-        if self.next_due is None:
-            return True
-        return timezone.now() >= self.next_due
-
-    def update_after_review(self, net_work):
-        from datetime import timedelta
-        # Simplified Math Academy FIRe logic for updating state
-        self.memory += net_work
-        
-        if net_work > 0:
-            self.rep_num += net_work
-            if self.status in ['new', 'learning', 'struggling'] and self.memory >= 1.0:
-                self.status = 'learned'
-        elif net_work < 0:
-            self.rep_num = max(0.0, self.rep_num + net_work)
-            if self.memory < 0:
-                self.status = 'struggling'
-        
-        self.last_reviewed = timezone.now()
-        interval = self.calculate_interval()
-        self.next_due = self.last_reviewed + timedelta(days=interval)
-        self.save()
 
 class Notification(models.Model):
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='notifications')

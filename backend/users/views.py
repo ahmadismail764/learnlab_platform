@@ -9,7 +9,7 @@ class LearnerRegisterView(generics.CreateAPIView):
 
 class AdminRegisterView(generics.CreateAPIView):
     serializer_class = AdminRegisterSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAdminUser]
 
 class CurrentUserView(generics.RetrieveUpdateAPIView):
     serializer_class = DynamicUserSerializer
@@ -33,7 +33,7 @@ class TopicLeaderboardView(generics.ListAPIView):
         topic_id = self.kwargs.get('topic_id')
         top_learner_ids = list(
             TopicMastery.objects.filter(topic_id=topic_id)
-            .order_by('-mastery_level')
+            .order_by('-stability')
             .values_list('learner_id', flat=True)[:10]
         )
         return LearnerUser.objects.filter(learner_profile__id__in=top_learner_ids).select_related('learner_profile')

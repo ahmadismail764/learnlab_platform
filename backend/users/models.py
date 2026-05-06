@@ -73,6 +73,7 @@ class Learner(models.Model):
     
     def add_xp(self, amount):
         self.total_xp += amount
+        self.save(update_fields=['total_xp'])
         
     def update_streak(self):
         today = date.today()

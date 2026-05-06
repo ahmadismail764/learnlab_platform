@@ -21,7 +21,6 @@ class Question(models.Model):
     # explanation_video_url = models.URLField(null=True, blank=True)
 
 
-
 class PracticeSession(models.Model):
     SESSION_TYPES = (
         ('adaptive', 'Adaptive'),
@@ -29,29 +28,20 @@ class PracticeSession(models.Model):
         ('review', 'Review')
     )
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='practice_sessions')
-    session_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='adaptive')
+    # session_type = models.CharField(max_length=20, choices=SESSION_TYPES, default='adaptive')
+    questions = models.ManyToManyField(Question, related_name='practice_sessions')
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     total_xp_earned = models.IntegerField(default=0)
-    
-    def __str__(self):
-        return f"{self.session_type} Session {self.id} for {self.learner.user.username}"
+
 
 class SingleQuestionInteraction(models.Model):
     session = models.ForeignKey(PracticeSession, on_delete=models.CASCADE, related_name='interactions')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     user_response = models.CharField(max_length=255, null=True, blank=True)
     is_correct = models.BooleanField(default=False)
-    # time_taken_seconds = models.FloatField(default=0.0)
-    # confidence_rating = models.IntegerField(default=1, help_text="1=Guess, 5=Sure")
-    
-    def __str__(self):
-        return f"Interaction for Q{self.question.id} in Session {self.session.id}"
 
 class TopicMastery(models.Model):
-    """
-    Tracks a learner's mastery of a specific topic using FSRS.
-    """
     STATE_CHOICES = (
         ('new', 'New'),
         ('learning', 'Learning'),
@@ -61,7 +51,7 @@ class TopicMastery(models.Model):
     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE)
 
-    difficulty = models.FloatField(default=5.0, help_text="FSRS difficulty parameter (1–10)")
+    difficulty = models.FloatField(default=5.0, help_text="FSRS difficulty parameter (1-10)")
     stability = models.FloatField(default=1.0, help_text="FSRS stability in days")
     
     reps = models.IntegerField(default=0, help_text="Number of successful reviews")
@@ -73,8 +63,8 @@ class TopicMastery(models.Model):
     class Meta:
         unique_together = ('learner', 'topic')
 
-class Notification(models.Model):
-    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='notifications')
-    topics = models.ManyToManyField(Topic)
-    sent_at = models.DateTimeField(auto_now_add=True)
-    responded_at = models.DateTimeField(null=True, blank=True)
+# class Notification(models.Model):
+#     learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='notifications')
+#     topics = models.ManyToManyField(Topic)
+#     sent_at = models.DateTimeField(auto_now_add=True)
+#     responded_at = models.DateTimeField(null=True, blank=True)

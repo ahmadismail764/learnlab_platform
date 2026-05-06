@@ -46,7 +46,7 @@ class TopicViewSet(viewsets.ModelViewSet):
             ]
             TopicMastery.objects.bulk_create(masteries, ignore_conflicts=True)
 
-class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
+class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend]

@@ -16,5 +16,5 @@ urlpatterns = [
 
     # API v2 blueprint
     # planned to include other apps
-
+    path('silk/', include('silk.urls', namespace='silk')),
 ]

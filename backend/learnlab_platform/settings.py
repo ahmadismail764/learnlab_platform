@@ -32,7 +32,8 @@ INSTALLED_APPS = [
     'silk',
 
     'accounts',
-    'questions',
+    'practice',
+    'topics',
 ]
 
 MIDDLEWARE = [

@@ -6,8 +6,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # API v1 Blueprint
-    path('api/v1/', include('accounts.urls')),        # All identity/login traffic
-    # path('api/v1/practice/', include('questions.urls')), # All FSRS/questions traffic
+    path('/api/auth/', include('accounts.urls')),        # All identity/login traffic
 
     # DRF Spectacular Docs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

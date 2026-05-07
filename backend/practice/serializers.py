@@ -1,22 +1,10 @@
 from rest_framework import serializers
-from .models import Topic, Subtopic, Question, PracticeSession, QuestionResponse, SubtopicMastery
+from practice.models import Question, PracticeSession, QuestionResponse
 from accounts.serializers import LearnerSerializer
 import math
 from datetime import datetime, timezone
 
-class TopicSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Topic
-        fields = ['id', 'name', 'description']
 
-    id = serializers.UUIDField(read_only=True)
-
-class SubtopicSerializer(serializers.ModelSerializer):
-    topic_name = serializers.CharField(source='topic.name', read_only=True)
-
-    class Meta:
-        model = Subtopic
-        fields = ['id', 'topic', 'topic_name', 'name', 'description', 'question_count']
 
 class QuestionSerializer(serializers.ModelSerializer):
     subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
@@ -62,26 +50,3 @@ class PracticeSessionCreateSerializer(serializers.ModelSerializer):
             QuestionResponse.objects.create(session=session, **response_data)
         return session
 
-class SubtopicMasterySerializer(serializers.ModelSerializer):
-    retrievability = serializers.SerializerMethodField()
-    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
-
-    class Meta:
-        model = SubtopicMastery
-        fields = ['id', 'learner', 'subtopic', 'subtopic_name', 'difficulty', 'stability', 'reps', 'lapses', 'state', 'last_review', 'next_review', 'retrievability']
-        read_only_fields = ['learner', 'subtopic', 'difficulty', 'stability', 'reps', 'lapses', 'last_review', 'retrievability']
-
-    def get_retrievability(self, obj) -> float:
-        if obj.stability is None or obj.last_review is None:
-            return 0.0
-
-        now = datetime.now(timezone.utc)
-        elapsed_days = (now - obj.last_review).total_seconds() / 86400
-        return round(math.exp(math.log(0.9) * elapsed_days / obj.stability), 4)
-
-class InteractionPayloadSerializer(serializers.Serializer):
-    question_id = serializers.UUIDField()
-    is_correct = serializers.BooleanField()
-    session_id = serializers.UUIDField()
-    confidence_rating = serializers.IntegerField(required=False, default=3)
-    time_taken_seconds = serializers.FloatField(required=False, default=0.0)

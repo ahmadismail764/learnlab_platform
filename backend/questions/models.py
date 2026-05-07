@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from users.models import Learner
+from accounts.models import Learner
 import uuid
 
 

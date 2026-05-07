@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Topic, Subtopic, Question, PracticeSession, QuestionResponse, SubtopicMastery
-from users.serializers import LearnerSerializer
+from accounts.serializers import LearnerSerializer
 import math
 from datetime import datetime, timezone
 

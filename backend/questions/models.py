@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-from accounts.models import Learner
+from accounts.models import User
 import uuid
 
 
@@ -46,7 +46,7 @@ class Question(models.Model):
 class PracticeSession(models.Model):
     # keys
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='practice_sessions')
+    learner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='practice_sessions')
 
     # session data
     start_time = models.DateTimeField(auto_now_add=True)
@@ -82,7 +82,7 @@ class SubtopicMastery(models.Model):
     
     # keys
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    learner = models.ForeignKey(Learner, on_delete=models.CASCADE, related_name='masteries')
+    learner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='masteries')
     subtopic = models.ForeignKey(Subtopic, on_delete=models.CASCADE, related_name='masteries')
 
     # FSRS parameters

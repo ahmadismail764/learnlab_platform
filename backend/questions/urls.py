@@ -5,17 +5,16 @@ from .views import (
     SubtopicViewSet,
     QuestionViewSet, 
     PracticeSessionViewSet, 
-    SubtopicMasteryViewSet, 
-    InteractionViewSet
+    SubtopicMasteryViewSet,
 )
 
 router = DefaultRouter()
-router.register('topics', TopicViewSet)
-router.register('subtopics', SubtopicViewSet)
-router.register('questions', QuestionViewSet)
-router.register('sessions', PracticeSessionViewSet, basename='practicesession')
-router.register('mastery', SubtopicMasteryViewSet, basename='subtopicmastery')
-router.register('interactions', InteractionViewSet, basename='interaction')
+# router.register('topics', TopicViewSet)
+# router.register('subtopics', SubtopicViewSet)
+# router.register('questions', QuestionViewSet)
+# router.register('sessions', PracticeSessionViewSet, basename='practicesession')
+# router.register('mastery', SubtopicMasteryViewSet, basename='subtopicmastery')
+# router.register('interactions', InteractionViewSet, basename='interaction')
 
 urlpatterns = [
     path('', include(router.urls)),

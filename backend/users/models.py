@@ -1,111 +1,74 @@
-from django.contrib.auth.models import AbstractUser, UserManager
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.db import models
 from django.db.models.signals import post_save
+from django.dispatch import receiver
 from datetime import date, timedelta
+import uuid
 
-class LearnerManager(UserManager):
-    def get_queryset(self):
-        return super().get_queryset().filter(role='learner')
 
-class AdminManager(UserManager):
-    def get_queryset(self):
-        return super().get_queryset().filter(role='admin')
+class UserManager(BaseUserManager):
+    def create_user(self, username, password=None, **extra_fields):
+        user = self.model(username=username, **extra_fields)
+        user.set_password(password)
+        user.save()
+        return user
 
-class User(AbstractUser):
-    ROLE_CHOICES = (
-        ('learner', 'Learner'),
-        ('admin', 'Admin'),
-    )
+    def create_superuser(self, username, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        return self.create_user(username, password, **extra_fields)
+
+
+class User(AbstractBaseUser):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='learner')
-    failed_login_attempts = models.IntegerField(default=0)
-    account_locked_until = models.DateTimeField(null=True, blank=True)
-    
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
 
-    def is_locked(self):
-        from django.utils import timezone
-        return bool(self.account_locked_until and self.account_locked_until > timezone.now())
+    objects = UserManager()
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email']
 
     def __str__(self):
-        return self.email
+        return self.username
 
-class LearnerUser(User):
-    objects = LearnerManager()
-    
-    class Meta:
-        proxy = True
+    def has_perm(self, perm, obj=None):
+        return self.is_staff
 
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.role = 'learner'
-        super().save(*args, **kwargs)
-
-    @property
-    def profile(self):
-        return self.learner_profile
-
-
-class AdminUser(User):
-    objects = AdminManager()
-    
-    class Meta:
-        proxy = True
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.role = 'admin'
-            self.is_staff = True
-            self.is_superuser = True
-        super().save(*args, **kwargs)
-        
-    @property
-    def profile(self):
-        return self.admin_profile
+    def has_module_perms(self, app_label):
+        return self.is_staff
 
 
 class Learner(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='learner_profile')
     total_xp = models.IntegerField(default=0)
     streak_count = models.IntegerField(default=0)
     last_practice_date = models.DateField(null=True, blank=True)
-    
+
     def add_xp(self, amount):
         self.total_xp += amount
         self.save(update_fields=['total_xp'])
-        
+
     def update_streak(self):
         today = date.today()
         if self.last_practice_date == today:
-            self.save()
             return
-        
         yesterday = today - timedelta(days=1)
         if self.last_practice_date == yesterday:
             self.streak_count += 1
         else:
             self.streak_count = 1
-        
         self.last_practice_date = today
-        self.save()
-        
+        self.save(update_fields=['streak_count', 'last_practice_date'])
+
     def __str__(self):
         return f"{self.user.username} (XP: {self.total_xp})"
 
-class AdminProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='admin_profile')
-    
-    def __str__(self):
-        return f"Admin: {self.user.username}"
 
+@receiver(post_save, sender=User)
+def create_learner_profile(sender, instance, created, **kwargs):
+    if created and not instance.is_staff:
+        Learner.objects.get_or_create(user=instance)
 
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        if instance.role == 'learner':
-            Learner.objects.get_or_create(user=instance)
-        elif instance.role == 'admin':
-            AdminProfile.objects.get_or_create(user=instance)
-
-for model in [User, LearnerUser, AdminUser]:
-    post_save.connect(create_user_profile, sender=model)

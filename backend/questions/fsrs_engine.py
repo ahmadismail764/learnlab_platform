@@ -1,29 +1,20 @@
+# TODO(@nooruddina): This file is yours to edit! Implement the FSRS-5 algorithm and integrate it with the QuestionResponse model.
 from datetime import timedelta
-
 from django.db import transaction
 from django.utils import timezone
+from questions.models import QuestionResponse, Subtopic, SubtopicMastery
 
-from .models import QuestionResponse, Subtopic, SubtopicMastery
 
-
+# the logic here is just arbitrary to avoid errors
+# this is not for actual functionality of course
 def get_rating(interaction: QuestionResponse) -> int:
-    """Map a QuestionResponse to an FSRS rating (1-4).
-
-    1 = Again, 2 = Hard, 3 = Good, 4 = Easy.
-    """
-    if not interaction.is_correct:
-        return 1
-
-    if interaction.confidence_rating < 3:
-        return 2
-    if interaction.confidence_rating < 5:
-        return 3
-    return 4
+    return -1 if not interaction.is_correct else 2
 
 
 # TODO: replace stub with full FSRS-5 implementation
 def apply_fsrs(mastery: SubtopicMastery, rating: int) -> SubtopicMastery:
-    """Apply FSRS scheduling to a SubtopicMastery record.
+    """
+    Apply FSRS scheduling to a SubtopicMastery record.
 
     Returns the mutated *mastery* instance **without** saving it —
     the caller is responsible for calling ``mastery.save()``.

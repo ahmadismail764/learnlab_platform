@@ -9,9 +9,10 @@ class TopicSerializer(serializers.ModelSerializer):
         model = Topic
         fields = ['id', 'name', 'description']
 
+    id = serializers.UUIDField(read_only=True)
+
 class SubtopicSerializer(serializers.ModelSerializer):
     topic_name = serializers.CharField(source='topic.name', read_only=True)
-    question_count = serializers.IntegerField(source='questions.count', read_only=True)
 
     class Meta:
         model = Subtopic

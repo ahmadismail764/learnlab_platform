@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from accounts.models import User, LearnerProfile
+from accounts.models import User
 
-class LearnerSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     # Make password write-only so it never gets returned in the JSON response
     password = serializers.CharField(write_only=True, style={'input_type': 'password'})
 
@@ -16,10 +16,5 @@ class LearnerSerializer(serializers.ModelSerializer):
             email=validated_data['email'],
             password=validated_data['password']
         )
-        LearnerProfile.objects.create(user=user)
         return user
     
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        exclude = ['password']

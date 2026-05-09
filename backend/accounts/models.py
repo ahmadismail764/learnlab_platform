@@ -35,6 +35,7 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, username, email, password=None, **extra_fields):
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_staff', True)
         return self.create_user(username, email, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -54,19 +55,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # The str method is already implemented perfectly 
     # in the parent class AbstractBaseUser, we don't need to override it
-
-
-# 2. The Learner Model (Handles extra data specific only to learners)
-class LearnerProfile(models.Model):
-    # The OneToOne link to the auth user
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='learner_profile')
-    
-    # Your extra learner-specific fields go here!
     current_xp = models.IntegerField(default=0)
     streak_count = models.IntegerField(default=0) # This represents the number of consecutive times he practiced on time
     last_practice_date = models.DateField(null=True, blank=True) # might be useful for customization purposes
-    
+
     def __str__(self):
-        return f"Learner Profile for {self.user.username}"
-    
-    
+        return f"Admin: {self.username}" if self.is_superuser else f"Learner: {self.username}"
+        

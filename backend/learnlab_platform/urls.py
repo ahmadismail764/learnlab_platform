@@ -7,12 +7,13 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # API v1 Blueprint
-    path('api/auth/', include('accounts.urls')),        # All identity/login traffic
-    path('api/practice/', include('practice.urls')),   # All practice-related traffic
+    path('auth/', include('accounts.urls')),        # All identity/login traffic
+    path('practice/', include('practice.urls')),   # All practice-related traffic
+    path('topcis/', include('topics.urls')),  # All topic and subtopic related traffic
     
     # DRF Spectacular Docs
-    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 
     # API v2 blueprint
     # planned to include other apps

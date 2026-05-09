@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager, AbstractUser
 
 """
 We have two types of users: Admins and Learners.
@@ -14,7 +14,10 @@ The Learner has extra fields: [current_xp, streak_count, last_practice_date]
 NOTE: The default manager for any django model is supposed to Model.objects
 However, AbstractBaseUser (which appears right below in the User class defintion) does not have the default manager.
 So, we need to define a custom manager
+
+
 """
+
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None, **extra_fields):
         if not email:
@@ -65,3 +68,5 @@ class LearnerProfile(models.Model):
     
     def __str__(self):
         return f"Learner Profile for {self.user.username}"
+    
+    

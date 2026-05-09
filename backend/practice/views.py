@@ -13,7 +13,7 @@ from rest_framework.response import Response
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def get_all_questions(request):
-    questions = Question.objects.all()
+    questions = Question.objects.prefetch_related('subtopic__topic')
     serializer = QuestionSerializer(questions, many=True)
     return Response(serializer.data)
 

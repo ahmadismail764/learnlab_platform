@@ -1,12 +1,21 @@
-from rest_framework import generics
+from rest_framework import generics, permissions
 from rest_framework.permissions import AllowAny
 from accounts.models import User
-from accounts.serializers import LearnerSerializer
+from accounts.serializers import LearnerSerializer, UserSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
 
 class RegisterLearnerView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = LearnerSerializer
     permission_classes = [AllowAny]
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_all_questions(request):
+    users = User.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
 
 # class LearnerRegisterView(generics.CreateAPIView):
 #     serializer_class = LearnerRegisterSerializer

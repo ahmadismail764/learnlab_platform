@@ -10,7 +10,6 @@ class Topic(models.Model):
     def __str__(self):
         return self.name
 
-
 class Subtopic(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='subtopics')

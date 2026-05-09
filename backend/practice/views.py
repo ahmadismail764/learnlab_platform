@@ -1,11 +1,8 @@
 from rest_framework import permissions, viewsets
 from practice.models import Question, PracticeSession, QuestionResponse
-from .serializers import (
-    QuestionResponseSerializer,
-    PracticeSessionSerializer,
-    QuestionCreateSerializer,
-    QuestionSerializer,
-)
+from .serializers import QuestionResponseSerializer, PracticeSessionSerializer, QuestionCreateSerializer, QuestionSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
 
 # class IsAdminOrReadOnly(permissions.BasePermission):
 #     def has_permission(self, request, view):
@@ -13,6 +10,12 @@ from .serializers import (
 #             return True
 #         return request.user and request.user.is_staff
 
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def get_all_questions(request):
+    questions = Question.objects.all()
+    serializer = QuestionSerializer(questions, many=True)
+    return Response(serializer.data)
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.prefetch_related('subtopic')

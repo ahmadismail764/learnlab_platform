@@ -13,28 +13,28 @@ LearnLab is a Progressive Web Application (PWA) designed to replace passive vide
 
 ## 🚀 Key Features
 
-* **Topic-Based FSRS (Free Spaced Repetition Scheduler):** Instead of isolated flashcards, LearnLab schedules entire topics, generating fresh, parameterized problem instances to ensure genuine understanding. The system models memory stability to dynamically adjust review dates.
-* **Adaptive Scaffolding:** Dynamically selects question complexity (Conceptual -> Application -> Complex Synthesis) based on your demonstrated FSRS stability metric.
-* **Gamification:** Keeps learners engaged through XP, streak multipliers, and stability-based progress indicators.
-* **Virtual Math Input:** Seamless integration of MathLive for precise symbolic notation (e.g., $\forall$, $\exists$, $\cup$, $\cap$).
-* **Just-in-Time Resources:** Contextual hints and targeted video timestamps offered only when learners struggle.
+- **Topic-Based FSRS (Free Spaced Repetition Scheduler):** Instead of isolated flashcards, LearnLab schedules entire topics, generating fresh, parameterized problem instances to ensure genuine understanding. The system models memory stability to dynamically adjust review dates.
+- **Adaptive Scaffolding:** Dynamically selects question complexity (Conceptual -> Application -> Complex Synthesis) based on your demonstrated FSRS stability metric.
+- **Gamification:** Keeps learners engaged through XP, streak multipliers, and stability-based progress indicators.
+- **Virtual Math Input:** Seamless integration of MathLive for precise symbolic notation (e.g., $\forall$, $\exists$, $\cup$, $\cap$).
+- **Just-in-Time Resources:** Contextual hints and targeted video timestamps offered only when learners struggle.
 
 ## 🌐 Architecture & Integrations
 
 LearnLab uses a decoupled architecture with a React frontend and Django REST Framework backend.
 
-* **Authentication (`/api/v1/auth/`):** JWT-based secure login and registration.
-* **Topics & Practice (`/api/v1/sessions/`):** Practice sessions are generated adaptively. Topics are prioritized based on their FSRS `next_review_date`.
-* **Analytics (`/analytics/`):** Aggregated and topic-specific performance tracking.
-* **Frontend State:** Includes live integration status badges and UI elements tracking backend data sources.
+- **Authentication (`/api/v1/auth/`):** JWT-based secure login and registration.
+- **Topics & Practice (`/api/v1/sessions/`):** Practice sessions are generated adaptively. Topics are prioritized based on their FSRS `next_review_date`.
+- **Analytics (`/analytics/`):** Aggregated and topic-specific performance tracking.
+- **Frontend State:** Includes live integration status badges and UI elements tracking backend data sources.
 
 ## 🛠️ Quick Start
 
 ### Prerequisites
 
-* Python 3.12+
-* Node.js 18+
-* PostgreSQL 15+
+- Python 3.12+
+- Node.js 18+
+- PostgreSQL 15+
 
 ### Backend Setup
 
@@ -69,8 +69,8 @@ npm run dev
 
 ### Dev Utilities
 
-* **Seed Data**: Run `python manage.py seed_test_data` to populate topics (e.g., Discrete Math, Python Basics) and create a test user (`testlearner` / `testpass123`).
-* **Reminders**: Run `python manage.py send_reminders` to query for due practice reviews across the learner base and send alerts.
+- **Seed Data**: Run `python manage.py seed_test_data` to populate topics (e.g., Discrete Math, Python Basics) and create a test user (`testlearner` / `testpass123`).
+- **Reminders**: Run `python manage.py send_reminders` to query for due practice reviews across the learner base and send alerts.
 
 ## 🤝 Contributing & License
 

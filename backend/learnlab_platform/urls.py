@@ -1,13 +1,15 @@
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from practice.views import get_all_questions
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
     # API v1 Blueprint
-    path('/api/auth/', include('accounts.urls')),        # All identity/login traffic
-
+    path('api/auth/', include('accounts.urls')),        # All identity/login traffic
+    path('api/practice/', include('practice.urls')),   # All practice-related traffic
+    
     # DRF Spectacular Docs
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

@@ -31,7 +31,7 @@ class SubtopicMasterySerializer(serializers.ModelSerializer):
         if obj.stability is None or obj.last_review is None:
             return 0.0
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc) # type: ignore
         elapsed_days = (now - obj.last_review).total_seconds() / 86400
         return round(math.exp(math.log(0.9) * elapsed_days / obj.stability), 4)
 

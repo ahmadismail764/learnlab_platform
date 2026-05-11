@@ -340,19 +340,21 @@ export function RegisterPage() {
             />
             <span className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
               {t("auth:agreeToTerms")}{" "}
-              <a
-                href="#"
+              <button
+                type="button"
                 className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                title={t("auth:comingSoon", "Coming soon")}
               >
                 {t("auth:termsOfService")}
-              </a>{" "}
+              </button>{" "}
               {t("auth:and")}{" "}
-              <a
-                href="#"
+              <button
+                type="button"
                 className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                title={t("auth:comingSoon", "Coming soon")}
               >
                 {t("auth:privacyPolicy")}
-              </a>
+              </button>
             </span>
           </label>
           {fieldErrors.agreedToTerms && (

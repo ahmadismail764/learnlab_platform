@@ -18,7 +18,7 @@ import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useAuth, useCurrentUser } from '@/contexts'
 import { authService, AuthRequestError } from '@/services/auth'
 import { useLearnerProfile, useTopicMastery } from '@/hooks'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '@/contexts'
 import { validateForm, profileSchema } from '@/validation'
 
 /**

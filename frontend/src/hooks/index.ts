@@ -38,3 +38,4 @@ export {
 
 // API error interceptor (global)
 export { useApiErrorInterceptor } from './useApiErrorInterceptor'
+export { useLanguage } from './useLanguage'

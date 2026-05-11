@@ -45,9 +45,13 @@ export function MathInput({
   const { i18n, t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const mathFieldRef = useRef<MathfieldElement | null>(null)
+  const optionsRef = useRef({ onChange, showKeyboard, readOnly, disabled })
   const [isFocused, setIsFocused] = useState(false)
-  const [isReady, setIsReady] = useState(false)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
+
+  useEffect(() => {
+    optionsRef.current = { onChange, showKeyboard, readOnly, disabled }
+  }, [disabled, onChange, readOnly, showKeyboard])
 
   // Hide virtual keyboard on unmount (e.g. navigating away from the page)
   useEffect(() => {
@@ -89,24 +93,26 @@ export function MathInput({
     mf.style.setProperty('--selection-background-color', 'var(--color-primary-100, #dbeafe)')
     // Note: Dark mode colors are handled by a separate useEffect that listens for theme changes
 
-    // Configure virtual keyboard
-    if (showKeyboard) {
-      mf.mathVirtualKeyboardPolicy = 'manual'
-    }
-
     // Configure keyboard layouts for discrete math
     if (window.mathVirtualKeyboard) {
       window.mathVirtualKeyboard.layouts = ['numeric', 'symbols', 'greek']
     }
 
-    // Set read-only state
-    if (readOnly || disabled) {
-      mf.readOnly = true
+    const handleInput = (evt: Event) => {
+      const target = evt.target as MathfieldElement
+      optionsRef.current.onChange?.(target.getValue())
     }
 
-    // Set initial value
-    if (value) {
-      mf.setValue(value)
+    const handleFocus = () => {
+      const { showKeyboard: shouldShowKeyboard, readOnly: isReadOnly, disabled: isDisabled } = optionsRef.current
+      setIsFocused(true)
+      if (shouldShowKeyboard && !isReadOnly && !isDisabled && window.mathVirtualKeyboard) {
+        window.mathVirtualKeyboard.show()
+      }
+    }
+
+    const handleBlur = () => {
+      setIsFocused(false)
     }
 
     // Add event listeners
@@ -116,7 +122,6 @@ export function MathInput({
 
     // Mount to container
     container.appendChild(mf)
-    setIsReady(true)
 
     // Cleanup
     return () => {
@@ -130,26 +135,34 @@ export function MathInput({
     }
   }, [])
 
+  // Update virtual keyboard policy
+  useEffect(() => {
+    const mf = mathFieldRef.current
+    if (mf) {
+      mf.mathVirtualKeyboardPolicy = showKeyboard ? 'manual' : 'auto'
+    }
+  }, [showKeyboard])
+
   // Update value when prop changes
   useEffect(() => {
     const mf = mathFieldRef.current
-    if (mf && isReady && mf.getValue() !== value) {
+    if (mf && mf.getValue() !== value) {
       mf.setValue(value)
     }
-  }, [value, isReady])
+  }, [value])
 
   // Update read-only state
   useEffect(() => {
     const mf = mathFieldRef.current
-    if (mf && isReady) {
+    if (mf) {
       mf.readOnly = readOnly || disabled
     }
-  }, [readOnly, disabled, isReady])
+  }, [readOnly, disabled])
 
   // Handle RTL direction
   useEffect(() => {
     const mf = mathFieldRef.current
-    if (!mf || !isReady) return
+    if (!mf) return
     
     // Math content is always LTR
     mf.style.direction = 'ltr'
@@ -161,12 +174,12 @@ export function MathInput({
     } else {
       mf.classList.remove('rtl-container')
     }
-  }, [i18n.language, isReady])
+  }, [i18n, i18n.language])
 
   // Handle dark mode changes
   useEffect(() => {
     const mf = mathFieldRef.current
-    if (!mf || !isReady) return
+    if (!mf) return
 
     const updateTheme = () => {
       const isDark = document.documentElement.classList.contains('dark')
@@ -192,27 +205,7 @@ export function MathInput({
     })
 
     return () => observer.disconnect()
-  }, [isReady])
-
-  // Handle input changes
-  const handleInput = (evt: Event) => {
-    const target = evt.target as MathfieldElement
-    const latex = target.getValue()
-    onChange?.(latex)
-  }
-
-  // Handle focus events for virtual keyboard
-  const handleFocus = () => {
-    setIsFocused(true)
-    if (showKeyboard && !readOnly && !disabled && window.mathVirtualKeyboard) {
-      window.mathVirtualKeyboard.show()
-    }
-  }
-
-  const handleBlur = () => {
-    setIsFocused(false)
-    // Don't hide keyboard immediately - user might tap on it
-  }
+  }, [])
 
   // Hide the virtual keyboard explicitly
   const hideKeyboard = useCallback(() => {

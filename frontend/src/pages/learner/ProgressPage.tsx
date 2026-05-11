@@ -1,6 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
 import {
   Activity,
   ArrowRight,
@@ -47,8 +46,7 @@ const stateBadgeVariant: Record<string, 'success' | 'warning' | 'primary' | 'out
 }
 
 export function ProgressPage() {
-  const { t: _t } = useTranslation(['learner', 'topics', 'common', 'gamification'])
-
+  const [renderTimestamp] = useState(() => Date.now())
   const { data: profile, isLoading: profileLoading } = useLearnerProfile()
   const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
   const masteries = (rawMasteries ?? []) as TopicMastery[]
@@ -166,7 +164,7 @@ export function ProgressPage() {
   // Format next_due as relative text
   const formatDue = (nextDue: string | null): string => {
     if (!nextDue) return 'Not scheduled'
-    const diff = new Date(nextDue).getTime() - Date.now()
+    const diff = new Date(nextDue).getTime() - renderTimestamp
     if (diff <= 0) return 'Due now'
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
     if (days === 1) return 'Tomorrow'

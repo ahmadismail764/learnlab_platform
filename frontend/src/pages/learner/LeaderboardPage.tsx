@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useState, useMemo } from 'react'
 import {
   Medal,
   Flame,
@@ -16,6 +15,7 @@ import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
 import { useTopics, useGlobalLeaderboard, useTopicLeaderboard } from '@/hooks'
 import { cn } from '@/utils/cn'
+import type { LeaderboardLearner } from '@/services/learners'
 
 interface LeaderboardEntry {
   id: number | string
@@ -34,36 +34,34 @@ interface TopicOption {
   name: string
 }
 
+interface LeaderboardApiEntry extends LeaderboardLearner {
+  accuracy?: number
+  rank_change?: number
+}
+
 export function LeaderboardPage() {
-  const { t: _t } = useTranslation(['gamification', 'common'])
   const currentUser = useCurrentUser()
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
-  const [selectedTopicId, setSelectedTopicId] = useState<string>('')
+  const [selectedTopicOverride, setSelectedTopicOverride] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch topics for the filter dropdown
   const { data: rawTopics } = useTopics()
   const topics = (rawTopics ?? []) as TopicOption[]
-
-  // Auto-select first topic when topics load
-  useEffect(() => {
-    if (topics.length > 0 && !selectedTopicId) {
-      setSelectedTopicId(topics[0].id.toString())
-    }
-  }, [topics, selectedTopicId])
+  const selectedTopicId = selectedTopicOverride || topics[0]?.id.toString() || ''
 
   // Fetch leaderboard data — React Query handles caching + deduplication
   const { data: globalData, isLoading: globalLoading } = useGlobalLeaderboard()
   const { data: topicData, isLoading: topicLoading } = useTopicLeaderboard(
-    leaderboardType === 'topic' ? selectedTopicId : null
+    leaderboardType === 'topic' && selectedTopicId ? selectedTopicId : null
   )
 
   const isLoading = leaderboardType === 'global' ? globalLoading : topicLoading
-  const rawLeaderboard = leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])
+  const rawLeaderboard = (leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])) as LeaderboardApiEntry[]
 
   // Map raw API data to UI-friendly entries
   const leaderboard = useMemo<LeaderboardEntry[]>(() => {
-    return rawLeaderboard.map((entry: any, index: number) => ({
+    return rawLeaderboard.map((entry, index) => ({
       id: entry.id,
       name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
       xp: entry.total_xp || 0,
@@ -156,7 +154,7 @@ export function LeaderboardPage() {
             {leaderboardType === 'topic' && (
               <select
                 value={selectedTopicId}
-                onChange={(event) => setSelectedTopicId(event.target.value)}
+                onChange={(event) => setSelectedTopicOverride(event.target.value)}
                 className="h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-700 outline-hidden dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
               >
                 {topics.map((topic) => (

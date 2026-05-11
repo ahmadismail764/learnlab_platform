@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '@/contexts'
 import { useQueryClient, type Query } from '@tanstack/react-query'
 
 /**

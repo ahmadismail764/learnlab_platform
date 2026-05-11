@@ -41,7 +41,8 @@ function formatLog(level: LogLevel, message: string, data?: unknown): LogEntry {
  * - DataDog
  * - Azure Application Insights
  */
-function sendToMonitoring(_entry: LogEntry): void {
+function sendToMonitoring(entry: LogEntry): void {
+  void entry
   // TODO: Implement when monitoring service is set up
   // Example:
   // if (entry.level === 'error') {

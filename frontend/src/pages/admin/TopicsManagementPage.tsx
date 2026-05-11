@@ -19,7 +19,7 @@ import {
 import { Card, Button, Badge, Input, EmptyState } from '@/components/ui'
 import { topicsService } from '@/services/topics'
 import { useTopics } from '@/hooks'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '@/contexts'
 
 /**
  * TopicsManagementPage - Admin Curriculum Structure (UC-07)

@@ -31,6 +31,12 @@ const GOALS = [
   { id: 'serious', label: 'Serious', desc: '30+ mins/day', icon: Rocket, color: 'text-orange-500' },
 ]
 
+interface OnboardingTopic {
+  id: number
+  name: string
+  parent_module?: string | null
+}
+
 export function OnboardingPage() {
   const navigate = useNavigate()
   const user = useCurrentUser()
@@ -40,7 +46,7 @@ export function OnboardingPage() {
   const [selectedGoal, setSelectedGoal] = useState<string>('regular')
   const [selectedTopics, setSelectedTopics] = useState<number[]>([])
 
-  const topics = Array.isArray(topicsData) ? topicsData : topicsData?.results ?? []
+  const topics = (Array.isArray(topicsData) ? topicsData : topicsData?.results ?? []) as OnboardingTopic[]
 
   const handleNext = () => {
     if (step < 3) setStep(step + 1)
@@ -207,7 +213,7 @@ export function OnboardingPage() {
                   {topicsLoading ? (
                     <div className="flex justify-center py-10"><Rocket className="w-8 h-8 animate-spin text-primary-500" /></div>
                   ) : topics.length > 0 ? (
-                    topics.map((topic: any) => {
+                    topics.map((topic) => {
                       const isSelected = selectedTopics.includes(topic.id)
                       return (
                         <button

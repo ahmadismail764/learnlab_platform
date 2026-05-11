@@ -19,7 +19,7 @@ import {
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
 import { PageIntro, PageStatCard } from '@/components/common'
 import { useAuth, useCurrentUser } from '@/contexts'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '@/contexts'
 import { analyticsService, authService, learnersService } from '@/services'
 
 /**

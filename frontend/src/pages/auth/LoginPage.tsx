@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Mail, Lock, Eye, EyeOff, ShieldCheck, GraduationCap, CheckCircle, Copy } from "lucide-react";
 import { Button, Card, Input } from "@/components/ui";
 import { useAuth } from "@/contexts";
-import { useToast } from "@/contexts/ToastContext";
+import { useToast } from "@/contexts";
 import { AuthRequestError } from "@/services/auth";
 
 /**

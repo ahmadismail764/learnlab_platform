@@ -12,7 +12,7 @@ import {
   Sparkles,
   PartyPopper,
 } from "lucide-react";
-import { Card, Button, Badge, ProgressBar } from "@/components/ui";
+import { Card, Button, Badge, Input, ProgressBar } from "@/components/ui";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
@@ -568,16 +568,14 @@ export function TopicsPage() {
       </div>
 
       {/* Search bar (UC-08 Alt Flow 5a) */}
-      <div className="relative">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("learner:searchTopics")}
-          className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
-        />
-      </div>
+      <Input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={t("learner:searchTopics")}
+        leftIcon={<Search className="h-4 w-4" />}
+        size="md"
+        className="rounded-xl py-2.5"
+      />
 
       {/* ═══ All Caught Up state (UC-08 Alt Flow 3a) ═══ */}
       {allCaughtUp ? (

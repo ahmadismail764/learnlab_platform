@@ -1,8 +1,8 @@
-import { Suspense, lazy } from "react";
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { lazy } from "react";
+import { createBrowserRouter, Link, Navigate } from "react-router-dom";
 import { AuthLayout, DashboardLayout } from "@/components/layout";
 import type { User } from "@/types";
-import { Spinner } from "@/components/ui/Loading";
+import { LazyRoute } from "./LazyRoute";
 
 /**
  * Application Router
@@ -61,21 +61,6 @@ const SettingsPage = lazy(() =>
 const AdminProfilePage = lazy(() =>
   import("@/pages/admin/AdminProfilePage").then((m) => ({ default: m.AdminProfilePage }))
 );
-
-// ── Suspense wrapper for lazy routes ──────────────────────────────
-function LazyRoute({ children }: { children: React.ReactNode }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-[300px]">
-          <Spinner size="lg" />
-        </div>
-      }
-    >
-      {children}
-    </Suspense>
-  );
-}
 
 /**
  * Helper to create dashboard layout with user.
@@ -164,12 +149,12 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
           <div className="text-center">
             <h1 className="text-6xl font-bold text-neutral-300">404</h1>
             <p className="text-neutral-600 mt-2">Page not found</p>
-            <a
-              href="/"
+            <Link
+              to="/"
               className="text-primary-600 hover:text-primary-700 mt-4 inline-block"
             >
               Go home
-            </a>
+            </Link>
           </div>
         </div>
       ),

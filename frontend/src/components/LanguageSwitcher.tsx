@@ -256,22 +256,3 @@ export function LanguageSwitcher({
   )
 }
 
-/**
- * useLanguage hook
- * 
- * Provides current language info and change function.
- */
-export function useLanguage() {
-  const { i18n } = useTranslation()
-  const currentLang = i18n.language as SupportedLanguage
-  const config = languageConfig[currentLang] || languageConfig.en
-  
-  return {
-    language: currentLang,
-    dir: config.dir,
-    isRTL: config.dir === 'rtl',
-    config,
-    changeLanguage,
-    supportedLanguages,
-  }
-}

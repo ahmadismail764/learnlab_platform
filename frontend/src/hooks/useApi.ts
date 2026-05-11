@@ -108,8 +108,7 @@ export function useQuestions() {
     queryKey: ['questions', 'list'],
     queryFn: async () => {
       const { questionsService } = await import('@/services/questions')
-      const raw: any = await questionsService.getQuestions()
-      return Array.isArray(raw) ? raw : raw.results ?? []
+      return await questionsService.getQuestions()
     },
   })
 }

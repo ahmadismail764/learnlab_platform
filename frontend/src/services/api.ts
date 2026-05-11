@@ -17,7 +17,14 @@ function getApiRoot(baseUrl: string): string {
 
 function buildUrl(baseUrl: string, path: string): string {
   if (/^https?:\/\//i.test(path)) {
-    return path;
+    const targetUrl = new URL(path);
+    const baseOrigin = new URL(baseUrl).origin;
+
+    if (targetUrl.origin !== baseOrigin) {
+      throw new Error("Refusing to attach auth headers to a non-API origin");
+    }
+
+    return targetUrl.toString();
   }
 
   if (path.startsWith("/")) {

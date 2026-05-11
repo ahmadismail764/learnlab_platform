@@ -44,7 +44,10 @@ export function QuestionsPage() {
 
   // Data fetching via React Query
   const { data: rawQuestions, isLoading, error: queryError, refetch: fetchQuestions } = useQuestions()
-  const questions = (rawQuestions ?? []) as BackendQuestion[]
+  const questions = useMemo(
+    () => (rawQuestions ?? []) as BackendQuestion[],
+    [rawQuestions]
+  )
   const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load questions') : ''
 
   // Filters state

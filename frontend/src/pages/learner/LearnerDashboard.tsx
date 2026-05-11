@@ -59,7 +59,10 @@ export function LearnerDashboard() {
 
   const { data: profile, isLoading: profileLoading } = useLearnerProfile();
   const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery();
-  const masteries = (rawMasteries ?? []) as TopicMastery[];
+  const masteries = useMemo(
+    () => (rawMasteries ?? []) as TopicMastery[],
+    [rawMasteries]
+  );
   const isLoading = profileLoading || masteryLoading;
 
   const stats = useMemo(() => {

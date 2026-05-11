@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CheckCircle,
@@ -110,6 +110,84 @@ export function PracticePage() {
     }
   }
 
+  const handleAnswer = useCallback((choice: string) => {
+    if (!currentQuestion || !currentStatus || currentStatus.answerState === 'answered') return
+    const isCorrect = currentQuestion.choices.indexOf(choice) === currentQuestion.correct_answer_index
+    setQuestionStates((prev) => ({
+      ...prev,
+      [currentIndex]: {
+        ...prev[currentIndex],
+        userResponse: choice,
+        answerState: 'answered',
+        isCorrect: isCorrect
+      }
+    }))
+    if (isCorrect) setEarnedXp(prev => prev + 10 * currentQuestion.tier)
+  }, [currentQuestion, currentStatus, currentIndex])
+
+  const handleSubmitMathAnswer = useCallback(() => {
+    if (!currentQuestion || !mathValue || !currentStatus || currentStatus.answerState === 'answered') return
+    setQuestionStates(prev => ({
+      ...prev,
+      [currentIndex]: {
+        ...prev[currentIndex],
+        userResponse: mathValue,
+        answerState: 'answered',
+        isCorrect: true 
+      }
+    }))
+    setEarnedXp(prev => prev + 15 * currentQuestion.tier)
+  }, [currentQuestion, currentStatus, currentIndex, mathValue])
+
+  const completeSession = useCallback(async () => {
+    setSessionState('complete')
+    if (sessionRecord) {
+      try {
+        await practiceService.completeSession(sessionRecord.id, earnedXp)
+        // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
+        queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
+        queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.global })
+        queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
+        queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
+      } catch (e) {
+        console.error('Failed to complete session', e)
+      }
+    }
+  }, [earnedXp, queryClient, sessionRecord])
+
+  const handleGrade = useCallback(async (grade: FIReGrade) => {
+    if (!currentStatus || !sessionRecord || !currentQuestion) return
+    const timeTaken = Math.round((Date.now() - currentStatus.startTime) / 1000)
+    setQuestionStates((prev) => ({
+      ...prev,
+      [currentIndex]: { ...prev[currentIndex], grade: grade }
+    }))
+    try {
+      await practiceService.submitInteraction({
+        session: sessionRecord.id,
+        question: currentQuestion.id,
+        user_response: currentStatus.userResponse || mathValue || 'N/A',
+        is_correct: grade > 1,
+        time_taken_seconds: timeTaken,
+        confidence_rating: grade
+      })
+    } catch (err) {
+      console.error("Failed to submit interaction", err)
+    }
+    setMathValue('')
+    if (currentIndex < questions.length - 1) {
+      const nextIndex = currentIndex + 1
+      setCurrentIndex(nextIndex)
+      setQuestionStates((prev) => ({
+        ...prev,
+        [nextIndex]: { ...prev[nextIndex], startTime: Date.now() }
+      }))
+    } else {
+      completeSession()
+    }
+  }, [completeSession, currentIndex, currentQuestion, currentStatus, mathValue, questions.length, sessionRecord])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -146,86 +224,7 @@ export function PracticePage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sessionState, currentQuestion, currentStatus, mathValue]);
-
-  const handleAnswer = (choice: string) => {
-    if (!currentStatus || currentStatus.answerState === 'answered') return
-    const isCorrect = currentQuestion.choices.indexOf(choice) === currentQuestion.correct_answer_index
-    setQuestionStates((prev) => ({
-      ...prev,
-      [currentIndex]: {
-        ...prev[currentIndex],
-        userResponse: choice,
-        answerState: 'answered',
-        isCorrect: isCorrect
-      }
-    }))
-    if (isCorrect) setEarnedXp(prev => prev + 10 * currentQuestion.tier)
-  }
-
-  const handleSubmitMathAnswer = () => {
-    if (!mathValue || !currentStatus || currentStatus.answerState === 'answered') return
-    setQuestionStates(prev => ({
-      ...prev,
-      [currentIndex]: {
-        ...prev[currentIndex],
-        userResponse: mathValue,
-        answerState: 'answered',
-        isCorrect: true 
-      }
-    }))
-    setEarnedXp(prev => prev + 15 * currentQuestion.tier)
-  }
-
-  const handleGrade = async (grade: FIReGrade) => {
-    if (!currentStatus || !sessionRecord || !currentQuestion) return
-    const timeTaken = Math.round((Date.now() - currentStatus.startTime) / 1000)
-    setQuestionStates((prev) => ({
-      ...prev,
-      [currentIndex]: { ...prev[currentIndex], grade: grade }
-    }))
-    try {
-      await practiceService.submitInteraction({
-        session: sessionRecord.id,
-        question: currentQuestion.id,
-        user_response: currentStatus.userResponse || mathValue || 'N/A',
-        is_correct: grade > 1,
-        time_taken_seconds: timeTaken,
-        confidence_rating: grade
-      })
-    } catch (err) {
-      console.error("Failed to submit interaction", err)
-    }
-    setMathValue('')
-    if (currentIndex < questions.length - 1) {
-      const nextIndex = currentIndex + 1
-      setCurrentIndex(nextIndex)
-      setQuestionStates((prev) => ({
-        ...prev,
-        [nextIndex]: { ...prev[nextIndex], startTime: Date.now() }
-      }))
-    } else {
-      completeSession()
-    }
-  }
-
-  const completeSession = async () => {
-    setSessionState('complete')
-    if (sessionRecord) {
-      try {
-        await practiceService.completeSession(sessionRecord.id, earnedXp)
-        // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
-        queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
-        queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
-        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.global })
-        queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
-        queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
-        queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
-      } catch (e) {
-        console.error('Failed to complete session', e)
-      }
-    }
-  }
+  }, [currentQuestion, currentStatus, handleAnswer, handleGrade, handleSubmitMathAnswer, sessionState])
 
   if (sessionState === 'selecting') {
     return (

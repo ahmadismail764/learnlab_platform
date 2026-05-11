@@ -68,7 +68,10 @@ export function TopicsManagementPage() {
 
   // Data fetching via React Query
   const { data: rawTopics, isLoading, error: queryError, refetch: fetchTopics } = useTopics()
-  const topics = (rawTopics ?? []) as BackendTopic[]
+  const topics = useMemo(
+    () => (rawTopics ?? []) as BackendTopic[],
+    [rawTopics]
+  )
   const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load topics') : ''
 
   // UI state

@@ -26,6 +26,34 @@ import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
  * - Activity trends
  */
 
+const FSRS_METRICS = [
+  { topic: 'logic', speed: 14.2, retention: 92 },
+  { topic: 'sets', speed: 11.5, retention: 88 },
+  { topic: 'relations', speed: 8.7, retention: 82 },
+  { topic: 'combinatorics', speed: 6.3, retention: 76 },
+  { topic: 'graphs', speed: 9.8, retention: 85 },
+  { topic: 'numtheory', speed: 7.1, retention: 79 },
+] as const
+
+const TOPIC_PERFORMANCE = [
+  { topic: 'logic', accuracy: 78, attempts: 12450, avgTime: 45 },
+  { topic: 'sets', accuracy: 72, attempts: 9870, avgTime: 52 },
+  { topic: 'relations', accuracy: 68, attempts: 8340, avgTime: 58 },
+  { topic: 'combinatorics', accuracy: 65, attempts: 7210, avgTime: 62 },
+  { topic: 'graphs', accuracy: 71, attempts: 4560, avgTime: 48 },
+  { topic: 'numtheory', accuracy: 69, attempts: 2890, avgTime: 55 },
+] as const
+
+const WEEKLY_ACTIVITY = [
+  { day: 'Sat', learners: 420, questions: 2100 },
+  { day: 'Sun', learners: 380, questions: 1850 },
+  { day: 'Mon', learners: 520, questions: 2800 },
+  { day: 'Tue', learners: 490, questions: 2650 },
+  { day: 'Wed', learners: 510, questions: 2750 },
+  { day: 'Thu', learners: 470, questions: 2400 },
+  { day: 'Fri', learners: 350, questions: 1700 },
+] as const
+
 export function AnalyticsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
   const fallbackTopLearners = useMemo(() => [
@@ -66,23 +94,8 @@ export function AnalyticsPage() {
   }, [leaderboard, fallbackTopLearners])
 
   // UC-04 Step 3: FIRe-specific metrics per topic (mock data)
-  const fsrsMetrics = [
-    { topic: 'logic', speed: 14.2, retention: 92 },
-    { topic: 'sets', speed: 11.5, retention: 88 },
-    { topic: 'relations', speed: 8.7, retention: 82 },
-    { topic: 'combinatorics', speed: 6.3, retention: 76 },
-    { topic: 'graphs', speed: 9.8, retention: 85 },
-    { topic: 'numtheory', speed: 7.1, retention: 79 },
-  ]
-
-  const topicPerformance = [
-    { topic: 'logic', accuracy: 78, attempts: 12450, avgTime: 45 },
-    { topic: 'sets', accuracy: 72, attempts: 9870, avgTime: 52 },
-    { topic: 'relations', accuracy: 68, attempts: 8340, avgTime: 58 },
-    { topic: 'combinatorics', accuracy: 65, attempts: 7210, avgTime: 62 },
-    { topic: 'graphs', accuracy: 71, attempts: 4560, avgTime: 48 },
-    { topic: 'numtheory', accuracy: 69, attempts: 2890, avgTime: 55 },
-  ]
+  const fsrsMetrics = FSRS_METRICS
+  const topicPerformance = TOPIC_PERFORMANCE
 
   const difficultyBreakdown = {
     tier1: { attempts: 18500, accuracy: 85 },
@@ -90,36 +103,21 @@ export function AnalyticsPage() {
     tier3: { attempts: 9620, accuracy: 52 },
   }
 
-  const weeklyActivity = [
-    { day: 'Sat', learners: 420, questions: 2100 },
-    { day: 'Sun', learners: 380, questions: 1850 },
-    { day: 'Mon', learners: 520, questions: 2800 },
-    { day: 'Tue', learners: 490, questions: 2650 },
-    { day: 'Wed', learners: 510, questions: 2750 },
-    { day: 'Thu', learners: 470, questions: 2400 },
-    { day: 'Fri', learners: 350, questions: 1700 },
-  ]
+  const weeklyActivity = WEEKLY_ACTIVITY
 
 
 
-  const maxAttempts = useMemo(() => 
-    Math.max(...topicPerformance.map(t => t.attempts)),
-    [topicPerformance]
-  )
-
-  const maxDailyLearners = useMemo(() =>
-    Math.max(...weeklyActivity.map(d => d.learners)),
-    [weeklyActivity]
-  )
+  const maxAttempts = Math.max(...topicPerformance.map((t) => t.attempts))
+  const maxDailyLearners = Math.max(...weeklyActivity.map((d) => d.learners))
 
   // UC-04 Step 4a: Filter topics by search
   const filteredTopics = useMemo(() =>
     topicSearch
-      ? topicPerformance.filter(item =>
+      ? topicPerformance.filter((item) =>
           t(`topics:${item.topic}`).toLowerCase().includes(topicSearch.toLowerCase())
         )
       : topicPerformance,
-    [topicSearch, topicPerformance, t]
+    [topicSearch, t, topicPerformance]
   )
 
   // UC-04 Alternate Flow 2a: Insufficient data check

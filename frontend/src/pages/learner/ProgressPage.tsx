@@ -49,7 +49,10 @@ export function ProgressPage() {
   const [renderTimestamp] = useState(() => Date.now())
   const { data: profile, isLoading: profileLoading } = useLearnerProfile()
   const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
-  const masteries = (rawMasteries ?? []) as TopicMastery[]
+  const masteries = useMemo(
+    () => (rawMasteries ?? []) as TopicMastery[],
+    [rawMasteries]
+  )
   const isLoading = profileLoading || masteryLoading
 
   // Derive weekly-style stats from real data

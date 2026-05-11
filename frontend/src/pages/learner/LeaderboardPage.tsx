@@ -47,7 +47,10 @@ export function LeaderboardPage() {
 
   // Fetch topics for the filter dropdown
   const { data: rawTopics } = useTopics()
-  const topics = (rawTopics ?? []) as TopicOption[]
+  const topics = useMemo(
+    () => (rawTopics ?? []) as TopicOption[],
+    [rawTopics]
+  )
   const selectedTopicId = selectedTopicOverride || topics[0]?.id.toString() || ''
 
   // Fetch leaderboard data — React Query handles caching + deduplication
@@ -57,7 +60,10 @@ export function LeaderboardPage() {
   )
 
   const isLoading = leaderboardType === 'global' ? globalLoading : topicLoading
-  const rawLeaderboard = (leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])) as LeaderboardApiEntry[]
+  const rawLeaderboard = useMemo<LeaderboardApiEntry[]>(
+    () => (leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])),
+    [leaderboardType, globalData, topicData]
+  )
 
   // Map raw API data to UI-friendly entries
   const leaderboard = useMemo<LeaderboardEntry[]>(() => {

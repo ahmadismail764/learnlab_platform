@@ -54,7 +54,10 @@ export function LearnerProfilePage() {
   // Data fetching via React Query — cached, deduplicated, auto-refreshed
   const { data: learnerProfile } = useLearnerProfile()
   const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
-  const topicMasteries = (rawMasteries ?? []) as TopicMasteryData[]
+  const topicMasteries = useMemo(
+    () => (rawMasteries ?? []) as TopicMasteryData[],
+    [rawMasteries]
+  )
 
   const [profileForm, setProfileForm] = useState({
     username: user.username ?? user.email.split('@')[0],

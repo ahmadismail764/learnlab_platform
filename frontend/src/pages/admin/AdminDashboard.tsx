@@ -22,7 +22,10 @@ export function AdminDashboard() {
 
   const { data: metrics, isLoading: metricsLoading } = useAggregatedMetrics()
   const { data: leaderboardRaw, isLoading: lbLoading } = useGlobalLeaderboard()
-  const leaderboard = (leaderboardRaw ?? []) as LearnerProfile[]
+  const leaderboard = useMemo(
+    () => (leaderboardRaw ?? []) as LearnerProfile[],
+    [leaderboardRaw]
+  )
   const isLoading = metricsLoading || lbLoading
 
   const stats = useMemo(() => ({

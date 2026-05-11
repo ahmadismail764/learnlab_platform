@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest",
+    "test:run": "vitest run",
     "preview": "vite preview",
     "i18n:sync": "bun run scripts/sync-translations.ts",
     "i18n:check": "bun run scripts/sync-translations.ts --check",

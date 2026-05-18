@@ -1,4 +1,4 @@
-from django.urls import path
+"""URL routing configuration for the topics app."""
 from rest_framework.routers import DefaultRouter
 from topics.views import TopicViewSet, SubtopicViewSet, SubtopicMasteryViewSet
 

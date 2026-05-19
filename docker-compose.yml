@@ -1,0 +1,27 @@
+services:
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: SoftwareSQL11__
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - venv:/app/.venv
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
+  venv:

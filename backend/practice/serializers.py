@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from practice.models import Question, PracticeSession, QuestionResponse
-from accounts.serializers import LearnerSerializer
+from accounts.serializers import UserSerializer
 import math
 from datetime import datetime, timezone
 
@@ -24,7 +24,7 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'is_correct', 'time_taken_seconds', 'confidence_rating']
 
 class PracticeSessionSerializer(serializers.ModelSerializer):
-    learner = LearnerSerializer(read_only=True)
+    learner = UserSerializer(read_only=True)
     responses = QuestionResponseSerializer(many=True, read_only=True)
 
     class Meta:

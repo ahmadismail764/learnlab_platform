@@ -1,10 +1,14 @@
+# Docker
+docker-compose.override.yml
+
 # Python / Django
 __pycache__/
 *.pyc
 venv/
 .venv/
 staticfiles/
-
+.python-version
+*.pyo
 # Frontend
 frontend/node_modules/
 frontend/dist/

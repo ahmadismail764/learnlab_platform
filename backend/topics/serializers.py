@@ -1,15 +1,9 @@
-""""""
 from datetime import datetime, timezone
 import math
-from datetime import timezone
 from rest_framework import serializers
 from topics.models import Topic, Subtopic, SubtopicMastery
 
 class TopicSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Topic model.
-    Handles the serialization of basic topic information such as name and description.
-    """
     class Meta:
         model = Topic
         fields = ['id', 'name', 'description']
@@ -17,35 +11,47 @@ class TopicSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
 
 class SubtopicSerializer(serializers.ModelSerializer):
-    """
-    Serializer for the Subtopic model.
-    Includes the parent topic's name as a read-only field along with standard subtopic details.
-    """
     topic_name = serializers.CharField(source='topic.name', read_only=True)
+    question_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Subtopic
         fields = ['id', 'topic', 'topic_name', 'name', 'description', 'question_count']
 
+    def get_question_count(self, obj) -> int:
+        return obj.questions.count()
+
 class SubtopicMasterySerializer(serializers.ModelSerializer):
-    """
-    Serializer for the SubtopicMastery model.
-    Tracks a learner's spaced repetition state and calculates the current retrievability score for a specific subtopic.
-    """
-    retrievability = serializers.SerializerMethodField()
-    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
+    topic = serializers.UUIDField(source='subtopic.topic.id', read_only=True)
+    topic_name = serializers.CharField(source='subtopic.topic.name', read_only=True)
+    rep_num = serializers.IntegerField(source='reps', read_only=True)
+    memory = serializers.SerializerMethodField()
+    speed = serializers.FloatField(source='stability', read_only=True)
+    status = serializers.SerializerMethodField()
+    last_reviewed = serializers.DateTimeField(source='last_review', read_only=True)
+    next_due = serializers.DateTimeField(source='next_review', read_only=True)
 
     class Meta:
         model = SubtopicMastery
-        fields = ['id', 'learner', 'subtopic', 'subtopic_name', 'difficulty', 'stability', 'reps', 'lapses', 'state', 'last_review', 'next_review', 'retrievability']
-        read_only_fields = ['learner', 'subtopic', 'difficulty', 'stability', 'reps', 'lapses', 'last_review', 'retrievability']
+        fields = [
+            'id', 'topic', 'topic_name', 'rep_num', 'memory', 'speed', 
+            'difficulty', 'status', 'last_reviewed', 'next_due'
+        ]
+        read_only_fields = fields
 
-    """Returns the retrievability score for this subtopic (relative to the user of course)"""
-    def get_retrievability(self, obj) -> float:
-        if obj.stability is None or obj.last_review is None:
+    def get_memory(self, obj) -> float:
+        if obj.stability is None or obj.stability <= 0 or obj.last_review is None:
             return 0.0
 
-        now = datetime.now(timezone.utc) # type: ignore
+        now = datetime.now(timezone.utc)
         elapsed_days = (now - obj.last_review).total_seconds() / 86400
         return round(math.exp(math.log(0.9) * elapsed_days / obj.stability), 4)
 
+    def get_status(self, obj) -> str:
+        state_mapping = {
+            'NEW': 'new',
+            'LEARNING': 'learning',
+            'REVIEW': 'learned',
+            'RELEARNING': 'struggling',
+        }
+        return state_mapping.get(obj.state, 'new')

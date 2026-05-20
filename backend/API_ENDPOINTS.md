@@ -180,6 +180,17 @@
   ]
   ```
 
+### Adaptive Session Generation
+* **Endpoint**: `GET /practice/sessions/generate-adaptive/` (Requires JWT Authentication)
+* **Query Params**: `?topic=<uuid>` (optional), `?limit=<int>` (optional, default 10)
+* **Response (200 OK)**:
+  ```json
+  {
+    "questions": [/* QuestionSerializer rows, FSRS-prioritized */],
+    "message": "Generated adaptive session with 10 question(s)"
+  }
+  ```
+
 ---
 
 ## 3. Topics & Subtopics (`/topics/`)
@@ -257,6 +268,28 @@
   }
   ```
 
+### Bulk Topic Analytics
+* **Endpoint**: `GET /analytics/topics/` (Requires JWT Authentication)
+* **Query Params**: `?topic_ids=uuid1,uuid2` (optional)
+* **Response**:
+  ```json
+  {
+    "results": [
+      {
+        "topic_id": "a1ba01cc-55b8-4c8d-b988-1bcb0b03390a",
+        "topic_name": "Mathematics",
+        "metrics": {
+          "avg_speed": 1.0,
+          "avg_difficulty": 5.0,
+          "estimated_retention": 0.885,
+          "learner_count": 12
+        },
+        "distribution": { "low_speed": 3, "medium_speed": 7, "high_speed": 2 }
+      }
+    ]
+  }
+  ```
+
 ### Topic-specific Analytics Distribution
 * **Endpoint**: `GET /analytics/topics/<uuid:topic_id>/` (Requires JWT Authentication)
 * **Response**:
@@ -266,12 +299,39 @@
     "metrics": {
       "avg_speed": 1.0,
       "avg_difficulty": 5.0,
-      "learner_count": 1
+      "learner_count": 1,
+      "estimated_retention": 0.885
     },
     "distribution": {
       "low_speed": 1,
       "medium_speed": 0,
       "high_speed": 0
+    }
+  }
+  ```
+
+### Activity Time-Series
+* **Endpoint**: `GET /analytics/activity/` (Requires JWT Authentication)
+* **Query Params**: `?period=7d|30d|90d` or `?start=YYYY-MM-DD&end=YYYY-MM-DD`
+* **Response**:
+  ```json
+  {
+    "bucket": "day",
+    "results": [
+      { "date": "2026-05-01", "active_learners": 42, "questions_answered": 210 }
+    ]
+  }
+  ```
+
+### Difficulty Tier Breakdown
+* **Endpoint**: `GET /analytics/difficulty/` (Requires JWT Authentication)
+* **Response**:
+  ```json
+  {
+    "tiers": {
+      "1": { "attempts": 1850, "accuracy": 0.85 },
+      "2": { "attempts": 1720, "accuracy": 0.68 },
+      "3": { "attempts": 962,  "accuracy": 0.52 }
     }
   }
   ```

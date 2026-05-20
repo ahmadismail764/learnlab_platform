@@ -8,7 +8,7 @@ from .serializers import (
     PracticeSessionCreateSerializer, 
     QuestionSerializer
 )
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -47,6 +47,28 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(learner=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def responses(self, request, pk=None):
+        session = self.get_object()
+        if session.learner != request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("Not your session.")
+            
+        from .serializers import QuestionResponseCreateSerializer
+        serializer = QuestionResponseCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            response = QuestionResponse.objects.create(session=session, **serializer.validated_data)
+            
+            from practice.fsrs_engine import process_review
+            process_review(session.learner, response.question.subtopic, response)
+            
+            if response.is_correct:
+                session.total_xp_earned += 10
+                session.save()
+                
+            return Response(QuestionResponseSerializer(response).data, status=201)
+        return Response(serializer.errors, status=400)
 
 class LearnerProfileListView(generics.ListAPIView):
     serializer_class = LearnerProfileSerializer

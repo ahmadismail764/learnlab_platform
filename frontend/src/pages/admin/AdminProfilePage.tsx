@@ -18,8 +18,7 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
 import { PageIntro, PageStatCard } from '@/components/common'
-import { useAuth, useCurrentUser } from '@/contexts'
-import { useToast } from '@/contexts'
+import { useAuth, useCurrentUser, useToast } from '@/contexts'
 import { analyticsService, authService, learnersService } from '@/services'
 
 /**
@@ -50,10 +49,10 @@ export function AdminProfilePage() {
   })
 
   const [systemStats, setSystemStats] = useState({
-    totalLearners: 245,
-    totalQuestions: 1280,
-    activeToday: 42,
-    systemUptime: '99.9%',
+    totalLearners: 0,
+    totalQuestions: 0,
+    activeToday: 0,
+    systemUptime: '--',
   })
   const [statsError, setStatsError] = useState('')
 
@@ -313,6 +312,11 @@ export function AdminProfilePage() {
             <CardHeader
               title={t('profile:recentAdminActions')}
               subtitle={t('profile:recentAdminActionsDescription')}
+              action={
+                <Badge variant="secondary" size="sm">
+                  Simulated
+                </Badge>
+              }
             />
             <CardContent>
               <div className="space-y-2">

@@ -14,6 +14,17 @@ import { LazyRoute } from "./LazyRoute";
  * Roles:
  * - learner: Primary learner - solves problems, views progress
  * - admin: Content manager - manages questions, monitors analytics
+
+/**
+ * Application Router
+ *
+ * Route-level code splitting via React.lazy() keeps the initial bundle
+ * small. Heavy pages (especially PracticePage with mathlive) are loaded
+ * on demand. Each lazy chunk is wrapped in Suspense with a spinner.
+ *
+ * Roles:
+ * - learner: Primary learner - solves problems, views progress
+ * - admin: Content manager - manages questions, monitors analytics
  */
 
 // ── Eagerly loaded (part of initial bundle) ────────────────────────
@@ -22,49 +33,48 @@ import { ForgotPasswordPage, LoginPage, RegisterPage } from "@/pages/auth";
 
 // ── Lazily loaded (split into separate chunks) ─────────────────────
 const OnboardingPage = lazy(() =>
-  import("@/pages/learner/OnboardingPage").then((m) => ({ default: m.OnboardingPage }))
+  import("@/pages/learner/OnboardingPage.tsx").then((m) => ({ default: m.OnboardingPage }))
 );
 const LearnerDashboard = lazy(() =>
-  import("@/pages/learner/LearnerDashboard").then((m) => ({ default: m.LearnerDashboard }))
+  import("@/pages/learner/LearnerDashboard.tsx").then((m) => ({ default: m.LearnerDashboard }))
 );
 const TopicsPage = lazy(() =>
-  import("@/pages/learner/TopicsPage").then((m) => ({ default: m.TopicsPage }))
+  import("@/pages/learner/TopicsPage.tsx").then((m) => ({ default: m.TopicsPage }))
 );
 const PracticePage = lazy(() =>
-  import("@/pages/learner/PracticePage").then((m) => ({ default: m.PracticePage }))
+  import("@/pages/learner/PracticePage.tsx").then((m) => ({ default: m.PracticePage }))
 );
 const ProgressPage = lazy(() =>
-  import("@/pages/learner/ProgressPage").then((m) => ({ default: m.ProgressPage }))
+  import("@/pages/learner/ProgressPage.tsx").then((m) => ({ default: m.ProgressPage }))
 );
 const LeaderboardPage = lazy(() =>
-  import("@/pages/learner/LeaderboardPage").then((m) => ({ default: m.LeaderboardPage }))
+  import("@/pages/learner/LeaderboardPage.tsx").then((m) => ({ default: m.LeaderboardPage }))
 );
 const LearnerProfilePage = lazy(() =>
-  import("@/pages/learner/LearnerProfilePage").then((m) => ({ default: m.LearnerProfilePage }))
+  import("@/pages/learner/LearnerProfilePage.tsx").then((m) => ({ default: m.LearnerProfilePage }))
 );
 
 const AdminDashboard = lazy(() =>
-  import("@/pages/admin/AdminDashboard").then((m) => ({ default: m.AdminDashboard }))
+  import("@/pages/admin/AdminDashboard.tsx").then((m) => ({ default: m.AdminDashboard }))
 );
 const TopicsManagementPage = lazy(() =>
-  import("@/pages/admin/TopicsManagementPage").then((m) => ({ default: m.TopicsManagementPage }))
+  import("@/pages/admin/TopicsManagementPage.tsx").then((m) => ({ default: m.TopicsManagementPage }))
 );
 const QuestionsPage = lazy(() =>
-  import("@/pages/admin/QuestionsPage").then((m) => ({ default: m.QuestionsPage }))
+  import("@/pages/admin/QuestionsPage.tsx").then((m) => ({ default: m.QuestionsPage }))
 );
 const AnalyticsPage = lazy(() =>
-  import("@/pages/admin/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage }))
+  import("@/pages/admin/AnalyticsPage.tsx").then((m) => ({ default: m.AnalyticsPage }))
 );
 const SettingsPage = lazy(() =>
-  import("@/pages/admin/SettingsPage").then((m) => ({ default: m.SettingsPage }))
+  import("@/pages/admin/SettingsPage.tsx").then((m) => ({ default: m.SettingsPage }))
 );
 const AdminProfilePage = lazy(() =>
-  import("@/pages/admin/AdminProfilePage").then((m) => ({ default: m.AdminProfilePage }))
+  import("@/pages/admin/AdminProfilePage.tsx").then((m) => ({ default: m.AdminProfilePage }))
 );
 
 /**
  * Helper to create dashboard layout with user.
- * onLogout is provided by App.tsx from AuthContext.
  */
 function createDashboardElement(
   user: User | null,

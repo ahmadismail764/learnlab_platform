@@ -130,7 +130,7 @@ function ToastContainer({
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full"
+      className="fixed bottom-4 end-4 z-50 flex flex-col gap-2 max-w-sm w-full"
       role="region"
       aria-label="Notifications"
     >
@@ -182,7 +182,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     <div
       className={cn(
         'flex items-start gap-3 p-4 rounded-lg border shadow-lg',
-        'animate-in slide-in-from-right-full fade-in duration-300',
+        'animate-in slide-in-from-right-full rtl:slide-in-from-left-full fade-in duration-300',
         config.bg,
         config.border
       )}

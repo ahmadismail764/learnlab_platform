@@ -95,10 +95,9 @@ export function PracticePage() {
       setQuestions(normalizedQuestions)
 
       // Create session record — backend PracticeSessionCreateSerializer
-      // requires session_type and interactions (can be empty array)
+      // requires responses (can be empty array)
       const session = await practiceService.createSession({
-        session_type: 'adaptive',
-        interactions: []
+        responses: []
       })
       setSessionRecord(session)
 
@@ -453,7 +452,7 @@ export function PracticePage() {
                       onClick={() => handleAnswer(choice)}
                       disabled={isAnswered}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition-colors',
+                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
                         currentStatus.userResponse === choice
                           ? currentStatus.isCorrect
                             ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'

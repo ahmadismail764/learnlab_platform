@@ -28,8 +28,8 @@ const TEST_ACCOUNTS = [
   {
     label: "Learner",
     icon: GraduationCap,
-    username: "testlearner",
-    password: "testpass123",
+    username: "learner",
+    password: "learner123",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
   },
@@ -141,14 +141,14 @@ export function LoginPage() {
                 key={account.username}
                 type="button"
                 onClick={() => fillAccount(account)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors group ${account.bg}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-start transition-colors group ${account.bg}`}
               >
                 <Icon className={`h-4 w-4 flex-shrink-0 ${account.color}`} />
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
                     {account.label}
                   </span>
-                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ms-2">
                     {account.username}
                   </span>
                 </div>

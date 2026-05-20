@@ -16,3 +16,10 @@ export {
   type RegisterFormData,
   type ProfileFormData,
 } from './authSchemas'
+
+export {
+  createTopicSchema,
+  questionSchema,
+  type TopicFormData,
+  type QuestionFormState,
+} from './adminSchemas'

@@ -41,6 +41,7 @@ export interface BackendAuthUser {
   role: "learner" | "admin" | string;
   is_staff: boolean;
   date_joined: string;
+  joined_at?: string;
 }
 
 export interface UpdateCurrentUserPayload {
@@ -142,6 +143,8 @@ function coerceBackendUser(partial: Partial<BackendAuthUser>): BackendAuthUser {
   const now = new Date().toISOString();
   const username = partial.username || partial.email?.split("@")[0] || "learner";
 
+  const dateJoined = partial.date_joined ?? partial.joined_at ?? now;
+
   return {
     id: partial.id ?? username,
     email: partial.email ?? "",
@@ -150,7 +153,8 @@ function coerceBackendUser(partial: Partial<BackendAuthUser>): BackendAuthUser {
     last_name: partial.last_name ?? "",
     role: partial.role ?? (partial.is_staff ? "admin" : "learner"),
     is_staff: partial.is_staff ?? partial.role === "admin",
-    date_joined: partial.date_joined ?? now,
+    date_joined: dateJoined,
+    joined_at: partial.joined_at,
   };
 }
 
@@ -220,9 +224,7 @@ export const authService = {
     try {
       const identifier = credentials.email.trim();
 
-      // Backend uses USERNAME_FIELD = 'username', so we send { username }.
-      // If the user typed an email, we still send it as `username` — the backend
-      // should support email-based login (see backend_issues.md #2).
+      // Backend supports both username and email login (case-insensitive).
       const response = await postFirstAvailable(
         ["/auth/login/"],
         [{ username: identifier, password: credentials.password }],
@@ -253,18 +255,28 @@ export const authService = {
       storage.setItem("learnlab_auth_token", data.access);
       storage.setItem("learnlab_refresh_token", data.refresh);
 
-      // Save a user snapshot from the JWT claims.
-      // NOTE: The backend JWT currently only contains { user_id }. Once the backend
-      // adds role/email/username to the JWT claims (see backend_issues.md #10),
-      // remove the fallback values below.
-      const claims = decodeJwtPayload(data.access);
-      saveUserSnapshot({
-        id: String(claims?.user_id ?? claims?.sub ?? ""),
-        email: typeof claims?.email === "string" ? claims.email : "",
-        username: typeof claims?.username === "string" ? claims.username : identifier,
-        role: claims?.role === "admin" ? "admin" : (claims?.is_staff === true ? "admin" : "learner"),
-        is_staff: claims?.is_staff === true || claims?.role === "admin",
-      });
+      // The login response includes a `user` object with full profile data.
+      // Fall back to JWT decode if user object is missing (older backends).
+      if (data.user) {
+        saveUserSnapshot({
+          id: String(data.user.id ?? ""),
+          email: data.user.email ?? "",
+          username: data.user.username ?? identifier,
+          first_name: data.user.first_name ?? "",
+          last_name: data.user.last_name ?? "",
+          role: data.user.role ?? (data.user.is_staff ? "admin" : "learner"),
+          is_staff: data.user.is_staff ?? false,
+        });
+      } else {
+        const claims = decodeJwtPayload(data.access);
+        saveUserSnapshot({
+          id: String(claims?.user_id ?? claims?.sub ?? ""),
+          email: typeof claims?.email === "string" ? claims.email : "",
+          username: typeof claims?.username === "string" ? claims.username : identifier,
+          role: claims?.role === "admin" ? "admin" : (claims?.is_staff === true ? "admin" : "learner"),
+          is_staff: claims?.is_staff === true || claims?.role === "admin",
+        });
+      }
 
       return data;
     } catch (error) {
@@ -323,7 +335,6 @@ export const authService = {
   },
 
   getCurrentUser: async (options: CurrentUserOptions = {}): Promise<BackendAuthUser> => {
-    // Try the real endpoint first — the backend should implement this (see backend_issues.md #4).
     try {
       const response = await api.get("/auth/users/me/");
       if (response.ok) {
@@ -333,20 +344,28 @@ export const authService = {
         return user;
       }
     } catch {
-      // Endpoint doesn't exist yet — fall through to fallback.
+      // Network error — fall through to fallback if allowed.
     }
 
-    // Fallback: use the locally-stored snapshot from the last login.
-    // This is lossy (no role/name/email from the backend) until /users/me/ is implemented.
+    // Fallback: use the locally-stored snapshot (useful during network issues).
     if (options.allowFallback) {
       return getFallbackCurrentUser();
     }
-    throw new Error("Current user endpoint (/auth/users/me/) is not available on this backend.");
+    throw new Error("Failed to fetch current user from /auth/users/me/.");
   },
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  updateCurrentUser: async (..._args: [UpdateCurrentUserPayload?]): Promise<BackendAuthUser> => {
-    throw new Error("Profile update endpoint is not available on this backend.");
+  updateCurrentUser: async (payload?: UpdateCurrentUserPayload): Promise<BackendAuthUser> => {
+    if (!payload) {
+      throw new Error("No payload provided for profile update.");
+    }
+    const response = await api.patch("/auth/users/me/", payload);
+    if (!response.ok) {
+      await throwApiError(response, "Failed to update profile");
+    }
+    const data = await response.json();
+    const user = coerceBackendUser(data as Partial<BackendAuthUser>);
+    saveUserSnapshot(user);
+    return user;
   },
 
   requestPasswordReset: async (email: string) => {

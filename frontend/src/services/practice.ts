@@ -2,14 +2,11 @@ import { api, type EntityId } from "./api";
 import { questionsService } from "./questions";
 
 interface SessionCreatePayload {
-  session_type?: string;
-  interactions?: InteractionCreatePayload[];
-  responses?: InteractionCreatePayload[];
+  responses?: ResponsePayload[];
 }
 
-interface InteractionCreatePayload {
+interface ResponsePayload {
   question?: EntityId;
-  user_response?: string;
   is_correct?: boolean;
   time_taken_seconds?: number;
   confidence_rating?: number;
@@ -20,33 +17,8 @@ interface SessionUpdatePayload {
   total_xp_earned?: number;
 }
 
-interface InteractionSubmitPayload {
-  session: EntityId;
-  question: EntityId;
-  is_correct: boolean;
-  user_response?: string;
-  time_taken_seconds?: number;
-  confidence_rating?: number;
-}
-
 function isEndpointMissing(response: Response): boolean {
   return response.status === 404 || response.status === 405;
-}
-
-function isLocalSession(sessionId: EntityId): boolean {
-  return String(sessionId).startsWith('local-session-');
-}
-
-function localSession() {
-  return {
-    id: `local-session-${Date.now()}`,
-    session_type: 'adaptive',
-    start_time: new Date().toISOString(),
-    end_time: null,
-    total_xp_earned: 0,
-    responses: [],
-    is_local_fallback: true,
-  };
 }
 
 async function parseOptionalJson(response: Response) {
@@ -66,7 +38,8 @@ export const practiceService = {
     const response = await api.get("/practice/sessions/");
     if (isEndpointMissing(response)) return [];
     if (!response.ok) throw new Error("Failed to fetch sessions");
-    return await response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data : data.results ?? [];
   },
 
   getSession: async (id: EntityId) => {
@@ -76,29 +49,16 @@ export const practiceService = {
   },
 
   createSession: async (data: SessionCreatePayload) => {
-    const payloads = [
-      data,
-      { responses: data.responses ?? data.interactions ?? [] },
-      {},
-    ];
-
-    for (const payload of payloads) {
-      const response = await api.post("/practice/sessions/", payload);
-      if (response.ok) return await response.json();
-      if (isEndpointMissing(response)) return localSession();
-      if (response.status !== 400) break;
-    }
-
-    throw new Error("Failed to create session");
+    // Backend expects { responses: [...] } per integration guide
+    const payload = { responses: data.responses ?? [] };
+    const response = await api.post("/practice/sessions/", payload);
+    if (!response.ok) throw new Error("Failed to create session");
+    return await response.json();
   },
 
   updateSession: async (id: EntityId, data: SessionUpdatePayload) => {
-    if (isLocalSession(id)) {
-      return { ...localSession(), id, ...data };
-    }
-
     const response = await api.patch(`/practice/sessions/${id}/`, data);
-    if (isEndpointMissing(response)) return { ...localSession(), id, ...data };
+    if (isEndpointMissing(response)) return { id, ...data };
     if (!response.ok) throw new Error("Failed to update session");
     return await response.json();
   },
@@ -106,6 +66,7 @@ export const practiceService = {
   generateAdaptiveSession: async () => {
     const response = await api.get('/practice/sessions/generate-adaptive/');
     if (isEndpointMissing(response)) {
+      // Adaptive generation endpoint may not exist — build local queue from question bank.
       const questions = await questionsService.getQuestions();
       return {
         questions: questions.slice(0, 10),
@@ -132,52 +93,31 @@ export const practiceService = {
     return practiceService.getSessions();
   },
 
-  submitInteraction: async (data: InteractionSubmitPayload) => {
-    if (isLocalSession(data.session)) {
-      return { id: `local-interaction-${Date.now()}`, ...data };
+  submitInteraction: async (data: {
+    session: EntityId;
+    question: EntityId;
+    is_correct: boolean;
+    user_response?: string;
+    time_taken_seconds?: number;
+    confidence_rating?: number;
+  }) => {
+    // Try the responses endpoint with the standard payload
+    const response = await api.post('/practice/responses/', {
+      session: data.session,
+      question: data.question,
+      is_correct: data.is_correct,
+      time_taken_seconds: data.time_taken_seconds,
+      confidence_rating: data.confidence_rating,
+    });
+    if (response.ok) return await parseOptionalJson(response);
+    if (isEndpointMissing(response)) {
+      // Interactions might be submitted via session creation instead
+      return { id: `fallback-${Date.now()}`, ...data };
     }
-
-    const payloads = [
-      data,
-      {
-        session_id: data.session,
-        question_id: data.question,
-        user_response: data.user_response,
-        is_correct: data.is_correct,
-        time_taken_seconds: data.time_taken_seconds,
-        confidence_rating: data.confidence_rating,
-      },
-      {
-        session: data.session,
-        question: data.question,
-        is_correct: data.is_correct,
-      },
-    ];
-    const paths = ['/practice/interactions/', '/practice/responses/'];
-
-    for (const path of paths) {
-      for (const payload of payloads) {
-        const response = await api.post(path, payload);
-        if (response.ok) return await parseOptionalJson(response);
-        if (!isEndpointMissing(response) && response.status !== 400) {
-          throw new Error('Failed to submit interaction');
-        }
-      }
-    }
-
-    return { id: `local-interaction-${Date.now()}`, ...data, is_local_fallback: true };
+    throw new Error('Failed to submit interaction');
   },
 
   completeSession: async (sessionId: EntityId, earnedXp: number) => {
-    if (isLocalSession(sessionId)) {
-      return {
-        id: sessionId,
-        end_time: new Date().toISOString(),
-        total_xp_earned: earnedXp,
-        is_local_fallback: true,
-      };
-    }
-
     const response = await api.patch(`/practice/sessions/${sessionId}/`, {
       end_time: new Date().toISOString(),
       total_xp_earned: earnedXp,

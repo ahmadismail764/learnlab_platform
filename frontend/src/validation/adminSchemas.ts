@@ -1,0 +1,83 @@
+import { z } from 'zod/v4'
+
+/**
+ * Admin Form Validation Schemas
+ *
+ * Centralizes validation rules for curriculum topics and question management.
+ */
+
+// ── Topics Validation ──────────────────────────────────────────────
+
+/**
+ * Factory for topic validation schema.
+ * Allows checking for duplicates against active topic name list in memory.
+ */
+export const createTopicSchema = (
+  topics: { id: number; name: string }[],
+  editingTopicId?: number | null
+) =>
+  z.object({
+    name: z
+      .string()
+      .trim()
+      .min(1, 'Topic name is required')
+      .refine(
+        (name) => {
+          const duplicate = topics.find(
+            (t) => t.name.toLowerCase() === name.toLowerCase() && t.id !== editingTopicId
+          )
+          return !duplicate
+        },
+        {
+          message: 'A topic with this name already exists',
+        }
+      ),
+    description: z.string().trim().optional(),
+    parent_module: z.string().trim().optional(),
+  })
+
+export type TopicFormData = {
+  name: string
+  description: string
+  parent_module: string
+}
+
+// ── Questions Validation ────────────────────────────────────────────
+
+export const questionSchema = z
+  .object({
+    text: z.string().trim().min(1, 'Add the question text'),
+    choices: z
+      .array(z.string().trim().min(1, 'Choice text cannot be empty'))
+      .min(2, 'Add at least two answer choices'),
+    correctAnswerIndex: z.coerce.number().int().nonnegative('Correct index must be 0 or higher'),
+    tier: z.coerce.number().int().min(1).max(3),
+    relationId: z.string().trim().optional(),
+    explanationVideoUrl: z
+      .string()
+      .trim()
+      .refine(
+        (val) => {
+          if (!val) return true
+          try {
+            new URL(val)
+            return true
+          } catch {
+            return false
+          }
+        },
+        { message: 'Invalid video URL. Please enter a valid URL or leave it empty.' }
+      )
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      return data.correctAnswerIndex >= 0 && data.correctAnswerIndex < data.choices.length
+    },
+    {
+      message: 'Correct answer index must point to one of the listed choices',
+      path: ['correctAnswerIndex'],
+    }
+  )
+
+export type QuestionFormState = z.infer<typeof questionSchema>

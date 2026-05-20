@@ -193,10 +193,10 @@
 
 ---
 
-## 3. Topics & Subtopics (`/topics/`)
+## 3. Topics & Subtopics
 
 ### Topics List
-* **Endpoint**: `GET /topics/topics/`
+* **Endpoint**: `GET /topics/`
 * **Response**:
   ```json
   [
@@ -211,7 +211,7 @@
   ```
 
 ### Subtopics List
-* **Endpoint**: `GET /topics/subtopics/`
+* **Endpoint**: `GET /subtopics/`
 * **Response**:
   ```json
   [
@@ -227,7 +227,7 @@
   ```
 
 ### Topic Mastery Records
-* **Endpoint**: `GET /topics/mastery/` (Requires JWT Authentication)
+* **Endpoint**: `GET /mastery/` (Requires JWT Authentication)
 * **Response**:
   ```json
   [

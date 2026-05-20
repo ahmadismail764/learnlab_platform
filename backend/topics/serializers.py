@@ -4,11 +4,17 @@ from rest_framework import serializers
 from topics.models import Topic, Subtopic, SubtopicMastery
 
 class TopicSerializer(serializers.ModelSerializer):
+    question_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'description']
+        fields = ['id', 'name', 'description', 'parent_module', 'question_count']
 
     id = serializers.UUIDField(read_only=True)
+
+    def get_question_count(self, obj) -> int:
+        from practice.models import Question
+        return Question.objects.filter(subtopic__topic=obj).count()
 
 class SubtopicSerializer(serializers.ModelSerializer):
     topic_name = serializers.CharField(source='topic.name', read_only=True)

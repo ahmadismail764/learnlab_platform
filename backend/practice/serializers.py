@@ -30,6 +30,35 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         model = PracticeSession
         fields = ['id', 'learner', 'start_time', 'end_time', 'total_xp_earned', 'responses']
 
+    def update(self, instance, validated_data):
+        # Track if the session is being marked completed in this update
+        already_completed = instance.end_time is not None
+        total_xp_earned = validated_data.get('total_xp_earned', instance.total_xp_earned)
+        
+        # Perform the standard model update
+        instance = super().update(instance, validated_data)
+        
+        # If the session is now completed, award XP to the learner once
+        if instance.end_time is not None and not already_completed:
+            learner = instance.learner
+            # Add total XP earned in this session to user profile
+            learner.current_xp += total_xp_earned
+            
+            # Standard streak updates
+            from django.utils import timezone as django_timezone
+            today = django_timezone.localdate()
+            if learner.last_practice_date is None:
+                learner.streak_count = 1
+            elif learner.last_practice_date == today - django_timezone.timedelta(days=1):
+                learner.streak_count += 1
+            elif learner.last_practice_date < today - django_timezone.timedelta(days=1):
+                learner.streak_count = 1
+                
+            learner.last_practice_date = today
+            learner.save()
+            
+        return instance
+
 class QuestionResponseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse

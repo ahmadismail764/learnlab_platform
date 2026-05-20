@@ -39,6 +39,17 @@ interface LeaderboardApiEntry extends LeaderboardLearner {
   rank_change?: number
 }
 
+interface LeaderboardDisplayProps {
+  leaderboardType: 'global' | 'topic'
+  selectedTopicName?: string
+  currentUserEntry: LeaderboardEntry | null
+  displayEntries: LeaderboardEntry[]
+  averageAccuracy: number
+  longestStreak: number
+  searchQuery: string
+  setSearchQuery: (query: string) => void
+}
+
 function LeaderboardPageSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -168,73 +179,9 @@ function LeaderboardContent() {
     [rawTopics]
   )
   const selectedTopicId = selectedTopicOverride || topics[0]?.id.toString() || ''
-
-  // Fetch leaderboard data — React Query handles caching + deduplication
-  const { data: globalData } = useSuspenseGlobalLeaderboard()
-  const { data: topicData } = useSuspenseTopicLeaderboard(
-    leaderboardType === 'topic' && selectedTopicId ? selectedTopicId : null
-  )
-
-  const rawLeaderboard = useMemo<LeaderboardApiEntry[]>(
-    () => (leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])),
-    [leaderboardType, globalData, topicData]
-  )
-
-  // Map raw API data to UI-friendly entries
-  const leaderboard = useMemo<LeaderboardEntry[]>(() => {
-    return rawLeaderboard.map((entry, index) => ({
-      id: entry.id,
-      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
-      xp: entry.total_xp || 0,
-      streak: entry.streak_count || 0,
-      accuracy: entry.accuracy || 100,
-      rank: index + 1,
-      rank_change: entry.rank_change || 0,
-      is_current_user: String(entry.user?.id) === String(currentUser.id),
-    }))
-  }, [rawLeaderboard, currentUser.id])
-
-  const currentUserEntry = useMemo(
-    () => leaderboard.find((entry) => entry.is_current_user) || null,
-    [leaderboard]
-  )
-
-  const displayEntries = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
-    const filteredEntries = normalizedQuery
-      ? leaderboard.filter((entry) => {
-          return (
-            entry.name.toLowerCase().includes(normalizedQuery)
-            || String(entry.id).toLowerCase().includes(normalizedQuery)
-          )
-        })
-      : leaderboard
-
-    return filteredEntries.slice(0, 10).sort((a, b) => a.rank - b.rank)
-  }, [leaderboard, searchQuery])
-
   const selectedTopicName = useMemo(() => {
     return topics.find((topic) => String(topic.id) === selectedTopicId)?.name ?? 'Selected topic'
   }, [topics, selectedTopicId])
-
-  const averageAccuracy = useMemo(() => {
-    if (displayEntries.length === 0) return 0
-
-    return Math.round(
-      displayEntries.reduce((sum, entry) => sum + entry.accuracy, 0) / displayEntries.length,
-    )
-  }, [displayEntries])
-
-  const longestStreak = useMemo(() => {
-    return leaderboard.reduce((highest, entry) => Math.max(highest, entry.streak), 0)
-  }, [leaderboard])
-
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Crown className="h-5 w-5 text-amber-500" />
-    if (rank === 2) return <Medal className="h-5 w-5 text-neutral-400" />
-    if (rank === 3) return <Medal className="h-5 w-5 text-orange-600" />
-    return null
-  }
 
   return (
     <div className="space-y-6">
@@ -274,6 +221,190 @@ function LeaderboardContent() {
         )}
       />
 
+      <Suspense fallback={<LeaderboardPageSkeleton />}>
+        {leaderboardType === 'global' ? (
+          <GlobalLeaderboardSection
+            currentUser={currentUser}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        ) : (
+          <TopicLeaderboardSection
+            topicId={selectedTopicId}
+            selectedTopicName={selectedTopicName}
+            currentUser={currentUser}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+        )}
+      </Suspense>
+    </div>
+  )
+}
+
+function GlobalLeaderboardSection({
+  currentUser,
+  searchQuery,
+  setSearchQuery,
+}: {
+  currentUser: any
+  searchQuery: string
+  setSearchQuery: (query: string) => void
+}) {
+  const { data: globalData } = useSuspenseGlobalLeaderboard()
+
+  const leaderboard = useMemo<LeaderboardEntry[]>(() => {
+    return ((globalData ?? []) as LeaderboardApiEntry[]).map((entry, index) => ({
+      id: entry.id,
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
+      xp: entry.total_xp || 0,
+      streak: entry.streak_count || 0,
+      accuracy: entry.accuracy || 100,
+      rank: index + 1,
+      rank_change: entry.rank_change || 0,
+      is_current_user: String(entry.user?.id) === String(currentUser.id),
+    }))
+  }, [globalData, currentUser.id])
+
+  const currentUserEntry = useMemo(
+    () => leaderboard.find((entry) => entry.is_current_user) || null,
+    [leaderboard]
+  )
+
+  const displayEntries = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const filteredEntries = normalizedQuery
+      ? leaderboard.filter((entry) => {
+          return (
+            entry.name.toLowerCase().includes(normalizedQuery) ||
+            String(entry.id).toLowerCase().includes(normalizedQuery)
+          )
+        })
+      : leaderboard
+
+    return filteredEntries.slice(0, 10).sort((a, b) => a.rank - b.rank)
+  }, [leaderboard, searchQuery])
+
+  const averageAccuracy = useMemo(() => {
+    if (displayEntries.length === 0) return 0
+
+    return Math.round(
+      displayEntries.reduce((sum, entry) => sum + entry.accuracy, 0) / displayEntries.length,
+    )
+  }, [displayEntries])
+
+  const longestStreak = useMemo(() => {
+    return leaderboard.reduce((highest, entry) => Math.max(highest, entry.streak), 0)
+  }, [leaderboard])
+
+  return (
+    <LeaderboardDisplay
+      leaderboardType="global"
+      currentUserEntry={currentUserEntry}
+      displayEntries={displayEntries}
+      averageAccuracy={averageAccuracy}
+      longestStreak={longestStreak}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      totalCount={displayEntries.length}
+    />
+  )
+}
+
+function TopicLeaderboardSection({
+  topicId,
+  selectedTopicName,
+  currentUser,
+  searchQuery,
+  setSearchQuery,
+}: {
+  topicId: string
+  selectedTopicName: string
+  currentUser: any
+  searchQuery: string
+  setSearchQuery: (query: string) => void
+}) {
+  const { data: topicData } = useSuspenseTopicLeaderboard(topicId)
+
+  const leaderboard = useMemo<LeaderboardEntry[]>(() => {
+    return ((topicData ?? []) as LeaderboardApiEntry[]).map((entry, index) => ({
+      id: entry.id,
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
+      xp: entry.total_xp || 0,
+      streak: entry.streak_count || 0,
+      accuracy: entry.accuracy || 100,
+      rank: index + 1,
+      rank_change: entry.rank_change || 0,
+      is_current_user: String(entry.user?.id) === String(currentUser.id),
+    }))
+  }, [topicData, currentUser.id])
+
+  const currentUserEntry = useMemo(
+    () => leaderboard.find((entry) => entry.is_current_user) || null,
+    [leaderboard]
+  )
+
+  const displayEntries = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase()
+    const filteredEntries = normalizedQuery
+      ? leaderboard.filter((entry) => {
+          return (
+            entry.name.toLowerCase().includes(normalizedQuery) ||
+            String(entry.id).toLowerCase().includes(normalizedQuery)
+          )
+        })
+      : leaderboard
+
+    return filteredEntries.slice(0, 10).sort((a, b) => a.rank - b.rank)
+  }, [leaderboard, searchQuery])
+
+  const averageAccuracy = useMemo(() => {
+    if (displayEntries.length === 0) return 0
+
+    return Math.round(
+      displayEntries.reduce((sum, entry) => sum + entry.accuracy, 0) / displayEntries.length,
+    )
+  }, [displayEntries])
+
+  const longestStreak = useMemo(() => {
+    return leaderboard.reduce((highest, entry) => Math.max(highest, entry.streak), 0)
+  }, [leaderboard])
+
+  return (
+    <LeaderboardDisplay
+      leaderboardType="topic"
+      selectedTopicName={selectedTopicName}
+      currentUserEntry={currentUserEntry}
+      displayEntries={displayEntries}
+      averageAccuracy={averageAccuracy}
+      longestStreak={longestStreak}
+      searchQuery={searchQuery}
+      setSearchQuery={setSearchQuery}
+      totalCount={displayEntries.length}
+    />
+  )
+}
+
+function LeaderboardDisplay({
+  leaderboardType,
+  selectedTopicName,
+  currentUserEntry,
+  displayEntries,
+  averageAccuracy,
+  longestStreak,
+  searchQuery,
+  setSearchQuery,
+  totalCount,
+}: LeaderboardDisplayProps & { totalCount: number }) {
+  const getRankIcon = (rank: number) => {
+    if (rank === 1) return <Crown className="h-5 w-5 text-amber-500" />
+    if (rank === 2) return <Medal className="h-5 w-5 text-neutral-400" />
+    if (rank === 3) return <Medal className="h-5 w-5 text-orange-600" />
+    return null
+  }
+
+  return (
+    <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <PageStatCard
           icon={<TrendingUp className="h-5 w-5" />}
@@ -285,7 +416,7 @@ function LeaderboardContent() {
         <PageStatCard
           icon={<Users className="h-5 w-5" />}
           label="Visible entries"
-          value={displayEntries.length}
+          value={totalCount}
           helper={leaderboardType === 'topic' ? selectedTopicName : 'Current top results'}
           tone="primary"
         />

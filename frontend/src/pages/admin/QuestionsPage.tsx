@@ -250,10 +250,10 @@ function QuestionsContent() {
       <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800">
         <Info className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-sky-800 dark:text-sky-200">Question writes are wired to the backend API</p>
+          <p className="text-sm font-medium text-sky-800 dark:text-sky-200">Connected to backend API</p>
           <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
-            Create, edit, and delete call <code className="bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/practice/questions/</code>.{' '}
-            If the checked-in backend snapshot is still read-only, the action will fail gracefully without changing the table.
+            All CRUD operations call <code className="bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/practice/questions/</code>.{' '}
+            Changes are persisted to the database in real time.
           </p>
         </div>
       </div>

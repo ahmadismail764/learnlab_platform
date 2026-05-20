@@ -163,6 +163,13 @@ export function LearnerDashboard() {
       helper: "Consistency pays off",
       tone: "success" as const,
     },
+    {
+      icon: <Sparkles className="h-5 w-5" />,
+      label: t("learner:totalXP", "Total XP"),
+      value: stats.totalXP.toLocaleString(),
+      helper: "Overall experience points",
+      tone: "accent" as const,
+    },
   ];
 
   if (shouldRedirectToOnboarding) {
@@ -275,7 +282,7 @@ export function LearnerDashboard() {
         </Card>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {dashboardStats.map((item) => (
           <PageStatCard
             key={item.label}

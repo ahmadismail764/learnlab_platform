@@ -6,6 +6,7 @@ import {
   Brain,
   Clock,
   History,
+  Sparkles,
   Target,
   TrendingUp,
   TriangleAlert,
@@ -162,6 +163,13 @@ export function ProgressPage() {
       helper: 'The easiest way to protect retention',
       tone: 'secondary' as const,
     },
+    {
+      icon: <Sparkles className="h-5 w-5" />,
+      label: 'Total XP',
+      value: weeklyStats.xpEarned.toLocaleString(),
+      helper: 'Overall experience points',
+      tone: 'accent' as const,
+    },
   ]
 
   // Format next_due as relative text
@@ -257,9 +265,9 @@ export function ProgressPage() {
         </div>
       </Card>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
+          ? Array.from({ length: 5 }).map((_, i) => (
               <Card key={i} className="learner-panel-soft border-0" padding="sm">
                 <div className="flex items-center gap-3">
                   <Skeleton variant="rectangular" width={44} height={44} className="rounded-xl" />

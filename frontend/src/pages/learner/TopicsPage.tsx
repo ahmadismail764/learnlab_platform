@@ -13,6 +13,7 @@ import {
   PartyPopper,
 } from "lucide-react";
 import { Card, Button, Badge, Input, ProgressBar } from "@/components/ui";
+import { useTopicMastery } from "@/hooks";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
@@ -406,14 +407,80 @@ export function TopicsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
-  const reducedCategories = useMemo(
-    () =>
-      topicCategories.slice(0, 2).map((category) => ({
+  const { data: rawMasteries } = useTopicMastery();
+  const masteries = useMemo(() => rawMasteries ?? [], [rawMasteries]);
+
+  const mappedCategories = useMemo(() => {
+    return topicCategories.map((category) => {
+      const topics = category.topics.map((topic) => {
+        // Find matching backend mastery
+        const m = masteries.find((mastery: any) => {
+          const name = (mastery.topic_name || '').toLowerCase();
+          const normalizedId = topic.id.toLowerCase();
+          if (normalizedId === 'propositional') return name.includes('propositional');
+          if (normalizedId === 'predicates') return name.includes('predicate');
+          if (normalizedId === 'proofs') return name.includes('proof');
+          if (normalizedId === 'operations') return name.includes('operations');
+          if (normalizedId === 'venn') return name.includes('venn');
+          if (normalizedId === 'power') return name.includes('power');
+          if (normalizedId === 'cartesian') return name.includes('cartesian');
+          if (normalizedId === 'properties') return name.includes('properties');
+          if (normalizedId === 'equivalence') return name.includes('equivalence');
+          if (normalizedId === 'partial') return name.includes('partial');
+          if (normalizedId === 'functions') return name.includes('functions');
+          if (normalizedId === 'counting') return name.includes('count');
+          if (normalizedId === 'permutations') return name.includes('permut');
+          if (normalizedId === 'combinations') return name.includes('combin');
+          if (normalizedId === 'pigeonhole') return name.includes('pigeon');
+          if (normalizedId === 'basics') return name.includes('basic') || name.includes('definition');
+          if (normalizedId === 'paths') return name.includes('path') || name.includes('cycle');
+          if (normalizedId === 'trees') return name.includes('tree');
+          if (normalizedId === 'planarity') return name.includes('planar');
+          if (normalizedId === 'divisibility') return name.includes('divis');
+          if (normalizedId === 'modular') return name.includes('modular');
+          if (normalizedId === 'gcd') return name.includes('gcd');
+          if (normalizedId === 'primes') return name.includes('prime');
+          return false;
+        });
+
+        if (m) {
+          const isDue = m.next_due && new Date(m.next_due) <= new Date();
+          const lastReviewedStr = m.last_reviewed
+            ? new Date(m.last_reviewed).toLocaleDateString()
+            : undefined;
+
+          // State determination
+          let stateVal = topic.state;
+          if (m.status === 'learned') {
+            stateVal = isDue ? 'review' : 'mastered';
+          } else if (m.status === 'struggling') {
+            stateVal = 'review';
+          } else if (m.status === 'learning') {
+            stateVal = 'learning';
+          } else if (m.status === 'new') {
+            stateVal = 'new';
+          }
+
+          return {
+            ...topic,
+            progress: Math.round((m.memory || 0) * 100),
+            questionsDue: isDue ? 5 : 0,
+            lastReviewed: lastReviewedStr,
+            state: stateVal as any,
+            memory: m.memory || 0,
+            nextReview: isDue ? 'today' : m.next_due ? new Date(m.next_due).toLocaleDateString() : undefined,
+          };
+        }
+
+        return topic;
+      });
+
+      return {
         ...category,
-        topics: category.topics.slice(0, 2),
-      })),
-    [],
-  );
+        topics,
+      };
+    });
+  }, [masteries]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -455,9 +522,9 @@ export function TopicsPage() {
 
   // --- Search / filter (UC-08 Alt Flow 5a) ---
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return reducedCategories;
+    if (!searchQuery.trim()) return mappedCategories;
     const q = searchQuery.toLowerCase();
-    return reducedCategories
+    return mappedCategories
       .map((cat) => ({
         ...cat,
         topics: cat.topics.filter((topic) =>
@@ -465,12 +532,12 @@ export function TopicsPage() {
         ),
       }))
       .filter((cat) => cat.topics.length > 0);
-  }, [searchQuery, t, reducedCategories]);
+  }, [searchQuery, t, mappedCategories]);
 
   // --- Due Today vs Future Reviews (UC-08 Step 3) ---
   const allTopics = useMemo(
-    () => reducedCategories.flatMap((cat) => cat.topics),
-    [reducedCategories],
+    () => mappedCategories.flatMap((cat) => cat.topics),
+    [mappedCategories],
   );
 
   const dueTodayTopics = useMemo(

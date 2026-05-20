@@ -49,10 +49,10 @@ export function AdminProfilePage() {
   })
 
   const [systemStats, setSystemStats] = useState({
-    totalLearners: 245,
-    totalQuestions: 1280,
-    activeToday: 42,
-    systemUptime: '99.9%',
+    totalLearners: 0,
+    totalQuestions: 0,
+    activeToday: 0,
+    systemUptime: '--',
   })
   const [statsError, setStatsError] = useState('')
 

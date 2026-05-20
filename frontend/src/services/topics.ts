@@ -48,9 +48,17 @@ export const topicsService = {
     return results.map(normalizeTopic);
   },
 
-  getTopicMastery: async (filters: Record<string, string> = {}) => {
-    void filters;
-    return [];
+  getTopicMastery: async (filters: Record<string, string> = {}): Promise<TopicMastery[]> => {
+    const query = new URLSearchParams(filters).toString();
+    const response = await api.get(`/topcis/mastery/${query ? `?${query}` : ''}`);
+    if (!response.ok) {
+      // Mastery endpoint may return errors for users with no data — return empty gracefully.
+      console.warn('Topic mastery fetch returned non-OK status:', response.status);
+      return [];
+    }
+    const data = await response.json() as TopicMastery[] | { results?: TopicMastery[] };
+    const results = Array.isArray(data) ? data : data.results ?? [];
+    return results;
   },
 
   getTopicDetails: async (id: number) => {

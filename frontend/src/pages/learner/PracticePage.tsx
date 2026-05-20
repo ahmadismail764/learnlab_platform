@@ -95,10 +95,9 @@ export function PracticePage() {
       setQuestions(normalizedQuestions)
 
       // Create session record — backend PracticeSessionCreateSerializer
-      // requires session_type and interactions (can be empty array)
+      // requires responses (can be empty array)
       const session = await practiceService.createSession({
-        session_type: 'adaptive',
-        interactions: []
+        responses: []
       })
       setSessionRecord(session)
 

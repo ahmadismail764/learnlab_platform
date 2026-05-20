@@ -28,8 +28,8 @@ const TEST_ACCOUNTS = [
   {
     label: "Learner",
     icon: GraduationCap,
-    username: "testlearner",
-    password: "testpass123",
+    username: "learner",
+    password: "learner123",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
   },

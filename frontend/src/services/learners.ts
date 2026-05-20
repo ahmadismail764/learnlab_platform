@@ -1,3 +1,4 @@
+import { api } from './api';
 import { authService, type BackendAuthUser } from './auth';
 
 export interface LearnerProfile {
@@ -20,6 +21,7 @@ interface RawLearnerProfile extends Partial<Omit<LearnerProfile, 'user'>> {
   role?: string;
   is_staff?: boolean;
   date_joined?: string;
+  joined_at?: string;
 }
 
 
@@ -33,7 +35,7 @@ function normalizeBackendUser(raw: Partial<BackendAuthUser>): BackendAuthUser {
     last_name: raw.last_name ?? '',
     role: raw.role ?? (raw.is_staff ? 'admin' : 'learner'),
     is_staff: raw.is_staff ?? raw.role === 'admin',
-    date_joined: raw.date_joined ?? new Date().toISOString(),
+    date_joined: raw.date_joined ?? raw.joined_at ?? new Date().toISOString(),
   };
 }
 
@@ -52,18 +54,63 @@ function normalizeLearnerProfile(raw: RawLearnerProfile | BackendAuthUser): Lear
 }
 
 export const learnersService = {
-  getCurrentProfile: async () => {
+  getCurrentProfile: async (): Promise<LearnerProfile> => {
+    // Prefer the canonical current-user endpoint (also returns XP / streak fields)
+    try {
+      const response = await api.get('/auth/users/me/');
+      if (response.ok) {
+        const data = await response.json();
+        return normalizeLearnerProfile(data as RawLearnerProfile);
+      }
+    } catch {
+      // Fall through to auth-based profile
+    }
+
+    // Fallback: older backends may not expose /auth/users/me/ reliably.
+    // In that case, try the learners list and match the current user ID.
+    try {
+      const currentUser = await authService.getCurrentUser({ allowFallback: true });
+      const response = await api.get('/practice/learners/');
+      if (response.ok) {
+        const data = await response.json();
+        const list = Array.isArray(data) ? data : data.results ?? [];
+        const match = list.find((item: RawLearnerProfile) => {
+          const candidate = item.user?.id ?? item.id;
+          return candidate != null && String(candidate) === String(currentUser.id);
+        });
+        if (match) {
+          return normalizeLearnerProfile(match);
+        }
+      }
+      return normalizeLearnerProfile(currentUser);
+    } catch {
+      // Final fallback: snapshot/JWT-derived user (XP/streak may be missing).
+    }
+
     return normalizeLearnerProfile(
       await authService.getCurrentUser({ allowFallback: true }),
     );
   },
 
-  getLeaderboard: async () => {
-    return [];
+  getLeaderboard: async (): Promise<LeaderboardLearner[]> => {
+    const response = await api.get('/practice/learners/leaderboard/');
+    if (!response.ok) {
+      console.warn('Leaderboard fetch failed with status:', response.status);
+      return [];
+    }
+    const data = await response.json();
+    const list = Array.isArray(data) ? data : data.results ?? [];
+    return list.map((item: RawLearnerProfile) => normalizeLearnerProfile(item));
   },
 
-  getTopicLeaderboard: async (topicId: string | number) => {
-    void topicId;
-    return [];
-  }
+  getTopicLeaderboard: async (topicId: string | number): Promise<LeaderboardLearner[]> => {
+    const response = await api.get(`/practice/learners/leaderboard/?topic=${topicId}`);
+    if (!response.ok) {
+      console.warn('Topic leaderboard fetch failed with status:', response.status);
+      return [];
+    }
+    const data = await response.json();
+    const list = Array.isArray(data) ? data : data.results ?? [];
+    return list.map((item: RawLearnerProfile) => normalizeLearnerProfile(item));
+  },
 };

@@ -1,4 +1,4 @@
-import type { BackendAuthUser } from './auth';
+import { authService, type BackendAuthUser } from './auth';
 
 export interface AdminProfile {
   id: number | string;
@@ -6,7 +6,8 @@ export interface AdminProfile {
 }
 
 export const adminsService = {
-  getCurrentProfile: async () => {
-    throw new Error('Admin profile endpoint is not available on this backend.');
-  }
+  getCurrentProfile: async (): Promise<AdminProfile> => {
+    const user = await authService.getCurrentUser({ allowFallback: true });
+    return { id: user.id, user };
+  },
 };

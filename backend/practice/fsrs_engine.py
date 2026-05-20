@@ -8,7 +8,15 @@ from practice.models import QuestionResponse, Subtopic, SubtopicMastery
 # the logic here is just arbitrary to avoid errors
 # this is not for actual functionality of course
 def get_rating(interaction: QuestionResponse) -> int:
-    return -1 if not interaction.is_correct else 2
+    if not interaction.is_correct:
+        return 1  # Again
+    
+    # Map confidence to FSRS rating scale if available (usually 1 to 5)
+    confidence = getattr(interaction, 'confidence_rating', None)
+    if confidence is not None and confidence > 0:
+        return confidence
+    
+    return 3  # Good by default
 
 
 # TODO: replace stub with full FSRS-5 implementation

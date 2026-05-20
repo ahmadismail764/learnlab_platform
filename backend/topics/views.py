@@ -1,8 +1,7 @@
-from django.shortcuts import render
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions
 from topics.models import Topic, Subtopic, SubtopicMastery
 from topics.serializers import TopicSerializer, SubtopicSerializer, SubtopicMasterySerializer
-# Create your views here.
+
 class TopicViewSet(viewsets.ModelViewSet):
     queryset = Topic.objects.prefetch_related('subtopics')
     serializer_class = TopicSerializer
@@ -14,5 +13,11 @@ class SubtopicViewSet(viewsets.ModelViewSet):
 
 # Tracks a user's mastery level for specific subtopics based on their performance.
 class SubtopicMasteryViewSet(viewsets.ModelViewSet):
-    queryset = SubtopicMastery.objects.all()
     serializer_class = SubtopicMasterySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_anonymous:
+            return SubtopicMastery.objects.none()
+        return SubtopicMastery.objects.filter(learner=user)

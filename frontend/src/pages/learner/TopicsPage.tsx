@@ -12,17 +12,17 @@ import {
   Sparkles,
   PartyPopper,
 } from "lucide-react";
-import { Card, Button, Badge, ProgressBar } from "@/components/ui";
+import { Card, Button, Badge, Input, ProgressBar } from "@/components/ui";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
  *
  * Browse Discrete Mathematics topics organized by category.
- * Shows FIRe-based progress and review status for each topic.
+ * Shows FSRS-based progress and review status for each topic.
  *
  * UC-08 Features:
  * - "Due Today" vs "Future Reviews" categorization (Step 3)
- * - FIRe memory-based sorting — lowest = highest priority (Step 4)
+ * - FSRS retrievability-based sorting — lowest = highest priority (Step 4)
  * - Tier badges: 🥉 Tier 1 / 🥈 Tier 2 / 🥇 Tier 3 (Step 5)
  * - "Review!" visual cue for due topics (Step 5)
  * - Search / filter bar (Alt Flow 5a)
@@ -38,7 +38,7 @@ interface TopicItem {
   questionsDue: number;
   lastReviewed?: string;
   state: "new" | "learning" | "review" | "mastered";
-  /** FIRe memory 0–1 — lower = more urgent (UC-08 Step 4) */
+  /** FSRS retrievability 0-1: lower = more urgent (UC-08 Step 4) */
   memory: number;
   /** Scaffolding tier 1–3 (UC-08 Step 5) */
   tier: 1 | 2 | 3;
@@ -406,6 +406,15 @@ export function TopicsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
+  const reducedCategories = useMemo(
+    () =>
+      topicCategories.slice(0, 2).map((category) => ({
+        ...category,
+        topics: category.topics.slice(0, 2),
+      })),
+    [],
+  );
+
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
       const newSet = new Set(prev);
@@ -446,9 +455,9 @@ export function TopicsPage() {
 
   // --- Search / filter (UC-08 Alt Flow 5a) ---
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return topicCategories;
+    if (!searchQuery.trim()) return reducedCategories;
     const q = searchQuery.toLowerCase();
-    return topicCategories
+    return reducedCategories
       .map((cat) => ({
         ...cat,
         topics: cat.topics.filter((topic) =>
@@ -456,12 +465,12 @@ export function TopicsPage() {
         ),
       }))
       .filter((cat) => cat.topics.length > 0);
-  }, [searchQuery, t]);
+  }, [searchQuery, t, reducedCategories]);
 
   // --- Due Today vs Future Reviews (UC-08 Step 3) ---
   const allTopics = useMemo(
-    () => topicCategories.flatMap((cat) => cat.topics),
-    [],
+    () => reducedCategories.flatMap((cat) => cat.topics),
+    [reducedCategories],
   );
 
   const dueTodayTopics = useMemo(
@@ -559,16 +568,14 @@ export function TopicsPage() {
       </div>
 
       {/* Search bar (UC-08 Alt Flow 5a) */}
-      <div className="relative">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("learner:searchTopics")}
-          className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
-        />
-      </div>
+      <Input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={t("learner:searchTopics")}
+        leftIcon={<Search className="h-4 w-4" />}
+        size="md"
+        className="rounded-xl py-2.5"
+      />
 
       {/* ═══ All Caught Up state (UC-08 Alt Flow 3a) ═══ */}
       {allCaughtUp ? (

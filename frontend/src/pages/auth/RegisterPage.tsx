@@ -13,6 +13,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { Button, Card, Input } from "@/components/ui";
 import { authService, AuthRequestError } from "@/services/auth";
+import { validateForm, registerSchema } from "@/validation";
 
 /**
  * RegisterPage — UC-01
@@ -114,42 +115,15 @@ export function RegisterPage() {
     if (generalError) setGeneralError("");
   };
 
-  // Client-side validation
+  // Client-side validation (powered by Zod schema)
   const validate = (): boolean => {
-    const errors: FieldErrors = {};
-
-    if (!formData.firstName.trim()) errors.firstName = t("auth:fieldRequired");
-    if (!formData.lastName.trim()) errors.lastName = t("auth:fieldRequired");
-    if (!formData.username.trim()) {
-      errors.username = t("auth:fieldRequired");
-    } else if (!/^[\w.@+-]{3,150}$/.test(formData.username)) {
-      errors.username = t("auth:invalidUsername");
+    const result = validateForm(registerSchema, formData)
+    if (result.success) {
+      setFieldErrors({})
+      return true
     }
-
-    if (!formData.email.trim()) {
-      errors.email = t("auth:fieldRequired");
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = t("auth:invalidEmail");
-    }
-
-    if (!formData.password) {
-      errors.password = t("auth:fieldRequired");
-    } else if (formData.password.length < 8) {
-      errors.password = t("auth:passwordTooShort");
-    }
-
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = t("auth:fieldRequired");
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = t("auth:passwordsDoNotMatch");
-    }
-
-    if (!formData.agreedToTerms) {
-      errors.agreedToTerms = t("auth:agreeToTermsRequired");
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors(result.fieldErrors as FieldErrors)
+    return false
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -366,19 +340,21 @@ export function RegisterPage() {
             />
             <span className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
               {t("auth:agreeToTerms")}{" "}
-              <a
-                href="#"
+              <button
+                type="button"
                 className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                title={t("auth:comingSoon", "Coming soon")}
               >
                 {t("auth:termsOfService")}
-              </a>{" "}
+              </button>{" "}
               {t("auth:and")}{" "}
-              <a
-                href="#"
+              <button
+                type="button"
                 className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                title={t("auth:comingSoon", "Coming soon")}
               >
                 {t("auth:privacyPolicy")}
-              </a>
+              </button>
             </span>
           </label>
           {fieldErrors.agreedToTerms && (

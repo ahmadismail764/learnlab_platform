@@ -5,6 +5,9 @@
  * Keep contexts focused - one responsibility each.
  */
 
-export { AuthProvider, useAuth, useCurrentUser } from './AuthContext'
-export { ToastProvider, useToast } from './ToastContext'
-export { ThemeProvider, useTheme } from './ThemeContext'
+export { AuthProvider } from './AuthContext'
+export { useAuth, useCurrentUser } from './useAuth'
+export { ToastProvider } from './ToastContext'
+export { useToast } from './useToast'
+export { ThemeProvider } from './ThemeContext'
+export { useTheme } from './useTheme'

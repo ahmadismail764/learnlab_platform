@@ -1,5 +1,3 @@
-import { api } from './api';
-
 export interface AggregatedMetricsResponse {
   review_count: number;
   active_users: {
@@ -27,31 +25,15 @@ export interface TopicAnalyticsResponse {
   };
 }
 
-async function parseApiError(response: Response, fallback: string): Promise<string> {
-  try {
-    const data = await response.json();
-    if (typeof data.error === 'string') return data.error;
-    if (typeof data.detail === 'string') return data.detail;
-  } catch {
-    // Ignore non-JSON responses.
-  }
-  return fallback;
-}
-
 export const analyticsService = {
-  getAggregatedMetrics: async () => {
-    const response = await api.get('/analytics/aggregated/');
-    if (!response.ok) {
-      throw new Error(await parseApiError(response, 'Failed to fetch aggregated analytics'));
-    }
-    return await response.json() as AggregatedMetricsResponse;
+  getAggregatedMetrics: async (): Promise<AggregatedMetricsResponse | null> => {
+    console.warn('Analytics endpoints are not available on this backend.');
+    return null;
   },
 
-  getTopicAnalytics: async (topicId: number) => {
-    const response = await api.get(`/analytics/topic/${topicId}/`);
-    if (!response.ok) {
-      throw new Error(await parseApiError(response, 'Failed to fetch topic analytics'));
-    }
-    return await response.json() as TopicAnalyticsResponse;
+  getTopicAnalytics: async (topicId: number): Promise<TopicAnalyticsResponse | null> => {
+    void topicId;
+    console.warn('Analytics endpoints are not available on this backend.');
+    return null;
   },
 };

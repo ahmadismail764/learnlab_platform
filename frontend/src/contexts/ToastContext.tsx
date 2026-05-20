@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useState,
   useCallback,
   useMemo,
@@ -8,34 +6,18 @@ import {
 } from 'react'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import {
+  ToastContext,
+  type Toast,
+  type ToastContextValue,
+  type ToastVariant,
+} from './toastContextValue'
 
 /**
  * Toast/Notification Context
  * 
  * Provides app-wide toast notifications for success, error, warning, and info messages.
  */
-
-type ToastVariant = 'success' | 'error' | 'warning' | 'info'
-
-interface Toast {
-  id: string
-  message: string
-  variant: ToastVariant
-  duration?: number
-}
-
-interface ToastContextValue {
-  toasts: Toast[]
-  showToast: (message: string, variant?: ToastVariant, duration?: number) => void
-  showSuccess: (message: string, duration?: number) => void
-  showError: (message: string, duration?: number) => void
-  showWarning: (message: string, duration?: number) => void
-  showInfo: (message: string, duration?: number) => void
-  removeToast: (id: string) => void
-  clearAll: () => void
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null)
 
 // Generate unique IDs
 let toastId = 0
@@ -132,17 +114,6 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
     </ToastContext.Provider>
   )
-}
-
-/**
- * useToast hook
- */
-export function useToast(): ToastContextValue {
-  const context = useContext(ToastContext)
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider')
-  }
-  return context
 }
 
 /**

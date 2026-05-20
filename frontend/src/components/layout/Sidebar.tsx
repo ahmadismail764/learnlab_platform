@@ -11,11 +11,14 @@ import {
   ChevronLeft,
   Medal,
   UserCircle,
+  Moon,
+  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { LogoMark, LogoFull } from "@/components/brand";
 import type { User, UserRole } from "@/types";
+import { useTheme } from "@/contexts";
 
 /**
  * Sidebar Component
@@ -131,6 +134,8 @@ export function Sidebar({
 }: SidebarProps) {
   const { t } = useTranslation("auth");
   const location = useLocation();
+  const { isDark, toggleTheme } = useTheme();
+  const isLearner = user.role === 'learner'
 
   // Filter nav items based on user role
   const visibleItems = navItems.filter((item) =>
@@ -142,65 +147,52 @@ export function Sidebar({
     admin: t("auth:admin"),
   };
 
+  const activeIconClass = isLearner
+    ? 'text-primary-600 dark:text-primary-300'
+    : 'text-secondary-600 dark:text-secondary-300'
+  const activeIndicatorClass = isLearner ? 'bg-primary-500' : 'bg-secondary-500'
+
   return (
     <aside
       className={cn(
-        "flex flex-col h-screen bg-white dark:bg-neutral-900 border-e border-neutral-200 dark:border-neutral-800",
-        "overflow-hidden transition-[width] duration-300 ease-out",
-        isCollapsed ? "w-16" : "w-64",
+        "flex h-screen flex-col border-e overflow-hidden transition-[width] duration-300 ease-out",
+        "border-neutral-200/70 bg-white/82 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/82",
+        isCollapsed ? "w-20" : isLearner ? "w-[17.5rem] xl:w-[18rem]" : "w-[17rem] xl:w-[17.5rem]",
       )}
     >
       {/* Logo + Collapse Toggle */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800">
-        <div
-          className={cn(
-            "relative flex items-center h-16 px-4",
-            isCollapsed ? "justify-center" : "gap-3",
-          )}
-        >
-          {isCollapsed ? <LogoMark size={32} /> : <LogoFull iconSize={32} />}
+      <div
+        className={cn(
+          'relative flex h-[4.25rem] items-center border-b',
+          isCollapsed ? 'justify-center px-3' : 'justify-between gap-3 px-5',
+          'border-neutral-200/70 dark:border-neutral-800',
+        )}
+      >
+        {isCollapsed ? <LogoMark size={32} /> : <LogoFull iconSize={32} />}
 
-          {onToggleCollapse && !isCollapsed && (
-            <button
-              onClick={onToggleCollapse}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 rounded-full p-2 text-neutral-500 transition-colors duration-150 dark:text-neutral-400",
+              "hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-800/50 dark:hover:text-neutral-200",
+              isCollapsed ? "end-2" : "end-4",
+            )}
+            title={isCollapsed ? t("nav:expand", "Expand sidebar") : t("nav:collapse", "Collapse sidebar")}
+          >
+            <ChevronLeft
               className={cn(
-                "absolute top-1/2 -translate-y-1/2 p-2 rounded-lg text-neutral-500 dark:text-neutral-400",
-                "hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200",
-                "transition-colors duration-150",
-                "ltr:right-2 rtl:left-2",
+                "h-5 w-5 transition-transform duration-300",
+                isCollapsed && "ltr:rotate-180 rtl:-rotate-180",
               )}
-              title={t("nav:collapse", "Collapse sidebar")}
-            >
-              <ChevronLeft className="w-5 h-5 transition-transform duration-300" />
-            </button>
-          )}
-        </div>
-
-        <div className="h-12 flex items-center justify-center">
-          {onToggleCollapse && isCollapsed && (
-            <button
-              onClick={onToggleCollapse}
-              className={cn(
-                "p-2 rounded-lg text-neutral-500 dark:text-neutral-400",
-                "hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-700 dark:hover:text-neutral-200",
-                "transition-colors duration-150",
-              )}
-              title={t("nav:expand", "Expand sidebar")}
-            >
-              <ChevronLeft
-                className={cn(
-                  "w-5 h-5 transition-transform duration-300",
-                  "ltr:rotate-180 rtl:-rotate-180",
-                )}
-              />
-            </button>
-          )}
-        </div>
+            />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 overflow-y-auto overflow-x-hidden">
-        <ul className="space-y-1 px-2">
+      <nav className={cn("flex-1 overflow-y-auto overflow-x-hidden", isCollapsed ? "py-4" : "py-3")}>
+        <ul className={cn('space-y-1', isCollapsed ? 'px-2' : 'px-3')}>
           {visibleItems.map((item) => {
             const isActive = location.pathname === item.href;
             const Icon = item.icon;
@@ -211,17 +203,28 @@ export function Sidebar({
                 <Link
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg",
-                    "transition-colors duration-150",
+                    'group relative flex items-center rounded-xl text-sm transition-colors duration-200',
+                    isCollapsed ? 'justify-center px-3 py-3' : 'gap-3 px-3.5 py-3',
                     isActive
-                      ? "bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400 font-medium"
-                      : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 hover:text-neutral-800 dark:hover:text-neutral-200",
-                    isCollapsed && "justify-center",
+                      ? 'bg-white text-neutral-900 shadow-sm ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:text-white dark:ring-neutral-700'
+                      : isLearner
+                        ? 'text-neutral-600 hover:bg-neutral-100/80 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-900/72 dark:hover:text-white'
+                        : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-800/50 dark:hover:text-neutral-200',
                   )}
                   title={isCollapsed ? label : undefined}
                 >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  {!isCollapsed && <span>{label}</span>}
+                  {!isCollapsed && isActive && (
+                    <span className={cn("absolute inset-y-2 start-1 w-0.5 rounded-full", activeIndicatorClass)} />
+                  )}
+                  <Icon
+                    className={cn(
+                      'h-4 w-4 shrink-0',
+                      isActive
+                        ? activeIconClass
+                        : 'text-neutral-400 transition-colors group-hover:text-neutral-600 dark:text-neutral-500 dark:group-hover:text-neutral-300',
+                    )}
+                  />
+                  {!isCollapsed && <span className={cn('truncate', isActive && 'font-medium')}>{label}</span>}
                 </Link>
               </li>
             );
@@ -231,7 +234,7 @@ export function Sidebar({
       {/* User section */}
       <div
         className={cn(
-          "border-t border-neutral-200 dark:border-neutral-800 p-4",
+          'border-t border-neutral-200/70 p-3 dark:border-neutral-800',
           isCollapsed && "px-2",
         )}
       >
@@ -244,8 +247,8 @@ export function Sidebar({
           <Link
             to={`/${user.role}/profile`}
             className={cn(
-              "flex items-center rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors",
-              isCollapsed ? "p-1" : "flex-1 min-w-0 gap-3 p-1.5 -m-1.5",
+              "flex items-center transition-colors",
+              isCollapsed ? "p-1" : "min-w-0 flex-1 gap-3 rounded-xl px-2 py-2 hover:bg-neutral-100/80 dark:hover:bg-neutral-900/70",
             )}
           >
             <Avatar
@@ -264,16 +267,36 @@ export function Sidebar({
               </div>
             )}
           </Link>
-          {!isCollapsed && onLogout && (
-            <button
-              onClick={onLogout}
-              className="p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
-              title={t("nav:logout")}
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+          {!isCollapsed && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleTheme}
+                className="rounded-full p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-800/70 dark:hover:text-neutral-300"
+                title={isDark ? t('nav:lightMode', 'Light mode') : t('nav:darkMode', 'Dark mode')}
+              >
+                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="rounded-full p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-800/70 dark:hover:text-neutral-300"
+                  title={t("nav:logout")}
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           )}
         </div>
+        {isCollapsed && (
+          <button
+            onClick={toggleTheme}
+            className="mt-2 mx-auto p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors flex items-center justify-center"
+            title={isDark ? t('nav:lightMode', 'Light mode') : t('nav:darkMode', 'Dark mode')}
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+        )}
       </div>
     </aside>
   );

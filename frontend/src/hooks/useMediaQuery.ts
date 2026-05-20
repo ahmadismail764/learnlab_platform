@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import { BREAKPOINTS } from '@/constants'
 
 /**
@@ -13,34 +13,23 @@ import { BREAKPOINTS } from '@/constants'
  * @param query - CSS media query string
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false
-    return window.matchMedia(query).matches
-  })
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
+  const subscribe = useCallback((onStoreChange: () => void) => {
+    if (typeof window === 'undefined') return () => {}
 
     const mediaQuery = window.matchMedia(query)
-    
-    // Set initial value
-    setMatches(mediaQuery.matches)
+    mediaQuery.addEventListener('change', onStoreChange)
 
-    // Create listener
-    const handler = (event: MediaQueryListEvent) => {
-      setMatches(event.matches)
-    }
-
-    // Add listener
-    mediaQuery.addEventListener('change', handler)
-
-    // Cleanup
     return () => {
-      mediaQuery.removeEventListener('change', handler)
+      mediaQuery.removeEventListener('change', onStoreChange)
     }
   }, [query])
 
-  return matches
+  const getSnapshot = useCallback(() => {
+    if (typeof window === 'undefined') return false
+    return window.matchMedia(query).matches
+  }, [query])
+
+  return useSyncExternalStore(subscribe, getSnapshot, () => false)
 }
 
 /**

@@ -17,9 +17,9 @@ import { Card, Button, Input, Avatar, Badge, ProgressBar } from '@/components/ui
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useAuth, useCurrentUser } from '@/contexts'
 import { authService, AuthRequestError } from '@/services/auth'
-import { learnersService, type LearnerProfile as LearnerProfileDto } from '@/services/learners'
-import { topicsService } from '@/services/topics'
-import { useToast } from '@/contexts/ToastContext'
+import { useLearnerProfile, useTopicMastery } from '@/hooks'
+import { useToast } from '@/contexts'
+import { validateForm, profileSchema } from '@/validation'
 
 /**
  * LearnerProfilePage (Researcher Dossier)
@@ -32,8 +32,8 @@ import { useToast } from '@/contexts/ToastContext'
  */
 
 interface TopicMasteryData {
-  id: number
-  topic: number
+  id: string | number
+  topic: string | number
   topic_name: string
   rep_num: number
   memory: number
@@ -44,16 +44,21 @@ interface TopicMasteryData {
 }
 
 export function LearnerProfilePage() {
-  const { t: _t } = useTranslation(['learner', 'common'])
+  const { t } = useTranslation(['profile', 'learner', 'common'])
   const user = useCurrentUser()
   const { updateUser, logout } = useAuth()
   const { showSuccess, showError } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [learnerProfile, setLearnerProfile] = useState<LearnerProfileDto | null>(null)
-  const [topicMasteries, setTopicMasteries] = useState<TopicMasteryData[]>([])
-  const [masteryLoading, setMasteryLoading] = useState(true)
+  // Data fetching via React Query — cached, deduplicated, auto-refreshed
+  const { data: learnerProfile } = useLearnerProfile()
+  const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
+  const topicMasteries = useMemo(
+    () => (rawMasteries ?? []) as TopicMasteryData[],
+    [rawMasteries]
+  )
+
   const [profileForm, setProfileForm] = useState({
     username: user.username ?? user.email.split('@')[0],
     email: user.email,
@@ -70,66 +75,12 @@ export function LearnerProfilePage() {
     })
   }, [user.username, user.email, user.firstName, user.lastName])
 
-  // Load learner profile (XP, streak)
-  useEffect(() => {
-    let isMounted = true
-
-    const loadLearnerProfile = async () => {
-      try {
-        const profile = await learnersService.getCurrentProfile()
-        if (isMounted) {
-          setLearnerProfile(profile)
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.error('Failed to load learner profile', error)
-        }
-      }
-    }
-
-    loadLearnerProfile()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  // Load topic mastery data
-  useEffect(() => {
-    let isMounted = true
-
-    const loadMasteries = async () => {
-      setMasteryLoading(true)
-      try {
-        const data = await topicsService.getTopicMastery()
-        if (isMounted) {
-          // Handle both paginated and unpaginated responses
-          const items = Array.isArray(data) ? data : (data.results ?? [])
-          setTopicMasteries(items)
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.error('Failed to load topic mastery', error)
-        }
-      } finally {
-        if (isMounted) setMasteryLoading(false)
-      }
-    }
-
-    loadMasteries()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
   const memberSinceYear = useMemo(() => {
     const parsed = new Date(user.createdAt)
     return Number.isNaN(parsed.getTime()) ? 'N/A' : String(parsed.getFullYear())
   }, [user.createdAt])
 
-  // Compute mastery index from FIRe memory scores
-  // Note: Backend serializer currently out of sync and does not return memory yet.
+  // Compute mastery index from normalized FSRS retrievability scores.
   const masteryIndex = useMemo(() => {
     if (topicMasteries.length === 0) return null
     const avgMemory = topicMasteries.reduce((sum, m) => sum + Math.min(1, m.memory || 0), 0) / topicMasteries.length
@@ -139,31 +90,31 @@ export function LearnerProfilePage() {
   const researchStats = useMemo(
     () => [
       {
-        label: 'Total XP',
+        label: t('profile:xp'),
         val: learnerProfile ? learnerProfile.total_xp.toLocaleString() : '--',
         icon: Zap,
         tone: 'primary' as const,
       },
       {
-        label: 'Practice Streak',
-        val: learnerProfile ? `${learnerProfile.streak_count} Days` : '--',
+        label: t('profile:currentStreak'),
+        val: learnerProfile ? `${learnerProfile.streak_count} ${t('profile:days')}` : '--',
         icon: Activity,
         tone: 'accent' as const,
       },
       {
-        label: 'Mastery Index',
+        label: t('learner:topicMastery'),
         val: masteryIndex !== null ? `${masteryIndex}%` : '--',
         icon: Brain,
         tone: 'secondary' as const,
       },
       {
-        label: 'Role',
-        val: user.role === 'admin' ? 'Admin' : 'Learner',
+        label: t('profile:role'),
+        val: user.role === 'admin' ? t('common:admin', 'Admin') : t('common:learner', 'Learner'),
         icon: Shield,
         tone: 'success' as const,
       },
     ],
-    [learnerProfile, masteryIndex, user.role],
+    [learnerProfile, masteryIndex, user.role, t],
   )
 
   // Top topics sorted by memory (descending), limited to 3
@@ -206,6 +157,13 @@ export function LearnerProfilePage() {
     setIsSaving(true)
     setSaveError('')
 
+    const validation = validateForm(profileSchema, profileForm)
+    if (!validation.success) {
+      setSaveError(Object.values(validation.fieldErrors).join('; '))
+      setIsSaving(false)
+      return
+    }
+
     try {
       const payload = {
         username: profileForm.username.trim(),
@@ -229,16 +187,16 @@ export function LearnerProfilePage() {
       })
 
       setIsEditing(false)
-      showSuccess('Profile synchronized successfully.')
+      showSuccess(t('profile:profileSyncSuccess'))
     } catch (error) {
       if (error instanceof AuthRequestError && error.fieldErrors) {
         const messages = Object.values(error.fieldErrors).join('; ')
         setSaveError(messages || error.message)
       } else {
-        const message = error instanceof Error ? error.message : 'Failed to synchronize profile.'
+        const message = error instanceof Error ? error.message : t('profile:profileSyncFailed')
         setSaveError(message)
       }
-      showError('Failed to synchronize profile.')
+      showError(t('profile:profileSyncFailed'))
     } finally {
       setIsSaving(false)
     }
@@ -249,7 +207,7 @@ export function LearnerProfilePage() {
       <PageIntro
         eyebrow="Profile"
         title={`${user.firstName} ${user.lastName}`}
-        description="Manage your learner details, review your mastery snapshot, and keep your account settings in the same calmer layout as the rest of the platform."
+        description={t('profile:profileDescription')}
         icon={<Settings className="h-6 w-6" />}
         tone="neutral"
         actions={(
@@ -259,7 +217,7 @@ export function LearnerProfilePage() {
             variant={isEditing ? 'primary' : 'outline'}
             leftIcon={!isSaving ? (isEditing ? <Save className="h-4 w-4" /> : <Settings className="h-4 w-4" />) : undefined}
           >
-            {isEditing ? 'Save changes' : 'Edit profile'}
+            {isEditing ? t('profile:saveChanges') : t('profile:editProfile')}
           </Button>
         )}
       />
@@ -282,10 +240,10 @@ export function LearnerProfilePage() {
                 </h2>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Badge variant="primary" size="sm">
-                    {user.role === 'admin' ? 'Admin' : 'Learner'}
+                    {user.role === 'admin' ? t('common:admin', 'Admin') : t('common:learner', 'Learner')}
                   </Badge>
                   <Badge variant="outline" size="sm">
-                    Since {memberSinceYear}
+                    {t('profile:memberSince')} {memberSinceYear}
                   </Badge>
                 </div>
               </div>
@@ -298,13 +256,13 @@ export function LearnerProfilePage() {
               </div>
               <div className="flex items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
                 <MapPin className="h-4 w-4 text-neutral-400" />
-                <span>LearnLab learner workspace</span>
+                <span>{t('profile:workspace')}</span>
               </div>
             </div>
 
             <div className="mt-5 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="text-neutral-500 dark:text-neutral-400">Overall mastery</span>
+                <span className="text-neutral-500 dark:text-neutral-400">{t('profile:overallMastery')}</span>
                 <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                   {topicMasteries.length > 0 ? `${overallMastery}%` : '--'}
                 </span>
@@ -312,8 +270,8 @@ export function LearnerProfilePage() {
               <ProgressBar value={overallMastery} />
               <p className="mt-3 text-sm text-neutral-500 dark:text-neutral-400">
                 {topicMasteries.length > 0
-                  ? `Tracking ${topicMasteries.length} topic${topicMasteries.length !== 1 ? 's' : ''} with FIRe review data.`
-                  : 'Mastery data will appear here after you complete more practice sessions.'}
+                  ? t('profile:masteryTrackingInfo', { count: topicMasteries.length })
+                  : t('profile:masteryWillAppear')}
               </p>
             </div>
           </Card>
@@ -337,33 +295,33 @@ export function LearnerProfilePage() {
         <div className="space-y-6 lg:col-span-8">
           <section className="space-y-4">
             <SectionHeading
-              title="Profile details"
-              description="Update the account information that appears across the learner experience."
+              title={t('profile:profileDetails')}
+              description={t('profile:profileDetailsDescription')}
             />
 
             <Card>
               <div className="grid gap-4 md:grid-cols-2">
                 <Input
-                  label="Username"
+                  label={t('profile:username', 'Username')}
                   disabled={!isEditing || isSaving}
                   value={profileForm.username}
                   onChange={(event) => setProfileForm((prev) => ({ ...prev, username: event.target.value }))}
                 />
                 <Input
-                  label="Email"
+                  label={t('profile:email')}
                   type="email"
                   disabled={!isEditing || isSaving}
                   value={profileForm.email}
                   onChange={(event) => setProfileForm((prev) => ({ ...prev, email: event.target.value }))}
                 />
                 <Input
-                  label="First name"
+                  label={t('profile:firstName')}
                   disabled={!isEditing || isSaving}
                   value={profileForm.firstName}
                   onChange={(event) => setProfileForm((prev) => ({ ...prev, firstName: event.target.value }))}
                 />
                 <Input
-                  label="Last name"
+                  label={t('profile:lastName')}
                   disabled={!isEditing || isSaving}
                   value={profileForm.lastName}
                   onChange={(event) => setProfileForm((prev) => ({ ...prev, lastName: event.target.value }))}
@@ -385,10 +343,10 @@ export function LearnerProfilePage() {
                       })
                     }}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button onClick={handleSyncProfile} isLoading={isSaving}>
-                    Save profile
+                    {t('profile:saveProfile')}
                   </Button>
                 </div>
               )}
@@ -397,15 +355,15 @@ export function LearnerProfilePage() {
 
           <section className="space-y-4">
             <SectionHeading
-              title="Top topics"
-              description="Your strongest mastery areas based on the latest learner data."
+              title={t('profile:topTopics')}
+              description={t('profile:topTopicsDescription')}
             />
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {masteryLoading ? (
                 <Card className="md:col-span-2">
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Loading mastery data...
+                    {t('profile:loadingMastery')}
                   </p>
                 </Card>
               ) : topTopics.length === 0 ? (
@@ -414,10 +372,10 @@ export function LearnerProfilePage() {
                     <Sparkles className="h-8 w-8 text-neutral-300" />
                     <div className="space-y-1">
                       <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                        No mastery data yet
+                        {t('profile:noMasteryYet')}
                       </p>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                        Complete a few more practice sessions and your topic strengths will show up here.
+                        {t('profile:noMasteryDescription')}
                       </p>
                     </div>
                   </div>
@@ -441,7 +399,7 @@ export function LearnerProfilePage() {
 
                     <div className="mt-4 space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">Mastery score</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">{t('profile:masteryScore')}</span>
                         <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                           {topic.progress}%
                         </span>
@@ -458,14 +416,14 @@ export function LearnerProfilePage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                  Sign out from this device
+                  {t('profile:signOutDevice')}
                 </h3>
                 <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                  End your current session without changing any learner data.
+                  {t('profile:endSession')}
                 </p>
               </div>
               <Button variant="danger" onClick={logout} leftIcon={<LogOut className="h-4 w-4" />}>
-                Sign out
+                {t('profile:signOut')}
               </Button>
             </div>
           </Card>

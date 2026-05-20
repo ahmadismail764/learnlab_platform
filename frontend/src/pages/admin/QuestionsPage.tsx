@@ -1,5 +1,6 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus,
   Search,
@@ -19,8 +20,9 @@ import {
   Info,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState } from '@/components/ui'
-import { questionsService, type BackendQuestion } from '@/services/questions'
-import { useToast } from '@/contexts/ToastContext'
+import { questionsService, type BackendQuestion, type QuestionMutationPayload } from '@/services/questions'
+import { queryKeys, useQuestions } from '@/hooks'
+
 
 /**
  * QuestionsPage - Admin Question Bank Management (UC-05)
@@ -30,21 +32,71 @@ import { useToast } from '@/contexts/ToastContext'
  * - Filter by topic and tier via query params
  * - View question details
  *
- * Note: The backend QuestionViewSet is ReadOnlyModelViewSet.
- * Create/Edit/Delete are shown in the UI but disabled with a notice
- * that the backend API does not yet support write operations for questions.
+ * Create/Edit/Delete are wired to the upgraded question API and surface
+ * clean errors when an older backend still rejects write methods.
  */
 
 type FilterTier = 'all' | 1 | 2 | 3
 
+interface QuestionFormState {
+  text: string
+  choicesText: string
+  correctAnswerIndex: string
+  tier: '1' | '2' | '3'
+  relationId: string
+  explanationVideoUrl: string
+}
+
+const emptyQuestionForm: QuestionFormState = {
+  text: '',
+  choicesText: '',
+  correctAnswerIndex: '0',
+  tier: '1',
+  relationId: '',
+  explanationVideoUrl: '',
+}
+
+function questionToForm(question: BackendQuestion): QuestionFormState {
+  return {
+    text: question.text,
+    choicesText: question.choices.join('\n'),
+    correctAnswerIndex: String(question.correct_answer_index),
+    tier: String(question.tier || 1) as QuestionFormState['tier'],
+    relationId: String(question.subtopic ?? question.knowledge_point ?? ''),
+    explanationVideoUrl: question.explanation_video_url ?? '',
+  }
+}
+
+function formToPayload(form: QuestionFormState): QuestionMutationPayload {
+  return {
+    text: form.text,
+    choices: form.choicesText
+      .split('\n')
+      .map((choice) => choice.trim())
+      .filter(Boolean),
+    correct_answer_index: Number(form.correctAnswerIndex),
+    tier: Number(form.tier),
+    subtopic: form.relationId.trim() || null,
+    explanation_video_url: form.explanationVideoUrl.trim() || null,
+  }
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
 export function QuestionsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
-  const { showError } = useToast()
+  const queryClient = useQueryClient()
 
-  // Data state
-  const [questions, setQuestions] = useState<BackendQuestion[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+
+  // Data fetching via React Query
+  const { data: rawQuestions, isLoading, error: queryError, refetch: fetchQuestions } = useQuestions()
+  const questions = useMemo(
+    () => (rawQuestions ?? []) as BackendQuestion[],
+    [rawQuestions]
+  )
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load questions') : ''
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
@@ -53,27 +105,104 @@ export function QuestionsPage() {
 
   // Selected question for preview
   const [selectedQuestion, setSelectedQuestion] = useState<BackendQuestion | null>(null)
+  const [isQuestionFormOpen, setIsQuestionFormOpen] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState<BackendQuestion | null>(null)
+  const [questionForm, setQuestionForm] = useState<QuestionFormState>(emptyQuestionForm)
+  const [deleteTarget, setDeleteTarget] = useState<BackendQuestion | null>(null)
+  const [actionError, setActionError] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
 
-  // --- Data fetching ---
+  const invalidateQuestions = async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.questions.list })
+  }
 
-  const fetchQuestions = useCallback(async () => {
-    setIsLoading(true)
-    setLoadError('')
-    try {
-      const data = await questionsService.getQuestions()
-      setQuestions(data)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load questions'
-      setLoadError(message)
-      showError(message)
-    } finally {
-      setIsLoading(false)
+  const createQuestionMutation = useMutation({
+    mutationFn: (payload: QuestionMutationPayload) => questionsService.createQuestion(payload),
+    onSuccess: async () => {
+      await invalidateQuestions()
+      setQuestionForm(emptyQuestionForm)
+      setEditingQuestion(null)
+      setIsQuestionFormOpen(false)
+      setActionError('')
+      setActionMessage('Question created successfully.')
+    },
+    onError: (error) => {
+      setActionMessage('')
+      setActionError(getErrorMessage(error, 'Failed to create question'))
+    },
+  })
+
+  const updateQuestionMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string | number; payload: QuestionMutationPayload }) =>
+      questionsService.updateQuestion(id, payload),
+    onSuccess: async () => {
+      await invalidateQuestions()
+      setQuestionForm(emptyQuestionForm)
+      setEditingQuestion(null)
+      setIsQuestionFormOpen(false)
+      setActionError('')
+      setActionMessage('Question updated successfully.')
+    },
+    onError: (error) => {
+      setActionMessage('')
+      setActionError(getErrorMessage(error, 'Failed to update question'))
+    },
+  })
+
+  const deleteQuestionMutation = useMutation({
+    mutationFn: (id: string | number) => questionsService.deleteQuestion(id),
+    onSuccess: async () => {
+      await invalidateQuestions()
+      setDeleteTarget(null)
+      setSelectedQuestion(null)
+      setActionError('')
+      setActionMessage('Question deleted successfully.')
+    },
+    onError: (error) => {
+      setActionMessage('')
+      setActionError(getErrorMessage(error, 'Failed to delete question'))
+    },
+  })
+
+  const openCreateForm = () => {
+    setEditingQuestion(null)
+    setQuestionForm(emptyQuestionForm)
+    setIsQuestionFormOpen(true)
+    setActionError('')
+    setActionMessage('')
+  }
+
+  const openEditForm = (question: BackendQuestion) => {
+    setEditingQuestion(question)
+    setQuestionForm(questionToForm(question))
+    setIsQuestionFormOpen(true)
+    setActionError('')
+    setActionMessage('')
+  }
+
+  const handleQuestionSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const payload = formToPayload(questionForm)
+
+    if (!payload.text || payload.choices.length < 2) {
+      setActionError('Add the question text and at least two answer choices.')
+      return
     }
-  }, [showError])
 
-  useEffect(() => {
-    fetchQuestions()
-  }, [fetchQuestions])
+    if (payload.correct_answer_index < 0 || payload.correct_answer_index >= payload.choices.length) {
+      setActionError('Correct answer index must point to one of the listed choices.')
+      return
+    }
+
+    if (editingQuestion) {
+      updateQuestionMutation.mutate({ id: editingQuestion.id, payload })
+    } else {
+      createQuestionMutation.mutate(payload)
+    }
+  }
+
+  const isSavingQuestion = createQuestionMutation.isPending || updateQuestionMutation.isPending
+
 
   // --- Computed data ---
 
@@ -131,6 +260,10 @@ export function QuestionsPage() {
   }
 
   const hasActiveFilters = filterTopic !== 'all' || filterTier !== 'all' || searchQuery !== ''
+  const formChoices = useMemo(
+    () => questionForm.choicesText.split('\n').map((choice) => choice.trim()).filter(Boolean),
+    [questionForm.choicesText]
+  )
 
   // --- Loading & Error states ---
 
@@ -148,7 +281,7 @@ export function QuestionsPage() {
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
-        <Button variant="outline" onClick={fetchQuestions} leftIcon={<RefreshCw className="w-4 h-4" />}>
+        <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
           Retry
         </Button>
       </div>
@@ -164,27 +297,39 @@ export function QuestionsPage() {
           <p className="mt-1 text-neutral-600 dark:text-neutral-400">{t('admin:questions.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchQuestions} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             {t('common:refresh')}
           </Button>
-          <Button className="gap-2" disabled title="Backend API is read-only for questions (ReadOnlyModelViewSet)">
+          <Button className="gap-2" onClick={openCreateForm}>
             <Plus className="h-4 w-4" />
             {t('admin:questions.addQuestion')}
           </Button>
         </div>
       </div>
 
-      {/* Read-only notice */}
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      {/* Integration notice */}
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800">
+        <Info className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Questions are read-only from the backend</p>
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-            The backend API uses <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">ReadOnlyModelViewSet</code> for questions. 
-            Create, edit, and delete must be done via Django Admin until the backend team upgrades the viewset.
+          <p className="text-sm font-medium text-sky-800 dark:text-sky-200">Question writes are wired to the backend API</p>
+          <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
+            Create, edit, and delete call <code className="bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/practice/questions/</code>. 
+            If the checked-in backend snapshot is still read-only, the action will fail gracefully without changing the table.
           </p>
         </div>
       </div>
+
+      {(actionError || actionMessage) && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            actionError
+              ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300'
+              : 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-300'
+          }`}
+        >
+          {actionError || actionMessage}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -412,21 +557,27 @@ export function QuestionsPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled
-                            title="Edit requires backend write support"
-                            onClick={(e) => e.stopPropagation()}
+                            title="Edit question"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              openEditForm(question)
+                            }}
                           >
-                            <Edit2 className="h-4 w-4 opacity-30" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled
-                            title="Delete requires backend write support"
+                            title="Delete question"
                             className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDeleteTarget(question)
+                              setActionError('')
+                              setActionMessage('')
+                            }}
                           >
-                            <Trash2 className="h-4 w-4 opacity-30" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -520,9 +671,9 @@ export function QuestionsPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Knowledge Point ID</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Subtopic / Knowledge Point ID</p>
                   <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                    {selectedQuestion.knowledge_point ?? 'None'}
+                    {selectedQuestion.subtopic ?? selectedQuestion.knowledge_point ?? 'None'}
                   </p>
                 </div>
               </div>
@@ -543,11 +694,222 @@ export function QuestionsPage() {
 
               {/* Actions */}
               <div className="flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-700 pt-4">
+                <Button
+                  variant="outline"
+                  leftIcon={<Edit2 className="h-4 w-4" />}
+                  onClick={() => {
+                    openEditForm(selectedQuestion)
+                    setSelectedQuestion(null)
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant="danger"
+                  leftIcon={<Trash2 className="h-4 w-4" />}
+                  onClick={() => {
+                    setDeleteTarget(selectedQuestion)
+                    setSelectedQuestion(null)
+                  }}
+                >
+                  Delete
+                </Button>
                 <Button variant="outline" onClick={() => setSelectedQuestion(null)}>
                   {t('common:close')}
                 </Button>
               </div>
             </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {isQuestionFormOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => {
+            if (!isSavingQuestion) {
+              setIsQuestionFormOpen(false)
+              setEditingQuestion(null)
+              setQuestionForm(emptyQuestionForm)
+            }
+          }}
+        >
+          <Card
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto scrollbar-styled"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                  {editingQuestion ? 'Edit question' : 'Add question'}
+                </h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  Keep choices on separate lines. The correct answer index starts at 0.
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={isSavingQuestion}
+                onClick={() => {
+                  setIsQuestionFormOpen(false)
+                  setEditingQuestion(null)
+                  setQuestionForm(emptyQuestionForm)
+                }}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </CardHeader>
+
+            <form onSubmit={handleQuestionSubmit} className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Question text
+                </label>
+                <textarea
+                  value={questionForm.text}
+                  onChange={(event) => setQuestionForm((prev) => ({ ...prev, text: event.target.value }))}
+                  className="min-h-28 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Choices
+                </label>
+                <textarea
+                  value={questionForm.choicesText}
+                  onChange={(event) => setQuestionForm((prev) => ({ ...prev, choicesText: event.target.value }))}
+                  className="min-h-32 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  placeholder={'Choice A\nChoice B\nChoice C'}
+                  required
+                />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Correct index
+                  </label>
+                  <select
+                    value={questionForm.correctAnswerIndex}
+                    onChange={(event) => setQuestionForm((prev) => ({ ...prev, correctAnswerIndex: event.target.value }))}
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  >
+                    {Array.from({ length: Math.max(formChoices.length, 1) }).map((_, index) => (
+                      <option key={index} value={index}>
+                        {index}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Tier
+                  </label>
+                  <select
+                    value={questionForm.tier}
+                    onChange={(event) =>
+                      setQuestionForm((prev) => ({
+                        ...prev,
+                        tier: event.target.value as QuestionFormState['tier'],
+                      }))
+                    }
+                    className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                  >
+                    <option value="1">Tier 1</option>
+                    <option value="2">Tier 2</option>
+                    <option value="3">Tier 3</option>
+                  </select>
+                </div>
+
+                <Input
+                  label="Subtopic ID"
+                  value={questionForm.relationId}
+                  onChange={(event) => setQuestionForm((prev) => ({ ...prev, relationId: event.target.value }))}
+                  placeholder="UUID or numeric id"
+                />
+              </div>
+
+              <Input
+                label="Explanation video URL"
+                value={questionForm.explanationVideoUrl}
+                onChange={(event) => setQuestionForm((prev) => ({ ...prev, explanationVideoUrl: event.target.value }))}
+                placeholder="https://..."
+              />
+
+              {actionError && (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                  {actionError}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={isSavingQuestion}
+                  onClick={() => {
+                    setIsQuestionFormOpen(false)
+                    setEditingQuestion(null)
+                    setQuestionForm(emptyQuestionForm)
+                  }}
+                >
+                  {t('common:cancel')}
+                </Button>
+                <Button type="submit" isLoading={isSavingQuestion}>
+                  {editingQuestion ? 'Save changes' : 'Create question'}
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => !deleteQuestionMutation.isPending && setDeleteTarget(null)}
+        >
+          <Card className="w-full max-w-md" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-200">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                  Delete this question?
+                </h2>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                  This will call the backend delete endpoint for question #{deleteTarget.id}.
+                </p>
+              </div>
+            </div>
+
+            {actionError && (
+              <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                {actionError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                disabled={deleteQuestionMutation.isPending}
+                onClick={() => setDeleteTarget(null)}
+              >
+                {t('common:cancel')}
+              </Button>
+              <Button
+                variant="danger"
+                isLoading={deleteQuestionMutation.isPending}
+                onClick={() => deleteQuestionMutation.mutate(deleteTarget.id)}
+              >
+                Delete
+              </Button>
+            </div>
           </Card>
         </div>
       )}

@@ -1,5 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useState, useMemo } from 'react'
 import {
   Medal,
   Flame,
@@ -14,9 +13,9 @@ import {
 import { Card, Badge, Avatar, ProgressBar, Button, Input } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
-import { learnersService } from '@/services/learners'
-import { topicsService } from '@/services/topics'
+import { useTopics, useGlobalLeaderboard, useTopicLeaderboard } from '@/hooks'
 import { cn } from '@/utils/cn'
+import type { LeaderboardLearner } from '@/services/learners'
 
 interface LeaderboardEntry {
   id: number | string
@@ -35,78 +34,55 @@ interface TopicOption {
   name: string
 }
 
+interface LeaderboardApiEntry extends LeaderboardLearner {
+  accuracy?: number
+  rank_change?: number
+}
+
 export function LeaderboardPage() {
-  const { t: _t } = useTranslation(['gamification', 'common'])
   const currentUser = useCurrentUser()
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
-  const [topics, setTopics] = useState<TopicOption[]>([])
-  const [selectedTopicId, setSelectedTopicId] = useState<string>('')
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentUserEntry, setCurrentUserEntry] = useState<LeaderboardEntry | null>(null)
+  const [selectedTopicOverride, setSelectedTopicOverride] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
 
-  useEffect(() => {
-    let isMounted = true
-    const fetchTopics = async () => {
-      try {
-        const data = await topicsService.getTopics()
-        const results = Array.isArray(data) ? data : (data.results || [])
-        if (isMounted) {
-          setTopics(results)
-          if (results.length > 0) setSelectedTopicId(results[0].id.toString())
-        }
-      } catch (error) {
-        console.error('Failed to fetch topics', error)
-      }
-    }
-    fetchTopics()
-    return () => { isMounted = false }
-  }, [])
+  // Fetch topics for the filter dropdown
+  const { data: rawTopics } = useTopics()
+  const topics = useMemo(
+    () => (rawTopics ?? []) as TopicOption[],
+    [rawTopics]
+  )
+  const selectedTopicId = selectedTopicOverride || topics[0]?.id.toString() || ''
 
-  useEffect(() => {
-    let isMounted = true
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        let data
-        if (leaderboardType === 'global') {
-          data = await learnersService.getLeaderboard()
-        } else {
-          if (!selectedTopicId) {
-            setIsLoading(false)
-            return
-          }
-          data = await learnersService.getTopicLeaderboard(selectedTopicId)
-        }
-        const results = data
-        
-        const mappedResults: LeaderboardEntry[] = results.map((entry: any, index: number) => ({
-          id: entry.id,
-          name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
-          xp: entry.total_xp || 0,
-          streak: entry.streak_count || 0,
-          accuracy: entry.accuracy || 100,
-          rank: index + 1,
-          rank_change: entry.rank_change || 0,
-          is_current_user: String(entry.user?.id) === String(currentUser.id),
-        }))
+  // Fetch leaderboard data — React Query handles caching + deduplication
+  const { data: globalData, isLoading: globalLoading } = useGlobalLeaderboard()
+  const { data: topicData, isLoading: topicLoading } = useTopicLeaderboard(
+    leaderboardType === 'topic' && selectedTopicId ? selectedTopicId : null
+  )
 
-        if (isMounted) {
-          setLeaderboard(mappedResults)
-          setCurrentUserEntry(
-            mappedResults.find((entry) => entry.is_current_user) || null,
-          )
-        }
-      } catch (error) {
-        if (isMounted) console.error('Failed to fetch leaderboard', error)
-      } finally {
-        if (isMounted) setIsLoading(false)
-      }
-    }
-    fetchData()
-    return () => { isMounted = false }
-   }, [leaderboardType, selectedTopicId, currentUser.id])
+  const isLoading = leaderboardType === 'global' ? globalLoading : topicLoading
+  const rawLeaderboard = useMemo<LeaderboardApiEntry[]>(
+    () => (leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])),
+    [leaderboardType, globalData, topicData]
+  )
+
+  // Map raw API data to UI-friendly entries
+  const leaderboard = useMemo<LeaderboardEntry[]>(() => {
+    return rawLeaderboard.map((entry, index) => ({
+      id: entry.id,
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
+      xp: entry.total_xp || 0,
+      streak: entry.streak_count || 0,
+      accuracy: entry.accuracy || 100,
+      rank: index + 1,
+      rank_change: entry.rank_change || 0,
+      is_current_user: String(entry.user?.id) === String(currentUser.id),
+    }))
+  }, [rawLeaderboard, currentUser.id])
+
+  const currentUserEntry = useMemo(
+    () => leaderboard.find((entry) => entry.is_current_user) || null,
+    [leaderboard]
+  )
 
   const displayEntries = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -184,7 +160,7 @@ export function LeaderboardPage() {
             {leaderboardType === 'topic' && (
               <select
                 value={selectedTopicId}
-                onChange={(event) => setSelectedTopicId(event.target.value)}
+                onChange={(event) => setSelectedTopicOverride(event.target.value)}
                 className="h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-700 outline-hidden dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
               >
                 {topics.map((topic) => (

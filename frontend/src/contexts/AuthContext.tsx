@@ -1,6 +1,4 @@
 import {
-  createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
@@ -12,8 +10,9 @@ import {
   authService,
   type BackendAuthUser,
   type LoginCredentials,
-  type RegisterPayload,
 } from "@/services/auth";
+import { getToken } from "@/services/api";
+import { AuthContext, type AuthContextValue } from "./authContextValue";
 
 /**
  * AuthContext
@@ -32,15 +31,6 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
-
-interface AuthContextValue extends AuthState {
-  login: (credentials: LoginCredentials) => Promise<User>;
-  register: (userData: RegisterPayload) => Promise<User>;
-  logout: () => void;
-  updateUser: (updates: Partial<User>) => void;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 // Initial state
 const initialState: AuthState = {
@@ -94,7 +84,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         return;
       }
 
-      const token = localStorage.getItem("learnlab_auth_token");
+      const token = getToken("learnlab_auth_token");
       if (!token) {
         setState((prev) => ({ ...prev, isLoading: false }));
         return;
@@ -129,39 +119,17 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     // The calling page (LoginPage) manages its own button/loading state.
     // Setting isLoading on the context would render the global "Loading..." screen
     // which blocks the login form and hides any error messages.
-    try {
-      await authService.login(credentials);
-      const backendUser = await authService.getCurrentUser();
-      const user = mapBackendUser(backendUser);
+    await authService.login(credentials);
+    const backendUser = await authService.getCurrentUser({ allowFallback: true });
+    const user = mapBackendUser(backendUser);
 
-      setState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return user;
-    } catch (error) {
-      // Don't change auth state on login failure — just re-throw
-      throw error;
-    }
+    setState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    return user;
   }, []);
-
-  const register = useCallback(
-    async (userData: RegisterPayload) => {
-      // Same as login — calling page handles its own loading state
-      try {
-        await authService.register(userData);
-        // Auto login after successful registration
-        return await login({
-          email: userData.email,
-          password: userData.password,
-        });
-      } catch (error) {
-        throw error;
-      }
-    },
-    [login],
-  );
 
   const logout = useCallback(() => {
     authService.logout();
@@ -183,11 +151,10 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     () => ({
       ...state,
       login,
-      register,
       logout,
       updateUser,
     }),
-    [state, login, register, logout, updateUser],
+    [state, login, logout, updateUser],
   );
 
   if (state.isLoading) {
@@ -200,20 +167,4 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
-
-export function useCurrentUser(): User {
-  const { user, isAuthenticated } = useAuth();
-  if (!isAuthenticated || !user) {
-    throw new Error("useCurrentUser must be used in an authenticated context");
-  }
-  return user;
 }

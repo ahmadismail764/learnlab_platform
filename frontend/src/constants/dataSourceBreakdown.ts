@@ -15,10 +15,10 @@ const authItems: DataSourceItem[] = [
 ]
 
 const learnerItems: DataSourceItem[] = [
-  { aspect: 'Learner dashboard metrics', source: 'static', note: 'Mock cards and summary values' },
-  { aspect: 'Topics list/progress', source: 'backend', note: 'GET /api/v1/practice/mastery/ via FIRe data' },
+  { aspect: 'Learner dashboard metrics', source: 'backend', note: 'XP/streak from /api/v1/auth/learner/me/, due topics from /api/v1/practice/mastery/' },
+  { aspect: 'Topics list/progress', source: 'backend', note: 'GET /api/v1/practice/mastery/ via FSRS data' },
   { aspect: 'Practice sessions', source: 'backend', note: 'CRUD via /api/v1/practice/sessions/ and /sessions/generate-adaptive/' },
-  { aspect: 'Progress analytics', source: 'static', note: 'Mock charts/series' },
+  { aspect: 'Progress analytics', source: 'backend', note: 'Topic mastery from /api/v1/practice/mastery/, profile from /api/v1/auth/learner/me/' },
 
   { aspect: 'Leaderboard', source: 'backend', note: 'Global/topic rankings via /api/v1/auth/leaderboard/*' },
   { aspect: 'Profile identity', source: 'backend', note: 'Auth user from /api/v1/auth/users/me/, editable via PATCH' },
@@ -27,9 +27,9 @@ const learnerItems: DataSourceItem[] = [
 ]
 
 const adminItems: DataSourceItem[] = [
-  { aspect: 'Admin dashboard cards', source: 'static', note: 'Mock overview data' },
+  { aspect: 'Admin dashboard cards', source: 'backend', note: 'Aggregated from /api/v1/analytics/aggregated/ + /api/v1/auth/leaderboard/global/' },
   { aspect: 'Topics management', source: 'backend', note: 'Full CRUD via /api/v1/practice/topics/' },
-  { aspect: 'Question bank list', source: 'partial', note: 'Read from GET /api/v1/practice/questions/; create/edit/delete pending (ReadOnlyModelViewSet)' },
+  { aspect: 'Question bank management', source: 'backend', note: 'Read/write via /api/v1/practice/questions/ with graceful handling when older backends reject writes' },
   { aspect: 'Analytics data', source: 'partial', note: 'Overview uses /api/v1/analytics/aggregated/ + /api/v1/auth/leaderboard/global/; detailed charts remain mock' },
   { aspect: 'Settings', source: 'static', note: 'Mock preferences save/reset' },
   { aspect: 'Admin profile identity', source: 'backend', note: 'Profile identity/edit uses /api/v1/auth/users/me/ and /api/v1/auth/admin/me/' },

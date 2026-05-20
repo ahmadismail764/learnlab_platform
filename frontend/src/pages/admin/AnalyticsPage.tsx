@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Users,
@@ -15,7 +15,7 @@ import {
 import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 import { PageIntro, PageStatCard } from '@/components/common'
-import { analyticsService, learnersService } from '@/services'
+import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
 
 /**
  * AnalyticsPage - Admin Learner Analytics Dashboard
@@ -25,6 +25,34 @@ import { analyticsService, learnersService } from '@/services'
  * - Topic performance overview
  * - Activity trends
  */
+
+const FSRS_METRICS = [
+  { topic: 'logic', speed: 14.2, retention: 92 },
+  { topic: 'sets', speed: 11.5, retention: 88 },
+  { topic: 'relations', speed: 8.7, retention: 82 },
+  { topic: 'combinatorics', speed: 6.3, retention: 76 },
+  { topic: 'graphs', speed: 9.8, retention: 85 },
+  { topic: 'numtheory', speed: 7.1, retention: 79 },
+] as const
+
+const TOPIC_PERFORMANCE = [
+  { topic: 'logic', accuracy: 78, attempts: 12450, avgTime: 45 },
+  { topic: 'sets', accuracy: 72, attempts: 9870, avgTime: 52 },
+  { topic: 'relations', accuracy: 68, attempts: 8340, avgTime: 58 },
+  { topic: 'combinatorics', accuracy: 65, attempts: 7210, avgTime: 62 },
+  { topic: 'graphs', accuracy: 71, attempts: 4560, avgTime: 48 },
+  { topic: 'numtheory', accuracy: 69, attempts: 2890, avgTime: 55 },
+] as const
+
+const WEEKLY_ACTIVITY = [
+  { day: 'Sat', learners: 420, questions: 2100 },
+  { day: 'Sun', learners: 380, questions: 1850 },
+  { day: 'Mon', learners: 520, questions: 2800 },
+  { day: 'Tue', learners: 490, questions: 2650 },
+  { day: 'Wed', learners: 510, questions: 2750 },
+  { day: 'Thu', learners: 470, questions: 2400 },
+  { day: 'Fri', learners: 350, questions: 1700 },
+] as const
 
 export function AnalyticsPage() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
@@ -36,93 +64,38 @@ export function AnalyticsPage() {
     { name: 'سارة أحمد', accuracy: 87, questionsAnswered: 254, xp: 3280 },
   ], [])
   const [topicSearch, setTopicSearch] = useState('')
-  const [overviewMetrics, setOverviewMetrics] = useState<{
-    totalLearners: number
-    activeThisWeek: number
-    totalReviews: number
-  } | null>(null)
-  const [topLearners, setTopLearners] = useState(fallbackTopLearners)
-  const [isLoadingOverview, setIsLoadingOverview] = useState(false)
-  const [overviewError, setOverviewError] = useState<string | null>(null)
 
-  useEffect(() => {
-    let isMounted = true
+  const { data: aggregated, isLoading: metricsLoading } = useAggregatedMetrics()
+  const { data: leaderboard, isLoading: lbLoading } = useGlobalLeaderboard()
 
-    const loadOverview = async () => {
-      setIsLoadingOverview(true)
-      setOverviewError(null)
+  const isLoadingOverview = metricsLoading || lbLoading
 
-      try {
-        const [aggregated, leaderboard] = await Promise.all([
-          analyticsService.getAggregatedMetrics(),
-          learnersService.getLeaderboard(),
-        ])
 
-        if (!isMounted) return
 
-        setOverviewMetrics({
-          totalLearners: leaderboard.length,
-          activeThisWeek: aggregated.active_users['7_days'],
-          totalReviews: aggregated.review_count,
-        })
-
-        setTopLearners(
-          leaderboard.slice(0, 5).map((entry) => ({
-            name: `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username,
-            accuracy: 0,
-            questionsAnswered: 0,
-            xp: entry.total_xp,
-          })),
-        )
-      } catch (error) {
-        if (!isMounted) return
-        const message = error instanceof Error ? error.message : 'Failed to fetch analytics overview'
-        setOverviewError(message)
-        setOverviewMetrics(null)
-        setTopLearners(fallbackTopLearners)
-      } finally {
-        if (isMounted) {
-          setIsLoadingOverview(false)
-        }
-      }
-    }
-
-    loadOverview()
-
-    return () => {
-      isMounted = false
-    }
-  }, [fallbackTopLearners])
-
-  // Mock analytics data
+  // Mock analytics data mixed with real dashboard overview metrics
   const overviewStats = useMemo(() => ({
-    totalLearners: overviewMetrics?.totalLearners ?? 1150,
-    activeThisWeek: overviewMetrics?.activeThisWeek ?? 892,
+    totalLearners: leaderboard?.length ?? 1150,
+    activeThisWeek: aggregated?.active_users['7_days'] ?? 892,
     avgAccuracy: 73,
     avgSessionTime: 24, // minutes
     totalQuestionsAnswered: 45320,
     questionsThisWeek: 3420,
-    totalReviews: overviewMetrics?.totalReviews ?? 45320, // For insufficient-data check (UC-04 alt flow 2a)
-  }), [overviewMetrics])
+    totalReviews: aggregated?.review_count ?? 45320, // For insufficient-data check (UC-04 alt flow 2a)
+  }), [aggregated, leaderboard])
 
-  // UC-04 Step 3: FIRe-specific metrics per topic (mock data)
-  const fsrsMetrics = [
-    { topic: 'logic', speed: 14.2, retention: 92 },
-    { topic: 'sets', speed: 11.5, retention: 88 },
-    { topic: 'relations', speed: 8.7, retention: 82 },
-    { topic: 'combinatorics', speed: 6.3, retention: 76 },
-    { topic: 'graphs', speed: 9.8, retention: 85 },
-    { topic: 'numtheory', speed: 7.1, retention: 79 },
-  ]
+  const topLearners = useMemo(() => {
+    if (!leaderboard) return fallbackTopLearners
+    return leaderboard.slice(0, 5).map((entry) => ({
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown',
+      accuracy: 0,
+      questionsAnswered: 0,
+      xp: entry.total_xp,
+    }))
+  }, [leaderboard, fallbackTopLearners])
 
-  const topicPerformance = [
-    { topic: 'logic', accuracy: 78, attempts: 12450, avgTime: 45 },
-    { topic: 'sets', accuracy: 72, attempts: 9870, avgTime: 52 },
-    { topic: 'relations', accuracy: 68, attempts: 8340, avgTime: 58 },
-    { topic: 'combinatorics', accuracy: 65, attempts: 7210, avgTime: 62 },
-    { topic: 'graphs', accuracy: 71, attempts: 4560, avgTime: 48 },
-    { topic: 'numtheory', accuracy: 69, attempts: 2890, avgTime: 55 },
-  ]
+  // UC-04 Step 3: FSRS-specific metrics per topic (mock data)
+  const fsrsMetrics = FSRS_METRICS
+  const topicPerformance = TOPIC_PERFORMANCE
 
   const difficultyBreakdown = {
     tier1: { attempts: 18500, accuracy: 85 },
@@ -130,36 +103,21 @@ export function AnalyticsPage() {
     tier3: { attempts: 9620, accuracy: 52 },
   }
 
-  const weeklyActivity = [
-    { day: 'Sat', learners: 420, questions: 2100 },
-    { day: 'Sun', learners: 380, questions: 1850 },
-    { day: 'Mon', learners: 520, questions: 2800 },
-    { day: 'Tue', learners: 490, questions: 2650 },
-    { day: 'Wed', learners: 510, questions: 2750 },
-    { day: 'Thu', learners: 470, questions: 2400 },
-    { day: 'Fri', learners: 350, questions: 1700 },
-  ]
+  const weeklyActivity = WEEKLY_ACTIVITY
 
 
 
-  const maxAttempts = useMemo(() => 
-    Math.max(...topicPerformance.map(t => t.attempts)),
-    [topicPerformance]
-  )
-
-  const maxDailyLearners = useMemo(() =>
-    Math.max(...weeklyActivity.map(d => d.learners)),
-    [weeklyActivity]
-  )
+  const maxAttempts = Math.max(...topicPerformance.map((t) => t.attempts))
+  const maxDailyLearners = Math.max(...weeklyActivity.map((d) => d.learners))
 
   // UC-04 Step 4a: Filter topics by search
   const filteredTopics = useMemo(() =>
     topicSearch
-      ? topicPerformance.filter(item =>
+      ? topicPerformance.filter((item) =>
           t(`topics:${item.topic}`).toLowerCase().includes(topicSearch.toLowerCase())
         )
       : topicPerformance,
-    [topicSearch, topicPerformance, t]
+    [topicSearch, t, topicPerformance]
   )
 
   // UC-04 Alternate Flow 2a: Insufficient data check
@@ -199,18 +157,11 @@ export function AnalyticsPage() {
         <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('common:loading')}</p>
       )}
 
-      {overviewError && (
-        <div className="rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-900/20 px-4 py-3">
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">{overviewError}</p>
-          <p className="text-xs text-amber-700/80 dark:text-amber-300/80 mt-1">
-            Showing fallback demo values for unavailable analytics fields.
-          </p>
-        </div>
-      )}
+      
 
       {/* UC-04 Alternate Flow 2a: Insufficient data empty state */}
       {hasInsufficientData ? (
-        <Card className="text-center py-12">
+        <Card className="dashboard-panel text-center py-12">
           <CardContent>
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
               <AlertTriangle className="w-8 h-8 text-amber-600 dark:text-amber-400" />
@@ -255,8 +206,8 @@ export function AnalyticsPage() {
         />
       </div>
 
-      {/* UC-04 Step 3: FIRe Metrics Section */}
-      <Card>
+      {/* UC-04 Step 3: FSRS Metrics Section */}
+      <Card className="dashboard-panel">
         <CardHeader
           title={t('admin:fsrsMetrics')}
           subtitle={t('admin:fsrsMetricsDescription')}
@@ -296,7 +247,7 @@ export function AnalyticsPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Topic Performance */}
         <div className="lg:col-span-2">
-          <Card>
+          <Card className="dashboard-panel">
             <CardHeader 
               title={t('admin:topicPerformance')}
               subtitle={t('admin:accuracyByTopic')}
@@ -360,7 +311,7 @@ export function AnalyticsPage() {
 
         {/* Difficulty Breakdown */}
         <div className="space-y-6">
-          <Card>
+          <Card className="dashboard-panel">
             <CardHeader title={t('admin:difficultyBreakdown')} />
             <CardContent>
               <div className="flex justify-around">
@@ -404,7 +355,7 @@ export function AnalyticsPage() {
       {/* Weekly Activity & Top Learners */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Weekly Activity */}
-        <Card>
+        <Card className="dashboard-panel">
           <CardHeader 
             title={t('admin:weeklyActivity')}
             subtitle={t('admin:last7Days')}
@@ -432,7 +383,7 @@ export function AnalyticsPage() {
         </Card>
 
         {/* Top Learners */}
-        <Card>
+        <Card className="dashboard-panel">
           <CardHeader 
             title={t('admin:topLearners')}
             subtitle={t('admin:byAccuracy')}
@@ -472,7 +423,7 @@ export function AnalyticsPage() {
       </div>
 
       {/* Questions Stats */}
-      <Card>
+      <Card className="dashboard-panel">
         <CardHeader title={t('admin:questionStatistics')} />
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">

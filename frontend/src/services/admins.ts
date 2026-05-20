@@ -1,15 +1,12 @@
-import { api } from './api';
 import type { BackendAuthUser } from './auth';
 
 export interface AdminProfile {
-  id: number;
+  id: number | string;
   user: BackendAuthUser;
 }
 
 export const adminsService = {
   getCurrentProfile: async () => {
-    const response = await api.get('/auth/admin/me/');
-    if (!response.ok) throw new Error('Failed to fetch admin profile');
-    return await response.json() as AdminProfile;
+    throw new Error('Admin profile endpoint is not available on this backend.');
   }
 };

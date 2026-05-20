@@ -19,7 +19,7 @@ import {
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
 import { PageIntro, PageStatCard } from '@/components/common'
 import { useAuth, useCurrentUser } from '@/contexts'
-import { useToast } from '@/contexts/ToastContext'
+import { useToast } from '@/contexts'
 import { analyticsService, authService, learnersService } from '@/services'
 
 /**
@@ -79,8 +79,8 @@ export function AdminProfilePage() {
 
         setSystemStats({
           totalLearners: leaderboard.length,
-          totalQuestions: aggregated.review_count,
-          activeToday: aggregated.active_users['7_days'],
+          totalQuestions: aggregated?.review_count ?? 0,
+          activeToday: aggregated?.active_users?.['7_days'] ?? 0,
           systemUptime: 'Live',
         })
       } catch (error) {

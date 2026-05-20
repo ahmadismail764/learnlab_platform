@@ -79,8 +79,8 @@ export function AdminProfilePage() {
 
         setSystemStats({
           totalLearners: leaderboard.length,
-          totalQuestions: aggregated.review_count,
-          activeToday: aggregated.active_users['7_days'],
+          totalQuestions: aggregated?.review_count ?? 0,
+          activeToday: aggregated?.active_users?.['7_days'] ?? 0,
           systemUptime: 'Live',
         })
       } catch (error) {

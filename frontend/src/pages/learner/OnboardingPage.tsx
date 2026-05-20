@@ -46,7 +46,7 @@ export function OnboardingPage() {
   const [selectedGoal, setSelectedGoal] = useState<string>('regular')
   const [selectedTopics, setSelectedTopics] = useState<number[]>([])
 
-  const topics = (Array.isArray(topicsData) ? topicsData : topicsData?.results ?? []) as OnboardingTopic[]
+  const topics = (topicsData ?? []) as OnboardingTopic[]
 
   const handleNext = () => {
     if (step < 3) setStep(step + 1)
@@ -124,7 +124,7 @@ export function OnboardingPage() {
                   Welcome to LearnLab
                 </h1>
                 <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-md mx-auto mb-10 leading-relaxed">
-                  The adaptive learning platform that uses Fast Interval Repetition Engine (FIRe) to guarantee you remember what you learn.
+                  The adaptive learning platform that uses FSRS to help you remember what you learn.
                 </p>
                 <Button size="lg" onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4" />} className="w-full sm:w-auto px-8 py-6 text-lg rounded-2xl shadow-lg shadow-primary-500/20">
                   Get Started

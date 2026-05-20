@@ -1,45 +1,88 @@
-import { api } from './api';
+import { api, type EntityId } from './api';
 
 interface TopicPayload {
   name: string;
   description: string;
-  parent_module: string;
+  parent_module?: string;
+  question_count?: number;
 }
+
+export interface TopicMastery {
+  id: EntityId;
+  topic: EntityId;
+  topic_name: string;
+  rep_num: number;
+  memory: number;
+  speed: number;
+  difficulty: number;
+  status: 'new' | 'learning' | 'learned' | 'struggling';
+  last_reviewed: string | null;
+  next_due: string | null;
+}
+
+
+interface BackendTopic {
+  id: EntityId;
+  name: string;
+  description: string;
+  parent_module?: string;
+  question_count?: number;
+}
+
+function normalizeTopic(raw: Partial<BackendTopic>): BackendTopic {
+  return {
+    id: raw.id ?? '',
+    name: raw.name ?? '',
+    description: raw.description ?? '',
+    parent_module: raw.parent_module ?? '',
+    question_count: Number(raw.question_count ?? 0),
+  };
+}
+
+function toList<T>(data: T[] | { results?: T[] }): T[] {
+  return Array.isArray(data) ? data : data.results ?? [];
+}
+
 
 export const topicsService = {
   getTopics: async () => {
-    const response = await api.get(`/practice/topics/`);
+    const response = await api.get('/topcis/topics/');
     if (!response.ok) throw new Error('Failed to fetch topics');
-    return await response.json();
+    const data = await response.json() as BackendTopic[] | { results?: BackendTopic[] };
+    return toList(Array.isArray(data) ? data : data.results ?? []).map(normalizeTopic);
   },
 
   getTopicMastery: async (filters: Record<string, string> = {}) => {
-    const query = new URLSearchParams(filters).toString();
-    const response = await api.get(`/practice/mastery/?${query}`);
-    if (!response.ok) throw new Error('Failed to fetch topic mastery');
-    return await response.json();
+    void filters;
+    return [];
   },
 
   getTopicDetails: async (id: number) => {
-    const response = await api.get(`/practice/topics/${id}/`);
+    const response = await api.get(`/topcis/topics/${id}/`);
     if (!response.ok) throw new Error('Failed to fetch topic details');
-    return await response.json();
+    return normalizeTopic(await response.json() as BackendTopic);
   },
 
   createTopic: async (data: TopicPayload) => {
-    const response = await api.post('/practice/topics/', data);
+    const response = await api.post('/topcis/topics/', {
+      name: data.name,
+      description: data.description,
+    });
     if (!response.ok) throw new Error('Failed to create topic');
-    return await response.json();
+    return normalizeTopic(await response.json() as BackendTopic);
   },
 
   updateTopic: async (id: number, data: Partial<TopicPayload>) => {
-    const response = await api.put(`/practice/topics/${id}/`, data);
+    const response = await api.put(`/topcis/topics/${id}/`, {
+      name: data.name,
+      description: data.description,
+    });
     if (!response.ok) throw new Error('Failed to update topic');
-    return await response.json();
+    return normalizeTopic(await response.json() as BackendTopic);
   },
 
   deleteTopic: async (id: number) => {
-    const response = await api.delete(`/practice/topics/${id}/`);
+    const response = await api.delete(`/topcis/topics/${id}/`);
     if (!response.ok) throw new Error('Failed to delete topic');
     if (response.status === 204) return null;
     return await response.json();

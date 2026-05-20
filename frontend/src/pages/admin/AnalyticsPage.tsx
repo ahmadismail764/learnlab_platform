@@ -93,7 +93,7 @@ export function AnalyticsPage() {
     }))
   }, [leaderboard, fallbackTopLearners])
 
-  // UC-04 Step 3: FIRe-specific metrics per topic (mock data)
+  // UC-04 Step 3: FSRS-specific metrics per topic (mock data)
   const fsrsMetrics = FSRS_METRICS
   const topicPerformance = TOPIC_PERFORMANCE
 
@@ -206,7 +206,7 @@ export function AnalyticsPage() {
         />
       </div>
 
-      {/* UC-04 Step 3: FIRe Metrics Section */}
+      {/* UC-04 Step 3: FSRS Metrics Section */}
       <Card className="dashboard-panel">
         <CardHeader
           title={t('admin:fsrsMetrics')}

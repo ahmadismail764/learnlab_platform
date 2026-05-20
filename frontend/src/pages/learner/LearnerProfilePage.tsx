@@ -32,8 +32,8 @@ import { validateForm, profileSchema } from '@/validation'
  */
 
 interface TopicMasteryData {
-  id: number
-  topic: number
+  id: string | number
+  topic: string | number
   topic_name: string
   rep_num: number
   memory: number
@@ -80,8 +80,7 @@ export function LearnerProfilePage() {
     return Number.isNaN(parsed.getTime()) ? 'N/A' : String(parsed.getFullYear())
   }, [user.createdAt])
 
-  // Compute mastery index from FIRe memory scores
-  // Note: Backend serializer currently out of sync and does not return memory yet.
+  // Compute mastery index from normalized FSRS retrievability scores.
   const masteryIndex = useMemo(() => {
     if (topicMasteries.length === 0) return null
     const avgMemory = topicMasteries.reduce((sum, m) => sum + Math.min(1, m.memory || 0), 0) / topicMasteries.length

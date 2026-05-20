@@ -6,11 +6,13 @@
 
 export {
   loginSchema,
+  forgotPasswordSchema,
   registerSchema,
   profileSchema,
   extractFieldErrors,
   validateForm,
   type LoginFormData,
+  type ForgotPasswordFormData,
   type RegisterFormData,
   type ProfileFormData,
 } from './authSchemas'

@@ -1,14 +1,25 @@
-import { api } from './api';
+import { api, type EntityId } from './api';
 
 export interface BackendQuestion {
-  id: number;
-  knowledge_point: number | null;
+  id: EntityId;
+  subtopic?: EntityId | null;
+  subtopic_name?: string | null;
+  knowledge_point?: EntityId | null;
   topic_name: string;
   text: string;
   choices: string[];
   correct_answer_index: number;
   tier: number;
-  explanation_video_url: string | null;
+  explanation_video_url?: string | null;
+}
+
+export interface QuestionMutationPayload {
+  text: string;
+  choices: string[];
+  correct_answer_index: number;
+  tier: number;
+  subtopic?: EntityId | null;
+  explanation_video_url?: string | null;
 }
 
 interface PaginatedResponse<T> {
@@ -18,41 +29,58 @@ interface PaginatedResponse<T> {
   results: T[];
 }
 
+function normalizeQuestion(raw: Partial<BackendQuestion>): BackendQuestion {
+  const choices = Array.isArray(raw.choices)
+    ? raw.choices.map(String)
+    : [];
+
+  return {
+    id: raw.id ?? '',
+    subtopic: raw.subtopic ?? null,
+    subtopic_name: raw.subtopic_name ?? null,
+    topic_name: raw.topic_name ?? raw.subtopic_name ?? 'Unlinked',
+    text: raw.text ?? '',
+    choices,
+    correct_answer_index: Number(raw.correct_answer_index ?? 0),
+    tier: Number(raw.tier ?? 1),
+  };
+}
+
+function toQuestionList(data: BackendQuestion[] | PaginatedResponse<BackendQuestion>) {
+  const rows = Array.isArray(data) ? data : data.results ?? [];
+  return rows.map(normalizeQuestion);
+}
+
 export const questionsService = {
+  supportsWrites: false,
   getQuestions: async (filters: Record<string, string> = {}): Promise<BackendQuestion[]> => {
     const query = new URLSearchParams(filters).toString();
     const response = await api.get(`/practice/questions/${query ? `?${query}` : ''}`);
     if (!response.ok) throw new Error('Failed to fetch questions');
     const data = await response.json();
-    // Handle both paginated and unpaginated responses
-    return Array.isArray(data) ? data : (data as PaginatedResponse<BackendQuestion>).results ?? [];
+    return toQuestionList(data as BackendQuestion[] | PaginatedResponse<BackendQuestion>);
   },
 
-  getQuestion: async (id: number): Promise<BackendQuestion> => {
-    const response = await api.get(`/practice/questions/${id}/`);
-    if (!response.ok) throw new Error('Failed to fetch question');
-    return await response.json();
+  getQuestion: async (id: EntityId): Promise<BackendQuestion> => {
+    const list = await questionsService.getQuestions();
+    const match = list.find((item) => String(item.id) === String(id));
+    if (!match) throw new Error('Question not found');
+    return match;
   },
 
-  // Note: The backend QuestionViewSet is ReadOnlyModelViewSet.
-  // These methods will return 405 Method Not Allowed until the backend
-  // upgrades to a full ModelViewSet for questions.
-  createQuestion: async (data: unknown) => {
-    const response = await api.post('/practice/questions/', data);
-    if (!response.ok) throw new Error('Failed to create question');
-    return await response.json();
+  createQuestion: async (data: QuestionMutationPayload) => {
+    void data;
+    throw new Error('Question write endpoints are not available on this backend.');
   },
 
-  updateQuestion: async (id: number, data: unknown) => {
-    const response = await api.put(`/practice/questions/${id}/`, data);
-    if (!response.ok) throw new Error('Failed to update question');
-    return await response.json();
+  updateQuestion: async (id: EntityId, data: QuestionMutationPayload) => {
+    void id;
+    void data;
+    throw new Error('Question write endpoints are not available on this backend.');
   },
 
-  deleteQuestion: async (id: number) => {
-    const response = await api.delete(`/practice/questions/${id}/`);
-    if (!response.ok) throw new Error('Failed to delete question');
-    if (response.status === 204) return null;
-    return await response.json();
+  deleteQuestion: async (id: EntityId) => {
+    void id;
+    throw new Error('Question write endpoints are not available on this backend.');
   }
 };

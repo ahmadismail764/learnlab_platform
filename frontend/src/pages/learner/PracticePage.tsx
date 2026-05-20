@@ -30,26 +30,39 @@ import { queryKeys } from '@/hooks'
 
 type SessionState = 'selecting' | 'practicing' | 'complete'
 type AnswerState = 'unanswered' | 'answered'
-type FIReGrade = 1 | 2 | 3 | 4 // Again, Hard, Good, Easy
+type FSRSGrade = 1 | 2 | 3 | 4 // Again, Hard, Good, Easy
 
 interface Question {
-  id: number
+  id: string | number
   text: string
   choices: string[]
   correct_answer_index: number
   tier: number
-  explanation_video_url?: string
+  explanation_video_url?: string | null
   topic_name: string
-  topic_id: number
+  topic_id?: string | number
 }
 
 interface QuestionState {
-  questionId: number
+  questionId: string | number
   userResponse: string | null
   answerState: AnswerState
   isCorrect: boolean | null
-  grade: FIReGrade | null
+  grade: FSRSGrade | null
   startTime: number
+}
+
+function normalizePracticeQuestion(raw: Partial<Question> & { subtopic_name?: string | null }): Question {
+  return {
+    id: raw.id ?? '',
+    text: raw.text ?? '',
+    choices: Array.isArray(raw.choices) ? raw.choices.map(String) : [],
+    correct_answer_index: Number(raw.correct_answer_index ?? 0),
+    tier: Number(raw.tier ?? 1),
+    explanation_video_url: raw.explanation_video_url ?? null,
+    topic_name: raw.topic_name ?? raw.subtopic_name ?? 'Practice question',
+    topic_id: raw.topic_id,
+  }
 }
 
 export function PracticePage() {
@@ -57,7 +70,7 @@ export function PracticePage() {
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [sessionRecord, setSessionRecord] = useState<{ id: number; session_type: string } | null>(null)
+  const [sessionRecord, setSessionRecord] = useState<{ id: string | number; session_type?: string } | null>(null)
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -78,7 +91,8 @@ export function PracticePage() {
         return
       }
 
-      setQuestions(data.questions)
+      const normalizedQuestions = data.questions.map(normalizePracticeQuestion)
+      setQuestions(normalizedQuestions)
 
       // Create session record — backend PracticeSessionCreateSerializer
       // requires session_type and interactions (can be empty array)
@@ -89,7 +103,7 @@ export function PracticePage() {
       setSessionRecord(session)
 
       const initialStates: Record<number, QuestionState> = {}
-      data.questions.forEach((q: Question, idx: number) => {
+      normalizedQuestions.forEach((q: Question, idx: number) => {
         initialStates[idx] = {
           questionId: q.id,
           userResponse: null,
@@ -157,7 +171,7 @@ export function PracticePage() {
     }
   }, [earnedXp, queryClient, sessionRecord])
 
-  const handleGrade = useCallback(async (grade: FIReGrade) => {
+  const handleGrade = useCallback(async (grade: FSRSGrade) => {
     if (!currentStatus || !sessionRecord || !currentQuestion) return
     const timeTaken = Math.round((Date.now() - currentStatus.startTime) / 1000)
     setQuestionStates((prev) => ({
@@ -232,7 +246,7 @@ export function PracticePage() {
         <PageIntro
           eyebrow="Practice session"
           title="Ready for a focused review?"
-          description="Start an adaptive FIRe session and we will pull the next questions from your learner queue without changing the rest of the site structure."
+          description="Start an adaptive FSRS session and we will pull the next questions from your learner queue without changing the rest of the site structure."
           icon={<TestTube2 className="h-6 w-6" />}
           tone="primary"
           actions={(
@@ -289,7 +303,7 @@ export function PracticePage() {
                 2. Reflect
               </p>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                After each answer, rate how hard recall felt so FIRe can tune the next interval.
+                After each answer, rate how hard recall felt so FSRS can tune the next interval.
               </p>
             </div>
             <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
@@ -526,7 +540,7 @@ export function PracticePage() {
                 ].map((button) => (
                   <button
                     key={button.grade}
-                    onClick={() => handleGrade(button.grade as FIReGrade)}
+                    onClick={() => handleGrade(button.grade as FSRSGrade)}
                     className={cn(
                       'rounded-2xl px-4 py-4 text-center text-white transition-transform hover:-translate-y-0.5',
                       button.tone,
@@ -591,7 +605,7 @@ export function PracticePage() {
               </div>
 
               <Badge variant="outline" size="sm">
-                Adaptive FIRe scheduling enabled
+                Adaptive FSRS scheduling enabled
               </Badge>
             </div>
           </Card>
@@ -610,7 +624,7 @@ export function PracticePage() {
                 </p>
                 <Button
                   variant="outline"
-                  onClick={() => window.open(currentQuestion.explanation_video_url, '_blank')}
+                  onClick={() => window.open(currentQuestion.explanation_video_url ?? undefined, '_blank')}
                 >
                   Watch explanation
                 </Button>

@@ -21,14 +21,14 @@ import { useLearnerProfile, useTopicMastery } from '@/hooks'
  *
  * Backend-integrated progress view:
  * - Stats derived from learner profile (XP, streak) and topic mastery
- * - Topic breakdown cards with FIRe memory/speed metrics
+ * - Topic breakdown cards with FSRS retrievability/stability metrics
  * - Review goal progress
  * RTL-aware with full i18n support.
  */
 
 interface TopicMastery {
-  id: number
-  topic: number
+  id: string | number
+  topic: string | number
   topic_name: string
   rep_num: number
   memory: number
@@ -188,7 +188,7 @@ export function ProgressPage() {
                 Progress that tells you what to do next
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-400 sm:text-base">
-                FIRe data is most useful when it reduces ambiguity. This view is tuned to show what is stable, what is drifting, and where a short review buys the most.
+                FSRS data is most useful when it reduces ambiguity. This view is tuned to show what is stable, what is drifting, and where a short review buys the most.
               </p>
             </div>
 
@@ -358,7 +358,7 @@ export function ProgressPage() {
             <div className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-secondary-600 dark:text-secondary-300" />
               <h2 className="font-display text-xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-                FIRe signals
+                FSRS signals
               </h2>
             </div>
 
@@ -401,7 +401,7 @@ export function ProgressPage() {
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  Approximate FIRe interval pace
+                  Approximate FSRS interval pace
                 </p>
               </div>
             </div>
@@ -449,7 +449,7 @@ export function ProgressPage() {
       <section className="space-y-4">
         <SectionHeading
           title="Topic breakdown"
-          description="Detailed FIRe-backed topic cards, still sorted by where attention matters most."
+          description="Detailed FSRS-backed topic cards, still sorted by where attention matters most."
         />
 
         {isLoading ? (

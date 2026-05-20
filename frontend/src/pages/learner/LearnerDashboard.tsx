@@ -20,13 +20,13 @@ import { useLearnerProfile, useTopicMastery } from "@/hooks";
  * Main landing page for learners showing real data from the backend:
  * - A concise overview of what matters right now
  * - Progress signals derived from learner profile and mastery data
- * - Review queue prioritized from FIRe mastery data
+ * - Review queue prioritized from FSRS mastery data
  * RTL-aware with full i18n support.
  */
 
 interface TopicMastery {
-  id: number;
-  topic: number;
+  id: string | number;
+  topic: string | number;
   topic_name: string;
   rep_num: number;
   memory: number;

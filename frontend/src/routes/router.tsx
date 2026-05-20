@@ -18,7 +18,7 @@ import { LazyRoute } from "./LazyRoute";
 
 // ── Eagerly loaded (part of initial bundle) ────────────────────────
 // Auth pages load fast and are the first thing users see
-import { LoginPage, RegisterPage } from "@/pages/auth";
+import { ForgotPasswordPage, LoginPage, RegisterPage } from "@/pages/auth";
 
 // ── Lazily loaded (split into separate chunks) ─────────────────────
 const OnboardingPage = lazy(() =>
@@ -103,12 +103,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
         { index: true, element: <Navigate to="/login" replace /> },
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
-        {
-          path: "forgot-password",
-          element: (
-            <div className="text-center">Forgot Password (Coming Soon)</div>
-          ),
-        },
+        { path: "forgot-password", element: <ForgotPasswordPage /> },
       ],
     },
 

@@ -31,7 +31,7 @@ const routeStatusMap: Array<{
     info: {
       status: 'backend',
       label: 'Backend Integrated',
-      detail: 'Topic list from /api/v1/practice/topics/, mastery data from /api/v1/practice/mastery/ with FIRe scheduling.',
+      detail: 'Topic list from /api/v1/practice/topics/, mastery data from /api/v1/practice/mastery/ with FSRS scheduling.',
     },
   },
   {
@@ -71,7 +71,7 @@ const routeStatusMap: Array<{
     info: {
       status: 'partial',
       label: 'Partially Integrated',
-      detail: 'Questions list and preview load from GET /api/v1/practice/questions/. Create/edit/delete are disabled because the backend uses ReadOnlyModelViewSet.',
+      detail: 'Questions list, preview, create, edit, and delete are wired through /api/v1/practice/questions/ with graceful errors for older read-only backends.',
     },
   },
   {

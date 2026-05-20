@@ -1,8 +1,12 @@
-import { api, getTokenStorage, getToken } from "./api";
+import {
+  api,
+  getTokenStorage,
+  getToken,
+  parseApiError,
+  throwApiError,
+} from "./api";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1"
-).replace(/\/$/, "");
+const AUTH_USER_SNAPSHOT_KEY = "learnlab_user_snapshot";
 
 export interface LoginCredentials {
   email: string;
@@ -46,36 +50,8 @@ export interface UpdateCurrentUserPayload {
   last_name?: string;
 }
 
-async function parseError(
-  response: Response,
-  fallback: string,
-): Promise<{ message: string; fieldErrors?: Record<string, string> }> {
-  try {
-    const data = await response.json();
-    if (data.detail) {
-      return { message: data.detail };
-    }
-    if (data.non_field_errors) {
-      return { message: data.non_field_errors[0] };
-    }
-
-    const fieldErrors = Object.fromEntries(
-      Object.entries(data).map(([key, val]) => [
-        key,
-        Array.isArray(val) ? String(val[0]) : String(val),
-      ]),
-    );
-    const message = Object.entries(fieldErrors)
-      .map(([key, val]) => `${key}: ${val}`)
-      .join("; ");
-
-    if (message) {
-      return { message, fieldErrors };
-    }
-  } catch {
-    // Non-JSON response
-  }
-  return { message: fallback };
+export interface CurrentUserOptions {
+  allowFallback?: boolean;
 }
 
 function normalizeAuthError(
@@ -109,6 +85,120 @@ function normalizeAuthError(
   return message;
 }
 
+function isEndpointMissing(response: Response): boolean {
+  return response.status === 404 || response.status === 405;
+}
+
+async function postFirstAvailable(
+  paths: string[],
+  payloads: unknown[],
+): Promise<Response> {
+  let lastResponse: Response | null = null;
+
+  for (const path of paths) {
+    for (const payload of payloads) {
+      const response = await api.postPublic(path, payload);
+
+      if (response.ok) {
+        return response;
+      }
+
+      lastResponse = response;
+
+      if (!isEndpointMissing(response) && response.status !== 400 && response.status !== 401) {
+        return response;
+      }
+    }
+  }
+
+  return lastResponse ?? api.postPublic(paths[0] ?? "/auth/login/", payloads[0] ?? {});
+}
+
+
+function decodeJwtPayload(token: string | null): Record<string, unknown> | null {
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) {
+      return null;
+    }
+    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
+        .join(""),
+    );
+    return JSON.parse(json) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function coerceBackendUser(partial: Partial<BackendAuthUser>): BackendAuthUser {
+  const now = new Date().toISOString();
+  const username = partial.username || partial.email?.split("@")[0] || "learner";
+
+  return {
+    id: partial.id ?? username,
+    email: partial.email ?? "",
+    username,
+    first_name: partial.first_name ?? "",
+    last_name: partial.last_name ?? "",
+    role: partial.role ?? (partial.is_staff ? "admin" : "learner"),
+    is_staff: partial.is_staff ?? partial.role === "admin",
+    date_joined: partial.date_joined ?? now,
+  };
+}
+
+function saveUserSnapshot(user: Partial<BackendAuthUser>) {
+  const storage = getTokenStorage();
+  storage.setItem(AUTH_USER_SNAPSHOT_KEY, JSON.stringify(coerceBackendUser(user)));
+}
+
+function readUserSnapshot(): BackendAuthUser | null {
+  const raw =
+    localStorage.getItem(AUTH_USER_SNAPSHOT_KEY) ??
+    sessionStorage.getItem(AUTH_USER_SNAPSHOT_KEY);
+
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return coerceBackendUser(JSON.parse(raw) as Partial<BackendAuthUser>);
+  } catch {
+    return null;
+  }
+}
+
+function getFallbackCurrentUser(): BackendAuthUser {
+  const snapshot = readUserSnapshot();
+  if (snapshot) {
+    return snapshot;
+  }
+
+  const claims = decodeJwtPayload(getToken("learnlab_auth_token"));
+  const id = claims?.user_id ?? claims?.sub ?? claims?.id ?? "learner";
+  const email = typeof claims?.email === "string" ? claims.email : "";
+  const username =
+    typeof claims?.username === "string"
+      ? claims.username
+      : email.split("@")[0] || String(id);
+  const role = claims?.role === "admin" ? "admin" : "learner";
+
+  return coerceBackendUser({
+    id: String(id),
+    email,
+    username,
+    role,
+    is_staff: role === "admin" || claims?.is_staff === true,
+  });
+}
+
 function normalizeFieldErrors(
   fieldErrors: Record<string, string> | undefined,
   mode: "login" | "register",
@@ -128,16 +218,17 @@ function normalizeFieldErrors(
 export const authService = {
   login: async (credentials: LoginCredentials) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/auth/login/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(credentials),
-        },
+      const identifier = credentials.email.trim();
+
+      // Backend uses USERNAME_FIELD = 'username', so we send { username }.
+      // If the user typed an email, we still send it as `username` — the backend
+      // should support email-based login (see backend_issues.md #2).
+      const response = await postFirstAvailable(
+        ["/auth/login/"],
+        [{ username: identifier, password: credentials.password }],
       );
       if (!response.ok) {
-        const { message, fieldErrors } = await parseError(response, "Login failed");
+        const { message, fieldErrors } = await parseApiError(response, "Login failed");
         throw new AuthRequestError(
           normalizeAuthError(message, "login"),
           normalizeFieldErrors(fieldErrors, "login"),
@@ -147,7 +238,6 @@ export const authService = {
 
       // Determine storage based on "remember me" preference
       const persist = credentials.rememberMe !== false; // default true
-      // Write the preference flag to localStorage (always — it's the source of truth)
       if (persist) {
         localStorage.setItem("learnlab_persist", "1");
       } else {
@@ -162,6 +252,20 @@ export const authService = {
 
       storage.setItem("learnlab_auth_token", data.access);
       storage.setItem("learnlab_refresh_token", data.refresh);
+
+      // Save a user snapshot from the JWT claims.
+      // NOTE: The backend JWT currently only contains { user_id }. Once the backend
+      // adds role/email/username to the JWT claims (see backend_issues.md #10),
+      // remove the fallback values below.
+      const claims = decodeJwtPayload(data.access);
+      saveUserSnapshot({
+        id: String(claims?.user_id ?? claims?.sub ?? ""),
+        email: typeof claims?.email === "string" ? claims.email : "",
+        username: typeof claims?.username === "string" ? claims.username : identifier,
+        role: claims?.role === "admin" ? "admin" : (claims?.is_staff === true ? "admin" : "learner"),
+        is_staff: claims?.is_staff === true || claims?.role === "admin",
+      });
+
       return data;
     } catch (error) {
       if (error instanceof AuthRequestError) {
@@ -174,16 +278,12 @@ export const authService = {
 
   register: async (userData: RegisterPayload) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/auth/learner/register/`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(userData),
-        },
+      const response = await postFirstAvailable(
+        ["/auth/register/"],
+        [userData],
       );
       if (!response.ok) {
-        const { message, fieldErrors } = await parseError(
+        const { message, fieldErrors } = await parseApiError(
           response,
           "Registration failed",
         );
@@ -208,42 +308,95 @@ export const authService = {
     localStorage.removeItem("learnlab_auth_token");
     localStorage.removeItem("learnlab_refresh_token");
     localStorage.removeItem("learnlab_persist");
+    localStorage.removeItem(AUTH_USER_SNAPSHOT_KEY);
     sessionStorage.removeItem("learnlab_auth_token");
     sessionStorage.removeItem("learnlab_refresh_token");
+    sessionStorage.removeItem(AUTH_USER_SNAPSHOT_KEY);
   },
 
   refreshToken: async () => {
     const refresh = getToken("learnlab_refresh_token");
     if (!refresh) throw new Error("No refresh token");
-    const response = await fetch(
-      `${API_BASE_URL}/auth/refresh/`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh }),
-      },
-    );
+    const response = await api.postPublic("/auth/refresh/", { refresh });
     if (!response.ok) throw new Error("Refresh failed");
     return await response.json();
   },
 
-  getCurrentUser: async (): Promise<BackendAuthUser> => {
-    const response = await api.get("/auth/users/me/");
-    if (!response.ok) {
-      const { message } = await parseError(response, "Failed to fetch current user");
-      throw new Error(message);
+  getCurrentUser: async (options: CurrentUserOptions = {}): Promise<BackendAuthUser> => {
+    // Try the real endpoint first — the backend should implement this (see backend_issues.md #4).
+    try {
+      const response = await api.get("/auth/users/me/");
+      if (response.ok) {
+        const data = await response.json();
+        const user = coerceBackendUser(data as Partial<BackendAuthUser>);
+        saveUserSnapshot(user);
+        return user;
+      }
+    } catch {
+      // Endpoint doesn't exist yet — fall through to fallback.
     }
-    return (await response.json()) as BackendAuthUser;
+
+    // Fallback: use the locally-stored snapshot from the last login.
+    // This is lossy (no role/name/email from the backend) until /users/me/ is implemented.
+    if (options.allowFallback) {
+      return getFallbackCurrentUser();
+    }
+    throw new Error("Current user endpoint (/auth/users/me/) is not available on this backend.");
   },
 
-  updateCurrentUser: async (
-    data: UpdateCurrentUserPayload,
-  ): Promise<BackendAuthUser> => {
-    const response = await api.patch("/auth/users/me/", data);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  updateCurrentUser: async (..._args: [UpdateCurrentUserPayload?]): Promise<BackendAuthUser> => {
+    throw new Error("Profile update endpoint is not available on this backend.");
+  },
+
+  requestPasswordReset: async (email: string) => {
+    const response = await postFirstAvailable(
+      [
+        "/auth/password-reset/",
+        "/auth/password/reset/",
+        "/auth/forgot-password/",
+      ],
+      [{ email }],
+    );
+
     if (!response.ok) {
-      const { message } = await parseError(response, "Failed to update profile");
-      throw new Error(message);
+      if (isEndpointMissing(response)) {
+        throw new AuthRequestError(
+          "Password reset is not available on this backend yet.",
+        );
+      }
+      await throwApiError(response, "Failed to request password reset");
     }
-    return (await response.json()) as BackendAuthUser;
+
+    if (response.status === 204) {
+      return null;
+    }
+
+    try {
+      return await response.json();
+    } catch {
+      return null;
+    }
+  },
+
+  confirmPasswordReset: async (data: {
+    uid?: string;
+    token: string;
+    password: string;
+  }) => {
+    const response = await postFirstAvailable(
+      [
+        "/auth/password-reset/confirm/",
+        "/auth/password/reset/confirm/",
+        "/auth/reset-password/confirm/",
+      ],
+      [data],
+    );
+
+    if (!response.ok) {
+      await throwApiError(response, "Failed to reset password");
+    }
+
+    return response.status === 204 ? null : await response.json();
   },
 };

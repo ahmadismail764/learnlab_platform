@@ -18,11 +18,11 @@ import { Card, Button, Badge, Input, ProgressBar } from "@/components/ui";
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
  *
  * Browse Discrete Mathematics topics organized by category.
- * Shows FIRe-based progress and review status for each topic.
+ * Shows FSRS-based progress and review status for each topic.
  *
  * UC-08 Features:
  * - "Due Today" vs "Future Reviews" categorization (Step 3)
- * - FIRe memory-based sorting — lowest = highest priority (Step 4)
+ * - FSRS retrievability-based sorting — lowest = highest priority (Step 4)
  * - Tier badges: 🥉 Tier 1 / 🥈 Tier 2 / 🥇 Tier 3 (Step 5)
  * - "Review!" visual cue for due topics (Step 5)
  * - Search / filter bar (Alt Flow 5a)
@@ -38,7 +38,7 @@ interface TopicItem {
   questionsDue: number;
   lastReviewed?: string;
   state: "new" | "learning" | "review" | "mastered";
-  /** FIRe memory 0–1 — lower = more urgent (UC-08 Step 4) */
+  /** FSRS retrievability 0-1: lower = more urgent (UC-08 Step 4) */
   memory: number;
   /** Scaffolding tier 1–3 (UC-08 Step 5) */
   tier: 1 | 2 | 3;

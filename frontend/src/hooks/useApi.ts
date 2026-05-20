@@ -32,6 +32,9 @@ export const queryKeys = {
     list: ['topics', 'list'] as const,
     detail: (id: string | number) => ['topics', 'detail', id] as const,
   },
+  questions: {
+    list: ['questions', 'list'] as const,
+  },
   analytics: {
     aggregated: ['analytics', 'aggregated'] as const,
   },
@@ -54,14 +57,13 @@ export function useLearnerProfile() {
   })
 }
 
-/** Fetch topic mastery data (FIRe memory/speed/status per topic) */
+/** Fetch normalized FSRS mastery data (retrievability/stability/status per topic) */
 export function useTopicMastery() {
   return useQuery({
     queryKey: queryKeys.learner.mastery,
     queryFn: async () => {
       try {
-        const raw = await topicsService.getTopicMastery()
-        return Array.isArray(raw) ? raw : raw.results ?? []
+        return await topicsService.getTopicMastery()
       } catch (e) {
         console.warn('Backend TopicMastery API is currently returning 500. Falling back to empty array.', e)
         return []
@@ -95,17 +97,14 @@ export function useTopicLeaderboard(topicId: string | number | null) {
 export function useTopics() {
   return useQuery({
     queryKey: queryKeys.topics.list,
-    queryFn: async () => {
-      const raw = await topicsService.getTopics()
-      return Array.isArray(raw) ? raw : raw.results ?? []
-    },
+    queryFn: () => topicsService.getTopics(),
   })
 }
 
 /** Fetch all questions */
 export function useQuestions() {
   return useQuery({
-    queryKey: ['questions', 'list'],
+    queryKey: queryKeys.questions.list,
     queryFn: async () => {
       const { questionsService } = await import('@/services/questions')
       return await questionsService.getQuestions()
@@ -117,7 +116,7 @@ export function useQuestions() {
 
 /** Fetch aggregated analytics metrics (admin) */
 export function useAggregatedMetrics() {
-  return useQuery<AggregatedMetricsResponse>({
+  return useQuery<AggregatedMetricsResponse | null>({
     queryKey: queryKeys.analytics.aggregated,
     queryFn: () => analyticsService.getAggregatedMetrics(),
   })

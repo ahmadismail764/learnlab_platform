@@ -12,14 +12,14 @@ import { AuthRequestError } from "@/services/auth";
  *
  * Flow:
  * 1. User opens LearnLab → system shows login form
- * 2. User enters email/password
+ * 2. User enters username/password
  * 3. System validates credentials
  * 4. System authenticates user
  *    - If learner → redirect to learner dashboard
  *    - If admin   → redirect to admin dashboard
  *
  * Alternate Flows:
- * 4a. Invalid credentials → "Invalid email or password" + remaining attempts
+ * 4a. Invalid credentials → "Invalid username or password" + remaining attempts
  * 4b. Account locked → notify user after 5 failed attempts, show lockout timer
  */
 
@@ -28,7 +28,7 @@ const TEST_ACCOUNTS = [
   {
     label: "Learner",
     icon: GraduationCap,
-    email: "testlearner@example.com",
+    username: "testlearner",
     password: "testpass123",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
@@ -36,7 +36,7 @@ const TEST_ACCOUNTS = [
   {
     label: "Admin",
     icon: ShieldCheck,
-    email: "admin@learnlab.com",
+    username: "admin",
     password: "admin123",
     color: "text-primary-600 dark:text-primary-400",
     bg: "hover:bg-primary-50 dark:hover:bg-primary-950/30",
@@ -50,7 +50,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const { showSuccess } = useToast();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -64,7 +64,7 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!email.trim() || !password.trim()) {
+    if (!identifier.trim() || !password.trim()) {
       setError(t("auth:fieldRequired"));
       return;
     }
@@ -72,7 +72,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const user = await login({ email: email.trim(), password, rememberMe });
+      const user = await login({ email: identifier.trim(), password, rememberMe });
       showSuccess(t("auth:loginSuccess", { name: user.firstName || user.username }));
       const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       navigate(nextRoute, { replace: true });
@@ -96,7 +96,7 @@ export function LoginPage() {
 
   /** Quick-fill a test account */
   const fillAccount = (account: typeof TEST_ACCOUNTS[number]) => {
-    setEmail(account.email);
+    setIdentifier(account.username);
     setPassword(account.password);
     setError("");
   };
@@ -138,7 +138,7 @@ export function LoginPage() {
             const Icon = account.icon;
             return (
               <button
-                key={account.email}
+                key={account.username}
                 type="button"
                 onClick={() => fillAccount(account)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors group ${account.bg}`}
@@ -149,7 +149,7 @@ export function LoginPage() {
                     {account.label}
                   </span>
                   <span className="text-xs text-neutral-500 dark:text-neutral-400 ml-2">
-                    {account.email}
+                    {account.username}
                   </span>
                 </div>
                 <Copy className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -161,12 +161,12 @@ export function LoginPage() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label={t("auth:email")}
-          type="email"
+          label={t("auth:emailOrUsername")}
+          type="text"
           placeholder={t("auth:emailPlaceholder")}
-          value={email}
+          value={identifier}
           onChange={(e) => {
-            setEmail(e.target.value);
+            setIdentifier(e.target.value);
             setError("");
           }}
           leftIcon={<Mail className="w-4 h-4" />}

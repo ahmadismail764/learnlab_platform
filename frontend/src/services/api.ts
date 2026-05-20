@@ -1,7 +1,25 @@
 const API_BASE = normalizeBaseUrl(
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1",
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
 );
 const API_ROOT = getApiRoot(API_BASE);
+
+export type EntityId = string | number;
+
+export class ApiRequestError extends Error {
+  status: number;
+  fieldErrors?: Record<string, string>;
+
+  constructor(
+    message: string,
+    status: number,
+    fieldErrors?: Record<string, string>,
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.fieldErrors = fieldErrors;
+  }
+}
 
 function normalizeBaseUrl(rawUrl: string): string {
   return rawUrl.trim().replace(/\/$/, "");
@@ -34,6 +52,29 @@ function buildUrl(baseUrl: string, path: string): string {
   return `${baseUrl}/${path}`;
 }
 
+function shouldRetryFromApiRoot(response: Response, baseUrl: string): boolean {
+  return (
+    response.status === 404 &&
+    baseUrl === API_BASE &&
+    API_BASE !== API_ROOT &&
+    API_BASE.includes("/api/")
+  );
+}
+
+async function fetchFromBase(
+  url: string,
+  options: RequestInit,
+  baseUrl: string,
+): Promise<Response> {
+  const response = await fetch(buildUrl(baseUrl, url), options);
+
+  if (shouldRetryFromApiRoot(response, baseUrl)) {
+    return fetch(buildUrl(API_ROOT, url), options);
+  }
+
+  return response;
+}
+
 /**
  * Resolve which storage backend holds auth tokens.
  * On login the user's "remember me" choice writes a flag to localStorage.
@@ -64,28 +105,28 @@ async function fetchWithAuth(
     ...options.headers,
   };
 
-  let response = await fetch(buildUrl(baseUrl, url), { ...options, headers });
+  let response = await fetchFromBase(url, { ...options, headers }, baseUrl);
 
   if (response.status === 401) {
     // Try refresh token
     const refreshToken = getToken("learnlab_refresh_token");
     if (refreshToken) {
       try {
-        const refreshResponse = await fetch(buildUrl(API_BASE, "/auth/refresh/"), {
+        const refreshResponse = await fetchFromBase("/auth/refresh/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh: refreshToken }),
-        });
+        }, API_BASE);
         if (refreshResponse.ok) {
           const { access } = await refreshResponse.json();
           const storage = getTokenStorage();
           storage.setItem("learnlab_auth_token", access);
           // Retry original request
           const newHeaders = { ...headers, Authorization: `Bearer ${access}` };
-          response = await fetch(buildUrl(baseUrl, url), {
+          response = await fetchFromBase(url, {
             ...options,
             headers: newHeaders,
-          });
+          }, baseUrl);
           return response;
         }
       } catch (error) {
@@ -103,6 +144,72 @@ async function fetchWithAuth(
   return response;
 }
 
+async function fetchPublic(
+  url: string,
+  options: RequestInit = {},
+  baseUrl: string = API_BASE,
+) {
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    ...options.headers,
+  };
+
+  return fetchFromBase(url, { ...options, headers }, baseUrl);
+}
+
+export async function parseApiError(
+  response: Response,
+  fallback: string,
+): Promise<{ message: string; fieldErrors?: Record<string, string> }> {
+  try {
+    const data = await response.clone().json();
+    if (typeof data.detail === "string") {
+      return { message: data.detail };
+    }
+    if (typeof data.error === "string") {
+      return { message: data.error };
+    }
+    if (Array.isArray(data.non_field_errors) && data.non_field_errors[0]) {
+      return { message: String(data.non_field_errors[0]) };
+    }
+
+    const fieldErrors = Object.fromEntries(
+      Object.entries(data)
+        .filter(([, value]) => value != null)
+        .map(([key, value]) => [
+          key,
+          Array.isArray(value) ? String(value[0]) : String(value),
+        ]),
+    );
+    const message = Object.entries(fieldErrors)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join("; ");
+
+    if (message) {
+      return { message, fieldErrors };
+    }
+  } catch {
+    try {
+      const text = await response.clone().text();
+      if (text.trim()) {
+        return { message: text.trim() };
+      }
+    } catch {
+      // Fall through to fallback.
+    }
+  }
+
+  return { message: fallback };
+}
+
+export async function throwApiError(
+  response: Response,
+  fallback: string,
+): Promise<never> {
+  const { message, fieldErrors } = await parseApiError(response, fallback);
+  throw new ApiRequestError(message, response.status, fieldErrors);
+}
+
 export const api = {
   get: (url: string) => fetchWithAuth(url),
   post: (url: string, data: unknown) =>
@@ -113,4 +220,6 @@ export const api = {
     fetchWithAuth(url, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (url: string) => fetchWithAuth(url, { method: "DELETE" }),
   getFromRoot: (url: string) => fetchWithAuth(url, {}, API_ROOT),
+  postPublic: (url: string, data: unknown) =>
+    fetchPublic(url, { method: "POST", body: JSON.stringify(data) }),
 };

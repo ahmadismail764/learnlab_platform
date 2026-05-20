@@ -161,13 +161,13 @@ export function OnboardingPage() {
                           setTimeout(() => handleNext(), 350)
                         }}
                         className={cn(
-                          "w-full flex items-center p-5 rounded-2xl border-2 transition-all duration-200 text-left",
+                          "w-full flex items-center p-5 rounded-2xl border-2 transition-all duration-200 text-start",
                           isSelected 
                             ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20" 
                             : "border-neutral-200 dark:border-neutral-800 hover:border-primary-300 dark:hover:border-primary-700 bg-white dark:bg-neutral-950"
                         )}
                       >
-                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center mr-4", isSelected ? "bg-white dark:bg-neutral-900 shadow-sm" : "bg-neutral-100 dark:bg-neutral-900")}>
+                        <div className={cn("w-12 h-12 rounded-full flex items-center justify-center me-4", isSelected ? "bg-white dark:bg-neutral-900 shadow-sm" : "bg-neutral-100 dark:bg-neutral-900")}>
                           <Icon className={cn("w-6 h-6", goal.color)} />
                         </div>
                         <div className="flex-1">
@@ -186,8 +186,8 @@ export function OnboardingPage() {
                 </div>
 
                 <div className="flex items-center justify-between mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800/50">
-                  <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4" />}>Back</Button>
-                  <Button onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4" />}>Continue</Button>
+                  <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4 rtl:rotate-180" />}>Back</Button>
+                  <Button onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}>Continue</Button>
                 </div>
               </motion.div>
             )}
@@ -209,7 +209,7 @@ export function OnboardingPage() {
                   <p className="text-neutral-600 dark:text-neutral-400">Select a few topics to kickstart your adaptive queue.</p>
                 </div>
 
-                <div className="flex-1 overflow-y-auto pr-2 -mr-2 space-y-3 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto pe-2 -me-2 space-y-3 custom-scrollbar">
                   {topicsLoading ? (
                     <div className="flex justify-center py-10"><Rocket className="w-8 h-8 animate-spin text-primary-500" /></div>
                   ) : topics.length > 0 ? (
@@ -220,13 +220,13 @@ export function OnboardingPage() {
                           key={topic.id}
                           onClick={() => toggleTopic(topic.id)}
                           className={cn(
-                            "w-full flex items-center p-4 rounded-xl border transition-all text-left",
+                            "w-full flex items-center p-4 rounded-xl border transition-all text-start",
                             isSelected 
                               ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20" 
                               : "border-neutral-200 dark:border-neutral-800 hover:border-primary-200 dark:hover:border-primary-800"
                           )}
                         >
-                          <BookOpen className={cn("w-5 h-5 mr-3 shrink-0", isSelected ? "text-primary-600 dark:text-primary-400" : "text-neutral-400")} />
+                          <BookOpen className={cn("w-5 h-5 me-3 shrink-0", isSelected ? "text-primary-600 dark:text-primary-400" : "text-neutral-400")} />
                           <div className="flex-1">
                             <h4 className="font-medium text-neutral-900 dark:text-white">{topic.name}</h4>
                             {topic.parent_module && <p className="text-xs text-neutral-500 mt-0.5">{topic.parent_module}</p>}

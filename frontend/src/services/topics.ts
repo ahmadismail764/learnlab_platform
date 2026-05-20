@@ -39,17 +39,13 @@ function normalizeTopic(raw: Partial<BackendTopic>): BackendTopic {
   };
 }
 
-function toList<T>(data: T[] | { results?: T[] }): T[] {
-  return Array.isArray(data) ? data : data.results ?? [];
-}
-
-
 export const topicsService = {
   getTopics: async () => {
     const response = await api.get('/topcis/topics/');
     if (!response.ok) throw new Error('Failed to fetch topics');
     const data = await response.json() as BackendTopic[] | { results?: BackendTopic[] };
-    return toList(Array.isArray(data) ? data : data.results ?? []).map(normalizeTopic);
+    const results = Array.isArray(data) ? data : data.results ?? [];
+    return results.map(normalizeTopic);
   },
 
   getTopicMastery: async (filters: Record<string, string> = {}) => {

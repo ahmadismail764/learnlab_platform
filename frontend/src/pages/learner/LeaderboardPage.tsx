@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import {
   Medal,
   Flame,
@@ -10,10 +10,10 @@ import {
   Users,
   TrendingUp,
 } from 'lucide-react'
-import { Card, Badge, Avatar, ProgressBar, Button, Input } from '@/components/ui'
+import { Card, Badge, Avatar, ProgressBar, Button, Input, Skeleton } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
-import { useTopics, useGlobalLeaderboard, useTopicLeaderboard } from '@/hooks'
+import { useSuspenseTopics, useSuspenseGlobalLeaderboard, useSuspenseTopicLeaderboard } from '@/hooks'
 import { cn } from '@/utils/cn'
 import type { LeaderboardLearner } from '@/services/learners'
 
@@ -39,14 +39,130 @@ interface LeaderboardApiEntry extends LeaderboardLearner {
   rank_change?: number
 }
 
+function LeaderboardPageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Page Intro Skeleton */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-9 w-20 rounded-lg" />
+          <Skeleton className="h-9 w-24 rounded-lg" />
+        </div>
+      </div>
+
+      {/* Stats Grid Skeleton */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Skeleton variant="circular" width={40} height={40} />
+              <div className="flex-grow space-y-2">
+                <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-6 w-12" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Main Content Layout (Left Column & Right Column) */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Left Column - Your Position */}
+        <div className="space-y-4 lg:col-span-4">
+          <Skeleton className="h-6 w-32" />
+          <Card className="p-6 space-y-6">
+            <div className="flex items-center gap-4">
+              <Skeleton variant="circular" width={64} height={64} />
+              <div className="flex-grow space-y-2">
+                <Skeleton className="h-5 w-32" />
+                <div className="flex gap-2 mt-1">
+                  <Skeleton className="h-5 w-20 rounded" />
+                  <Skeleton className="h-5 w-24 rounded" />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 p-4 bg-neutral-50 dark:bg-neutral-900/60 rounded-2xl">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-5 w-10" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-2 w-full rounded-full" />
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column - Standings */}
+        <div className="space-y-4 lg:col-span-8">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-4 w-64" />
+            </div>
+            <Skeleton className="h-9 w-48 rounded-lg" />
+          </div>
+
+          <Card padding="none" className="overflow-hidden divide-y divide-neutral-200 dark:divide-neutral-800">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:items-center md:justify-between">
+                <div className="flex min-w-0 items-center gap-4 flex-grow">
+                  <Skeleton className="h-10 w-10 rounded-xl" />
+                  <Skeleton variant="circular" width={40} height={40} />
+                  <div className="space-y-2 flex-grow max-w-xs">
+                    <Skeleton className="h-4.5 w-32" />
+                    <Skeleton className="h-3.5 w-24" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 md:min-w-[320px]">
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-8" />
+                    <Skeleton className="h-4.5 w-12" />
+                  </div>
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-12" />
+                    <Skeleton className="h-4.5 w-10" />
+                  </div>
+                  <div className="space-y-1 text-end">
+                    <Skeleton className="h-3 w-16 ms-auto" />
+                    <Skeleton className="h-4.5 w-12 ms-auto" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function LeaderboardPage() {
+  return (
+    <Suspense fallback={<LeaderboardPageSkeleton />}>
+      <LeaderboardContent />
+    </Suspense>
+  )
+}
+
+function LeaderboardContent() {
   const currentUser = useCurrentUser()
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
   const [selectedTopicOverride, setSelectedTopicOverride] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Fetch topics for the filter dropdown
-  const { data: rawTopics } = useTopics()
+  const { data: rawTopics } = useSuspenseTopics()
   const topics = useMemo(
     () => (rawTopics ?? []) as TopicOption[],
     [rawTopics]
@@ -54,12 +170,11 @@ export function LeaderboardPage() {
   const selectedTopicId = selectedTopicOverride || topics[0]?.id.toString() || ''
 
   // Fetch leaderboard data — React Query handles caching + deduplication
-  const { data: globalData, isLoading: globalLoading } = useGlobalLeaderboard()
-  const { data: topicData, isLoading: topicLoading } = useTopicLeaderboard(
+  const { data: globalData } = useSuspenseGlobalLeaderboard()
+  const { data: topicData } = useSuspenseTopicLeaderboard(
     leaderboardType === 'topic' && selectedTopicId ? selectedTopicId : null
   )
 
-  const isLoading = leaderboardType === 'global' ? globalLoading : topicLoading
   const rawLeaderboard = useMemo<LeaderboardApiEntry[]>(
     () => (leaderboardType === 'global' ? (globalData ?? []) : (topicData ?? [])),
     [leaderboardType, globalData, topicData]
@@ -119,21 +234,6 @@ export function LeaderboardPage() {
     if (rank === 2) return <Medal className="h-5 w-5 text-neutral-400" />
     if (rank === 3) return <Medal className="h-5 w-5 text-orange-600" />
     return null
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Card className="py-14 text-center">
-          <div className="space-y-3">
-            <Crown className="mx-auto h-10 w-10 text-accent-500" />
-            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              Loading leaderboard standings...
-            </p>
-          </div>
-        </Card>
-      </div>
-    )
   }
 
   return (
@@ -364,7 +464,7 @@ export function LeaderboardPage() {
                           {entry.streak}
                         </p>
                       </div>
-                      <div className="text-left md:text-right">
+                      <div className="text-start md:text-end">
                         <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                           Accuracy
                         </p>

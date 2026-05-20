@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useSuspenseQuery, skipToken } from '@tanstack/react-query'
 import { learnersService, type LearnerProfile, type LeaderboardLearner } from '@/services/learners'
 import { topicsService } from '@/services/topics'
 import { analyticsService, type AggregatedMetricsResponse } from '@/services/analytics'
@@ -104,6 +104,40 @@ export function useTopics() {
 /** Fetch all questions */
 export function useQuestions() {
   return useQuery({
+    queryKey: queryKeys.questions.list,
+    queryFn: async () => {
+      const { questionsService } = await import('@/services/questions')
+      return await questionsService.getQuestions()
+    },
+  })
+}
+
+/** Suspense version to fetch the global leaderboard */
+export function useSuspenseGlobalLeaderboard() {
+  return useSuspenseQuery<LeaderboardLearner[]>({
+    queryKey: queryKeys.leaderboard.global,
+    queryFn: () => learnersService.getLeaderboard(),
+  })
+}
+
+export function useSuspenseTopicLeaderboard(topicId: string | number | null) {
+  return useSuspenseQuery<LeaderboardLearner[], Error, LeaderboardLearner[], any>({
+    queryKey: topicId ? queryKeys.leaderboard.topic(topicId) : skipToken,
+    queryFn: (topicId ? () => learnersService.getTopicLeaderboard(topicId) : skipToken) as any,
+  })
+}
+
+/** Suspense version to fetch all topics */
+export function useSuspenseTopics() {
+  return useSuspenseQuery({
+    queryKey: queryKeys.topics.list,
+    queryFn: () => topicsService.getTopics(),
+  })
+}
+
+/** Suspense version to fetch all questions */
+export function useSuspenseQuestions() {
+  return useSuspenseQuery({
     queryKey: queryKeys.questions.list,
     queryFn: async () => {
       const { questionsService } = await import('@/services/questions')

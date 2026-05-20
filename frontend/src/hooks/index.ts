@@ -33,6 +33,10 @@ export {
   useAggregatedMetrics,
   usePracticeSessions,
   useUpdateProfile,
+  useSuspenseGlobalLeaderboard,
+  useSuspenseTopicLeaderboard,
+  useSuspenseTopics,
+  useSuspenseQuestions,
   queryKeys,
 } from './useApi'
 

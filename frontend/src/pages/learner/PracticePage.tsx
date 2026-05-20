@@ -453,7 +453,7 @@ export function PracticePage() {
                       onClick={() => handleAnswer(choice)}
                       disabled={isAnswered}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition-colors',
+                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
                         currentStatus.userResponse === choice
                           ? currentStatus.isCorrect
                             ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'

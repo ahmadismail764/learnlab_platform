@@ -85,7 +85,7 @@ export function LanguageSwitcher({
               'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
               'border border-neutral-200 dark:border-neutral-700',
               'z-50',
-              'ltr:right-0 rtl:left-0'
+              'end-0'
             )}>
               {supportedLanguages.map((lang) => {
                 const config = languageConfig[lang]
@@ -228,7 +228,7 @@ export function LanguageSwitcher({
           'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
           'border border-neutral-200 dark:border-neutral-700',
           'z-50',
-          'ltr:right-0 rtl:left-0'
+          'end-0'
         )}>
           {supportedLanguages.map((lang) => {
             const config = languageConfig[lang]

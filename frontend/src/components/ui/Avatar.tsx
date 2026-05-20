@@ -108,7 +108,7 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
         {showStatus && (
           <span
             className={cn(
-              'absolute bottom-0 right-0 block rounded-full ring-2 ring-white',
+              'absolute bottom-0 end-0 block rounded-full ring-2 ring-white',
               statusColors[status],
               size === 'xs' || size === 'sm' ? 'w-2 h-2' : 'w-3 h-3'
             )}

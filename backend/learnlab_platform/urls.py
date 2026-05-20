@@ -9,7 +9,6 @@ urlpatterns = [
     path('auth/', include('accounts.urls')),        # All identity/login traffic
     path('practice/', include('practice.urls')),   # All practice-related traffic
     path('topics/', include('topics.urls')),       # All topic and subtopic related traffic
-    path('topcis/', include('topics.urls')),       # Typo backward compatibility
     path('analytics/', include('analytics.urls')), # Analytics traffic
     
     # DRF Spectacular Docs

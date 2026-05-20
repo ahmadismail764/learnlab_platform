@@ -27,7 +27,9 @@
       "is_staff": false,
       "first_name": "John",
       "last_name": "Doe",
-      "role": "learner"
+      "role": "learner",
+      "initials": "JD",
+      "avatar_color": "hsl(210, 70%, 50%)"
     }
   }
   ```
@@ -65,7 +67,9 @@
     "current_xp": 150,
     "streak_count": 3,
     "last_practice_date": "2026-05-19",
-    "role": "learner"
+    "role": "learner",
+    "initials": "JD",
+    "avatar_color": "hsl(210, 70%, 50%)"
   }
   ```
 * **Updates**: `PUT /auth/users/me/` or `PATCH /auth/users/me/` allows updating `first_name` and `last_name`.
@@ -143,6 +147,19 @@
   }
   ```
 
+### Submit Individual Practice Response
+* **Endpoint**: `POST /practice/sessions/<uuid:id>/responses/`
+* **Payload**:
+  ```json
+  {
+    "question": "5285701c-66f8-4e89-9831-299f104d41fa",
+    "is_correct": true,
+    "time_taken_seconds": 15,
+    "confidence_rating": 4
+  }
+  ```
+* **Response (201 Created)**: Returns the created `QuestionResponse` object. FSRS mastery and session XP are updated per response.
+
 ### Leaderboards & Learners
 * **Learner List**: `GET /practice/learners/`
 * **Leaderboard**: `GET /practice/learners/leaderboard/` (Supports filter `?topic=<uuid:topic_id>`)
@@ -165,23 +182,25 @@
 
 ---
 
-## 3. Topics & Subtopics (`/topics/` or `/topcis/`)
+## 3. Topics & Subtopics (`/topics/`)
 
 ### Topics List
-* **Endpoint**: `GET /topcis/topics/`
+* **Endpoint**: `GET /topics/topics/`
 * **Response**:
   ```json
   [
     {
       "id": "a1ba01cc-55b8-4c8d-b988-1bcb0b03390a",
       "name": "Mathematics",
-      "description": "Fundamental calculations and equations"
+      "description": "Fundamental calculations and equations",
+      "parent_module": "Uncategorized",
+      "question_count": 15
     }
   ]
   ```
 
 ### Subtopics List
-* **Endpoint**: `GET /topcis/subtopics/`
+* **Endpoint**: `GET /topics/subtopics/`
 * **Response**:
   ```json
   [
@@ -197,7 +216,7 @@
   ```
 
 ### Topic Mastery Records
-* **Endpoint**: `GET /topcis/mastery/` (Requires JWT Authentication)
+* **Endpoint**: `GET /topics/mastery/` (Requires JWT Authentication)
 * **Response**:
   ```json
   [

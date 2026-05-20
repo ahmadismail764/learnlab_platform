@@ -6,7 +6,6 @@ import {
   Trophy,
   Zap,
   PlayCircle,
-  PartyPopper,
   Clock,
   TestTube2,
   Lightbulb,
@@ -289,7 +288,7 @@ export function PracticePage() {
             description="Answer each question, then rate how easy recall felt so the scheduler can adapt future reviews."
           />
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 1. Solve
               </p>
@@ -297,7 +296,7 @@ export function PracticePage() {
                 Complete each question in order with either a multiple-choice answer or a math entry.
               </p>
             </div>
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 2. Reflect
               </p>
@@ -305,7 +304,7 @@ export function PracticePage() {
                 After each answer, rate how hard recall felt so FSRS can tune the next interval.
               </p>
             </div>
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 3. Keep momentum
               </p>
@@ -326,7 +325,7 @@ export function PracticePage() {
           eyebrow="Session complete"
           title="Nice work"
           description="Your practice session is finished. The results have been sent back into the review schedule so the next queue can stay aligned."
-          icon={<PartyPopper className="h-6 w-6" />}
+          icon={<CheckCircle2 className="h-6 w-6 text-green-500" />}
           tone="success"
           actions={(
             <Link to="/learner/progress">
@@ -574,7 +573,7 @@ export function PracticePage() {
               description="Small, useful telemetry instead of a second oversized panel."
             />
             <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+              <div className="surface-inset grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                     Elapsed
@@ -585,10 +584,10 @@ export function PracticePage() {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Question ID
+                    Difficulty
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    #{currentQuestion.id}
+                    Tier {currentQuestion.tier}
                   </p>
                 </div>
               </div>

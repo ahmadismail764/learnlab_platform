@@ -60,7 +60,6 @@ export function QuestionPreviewModal({
                   <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                     {t('admin:questions.preview.title')}
                   </h2>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Question #{question.id}</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={onClose} className="p-1 rounded-lg">
                   <X className="h-5 w-5" />
@@ -133,9 +132,9 @@ export function QuestionPreviewModal({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Subtopic / Knowledge Point ID</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Subtopic</p>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {question.subtopic ?? question.knowledge_point ?? 'None'}
+                      {question.subtopic_name ?? 'General'}
                     </p>
                   </div>
                 </div>

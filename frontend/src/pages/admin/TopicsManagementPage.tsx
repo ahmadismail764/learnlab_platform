@@ -330,7 +330,7 @@ function TopicsManagementContent() {
                         }`}
                       >
                         <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-sm font-mono font-bold text-neutral-500 shrink-0">
-                          {topic.id}
+                          {index + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">

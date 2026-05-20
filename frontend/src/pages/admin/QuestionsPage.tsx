@@ -11,7 +11,7 @@ import {
   BookOpen,
   GraduationCap,
   Layers,
-  Crown,
+  Zap,
   X,
   AlertTriangle,
   RefreshCw,
@@ -311,7 +311,7 @@ function QuestionsContent() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400">
-              <Crown className="h-5 w-5" />
+              <Zap className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.advanced')}</p>
@@ -437,7 +437,7 @@ function QuestionsContent() {
                 <thead className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                   <tr>
                     <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
-                      ID
+                      #
                     </th>
                     <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.question')}
@@ -457,14 +457,14 @@ function QuestionsContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                  {filteredQuestions.map((question) => (
+                  {filteredQuestions.map((question, index) => (
                     <tr
                       key={question.id}
                       className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
                       onClick={() => setSelectedQuestion(question)}
                     >
                       <td className="px-4 py-4">
-                        <span className="text-xs font-mono text-neutral-400">#{question.id}</span>
+                        <span className="text-xs font-mono text-neutral-400">#{index + 1}</span>
                       </td>
                       <td className="px-4 py-4">
                         <p className="max-w-md truncate text-sm text-neutral-900 dark:text-neutral-100">

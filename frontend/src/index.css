@@ -191,6 +191,34 @@ html.dark .learner-panel-soft {
     0 6px 14px -12px rgba(0, 0, 0, 0.2);
 }
 
+/*
+ * Reusable surface utility classes
+ * Used inside dashboard/learner panels for inset sections, inner tiles, and dashed empty states.
+ */
+
+.surface-inset {
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 1);
+  padding: 1rem;
+}
+
+html.dark .surface-inset {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.surface-tile {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.dark .surface-tile {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.72);
+}
+
 /* RTL Support - Arabic */
 html[dir="rtl"] {
   font-family: var(--font-arabic);

@@ -36,3 +36,6 @@ export type {} from './Loading'
 // EmptyState
 export { EmptyState } from './EmptyState'
 export type {} from './EmptyState'
+
+// Empty State Illustrations
+export { AllCaughtUpIllustration, EmptySearchIllustration, EmptyDataIllustration } from './EmptyStateIllustrations'

@@ -9,7 +9,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, Button, Badge, Avatar } from '@/components/ui'
+import { Card, Button, Badge, Avatar, EmptyState, EmptyDataIllustration } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
 import { useCurrentUser } from '@/contexts'
@@ -165,11 +165,12 @@ export function AdminDashboard() {
                 ))}
               </div>
             ) : topLearners.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-neutral-200/80 bg-neutral-50/80 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  No learner data available yet.
-                </p>
-              </div>
+              <EmptyState
+                illustration={<EmptyDataIllustration className="mx-auto" />}
+                title={t('admin:noLearnerData', 'No learner data available yet')}
+                description="Once learners start practicing and gaining XP, they will appear in this leaderboard."
+                className="py-6 surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800"
+              />
             ) : (
               <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {topLearners.map((entry, index) => (

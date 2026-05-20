@@ -111,3 +111,11 @@ export const VALIDATION = {
   USERNAME_MIN_LENGTH: 3,
   USERNAME_MAX_LENGTH: 30,
 } as const
+
+// ============================================
+// Mastery / Topic Status
+// ============================================
+
+export { MASTERY_STATUS_BADGE_VARIANT, MASTERY_STATUS_ICONS } from './mastery'
+export type { TopicMastery } from './mastery'
+

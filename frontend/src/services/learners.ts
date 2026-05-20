@@ -1,5 +1,6 @@
 import { api } from './api';
 import { authService, type BackendAuthUser } from './auth';
+import { coerceBackendUser } from './mappers/backendUser';
 
 export interface LearnerProfile {
   id: number | string;
@@ -24,25 +25,10 @@ interface RawLearnerProfile extends Partial<Omit<LearnerProfile, 'user'>> {
   joined_at?: string;
 }
 
-
-function normalizeBackendUser(raw: Partial<BackendAuthUser>): BackendAuthUser {
-  const username = raw.username || raw.email?.split('@')[0] || 'learner';
-  return {
-    id: raw.id ?? username,
-    username,
-    email: raw.email ?? '',
-    first_name: raw.first_name ?? '',
-    last_name: raw.last_name ?? '',
-    role: raw.role ?? (raw.is_staff ? 'admin' : 'learner'),
-    is_staff: raw.is_staff ?? raw.role === 'admin',
-    date_joined: raw.date_joined ?? raw.joined_at ?? new Date().toISOString(),
-  };
-}
-
 function normalizeLearnerProfile(raw: RawLearnerProfile | BackendAuthUser): LearnerProfile {
   const profile = raw as RawLearnerProfile;
   const rawUser = profile.user ? profile.user : raw;
-  const user = normalizeBackendUser(rawUser);
+  const user = coerceBackendUser(rawUser);
 
   return {
     id: profile.id ?? user.id,

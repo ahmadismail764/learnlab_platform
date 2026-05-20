@@ -20,6 +20,7 @@ import { authService, AuthRequestError } from '@/services/auth'
 import { useLearnerProfile, useTopicMastery } from '@/hooks'
 import { useToast } from '@/contexts'
 import { validateForm, profileSchema } from '@/validation'
+import type { TopicMastery } from '@/constants/mastery'
 
 /**
  * LearnerProfilePage (Researcher Dossier)
@@ -30,18 +31,6 @@ import { validateForm, profileSchema } from '@/validation'
  * - Learner stats (XP, streak) via GET /api/v1/auth/learner/me/
  * - Topic mastery via GET /api/v1/practice/mastery/
  */
-
-interface TopicMasteryData {
-  id: string | number
-  topic: string | number
-  topic_name: string
-  rep_num: number
-  memory: number
-  speed: number
-  status: 'new' | 'learning' | 'learned' | 'struggling'
-  last_reviewed: string | null
-  next_due: string | null
-}
 
 export function LearnerProfilePage() {
   const { t } = useTranslation(['profile', 'learner', 'common'])
@@ -55,7 +44,7 @@ export function LearnerProfilePage() {
   const { data: learnerProfile } = useLearnerProfile()
   const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
   const topicMasteries = useMemo(
-    () => (rawMasteries ?? []) as TopicMasteryData[],
+    () => (rawMasteries ?? []) as TopicMastery[],
     [rawMasteries]
   )
 
@@ -260,7 +249,7 @@ export function LearnerProfilePage() {
               </div>
             </div>
 
-            <div className="mt-5 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset mt-5">
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span className="text-neutral-500 dark:text-neutral-400">{t('profile:overallMastery')}</span>
                 <span className="font-semibold text-neutral-900 dark:text-neutral-100">

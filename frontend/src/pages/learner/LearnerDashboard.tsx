@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BookOpen, ChevronRight, Clock3, Flame, Sparkles, Target } from "lucide-react";
+import { BookOpen, ChevronRight, Clock3, Flame, Award, Target } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -8,11 +8,17 @@ import {
   Card,
   ProgressBar,
   ProgressRing,
+  AllCaughtUpIllustration,
 } from "@/components/ui";
 import { PageStatCard, SectionHeading } from "@/components/common";
 import { Skeleton } from "@/components/ui/Loading";
 import { useCurrentUser } from "@/contexts";
 import { useLearnerProfile, useTopicMastery } from "@/hooks";
+import {
+  MASTERY_STATUS_BADGE_VARIANT,
+  MASTERY_STATUS_ICONS,
+  type TopicMastery,
+} from "@/constants/mastery";
 
 /**
  * LearnerDashboard
@@ -23,35 +29,6 @@ import { useLearnerProfile, useTopicMastery } from "@/hooks";
  * - Review queue prioritized from FSRS mastery data
  * RTL-aware with full i18n support.
  */
-
-interface TopicMastery {
-  id: string | number;
-  topic: string | number;
-  topic_name: string;
-  rep_num: number;
-  memory: number;
-  speed: number;
-  status: "new" | "learning" | "learned" | "struggling";
-  last_reviewed: string | null;
-  next_due: string | null;
-}
-
-const statusIcons: Record<TopicMastery["status"], string> = {
-  new: "N",
-  learning: "L",
-  learned: "M",
-  struggling: "S",
-};
-
-const statusVariants: Record<
-  TopicMastery["status"],
-  "outline" | "primary" | "success" | "warning"
-> = {
-  new: "outline",
-  learning: "primary",
-  learned: "success",
-  struggling: "warning",
-};
 
 export function LearnerDashboard() {
   const { t } = useTranslation(["learner", "common", "topics"]);
@@ -164,7 +141,7 @@ export function LearnerDashboard() {
       tone: "success" as const,
     },
     {
-      icon: <Sparkles className="h-5 w-5" />,
+      icon: <Award className="h-5 w-5" />,
       label: t("learner:totalXP", "Total XP"),
       value: stats.totalXP.toLocaleString(),
       helper: "Overall experience points",
@@ -322,8 +299,8 @@ export function LearnerDashboard() {
                 ))}
               </div>
             ) : displayTopics.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-neutral-200/80 bg-neutral-50/80 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
-                <Sparkles className="mx-auto h-9 w-9 text-neutral-300 dark:text-neutral-600" />
+              <div className="surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800 px-6 py-10 text-center">
+              <AllCaughtUpIllustration className="mx-auto" />
                 <p className="mt-4 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                   {t("learner:allCaughtUp", "All caught up!")}
                 </p>
@@ -349,7 +326,7 @@ export function LearnerDashboard() {
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-sm font-semibold text-primary-700 dark:bg-primary-950/30 dark:text-primary-300">
-                        {statusIcons[topic.status]}
+                        {MASTERY_STATUS_ICONS[topic.status]}
                       </div>
 
                       <div className="min-w-0 flex-1">
@@ -357,7 +334,7 @@ export function LearnerDashboard() {
                           <h3 className="truncate text-sm font-semibold text-neutral-950 dark:text-neutral-50 sm:text-base">
                             {topic.name}
                           </h3>
-                          <Badge variant={statusVariants[topic.status]} size="sm">
+                          <Badge variant={MASTERY_STATUS_BADGE_VARIANT[topic.status]} size="sm">
                             {topic.status === "new"
                               ? t("learner:stateNew")
                               : topic.status === "learning"
@@ -467,7 +444,7 @@ export function LearnerDashboard() {
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/60">
+              <div className="surface-inset border border-neutral-200/80 dark:border-neutral-800">
                 <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
                   Next best move
                 </p>

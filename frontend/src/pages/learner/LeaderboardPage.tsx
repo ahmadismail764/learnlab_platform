@@ -463,7 +463,7 @@ function LeaderboardDisplay({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+                <div className="surface-inset grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                       Streak

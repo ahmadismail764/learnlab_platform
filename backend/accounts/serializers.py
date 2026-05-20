@@ -22,21 +22,41 @@ class UserSerializer(serializers.ModelSerializer):
 
 class UserDetailSerializer(serializers.ModelSerializer):
     role = serializers.SerializerMethodField()
+    initials = serializers.SerializerMethodField()
+    avatar_color = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name', 
             'is_staff', 'joined_at', 'current_xp', 'streak_count', 
-            'last_practice_date', 'role'
+            'last_practice_date', 'role', 'initials', 'avatar_color'
         ]
         read_only_fields = [
             'id', 'is_staff', 'joined_at', 'current_xp', 
-            'streak_count', 'last_practice_date', 'role'
+            'streak_count', 'last_practice_date', 'role',
+            'initials', 'avatar_color'
         ]
 
     def get_role(self, obj) -> str:
         return 'admin' if obj.is_staff else 'learner'
+
+    def get_initials(self, obj) -> str:
+        first = getattr(obj, 'first_name', '')
+        last = getattr(obj, 'last_name', '')
+        if first and last:
+            return f"{first[0]}{last[0]}".upper()
+        elif first:
+            return first[0].upper()
+        elif getattr(obj, 'username', ''):
+            return obj.username[0].upper()
+        return "??"
+
+    def get_avatar_color(self, obj) -> str:
+        import hashlib
+        hash_val = int(hashlib.md5(str(obj.id).encode('utf-8')).hexdigest(), 16)
+        hue = hash_val % 360
+        return f"hsl({hue}, 70%, 50%)"
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -52,14 +72,32 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+        
+        first = getattr(self.user, 'first_name', '')
+        last = getattr(self.user, 'last_name', '')
+        if first and last:
+            initials = f"{first[0]}{last[0]}".upper()
+        elif first:
+            initials = first[0].upper()
+        elif self.user.username:
+            initials = self.user.username[0].upper()
+        else:
+            initials = "??"
+            
+        import hashlib
+        hash_val = int(hashlib.md5(str(self.user.id).encode('utf-8')).hexdigest(), 16)
+        avatar_color = f"hsl({hash_val % 360}, 70%, 50%)"
+        
         data['user'] = {
             'id': str(self.user.id),
             'username': self.user.username,
             'email': self.user.email,
             'is_staff': self.user.is_staff,
-            'first_name': getattr(self.user, 'first_name', ''),
-            'last_name': getattr(self.user, 'last_name', ''),
+            'first_name': first,
+            'last_name': last,
             'role': 'admin' if self.user.is_staff else 'learner',
+            'initials': initials,
+            'avatar_color': avatar_color,
         }
         return data
 

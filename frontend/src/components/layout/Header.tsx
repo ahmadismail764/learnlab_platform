@@ -4,7 +4,7 @@ import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock, User as UserIcon, LogOut, 
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { IntegrationStatusBadge } from '@/components/common'
+
 import { useAuth } from '@/contexts'
 import type { User } from '@/types'
 import { cn } from '@/utils/cn'
@@ -78,7 +78,6 @@ export function Header({
   showMenuButton = false,
   onMenuClick,
 }: HeaderProps) {
-  const showIntegrationStatus = false
   const dashboardControlButtonClass =
     'rounded-full p-2.5 text-neutral-500 transition-colors hover:bg-white hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900/80 dark:hover:text-neutral-100'
   const [showNotifications, setShowNotifications] = useState(false)
@@ -155,11 +154,7 @@ export function Header({
             </h1>
           </div>
         )}
-        {showIntegrationStatus && (
-          <div className="hidden md:block">
-            <IntegrationStatusBadge compact />
-          </div>
-        )}
+
       </div>
 
       {/* Center spacer */}

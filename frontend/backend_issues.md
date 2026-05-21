@@ -1,172 +1,114 @@
-# Backend Issues & Suggestions
+# LearnLab Backend Issues & Suggestions (API Audit)
 
-> **For the backend team.** This document tracks unresolved issues, architectural suggestions, and security improvements for the LearnLab Django backend, as identified by the frontend engineering team.
-> All 14 previous critical integration blockers have been **successfully resolved**!
+> **For the backend team.** This document tracks unresolved API suggestions, architectural improvements, and security warnings, as well as successfully completed milestones for the LearnLab Django backend, as compiled by the frontend engineering team.
 
 ---
 
 ## 🟢 Newly Identified Suggestions & Improvements
 
-### 1. Coordinated Renaming of `/topcis/` Typo (Tech Debt)
-- **Status:** Active Fallback
-- **Description:** The backend currently mounts topics under `/topcis/` due to an early typo, but also supports `/topics/` as a fallback. The frontend service files currently use the `/topcis/` path to guarantee compatibility.
-- **Recommendation:** Coordinate a clean rename in the Django URL configuration to drop `/topcis/` entirely, and simultaneously update the frontend service files (`topics.ts`, `analytics.ts`, etc.) to use `/topics/`.
-
-### 2. Cryptographic Signing Key Length Warning (Security)
-- **Status:** Active Warning
-- **Description:** The Django dev server logs a security warning from SimpleJWT during startup:
-  `InsecureKeyLengthWarning: The key length (16 bytes) is insecure...`
-  This is caused by a short signing key defined in `.env` / `settings.py`.
-- **Recommendation:** In both dev and production settings, ensure the `SIGNING_KEY` (or `SECRET_KEY` if used as signing key) is a cryptographically strong string of at least 256 bits (32 bytes).
-
-### 3. User Avatar/Profile Decorators in User Serializer (UX Improvement)
-- **Status:** Suggestion
-- **Description:** Profile dashboards and headers display learner/admin initials and placeholder avatars. To provide a modern, polished look, it would be beneficial to return decorative fields from the profile endpoints.
-- **Recommendation:** Update the user detail serializer (`/auth/users/me/` and `/auth/login/`) to include:
-  - `initials`: pre-computed string of the user's first and last name (e.g. `"JD"`).
-  - `avatar_color`: a stable HSL or hex color code generated from the user's ID or username (e.g., `"#3B82F6"`), allowing the client to render beautiful custom avatar badges instantly.
-
-### 4. Practice Session Completion XP Awarding Bug (Critical Bug)
-- **Status:** Active Critical Bug
-- **Description:** The backend currently does not credit the learner's `current_xp` when they complete a practice session. This is because the XP calculations, user XP additions, and practice streak updates are only implemented inside the `create()` method of `PracticeSessionCreateSerializer`. However, the frontend creates a practice session *before* starting queries (submitting `{ "responses": [] }`), leading to `0` XP initially. When the frontend completes the session, it submits a `PATCH /practice/sessions/<id>/` request to update `total_xp_earned` and `end_time` (handled by `PracticeSessionSerializer`). Because `PracticeSessionSerializer` is a standard `ModelSerializer` without custom update behavior, the user's profile `current_xp` is never increased.
-- **Recommendation:** Modify `PracticeSessionSerializer.update` (or the viewset's `perform_update`) in `backend/practice/serializers.py` to credit the user's `current_xp` and update their streak when a session is finalized. For example:
+### 1. Backend-Side XP Validation on Practice Session Finalization (Anti-Cheat)
+- **Status:** Suggestion (High Value / Security)
+- **Description:** Currently, when completing a practice session, the frontend submits a `PATCH` request to `/practice/sessions/<id>/` containing `total_xp_earned`. The backend `PracticeSessionSerializer.update` trusts this client-side value and increments the user's `current_xp` by this amount. This introduces a vulnerability where a user can send a modified, inflated `total_xp_earned` payload to artificially boost their XP on the leaderboard.
+- **Recommendation:** Calculate the XP earned dynamically on the server-side upon session finalization by counting the verified correct `QuestionResponse` records linked to that session in the database:
   ```python
-  class PracticeSessionSerializer(serializers.ModelSerializer):
-      learner = UserDetailSerializer(read_only=True)
-      responses = QuestionResponseSerializer(many=True, read_only=True)
-
-      class Meta:
-          model = PracticeSession
-          fields = ['id', 'learner', 'start_time', 'end_time', 'total_xp_earned', 'responses']
-
-      def update(self, instance, validated_data):
-          # Track if the session is being marked completed in this update
-          already_completed = instance.end_time is not None
-          total_xp_earned = validated_data.get('total_xp_earned', instance.total_xp_earned)
-          
-          # Perform the standard model update
-          instance = super().update(instance, validated_data)
-          
-          # If the session is now completed, award XP to the learner once
-          if instance.end_time is not None and not already_completed:
-              learner = instance.learner
-              # Add total XP earned in this session to user profile
-              learner.current_xp += total_xp_earned
-              
-              # Standard streak updates
-              from django.utils import timezone as django_timezone
-              today = django_timezone.localdate()
-              if learner.last_practice_date is None:
-                  learner.streak_count = 1
-              elif learner.last_practice_date == today - django_timezone.timedelta(days=1):
-                  learner.streak_count += 1
-              elif learner.last_practice_date < today - django_timezone.timedelta(days=1):
-                  learner.streak_count = 1
-                  
-              learner.last_practice_date = today
-              learner.save()
-              
-          return instance
+  # Instead of: learner.current_xp += total_xp_earned
+  correct_responses = instance.responses.filter(is_correct=True).count()
+  earned_xp = correct_responses * 10
+  learner.current_xp += earned_xp
   ```
 
-### 5. Add High-Value Analytics Telemetry Endpoints (Performance + Charts)
-- **Status:** Suggestion
-- **Context:** The frontend admin analytics dashboard currently relies on:
-  - `GET /analytics/aggregated/` (overview cards)
-  - `GET /analytics/topics/<topic_id>/` (single-topic drilldown)
-  For richer charts, the UI currently uses local mock arrays (weekly activity, difficulty breakdown, per-topic performance) because the backend does not yet expose bulk/time-series breakdown endpoints.
-- **Recommendation:** Add the following endpoints to support charts efficiently and avoid N+1 requests:
+### 2. Complete FSRS-5 Mathematical Scheduling Algorithm (Transition from Stub)
+- **Status:** Suggestion (High Value / Spaced Repetition)
+- **Description:** The spacing engine in `backend/practice/fsrs_engine.py` currently relies on a simple multiplier stub (e.g., doubling `stability` on a correct response, or cutting it in half on a lapse). To achieve true adaptive spaced repetition, the system should leverage the full FSRS-5 mathematical formulas.
+- **Recommendation:** Implement the full FSRS-5 mathematical equations in `fsrs_engine.py` (utilizing the 17 parameters to compute stability, difficulty, and retrievability based on confidence ratings and actual elapsed days).
 
-  **A) `GET /analytics/topics/` (bulk)**
-  - Returns per-topic analytics in one request for the “Topic Performance” section.
-  - Suggested response shape:
-    ```json
-    {
-      "results": [
-        {
-          "topic_id": "uuid",
-          "topic_name": "Logic",
-          "metrics": {
-            "avg_speed": 12.3,
-            "avg_difficulty": 6.1,
-            "estimated_retention": 0.86,
-            "learner_count": 120
-          },
-          "distribution": { "low_speed": 10, "medium_speed": 70, "high_speed": 40 }
-        }
-      ]
-    }
-    ```
-  - Optional query params: `?topic_ids=<uuid,uuid>` and/or `?include=distribution`.
+### 3. Conditional CORS Origin Restraints in Production Settings
+- **Status:** Security Suggestion
+- **Description:** The backend `settings.py` currently has `CORS_ALLOW_ALL_ORIGINS = True` hardcoded. While helpful for local development across various hostnames, allowing all origins globally is insecure for production environments.
+- **Recommendation:** Restrict wildcard origins to local development mode by setting `CORS_ALLOW_ALL_ORIGINS = DEBUG` and configuring production hostnames in `CORS_ALLOWED_ORIGINS`.
 
-  **B) `GET /analytics/activity/` (historical time-series)**
-  - Returns daily/weekly aggregates for charts (active learners, questions answered, review events).
-  - Suggested query params: `?start=YYYY-MM-DD&end=YYYY-MM-DD` or `?period=7d|30d|90d`.
-  - Suggested response shape:
-    ```json
-    {
-      "bucket": "day",
-      "results": [
-        { "date": "2026-05-01", "active_learners": 420, "questions_answered": 2100 }
-      ]
-    }
-    ```
-
-  **C) `GET /analytics/difficulty/` (difficulty tier breakdown)**
-  - Returns attempts + accuracy broken down by difficulty tiers (1/2/3) for curriculum insights.
-  - Suggested response shape:
-    ```json
-    {
-      "tiers": {
-        "1": { "attempts": 18500, "accuracy": 0.85 },
-        "2": { "attempts": 17200, "accuracy": 0.68 },
-        "3": { "attempts": 9620,  "accuracy": 0.52 }
-      }
-    }
-    ```
-
-> [!NOTE]
-> The frontend can continue using `GET /analytics/aggregated/` and `GET /analytics/topics/<topic_id>/` as-is; the above endpoints are additive and primarily target performance (bulk fetch) and chart completeness (time-series + difficulty breakdown).
-
-### 6. Missing Practice Response Submission Endpoint (`POST /practice/responses/`) (Critical Integration)
-- **Status:** Active Integration Gap
-- **Context:** The learner practice flow currently:
-  1) creates a session with an empty `responses: []` payload (`POST /practice/sessions/`), then
-  2) submits each answer as an interaction via `POST /practice/responses/`.
-  
-  The backend already has a `QuestionResponse` model and serializers, but there is **no route** exposing `POST /practice/responses/` (or an equivalent nested endpoint). This means practice answers are not persisted, FSRS mastery updates are not triggered, and analytics (e.g. `review_count`) can remain near-zero even after practice.
-- **Recommendation (one of):**
-  - Add `QuestionResponseViewSet` under `/practice/responses/` (create-only is sufficient initially) that validates ownership (session belongs to the authenticated learner) and writes `QuestionResponse` rows.
-  - OR add a nested action like `POST /practice/sessions/<id>/responses/`.
-  - In either case, trigger the FSRS update (`process_review`) and XP/streak changes at the appropriate moment (per-response or on finalization) to keep learner progress consistent.
-
-### 7. Add Adaptive Session Generation Endpoint (`GET /practice/sessions/generate-adaptive/`) (Quality + Personalization)
-- **Status:** Suggestion
-- **Context:** The frontend calls `GET /practice/sessions/generate-adaptive/` to start an FSRS-driven session. When missing, the UI falls back to selecting the first 10 questions from the question bank (non-adaptive).
-- **Recommendation:** Provide an endpoint that returns the next recommended question set for the learner (due items first / lowest retrievability), e.g.:
+### 4. Admin Audit Logs API (`GET /admin/audit-logs/`)
+- **Status:** Suggestion (High Value)
+- **Description:** Currently, the Admin Profile page contains no dynamic feed for administrative actions. As the platform transitions to a multi-administrator layout, tracking resource modifications is critical for platform compliance, accountability, and debugging.
+- **Recommendation:** Expose a read-only endpoint `/admin/audit-logs/` that provides a time-series log of all administrative actions (e.g., questions created/modified/deleted, new topics registered, system settings updated). The JSON payload should structure:
   ```json
-  { "questions": [/* QuestionSerializer rows */], "message": "Generated adaptive session" }
+  [
+    {
+      "id": "uuid",
+      "actor": { "id": "admin_uuid", "username": "admin" },
+      "action_type": "question_create",
+      "description": "Added Propositional Logic question (Tier 2)",
+      "timestamp": "2026-05-21T10:45:00Z"
+    }
+  ]
   ```
 
-### 8. Topics Curriculum Metadata Used by Admin UI (`parent_module`, `question_count`) (Admin UX)
+### 5. User Preferences & Settings Persistence API
 - **Status:** Suggestion
-- **Context:** The admin curriculum UI groups topics by `parent_module` and shows a `question_count` per topic. The backend `Topic` model/serializer currently returns only `id`, `name`, `description`, so the UI defaults to `Uncategorized` and `0` questions.
-- **Recommendation:**
-  - Add a `parent_module` field to `Topic` (or introduce a first-class `Module` model) and include it in the topic serializer.
-  - Add a `question_count` computed field on the topic serializer (counting `Question` rows via `subtopic__topic`).
+- **Description:** System options like interface language preference, dark mode state, and notification settings (email digests, leaderboard alerts) are currently processed and saved locally in `localStorage`. If a user logs in from a different device, their settings are reset.
+- **Recommendation:** Provide a preferences persistence endpoint under the User profile, e.g., `PATCH /auth/users/me/preferences/` or `/settings/`, allowing a simple JSON metadata payload to be stored in the database.
+
+### 6. Server-Side Token Revocation on Logout (`POST /auth/logout/`)
+- **Status:** Security Suggestion
+- **Description:** The client currently executes logout operations by wiping token strings from local memory. However, active JWT tokens remain cryptographically valid until their expiry time.
+- **Recommendation:** Implement a server-side logout route using SimpleJWT's token blacklist feature (`POST /auth/logout/` or similar) that accepts the active refresh token and blacklists it, preventing subsequent access requests.
+
+### 7. SimpleJWT SSO / Social OAuth Endpoints
+- **Status:** Architecture Suggestion
+- **Description:** The platform currently relies solely on local email/username credential pairs. Adding support for SSO (e.g. Google Workspace, Microsoft Azure AD, or Github OAuth) would simplify academic onboarding.
+- **Recommendation:** Mount Django-allauth or djangorestframework-simplejwt token authentication endpoints supporting social sign-ins (e.g. `/auth/google/login/`).
+
+### 8. System Health Telemetry API (`GET /admin/system-health/`)
+- **Status:** Suggestion (Nice to Have)
+- **Description:** During our integration pass, we removed simulated/mock dials (CPU/Memory percentages) from the Admin Dashboard and Admin Profile page. To allow administrators to monitor live operational feedback without configuring complex external APM software, a simple telemetry endpoint is needed.
+- **Recommendation:** Expose a read-only `GET /admin/system-health/` API endpoint returning CPU usage, memory consumption, storage space, PostgreSQL connection health, and average API response latency.
+
+### 9. Short-Lived Redis Caching for Analytics Routes (`/analytics/*`)
+- **Status:** Optimization Suggestion
+- **Description:** The student and admin analytics dashboards aggregate telemetry datasets (topics, difficulty tier breakdowns, and activity time-series). Under high concurrency (e.g., during active exams or lectures), repeated aggregation queries will place unnecessary database load on PostgreSQL.
+- **Recommendation:** Implement a short-lived Redis cache (e.g., 5-minute Time-To-Live) for the `GET /analytics/*` endpoints. These charts do not require second-by-second accuracy to be effective.
 
 ---
 
-## 🎉 Recently Resolved Integration Issues
-All previous integration milestones have been successfully completed:
-1. **Uncommented and implemented** `/auth/users/me/` RetrieveUpdateAPIView.
-2. **Added user claims** to the SimpleJWT access token payload.
-3. **Included full user profile object** in the `POST /auth/login/` token response.
-4. **Resolved registration serializer issues** to correctly persist `first_name` and `last_name`.
-5. **Enabled email-based login** alongside case-insensitive username checks.
-6. **Created real leaderboard endpoint** at `/practice/learners/leaderboard/`.
-7. **Created real aggregated and topic-specific analytics** under `/analytics/`.
-8. **Fixed database migration exceptions** and empty practice session 500 errors.
-9. **Added mock-supported forgot password workflows** console logging.
-10. **Enabled full questions CRUD (POST, PUT, DELETE)** by expanding the Django questions viewset.
-11. **Configured CORS origins** correctly for all standard local dev ports.
+## 🟡 Active Warnings
+
+### 1. Cryptographic Signing Key Length Warning (Security)
+- **Status:** Active Warning
+- **Description:** During local environment boots, the Django development server emits an insecure signing warning from SimpleJWT:
+  `InsecureKeyLengthWarning: The key length (16 bytes) is insecure...`
+  This is caused by the environment variable `SECRET_KEY` in `backend/.env` being under 32 bytes (256-bit strength).
+- **Recommendation:** Update `SECRET_KEY` (and `SIGNING_KEY` if configured separately) to a high-entropy string of at least 32 bytes in the server environment config.
+
+---
+
+## 🎉 Successfully Resolved Integration Milestones
+
+All critical blockers and previous suggestions from our early integrations have been **fully resolved** by the backend engineering team! Excellent work on these!
+
+### 1. Practice Session Completion XP Awarding Bug (Critical Bug)
+- **Status:** ✅ Resolved
+- **Verification:** The backend `PracticeSessionSerializer` now overrides `update()` to award the learner's `current_xp` and increment their practice streak upon session completion (PATCH request with `end_time`).
+
+### 2. Interactive Practice Response Submission Endpoint
+- **Status:** ✅ Resolved
+- **Verification:** Nested response route `POST /practice/sessions/<uuid:id>/responses/` handles live student practice answers, successfully writing `QuestionResponse` tables and instantly updating FSRS memory mastery metrics and XP scores.
+
+### 3. FSRS Adaptive Session Generation
+- **Status:** ✅ Resolved
+- **Verification:** `GET /practice/sessions/generate-adaptive/` is active and serves FSRS-spaced questions sorted by lowest retrievability and current scheduling priorities.
+
+### 4. Bulk & Time-Series Analytics Telemetry
+- **Status:** ✅ Resolved
+- **Verification:** Dedicated aggregated endpoints `/analytics/topics/`, `/analytics/activity/`, and `/analytics/difficulty/` are fully active, powering the admin metrics, difficulty progress rings, and dynamically loaded weekly trends.
+
+### 5. Curriculum Questions Counts and Grouping
+- **Status:** ✅ Resolved
+- **Verification:** `/topics/` responses now correctly expose computed `question_count` properties and `parent_module` grouping fields.
+
+### 6. Topic Typo Resolution (`/topics/`)
+- **Status:** ✅ Resolved
+- **Verification:** The backend has stabilized the URL scheme to `/topics/`, letting the frontend service layers transition fully away from `/topcis/` fallbacks.
+
+### 7. User Initials and Avatar Colors in Token Response
+- **Status:** ✅ Resolved
+- **Verification:** `/auth/users/me/` and `/auth/login/` endpoints now return stable, computed `initials` (e.g., `"JD"`) and beautiful design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). This enables clean client-side dynamic avatar generation without mock colors.

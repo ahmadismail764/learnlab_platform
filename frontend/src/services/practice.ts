@@ -1,5 +1,4 @@
 import { api, type EntityId } from "./api";
-import { questionsService } from "./questions";
 
 interface SessionCreatePayload {
   responses?: ResponsePayload[];
@@ -58,24 +57,12 @@ export const practiceService = {
 
   updateSession: async (id: EntityId, data: SessionUpdatePayload) => {
     const response = await api.patch(`/practice/sessions/${id}/`, data);
-    if (isEndpointMissing(response)) return { id, ...data };
     if (!response.ok) throw new Error("Failed to update session");
     return await response.json();
   },
 
   generateAdaptiveSession: async () => {
     const response = await api.get('/practice/sessions/generate-adaptive/');
-    if (isEndpointMissing(response)) {
-      // Adaptive generation endpoint may not exist — build local queue from question bank.
-      const questions = await questionsService.getQuestions();
-      return {
-        questions: questions.slice(0, 10),
-        message: questions.length
-          ? 'Generated a local practice queue from the question bank.'
-          : 'No questions are available yet.',
-        is_local_fallback: true,
-      };
-    }
     if (!response.ok) throw new Error('Failed to generate adaptive session');
     return await response.json();
   },
@@ -101,20 +88,14 @@ export const practiceService = {
     time_taken_seconds?: number;
     confidence_rating?: number;
   }) => {
-    // Try the responses endpoint with the standard payload
-    const response = await api.post('/practice/responses/', {
-      session: data.session,
+    const response = await api.post(`/practice/sessions/${data.session}/responses/`, {
       question: data.question,
       is_correct: data.is_correct,
       time_taken_seconds: data.time_taken_seconds,
       confidence_rating: data.confidence_rating,
     });
-    if (response.ok) return await parseOptionalJson(response);
-    if (isEndpointMissing(response)) {
-      // Interactions might be submitted via session creation instead
-      return { id: `fallback-${Date.now()}`, ...data };
-    }
-    throw new Error('Failed to submit interaction');
+    if (!response.ok) throw new Error('Failed to submit interaction');
+    return await parseOptionalJson(response);
   },
 
   completeSession: async (sessionId: EntityId, earnedXp: number) => {
@@ -122,14 +103,6 @@ export const practiceService = {
       end_time: new Date().toISOString(),
       total_xp_earned: earnedXp,
     });
-    if (isEndpointMissing(response)) {
-      return {
-        id: sessionId,
-        end_time: new Date().toISOString(),
-        total_xp_earned: earnedXp,
-        is_local_fallback: true,
-      };
-    }
     if (!response.ok) throw new Error('Failed to complete session');
     return await response.json();
   },

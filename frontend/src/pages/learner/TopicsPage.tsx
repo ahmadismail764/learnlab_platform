@@ -13,31 +13,37 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Card, Button, Badge, Input, ProgressBar, AllCaughtUpIllustration } from "@/components/ui";
-import { useTopicMastery } from "@/hooks";
-import {
-  TOPIC_CATEGORIES,
-  TIER_BADGE,
-  type TopicCategory,
-  type TopicItem,
-} from "@/constants/topicCategories";
+import { useTopicMastery, useTopics } from "@/hooks";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
  *
  * Browse Discrete Mathematics topics organized by category.
  * Shows FSRS-based progress and review status for each topic.
- *
- * UC-08 Features:
- * - "Due Today" vs "Future Reviews" categorization (Step 3)
- * - FSRS retrievability-based sorting — lowest = highest priority (Step 4)
- * - Tier badges: 🥉 Tier 1 / 🥈 Tier 2 / 🥇 Tier 3 (Step 5)
- * - "Review!" visual cue for due topics (Step 5)
- * - Search / filter bar (Alt Flow 5a)
- * - "All caught up!" state with Study Ahead / New Topics (Alt Flow 3a)
  */
 
-// Mock topic data — includes memory & tier for UC-08
-const topicCategories: TopicCategory[] = TOPIC_CATEGORIES;
+const TIER_BADGE: Record<number, string> = {
+  1: "🥉",
+  2: "🥈",
+  3: "🥇",
+};
+
+interface TopicItem {
+  id: string;
+  name: string;
+  nameKey: string;
+  description: string;
+  parent_module: string;
+  icon: string;
+  progress: number;
+  questionsTotal: number;
+  questionsDue: number;
+  lastReviewed?: string;
+  state: "new" | "learning" | "review" | "mastered";
+  memory: number;
+  tier: 1 | 2 | 3;
+  nextReview?: string;
+}
 
 export function TopicsPage() {
   const { t } = useTranslation(["topics", "learner", "common"]);
@@ -46,80 +52,139 @@ export function TopicsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
+  const { data: rawTopics, isLoading: topicsLoading } = useTopics();
   const { data: rawMasteries } = useTopicMastery();
+
+  const topics = useMemo(() => rawTopics ?? [], [rawTopics]);
   const masteries = useMemo(() => rawMasteries ?? [], [rawMasteries]);
 
-  const mappedCategories = useMemo(() => {
-    return topicCategories.map((category) => {
-      const topics = category.topics.map((topic) => {
-        // Find matching backend mastery
-        const m = masteries.find((mastery: any) => {
-          const name = (mastery.topic_name || '').toLowerCase();
-          const normalizedId = topic.id.toLowerCase();
-          if (normalizedId === 'propositional') return name.includes('propositional');
-          if (normalizedId === 'predicates') return name.includes('predicate');
-          if (normalizedId === 'proofs') return name.includes('proof');
-          if (normalizedId === 'operations') return name.includes('operations');
-          if (normalizedId === 'venn') return name.includes('venn');
-          if (normalizedId === 'power') return name.includes('power');
-          if (normalizedId === 'cartesian') return name.includes('cartesian');
-          if (normalizedId === 'properties') return name.includes('properties');
-          if (normalizedId === 'equivalence') return name.includes('equivalence');
-          if (normalizedId === 'partial') return name.includes('partial');
-          if (normalizedId === 'functions') return name.includes('functions');
-          if (normalizedId === 'counting') return name.includes('count');
-          if (normalizedId === 'permutations') return name.includes('permut');
-          if (normalizedId === 'combinations') return name.includes('combin');
-          if (normalizedId === 'pigeonhole') return name.includes('pigeon');
-          if (normalizedId === 'basics') return name.includes('basic') || name.includes('definition');
-          if (normalizedId === 'paths') return name.includes('path') || name.includes('cycle');
-          if (normalizedId === 'trees') return name.includes('tree');
-          if (normalizedId === 'planarity') return name.includes('planar');
-          if (normalizedId === 'divisibility') return name.includes('divis');
-          if (normalizedId === 'modular') return name.includes('modular');
-          if (normalizedId === 'gcd') return name.includes('gcd');
-          if (normalizedId === 'primes') return name.includes('prime');
-          return false;
-        });
+  const mappedTopics = useMemo(() => {
+    return topics.map((t): TopicItem => {
+      const m = masteries.find((mastery) => mastery.topic === t.id);
 
-        if (m) {
-          const isDue = m.next_due && new Date(m.next_due) <= new Date();
-          const lastReviewedStr = m.last_reviewed
-            ? new Date(m.last_reviewed).toLocaleDateString()
-            : undefined;
+      let icon = "📝";
+      const mod = (t.parent_module || '').toLowerCase();
+      if (mod.includes("logic")) icon = "🔢";
+      else if (mod.includes("set")) icon = "∪";
+      else if (mod.includes("relation")) icon = "≡";
+      else if (mod.includes("combinatorics")) icon = "📊";
+      else if (mod.includes("graph")) icon = "🔗";
+      else if (mod.includes("number")) icon = "🔢";
 
-          // State determination
-          let stateVal = topic.state;
-          if (m.status === 'learned') {
-            stateVal = isDue ? 'review' : 'mastered';
-          } else if (m.status === 'struggling') {
-            stateVal = 'review';
-          } else if (m.status === 'learning') {
-            stateVal = 'learning';
-          } else if (m.status === 'new') {
-            stateVal = 'new';
-          }
+      let progress = 0;
+      let questionsDue = 0;
+      let lastReviewed: string | undefined = undefined;
+      let state: 'new' | 'learning' | 'review' | 'mastered' = 'new';
+      let memory = 1.0;
+      let nextReview: string | undefined = undefined;
+      
+      let tier: 1 | 2 | 3 = 1;
+      const nameLower = t.name.toLowerCase();
+      if (nameLower.includes("proof") || nameLower.includes("partial") || nameLower.includes("pigeon") || nameLower.includes("planar")) {
+        tier = 3;
+      } else if (nameLower.includes("propositional") || nameLower.includes("operation") || nameLower.includes("power") || nameLower.includes("equivalence") || nameLower.includes("permut") || nameLower.includes("combin") || nameLower.includes("path") || nameLower.includes("tree") || nameLower.includes("modular")) {
+        tier = 2;
+      }
 
-          return {
-            ...topic,
-            progress: Math.round((m.memory || 0) * 100),
-            questionsDue: isDue ? 5 : 0,
-            lastReviewed: lastReviewedStr,
-            state: stateVal as any,
-            memory: m.memory || 0,
-            nextReview: isDue ? 'today' : m.next_due ? new Date(m.next_due).toLocaleDateString() : undefined,
-          };
+      let nameKey = "";
+      if (nameLower.includes("propositional")) nameKey = "logic.propositional";
+      else if (nameLower.includes("predicate")) nameKey = "logic.predicates";
+      else if (nameLower.includes("proof")) nameKey = "logic.proofTechniques";
+      else if (nameLower.includes("quantifier")) nameKey = "logic.quantifiers";
+      else if (nameLower.includes("cartesian")) nameKey = "sets.cartesianProduct";
+      else if (nameLower.includes("operation")) nameKey = "sets.operations";
+      else if (nameLower.includes("power")) nameKey = "sets.powerSets";
+      else if (nameLower.includes("venn")) nameKey = "sets.vennDiagrams";
+      else if (nameLower.includes("equivalence")) nameKey = "relations.equivalence";
+      else if (nameLower.includes("function")) nameKey = "relations.functions";
+      else if (nameLower.includes("partial")) nameKey = "relations.partialOrders";
+      else if (nameLower.includes("properties")) nameKey = "relations.properties";
+      else if (nameLower.includes("counting")) nameKey = "combinatorics.counting";
+      else if (nameLower.includes("permut")) nameKey = "combinatorics.permutations";
+      else if (nameLower.includes("combin")) nameKey = "combinatorics.combinations";
+      else if (nameLower.includes("pigeon")) nameKey = "combinatorics.pigeonhole";
+      else if (nameLower.includes("basic") || nameLower.includes("definition")) nameKey = "graphTheory.basics";
+      else if (nameLower.includes("path") || nameLower.includes("cycle")) nameKey = "graphTheory.paths";
+      else if (nameLower.includes("planar")) nameKey = "graphTheory.planarity";
+      else if (nameLower.includes("tree")) nameKey = "graphTheory.trees";
+      else if (nameLower.includes("divis")) nameKey = "numberTheory.divisibility";
+      else if (nameLower.includes("modular")) nameKey = "numberTheory.modularArithmetic";
+      else if (nameLower.includes("gcd")) nameKey = "numberTheory.gcd";
+      else if (nameLower.includes("prime")) nameKey = "numberTheory.primes";
+      else nameKey = t.name;
+
+      if (m) {
+        const isDue = m.next_due && new Date(m.next_due) <= new Date();
+        const lastReviewedStr = m.last_reviewed
+          ? new Date(m.last_reviewed).toLocaleDateString()
+          : undefined;
+
+        if (m.status === 'learned') {
+          state = isDue ? 'review' : 'mastered';
+        } else if (m.status === 'struggling') {
+          state = 'review';
+        } else if (m.status === 'learning') {
+          state = 'learning';
+        } else if (m.status === 'new') {
+          state = 'new';
         }
 
-        return topic;
-      });
+        progress = Math.round((m.memory || 0) * 100);
+        questionsDue = isDue ? 5 : 0;
+        lastReviewed = lastReviewedStr;
+        memory = m.memory || 0;
+        nextReview = isDue ? 'today' : m.next_due ? new Date(m.next_due).toLocaleDateString() : undefined;
+      }
 
       return {
-        ...category,
-        topics,
+        id: t.id.toString(),
+        name: t.name,
+        nameKey,
+        description: t.description,
+        parent_module: t.parent_module || "Uncategorized",
+        icon,
+        progress,
+        questionsTotal: t.question_count ?? 10,
+        questionsDue,
+        lastReviewed,
+        state,
+        memory,
+        tier,
+        nextReview,
       };
     });
-  }, [masteries]);
+  }, [topics, masteries]);
+
+  const mappedCategories = useMemo(() => {
+    const groups: Record<string, TopicItem[]> = {};
+    mappedTopics.forEach((topic) => {
+      const module = topic.parent_module;
+      if (!groups[module]) {
+        groups[module] = [];
+      }
+      groups[module].push(topic);
+    });
+
+    const categoryIcons: Record<string, string> = {
+      "Logic": "🔢",
+      "Sets": "∪",
+      "Relations": "≡",
+      "Combinatorics": "📊",
+      "Graph Theory": "🔗",
+      "Number Theory": "🔢",
+      "Uncategorized": "📝",
+    };
+
+    return Object.entries(groups).map(([name, groupTopics]) => {
+      const id = name.toLowerCase().replace(/\s+/g, "-");
+      return {
+        id,
+        nameKey: name,
+        icon: categoryIcons[name] ?? "📝",
+        topics: groupTopics,
+      };
+    });
+  }, [mappedTopics]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -167,11 +232,12 @@ export function TopicsPage() {
       .map((cat) => ({
         ...cat,
         topics: cat.topics.filter((topic) =>
-          t(topic.nameKey).toLowerCase().includes(q),
+          topic.name.toLowerCase().includes(q) ||
+          (topic.description || '').toLowerCase().includes(q)
         ),
       }))
       .filter((cat) => cat.topics.length > 0);
-  }, [searchQuery, t, mappedCategories]);
+  }, [searchQuery, mappedCategories]);
 
   // --- Due Today vs Future Reviews (UC-08 Step 3) ---
   const allTopics = useMemo(
@@ -203,12 +269,20 @@ export function TopicsPage() {
   // Calculate overall stats
   const totalTopics = allTopics.length;
   const topicsDue = dueTodayTopics.length;
-  const avgProgress = Math.round(
+  const avgProgress = totalTopics > 0 ? Math.round(
     allTopics.reduce((sum, t) => sum + t.progress, 0) / totalTopics,
-  );
+  ) : 0;
 
   // UC-08 Alt Flow 3a: All caught up?
   const allCaughtUp = topicsDue === 0;
+
+  if (topicsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("common:loading")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

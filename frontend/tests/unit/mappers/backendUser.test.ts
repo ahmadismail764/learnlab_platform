@@ -81,4 +81,12 @@ describe('coerceBackendUser', () => {
     expect(coerced.date_joined).toBe('2026-05-21T09:00:00Z');
     expect(coerced.joined_at).toBe('2026-05-20T12:00:00Z');
   });
+
+  it('should preserve and map avatar_color if provided', () => {
+    const coerced = coerceBackendUser({
+      avatar_color: 'hsl(210, 70%, 50%)',
+    });
+
+    expect(coerced.avatar_color).toBe('hsl(210, 70%, 50%)');
+  });
 });

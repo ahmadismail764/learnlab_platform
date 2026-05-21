@@ -282,7 +282,7 @@ export function Header({
                 'rounded-full py-1 pe-2 ps-1 hover:bg-white dark:hover:bg-neutral-900/80',
               )}
             >
-              <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} size="sm" />
+              <Avatar name={`${user.firstName} ${user.lastName}`} src={user.avatarUrl} avatarColor={user.avatarColor} size="sm" />
               <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hidden sm:block">
                 {user.firstName}
               </span>

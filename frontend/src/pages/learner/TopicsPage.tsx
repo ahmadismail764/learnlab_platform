@@ -166,12 +166,12 @@ export function TopicsPage() {
     });
 
     const categoryIcons: Record<string, string> = {
-      "Logic": "🔢",
+      "Logic": "🧠",
       "Sets": "∪",
       "Relations": "≡",
-      "Combinatorics": "📊",
+      "Combinatorics": "🎲",
       "Graph Theory": "🔗",
-      "Number Theory": "🔢",
+      "Number Theory": "🧮",
       "Uncategorized": "📝",
     };
 

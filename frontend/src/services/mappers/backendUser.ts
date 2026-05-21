@@ -15,6 +15,7 @@ export interface BackendAuthUser {
 
   /** Raw backend field name (Django). */
   joined_at?: string;
+  avatar_color?: string;
 }
 
 export function coerceBackendUser(partial: Partial<BackendAuthUser>): BackendAuthUser {
@@ -33,5 +34,6 @@ export function coerceBackendUser(partial: Partial<BackendAuthUser>): BackendAut
     is_staff: partial.is_staff ?? partial.role === "admin",
     date_joined: dateJoined,
     joined_at: partial.joined_at,
+    avatar_color: partial.avatar_color,
   };
 }

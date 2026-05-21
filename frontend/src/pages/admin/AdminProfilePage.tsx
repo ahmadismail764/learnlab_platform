@@ -169,6 +169,7 @@ export function AdminProfilePage() {
           <Avatar
             name={`${user.firstName} ${user.lastName}`}
             src={user.avatarUrl}
+            avatarColor={user.avatarColor}
             size="xl"
           />
           <div className="flex-1 min-w-0">

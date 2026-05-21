@@ -3,8 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle,
   XCircle,
-  Trophy,
-  Zap,
   PlayCircle,
   Clock,
   TestTube2,
@@ -14,7 +12,7 @@ import {
   ArrowRight,
   Mic2,
 } from 'lucide-react'
-import { Card, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
+import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { MathInput } from '@/components/MathInput'
 import { practiceService } from '@/services/practice'
@@ -277,7 +275,7 @@ export function PracticePage() {
             tone="secondary"
           />
           <PageStatCard
-            icon={<Zap className="h-5 w-5" />}
+            icon={<XpBadge size="lg" variant="amber" />}
             label="Reward"
             value="Tier XP"
             helper="More for harder items"
@@ -341,7 +339,7 @@ export function PracticePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <PageStatCard
-            icon={<Trophy className="h-5 w-5" />}
+            icon={<XpBadge size="lg" variant="amber" />}
             label="XP earned"
             value={`+${earnedXp}`}
             tone="accent"
@@ -563,7 +561,7 @@ export function PracticePage() {
 
         <div className="space-y-4 lg:col-span-4">
           <PageStatCard
-            icon={<Zap className="h-5 w-5" />}
+            icon={<XpBadge size="lg" />}
             label="Session XP"
             value={`+${earnedXp}`}
             helper="Updates during the set"

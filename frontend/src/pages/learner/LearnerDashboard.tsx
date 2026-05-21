@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { BookOpen, ChevronRight, Clock3, Flame, Award, Target } from "lucide-react";
+import { BookOpen, ChevronRight, Clock3, Flame, Target } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -9,6 +9,7 @@ import {
   ProgressBar,
   ProgressRing,
   AllCaughtUpIllustration,
+  XpBadge,
 } from "@/components/ui";
 import { PageStatCard, SectionHeading } from "@/components/common";
 import { Skeleton } from "@/components/ui/Loading";
@@ -141,7 +142,7 @@ export function LearnerDashboard() {
       tone: "success" as const,
     },
     {
-      icon: <Award className="h-5 w-5" />,
+      icon: <XpBadge size="lg" />,
       label: t("learner:totalXP", "Total XP"),
       value: stats.totalXP.toLocaleString(),
       helper: "Overall experience points",

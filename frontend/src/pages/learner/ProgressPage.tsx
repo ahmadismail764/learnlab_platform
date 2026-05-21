@@ -6,13 +6,12 @@ import {
   Brain,
   Clock,
   History,
-  Award,
   Target,
   TrendingUp,
   TriangleAlert,
   Zap,
 } from 'lucide-react'
-import { Card, Badge, Button, ProgressBar, ProgressRing, EmptyDataIllustration } from '@/components/ui'
+import { Card, Badge, Button, ProgressBar, ProgressRing, EmptyDataIllustration, XpBadge } from '@/components/ui'
 import { PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
 import { useLearnerProfile, useTopicMastery } from '@/hooks'
@@ -146,7 +145,7 @@ export function ProgressPage() {
       tone: 'secondary' as const,
     },
     {
-      icon: <Award className="h-5 w-5" />,
+      icon: <XpBadge size="lg" />,
       label: 'Total XP',
       value: weeklyStats.xpEarned.toLocaleString(),
       helper: 'Overall experience points',

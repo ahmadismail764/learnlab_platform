@@ -39,3 +39,8 @@ export type {} from './EmptyState'
 
 // Empty State Illustrations
 export { AllCaughtUpIllustration, EmptySearchIllustration, EmptyDataIllustration } from './EmptyStateIllustrations'
+
+// XpBadge
+export { XpBadge } from './XpBadge'
+export type { XpBadgeProps, XpBadgeSize, XpBadgeVariant } from './XpBadge'
+

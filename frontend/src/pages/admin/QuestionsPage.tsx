@@ -9,13 +9,13 @@ import {
   Eye,
   ChevronDown,
   BookOpen,
-  GraduationCap,
-  Layers,
-  Zap,
   X,
   AlertTriangle,
   RefreshCw,
   Info,
+  SignalLow,
+  SignalMedium,
+  SignalHigh,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState, Skeleton } from '@/components/ui'
 import type { BackendQuestion } from '@/services/questions'
@@ -196,13 +196,19 @@ function QuestionsContent() {
   }), [questions])
 
   const getTierBadge = (tier: number) => {
-    const configs: Record<number, { variant: 'success' | 'secondary' | 'accent'; label: string }> = {
-      1: { variant: 'success', label: t('admin:questions.difficulty.basic') },
-      2: { variant: 'secondary', label: t('admin:questions.difficulty.intermediate') },
-      3: { variant: 'accent', label: t('admin:questions.difficulty.advanced') },
+    const configs: Record<number, { variant: 'success' | 'secondary' | 'accent'; label: string; icon: typeof SignalLow }> = {
+      1: { variant: 'success', label: t('admin:questions.difficulty.basic'), icon: SignalLow },
+      2: { variant: 'secondary', label: t('admin:questions.difficulty.intermediate'), icon: SignalMedium },
+      3: { variant: 'accent', label: t('admin:questions.difficulty.advanced'), icon: SignalHigh },
     }
-    const config = configs[tier] || { variant: 'secondary' as const, label: `Tier ${tier}` }
-    return <Badge variant={config.variant}>{config.label}</Badge>
+    const config = configs[tier] || { variant: 'secondary' as const, label: `Tier ${tier}`, icon: null }
+    const IconComponent = config.icon
+    return (
+      <Badge variant={config.variant} size="sm" className="inline-flex items-center">
+        {IconComponent && <IconComponent className="w-3.5 h-3.5 me-1 shrink-0" />}
+        {config.label}
+      </Badge>
+    )
   }
 
   const clearFilters = () => {
@@ -287,7 +293,7 @@ function QuestionsContent() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-              <GraduationCap className="h-5 w-5" />
+              <SignalLow className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.basic')}</p>
@@ -299,7 +305,7 @@ function QuestionsContent() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400">
-              <Layers className="h-5 w-5" />
+              <SignalMedium className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.intermediate')}</p>
@@ -311,7 +317,7 @@ function QuestionsContent() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400">
-              <Zap className="h-5 w-5" />
+              <SignalHigh className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.advanced')}</p>

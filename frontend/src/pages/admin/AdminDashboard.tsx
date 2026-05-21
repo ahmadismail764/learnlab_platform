@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import {
   Activity,
   BarChart3,
-  BookOpen,
+  Brain,
   ChevronRight,
   TrendingUp,
   Users,
@@ -122,7 +122,7 @@ export function AdminDashboard() {
           tone="primary"
         />
         <PageStatCard
-          icon={<BookOpen className="h-5 w-5" />}
+          icon={<Brain className="h-5 w-5" />}
           label={t('admin:retention', 'Retention')}
           value={isLoading ? '--' : `${stats.avgRetention}%`}
           helper="Estimated recall health"

@@ -6,14 +6,13 @@ import {
   Mail,
   Shield,
   Activity,
-  Zap,
   Brain,
   Sparkles,
   Save,
   LogOut,
   AlertCircle,
 } from 'lucide-react'
-import { Card, Button, Input, Avatar, Badge, ProgressBar } from '@/components/ui'
+import { Card, Button, Input, Avatar, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useAuth, useCurrentUser } from '@/contexts'
 import { authService, AuthRequestError } from '@/services/auth'
@@ -81,25 +80,25 @@ export function LearnerProfilePage() {
       {
         label: t('profile:xp'),
         val: learnerProfile ? learnerProfile.total_xp.toLocaleString() : '--',
-        icon: Zap,
+        icon: <XpBadge size="lg" />,
         tone: 'primary' as const,
       },
       {
         label: t('profile:currentStreak'),
         val: learnerProfile ? `${learnerProfile.streak_count} ${t('profile:days')}` : '--',
-        icon: Activity,
+        icon: <Activity className="h-5 w-5" />,
         tone: 'accent' as const,
       },
       {
         label: t('learner:topicMastery'),
         val: masteryIndex !== null ? `${masteryIndex}%` : '--',
-        icon: Brain,
+        icon: <Brain className="h-5 w-5" />,
         tone: 'secondary' as const,
       },
       {
         label: t('profile:role'),
         val: user.role === 'admin' ? t('common:admin', 'Admin') : t('common:learner', 'Learner'),
-        icon: Shield,
+        icon: <Shield className="h-5 w-5" />,
         tone: 'success' as const,
       },
     ],
@@ -222,7 +221,7 @@ export function LearnerProfilePage() {
         <div className="space-y-4 lg:col-span-4">
           <Card>
             <div className="flex items-start gap-4">
-              <Avatar name={`${user.firstName} ${user.lastName}`} size="xl" />
+              <Avatar name={`${user.firstName} ${user.lastName}`} avatarColor={user.avatarColor} size="xl" />
               <div className="min-w-0">
                 <h2 className="truncate text-xl font-semibold text-neutral-900 dark:text-neutral-100">
                   {user.firstName} {user.lastName}
@@ -267,11 +266,10 @@ export function LearnerProfilePage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             {researchStats.map((stat, index) => {
-              const Icon = stat.icon
               return (
                 <PageStatCard
                   key={index}
-                  icon={<Icon className="h-5 w-5" />}
+                  icon={stat.icon}
                   label={stat.label}
                   value={stat.val}
                   tone={stat.tone}

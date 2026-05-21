@@ -18,6 +18,8 @@ export interface AvatarProps extends Omit<ImgHTMLAttributes<HTMLImageElement>, '
   showStatus?: boolean
   /** Online status */
   status?: 'online' | 'offline' | 'away' | 'busy'
+  /** User's unique dynamic avatar color (HSL format) */
+  avatarColor?: string
 }
 
 const sizeStyles: Record<AvatarSize, string> = {
@@ -72,6 +74,7 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
       name = '',
       src,
       alt,
+      avatarColor,
       showStatus = false,
       status = 'offline',
       ...props
@@ -98,8 +101,9 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(
             className={cn(
               'rounded-full flex items-center justify-center font-medium text-white',
               sizeStyles[size],
-              bgColor
+              !avatarColor && bgColor
             )}
+            style={avatarColor ? { backgroundColor: avatarColor } : undefined}
           >
             {initials}
           </div>

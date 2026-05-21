@@ -61,6 +61,7 @@ function mapBackendUser(userData: BackendAuthUser): User {
     role: resolveRole(userData),
     createdAt: userData.date_joined,
     updatedAt: userData.date_joined,
+    avatarColor: userData.avatar_color,
   };
 }
 

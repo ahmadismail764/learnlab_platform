@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle,
   XCircle,
@@ -66,6 +66,9 @@ function normalizePracticeQuestion(raw: Partial<Question> & { subtopic_name?: st
 
 export function PracticePage() {
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const topicId = searchParams.get('topic') || undefined
+
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -82,7 +85,7 @@ export function PracticePage() {
   const startSession = async () => {
     setIsLoading(true)
     try {
-      const data = await practiceService.generateAdaptiveSession()
+      const data = await practiceService.generateAdaptiveSession(topicId)
 
       // Handle "all caught up" — no questions available
       if (!data.questions || data.questions.length === 0) {

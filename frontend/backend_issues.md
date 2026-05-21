@@ -4,6 +4,59 @@
 
 ---
 
+## 🔴 Critical Active Blockers (Immediate Fixes Required)
+
+These issues are current blockers that crash the API with a **500 Internal Server Error** under normal user flows. The frontend is fully integrated and tested, but is blocked by these database/import level issues.
+
+### 1. FSRS Adaptive Session Generation `FieldError` (Blocks Practice Initialization)
+- **Status:** 🔴 Active Blocker (Critical Bug)
+- **Location:** `backend/practice/views.py` (inside `GenerateAdaptiveSessionView.get()`)
+- **Description:** Attempting to start an adaptive practice session via `GET /practice/sessions/generate-adaptive/` crashes the backend with a **500 Internal Server Error**. The Django log reports:
+  ```text
+  django.core.exceptions.FieldError: Cannot resolve keyword 'next_review' into field. Join on 'subtopic' yields 'Subtopic', which does not have 'next_review' as an attribute.
+  ```
+  This is caused by trying to order the query directly by `subtopic__next_review` on the `Question` model:
+  ```python
+  # Crashes because 'next_review' resides in SubtopicMastery, NOT Subtopic
+  due_questions = list(
+      Question.objects.filter(subtopic_id__in=due_subtopic_ids)
+      .order_by('subtopic__next_review')[:limit]
+  )
+  ```
+- **Fix Recommendation:** Fetch the questions in the due subtopics and sort them in Python memory using the pre-sorted indices of `due_subtopic_ids`:
+  ```python
+  # Fetch the candidate questions
+  due_questions_qs = Question.objects.filter(subtopic_id__in=due_subtopic_ids)
+  # Map subtopic IDs to their sorted position in the due list
+  subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
+  # Sort in memory using the mapping to bypass the ORM compilation FieldError
+  due_questions = sorted(
+      due_questions_qs,
+      key=lambda q: subtopic_order_map.get(q.subtopic_id, 9999)
+  )[:limit]
+  ```
+
+### 2. Critical `ImportError` in `fsrs_engine.py` (Blocks Practice Progress & XP Updates)
+- **Status:** 🔴 Active Blocker (Critical Bug)
+- **Location:** `backend/practice/fsrs_engine.py` (line 5)
+- **Description:** Whenever a user submits a practice answer (`POST /practice/sessions/<uuid:id>/responses/`), the server crashes with a **500 Internal Server Error**. The traceback shows:
+  ```text
+  ImportError: cannot import name 'SubtopicMastery' from 'practice.models' (C:\organize2\learnlab_platform\backend\practice\models.py)
+  ```
+  The crash occurs because the FSRS engine attempts to import `SubtopicMastery` from `practice.models` on line 5:
+  ```python
+  from practice.models import QuestionResponse, Subtopic, SubtopicMastery
+  ```
+  However, both `Subtopic` and `SubtopicMastery` are defined in the `topics.models` module, NOT `practice.models`.
+- **Fix Recommendation:** Correct the import statements in `backend/practice/fsrs_engine.py` to point to their actual native locations:
+  ```python
+  from practice.models import QuestionResponse
+  from topics.models import Subtopic, SubtopicMastery
+  ```
+  *This simple fix will unblock answer submission, allowing responses to be saved, spaced repetition states to progress, and XP to update seamlessly.*
+
+---
+
 ## 🟢 Newly Identified Suggestions & Improvements
 
 ### 1. Backend-Side XP Validation on Practice Session Finalization (Anti-Cheat)
@@ -93,9 +146,7 @@ All critical blockers and previous suggestions from our early integrations have 
 - **Status:** ✅ Resolved
 - **Verification:** Nested response route `POST /practice/sessions/<uuid:id>/responses/` handles live student practice answers, successfully writing `QuestionResponse` tables and instantly updating FSRS memory mastery metrics and XP scores.
 
-### 3. FSRS Adaptive Session Generation
-- **Status:** ✅ Resolved
-- **Verification:** `GET /practice/sessions/generate-adaptive/` is active and serves FSRS-spaced questions sorted by lowest retrievability and current scheduling priorities.
+
 
 ### 4. Bulk & Time-Series Analytics Telemetry
 - **Status:** ✅ Resolved

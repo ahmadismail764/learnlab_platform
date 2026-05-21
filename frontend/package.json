@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:functional": "vitest run tests/functional",
     "preview": "vite preview",
     "i18n:sync": "bun run scripts/sync-translations.ts",
     "i18n:check": "bun run scripts/sync-translations.ts --check",

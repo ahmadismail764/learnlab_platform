@@ -61,8 +61,11 @@ export const practiceService = {
     return await response.json();
   },
 
-  generateAdaptiveSession: async () => {
-    const response = await api.get('/practice/sessions/generate-adaptive/');
+  generateAdaptiveSession: async (topicId?: string) => {
+    const url = topicId
+      ? `/practice/sessions/generate-adaptive/?topic=${encodeURIComponent(topicId)}`
+      : '/practice/sessions/generate-adaptive/';
+    const response = await api.get(url);
     if (!response.ok) throw new Error('Failed to generate adaptive session');
     return await response.json();
   },

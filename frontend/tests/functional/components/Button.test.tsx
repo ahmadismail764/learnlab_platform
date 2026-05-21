@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { vi } from 'vitest'
-import { Button } from './Button'
+import { vi, describe, it, expect } from 'vitest'
+import { Button } from '@/components/ui/Button'
 
 describe('Button', () => {
   it('renders label and handles clicks', () => {

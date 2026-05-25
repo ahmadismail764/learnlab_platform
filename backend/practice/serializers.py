@@ -21,7 +21,7 @@ class QuestionCreateSerializer(serializers.ModelSerializer):
 class QuestionResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
-        fields = ['id', 'question', 'is_correct', 'time_taken_seconds', 'confidence_rating']
+        fields = ['id', 'question', 'is_correct']
 
 class PracticeSessionSerializer(serializers.ModelSerializer):
     learner = UserSerializer(read_only=True)
@@ -34,7 +34,7 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
 class QuestionResponseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
-        fields = ['question', 'is_correct', 'time_taken_seconds', 'confidence_rating']
+        fields = ['question', 'is_correct']
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
     responses = QuestionResponseCreateSerializer(many=True, required=False)

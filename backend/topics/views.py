@@ -7,12 +7,17 @@ class TopicViewSet(viewsets.ModelViewSet):
     queryset = Topic.objects.prefetch_related('subtopics')
     serializer_class = TopicSerializer
 
-# Handles operations for Subtopics (e.g., Algebra, Geometry).
+# Handles operations for Subtopics (e.g., Algebra, Geometry).set
 class SubtopicViewSet(viewsets.ModelViewSet):
     queryset = Subtopic.objects.all()
     serializer_class = SubtopicSerializer
 
-# Tracks a user's mastery level for specific subtopics based on their performance.
 class SubtopicMasteryViewSet(viewsets.ModelViewSet):
     queryset = SubtopicMastery.objects.all()
     serializer_class = SubtopicMasterySerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return SubtopicMastery.objects.all()
+        return SubtopicMastery.objects.filter(learner=user)

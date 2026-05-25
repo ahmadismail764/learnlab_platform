@@ -22,10 +22,22 @@ class QuestionViewSet(viewsets.ModelViewSet):
     serializer_class = QuestionSerializer
 
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-    queryset = PracticeSession.objects.none()
+    queryset = PracticeSession.objects.all()
     serializer_class = PracticeSessionSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return PracticeSession.objects.all()
+        return PracticeSession.objects.filter(learner=user)
 
 class QuestionResponseViewSet(viewsets.ModelViewSet):
     queryset = QuestionResponse.objects.all()
     serializer_class = QuestionResponseSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return QuestionResponse.objects.all()
+        return QuestionResponse.objects.filter(session__learner=user)
 

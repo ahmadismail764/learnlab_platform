@@ -6,16 +6,16 @@ import {
   Brain,
   Clock,
   History,
-  Sparkles,
   Target,
   TrendingUp,
   TriangleAlert,
   Zap,
 } from 'lucide-react'
-import { Card, Badge, Button, ProgressBar, ProgressRing } from '@/components/ui'
+import { Card, Badge, Button, ProgressBar, ProgressRing, EmptyDataIllustration, XpBadge } from '@/components/ui'
 import { PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
 import { useLearnerProfile, useTopicMastery } from '@/hooks'
+import { MASTERY_STATUS_BADGE_VARIANT, type TopicMastery } from '@/constants/mastery'
 
 /**
  * ProgressPage
@@ -26,25 +26,6 @@ import { useLearnerProfile, useTopicMastery } from '@/hooks'
  * - Review goal progress
  * RTL-aware with full i18n support.
  */
-
-interface TopicMastery {
-  id: string | number
-  topic: string | number
-  topic_name: string
-  rep_num: number
-  memory: number
-  speed: number
-  status: 'new' | 'learning' | 'learned' | 'struggling'
-  last_reviewed: string | null
-  next_due: string | null
-}
-
-const stateBadgeVariant: Record<string, 'success' | 'warning' | 'primary' | 'outline'> = {
-  new: 'outline',
-  learning: 'primary',
-  struggling: 'warning',
-  learned: 'success',
-}
 
 export function ProgressPage() {
   const [renderTimestamp] = useState(() => Date.now())
@@ -164,7 +145,7 @@ export function ProgressPage() {
       tone: 'secondary' as const,
     },
     {
-      icon: <Sparkles className="h-5 w-5" />,
+      icon: <XpBadge size="lg" />,
       label: 'Total XP',
       value: weeklyStats.xpEarned.toLocaleString(),
       helper: 'Overall experience points',
@@ -303,7 +284,7 @@ export function ProgressPage() {
               Array.from({ length: 5 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-white/70 bg-white/75 p-4 shadow-sm dark:border-white/8 dark:bg-neutral-900/72"
+                  className="surface-tile"
                 >
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
@@ -316,8 +297,8 @@ export function ProgressPage() {
                 </div>
               ))
             ) : topicCards.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-neutral-200/80 bg-neutral-50/80 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
-                <Brain className="mx-auto h-8 w-8 text-neutral-300 dark:text-neutral-600" />
+              <div className="surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800 px-6 py-10 text-center">
+                <EmptyDataIllustration className="mx-auto" />
                 <p className="mt-4 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                   No mastery data yet
                 </p>
@@ -331,7 +312,7 @@ export function ProgressPage() {
                 return (
                   <div
                     key={topic.id}
-                    className="rounded-2xl border border-white/70 bg-white/76 p-4 shadow-sm dark:border-white/8 dark:bg-neutral-900/72"
+                    className="surface-tile"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
@@ -342,7 +323,7 @@ export function ProgressPage() {
                           {topic.rep_num} review{topic.rep_num !== 1 ? 's' : ''} • {formatDue(topic.next_due)}
                         </p>
                       </div>
-                      <Badge variant={stateBadgeVariant[topic.status] ?? 'outline'} size="sm">
+                      <Badge variant={MASTERY_STATUS_BADGE_VARIANT[topic.status] ?? 'outline'} size="sm">
                         {topic.status} • {progress}%
                       </Badge>
                     </div>
@@ -371,7 +352,7 @@ export function ProgressPage() {
             </div>
 
             <div className="mt-5 space-y-3">
-              <div className="rounded-2xl border border-white/70 bg-white/76 p-4 shadow-sm dark:border-white/8 dark:bg-neutral-900/72">
+              <div className="surface-tile">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                     Strong topics
@@ -385,7 +366,7 @@ export function ProgressPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/70 bg-white/76 p-4 shadow-sm dark:border-white/8 dark:bg-neutral-900/72">
+              <div className="surface-tile">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                     Needs attention
@@ -399,7 +380,7 @@ export function ProgressPage() {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-white/70 bg-white/76 p-4 shadow-sm dark:border-white/8 dark:bg-neutral-900/72">
+              <div className="surface-tile">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                     Average speed
@@ -423,7 +404,7 @@ export function ProgressPage() {
               </h2>
             </div>
 
-            <div className="mt-4 rounded-2xl border border-dashed border-neutral-200/80 bg-neutral-50/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/60">
+            <div className="surface-inset mt-4 border border-dashed border-neutral-200/80 dark:border-neutral-800">
               <div className="flex items-start gap-3">
                 {dueNowCount > 0 ? (
                   <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
@@ -510,7 +491,7 @@ export function ProgressPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge variant={stateBadgeVariant[topic.status] ?? 'outline'} size="sm">
+                    <Badge variant={MASTERY_STATUS_BADGE_VARIANT[topic.status] ?? 'outline'} size="sm">
                       {topic.status}
                     </Badge>
                   </div>
@@ -529,7 +510,7 @@ export function ProgressPage() {
                     />
                   </div>
 
-                  <div className="mt-5 grid grid-cols-3 gap-3 rounded-2xl border border-white/70 bg-white/78 p-4 text-sm shadow-sm dark:border-white/8 dark:bg-neutral-900/72">
+                  <div className="surface-tile mt-5 grid grid-cols-3 gap-3 text-sm">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500">
                         Memory

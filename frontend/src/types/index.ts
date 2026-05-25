@@ -10,7 +10,7 @@
  * Stakeholders:
  * - Learner: Primary user - solves problems, views leaderboard, progresses as learner
  * - Admin: Content manager - manages question bank, monitors learner analytics
- */
+ */
 
 // ============================================
 // User & Role Types
@@ -31,6 +31,7 @@ export interface User {
   lastName: string
   role: UserRole
   avatarUrl?: string
+  avatarColor?: string
   createdAt: string
   updatedAt: string
 }
@@ -42,10 +43,6 @@ export interface LearnerProfile extends User {
   level: number
   lastActiveAt: string
 }
-
-// ============================================
-// Course & Topic Types (OCP: Configurable)
-// ============================================
 
 /**
  * Course configuration - designed for extensibility

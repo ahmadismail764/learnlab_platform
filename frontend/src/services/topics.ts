@@ -41,7 +41,7 @@ function normalizeTopic(raw: Partial<BackendTopic>): BackendTopic {
 
 export const topicsService = {
   getTopics: async () => {
-    const response = await api.get('/topcis/topics/');
+    const response = await api.get('/topics/');
     if (!response.ok) throw new Error('Failed to fetch topics');
     const data = await response.json() as BackendTopic[] | { results?: BackendTopic[] };
     const results = Array.isArray(data) ? data : data.results ?? [];
@@ -50,7 +50,7 @@ export const topicsService = {
 
   getTopicMastery: async (filters: Record<string, string> = {}): Promise<TopicMastery[]> => {
     const query = new URLSearchParams(filters).toString();
-    const response = await api.get(`/topcis/mastery/${query ? `?${query}` : ''}`);
+    const response = await api.get(`/mastery/${query ? `?${query}` : ''}`);
     if (!response.ok) {
       // Mastery endpoint may return errors for users with no data — return empty gracefully.
       console.warn('Topic mastery fetch returned non-OK status:', response.status);
@@ -61,14 +61,14 @@ export const topicsService = {
     return results;
   },
 
-  getTopicDetails: async (id: number) => {
-    const response = await api.get(`/topcis/topics/${id}/`);
+  getTopicDetails: async (id: EntityId) => {
+    const response = await api.get(`/topics/${id}/`);
     if (!response.ok) throw new Error('Failed to fetch topic details');
     return normalizeTopic(await response.json() as BackendTopic);
   },
 
   createTopic: async (data: TopicPayload) => {
-    const response = await api.post('/topcis/topics/', {
+    const response = await api.post('/topics/', {
       name: data.name,
       description: data.description,
     });
@@ -76,8 +76,8 @@ export const topicsService = {
     return normalizeTopic(await response.json() as BackendTopic);
   },
 
-  updateTopic: async (id: number, data: Partial<TopicPayload>) => {
-    const response = await api.put(`/topcis/topics/${id}/`, {
+  updateTopic: async (id: EntityId, data: Partial<TopicPayload>) => {
+    const response = await api.put(`/topics/${id}/`, {
       name: data.name,
       description: data.description,
     });
@@ -85,8 +85,8 @@ export const topicsService = {
     return normalizeTopic(await response.json() as BackendTopic);
   },
 
-  deleteTopic: async (id: number) => {
-    const response = await api.delete(`/topcis/topics/${id}/`);
+  deleteTopic: async (id: EntityId) => {
+    const response = await api.delete(`/topics/${id}/`);
     if (!response.ok) throw new Error('Failed to delete topic');
     if (response.status === 204) return null;
     return await response.json();

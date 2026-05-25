@@ -10,7 +10,7 @@ import { cn } from '@/utils/cn'
 
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /** Visual variant */
-  variant?: 'default' | 'outlined' | 'elevated'
+  variant?: 'default' | 'outlined' | 'elevated' | 'panel' | 'panel-soft'
   /** Padding size */
   padding?: 'none' | 'sm' | 'md' | 'lg'
   /** Make card hoverable with subtle animation */
@@ -21,6 +21,8 @@ const variantStyles = {
   default: 'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 shadow-sm',
   outlined: 'bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-700',
   elevated: 'bg-white dark:bg-neutral-900 shadow-md dark:shadow-neutral-900/50',
+  panel: 'dashboard-panel border-0',
+  'panel-soft': 'dashboard-panel-soft border-0',
 }
 
 const paddingStyles = {

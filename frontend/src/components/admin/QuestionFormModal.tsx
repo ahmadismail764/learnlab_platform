@@ -202,7 +202,7 @@ export function QuestionFormModal({
                     value={form.text}
                     onChange={(e) => setForm((prev) => ({ ...prev, text: e.target.value }))}
                     disabled={isSaving}
-                    className="min-h-28 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-850 dark:text-neutral-100"
+                    className="min-h-28 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
                     required
                   />
                 </div>
@@ -216,7 +216,7 @@ export function QuestionFormModal({
                     value={form.choicesText}
                     onChange={(e) => setForm((prev) => ({ ...prev, choicesText: e.target.value }))}
                     disabled={isSaving}
-                    className="min-h-32 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-850 dark:text-neutral-100"
+                    className="min-h-32 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
                     placeholder={'Choice A\nChoice B\nChoice C'}
                     required
                   />

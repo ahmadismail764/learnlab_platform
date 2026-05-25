@@ -2,14 +2,13 @@ import { useMemo } from 'react'
 import {
   Activity,
   BarChart3,
-  BookOpen,
+  Brain,
   ChevronRight,
-  ShieldCheck,
   TrendingUp,
   Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, Button, Badge, Avatar } from '@/components/ui'
+import { Card, Button, Badge, Avatar, EmptyState, EmptyDataIllustration } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
 import { useCurrentUser } from '@/contexts'
@@ -48,12 +47,7 @@ export function AdminDashboard() {
     [leaderboard]
   )
 
-  const systemHealth = [
-    { nameKey: 'admin:apiResponseTime', value: metrics ? '< 200ms' : '--', status: metrics ? 'good' : 'warning' },
-    { nameKey: 'admin:database', value: '99.9%', status: 'good' },
-    { nameKey: 'admin:storage', value: '67%', status: 'warning' },
-    { nameKey: 'admin:activeSessions', value: String(stats.activeThisWeek), status: stats.activeThisWeek > 0 ? 'good' : 'warning' },
-  ] as const
+
 
   return (
     <div className="space-y-6">
@@ -128,7 +122,7 @@ export function AdminDashboard() {
           tone="primary"
         />
         <PageStatCard
-          icon={<BookOpen className="h-5 w-5" />}
+          icon={<Brain className="h-5 w-5" />}
           label={t('admin:retention', 'Retention')}
           value={isLoading ? '--' : `${stats.avgRetention}%`}
           helper="Estimated recall health"
@@ -165,11 +159,12 @@ export function AdminDashboard() {
                 ))}
               </div>
             ) : topLearners.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-neutral-200/80 bg-neutral-50/80 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900/60">
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                  No learner data available yet.
-                </p>
-              </div>
+              <EmptyState
+                illustration={<EmptyDataIllustration className="mx-auto" />}
+                title={t('admin:noLearnerData', 'No learner data available yet')}
+                description="Once learners start practicing and gaining XP, they will appear in this leaderboard."
+                className="py-6 surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800"
+              />
             ) : (
               <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {topLearners.map((entry, index) => (
@@ -205,30 +200,7 @@ export function AdminDashboard() {
         </Card>
 
         <div className="space-y-6">
-          <Card className="dashboard-panel">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 text-secondary-600 dark:text-secondary-300" />
-              <h2 className="font-display text-xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-                {t('admin:systemHealth')}
-              </h2>
-            </div>
 
-            <div className="mt-5 space-y-3">
-              {systemHealth.map((item) => (
-                <div key={item.nameKey} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200/70 bg-white/65 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900/60">
-                  <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                    {t(item.nameKey)}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
-                      {item.value}
-                    </span>
-                    <Badge dot variant={item.status === 'good' ? 'success' : 'warning'} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
 
           <Card className="dashboard-panel-soft border-0">
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">

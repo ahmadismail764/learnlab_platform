@@ -2,10 +2,7 @@ import { Outlet } from "react-router-dom";
 import { LogoMark, LogoFull } from "@/components/brand";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import {
-  DataSourceBreakdown,
-  IntegrationStatusBadge,
-} from "@/components/common";
+
 
 /**
  * AuthLayout Component
@@ -16,8 +13,7 @@ import {
  */
 
 export function AuthLayout() {
-  const showIntegrationStatus = false
-  const showDataSourceBreakdown = false
+
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
@@ -163,17 +159,7 @@ export function AuthLayout() {
         </div>
 
         <div className="w-full max-w-md">
-          {showIntegrationStatus && (
-            <div className="mb-4 flex justify-end">
-              <IntegrationStatusBadge compact />
-            </div>
-          )}
 
-          {showDataSourceBreakdown && (
-            <div className="mb-4">
-              <DataSourceBreakdown compact />
-            </div>
-          )}
 
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">

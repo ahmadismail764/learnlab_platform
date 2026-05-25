@@ -76,7 +76,7 @@ export function DeleteQuestionDialog({
                     Delete this question?
                   </h2>
                   <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                    This will call the backend delete endpoint for question #{question.id}.
+                    This will permanently delete this question from the database. This action cannot be undone.
                   </p>
                 </div>
               </div>

@@ -47,12 +47,11 @@ src/
 │   └── NotificationContext # Toast notifications system
 ├── hooks/           # Custom hooks
 │   └── useLocalStorage # Persistent state management
-├── data/            # Mock data & question pools
-│   └── sampleQuestions # MC, True/False, and Essay questions
 ├── locales/         # i18n translation files
 │   ├── en/          # English translations (11 namespaces)
 │   └── ar/          # Arabic translations (RTL)
 ├── types/           # Shared TypeScript types
+├── validation/      # Centralized input validation schemas (Zod)
 ├── pages/           # Page components
 │   ├── auth/        # Login page
 │   ├── student/     # Student pages (Dashboard, Topics, Practice, Progress, Achievements, Leaderboard, Profile)
@@ -181,34 +180,6 @@ This project follows **SOLID principles**:
 ---
 
 ## Development Notes
-
-### Adding New Questions
-
-Questions are defined in `src/data/sampleQuestions.ts`:
-
-```typescript
-// Multiple Choice
-{
-  id: 'unique-id',
-  topic: 'logic',
-  difficulty: 1, // 1-3
-  content: 'Question text',
-  answerType: 'multipleChoice',
-  options: ['A', 'B', 'C', 'D'],
-  correctAnswer: 'A',
-}
-
-// Essay (Math Expression)
-{
-  id: 'unique-id',
-  topic: 'sets',
-  difficulty: 2,
-  content: 'Write the formula for...',
-  answerType: 'essay',
-  correctAnswer: '\\Delta = (A \\setminus B) \\cup (B \\setminus A)',
-  alternativeAnswers: ['(A - B) \\cup (B - A)'],
-}
-```
 
 ### Translation Keys
 

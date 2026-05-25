@@ -22,7 +22,15 @@ export class ApiRequestError extends Error {
 }
 
 function normalizeBaseUrl(rawUrl: string): string {
-  return rawUrl.trim().replace(/\/$/, "");
+  let url = rawUrl.trim().replace(/\/$/, "");
+  if (!url.endsWith("/api/v1")) {
+    if (url.endsWith("/api")) {
+      url = `${url}/v1`;
+    } else {
+      url = `${url}/api/v1`;
+    }
+  }
+  return url;
 }
 
 function getApiRoot(baseUrl: string): string {

@@ -1,7 +1,13 @@
 import { useQuery, useMutation, useQueryClient, useSuspenseQuery, skipToken } from '@tanstack/react-query'
 import { learnersService, type LearnerProfile, type LeaderboardLearner } from '@/services/learners'
 import { topicsService } from '@/services/topics'
-import { analyticsService, type AggregatedMetricsResponse } from '@/services/analytics'
+import {
+  analyticsService,
+  type AggregatedMetricsResponse,
+  type BulkTopicAnalyticsResponse,
+  type ActivityTimeSeriesResponse,
+  type DifficultyTierBreakdownResponse,
+} from '@/services/analytics'
 import { practiceService } from '@/services/practice'
 import { authService, type UpdateCurrentUserPayload } from '@/services/auth'
 
@@ -37,6 +43,9 @@ export const queryKeys = {
   },
   analytics: {
     aggregated: ['analytics', 'aggregated'] as const,
+    bulk: ['analytics', 'bulk'] as const,
+    activity: (period?: string) => ['analytics', 'activity', period] as const,
+    difficulty: ['analytics', 'difficulty'] as const,
   },
   practice: {
     sessions: ['practice', 'sessions'] as const,
@@ -153,6 +162,30 @@ export function useAggregatedMetrics() {
   return useQuery<AggregatedMetricsResponse | null>({
     queryKey: queryKeys.analytics.aggregated,
     queryFn: () => analyticsService.getAggregatedMetrics(),
+  })
+}
+
+/** Fetch bulk topic performance analytics (admin) */
+export function useBulkTopicAnalytics() {
+  return useQuery<BulkTopicAnalyticsResponse | null>({
+    queryKey: queryKeys.analytics.bulk,
+    queryFn: () => analyticsService.getBulkTopicAnalytics(),
+  })
+}
+
+/** Fetch historical learner activity time-series (admin) */
+export function useActivityTimeSeries(period?: string) {
+  return useQuery<ActivityTimeSeriesResponse | null>({
+    queryKey: queryKeys.analytics.activity(period),
+    queryFn: () => analyticsService.getActivityTimeSeries(period),
+  })
+}
+
+/** Fetch curriculum difficulty tier breakdown (admin) */
+export function useDifficultyBreakdown() {
+  return useQuery<DifficultyTierBreakdownResponse | null>({
+    queryKey: queryKeys.analytics.difficulty,
+    queryFn: () => analyticsService.getDifficultyBreakdown(),
   })
 }
 

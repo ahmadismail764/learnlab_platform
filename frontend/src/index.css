@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+:root {
+  --brand-hue: 173;
+  --brand-saturation: 80%;
+}
+
 /* Enable class-based dark mode for manual theme switching */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -19,18 +24,18 @@
    * Identity: Teal (science/lab) + Violet (discovery) + Amber (energy)
    * ============================================================ */
 
-  /* Primary — Scientific Teal */
-  --color-primary-50:  #f0fdfa;
-  --color-primary-100: #ccfbf1;
-  --color-primary-200: #99f6e4;
-  --color-primary-300: #5eead4;
-  --color-primary-400: #2dd4bf;
-  --color-primary-500: #14b8a6;
-  --color-primary-600: #0d9488;
-  --color-primary-700: #0f766e;
-  --color-primary-800: #115e59;
-  --color-primary-900: #134e4a;
-  --color-primary-950: #042f2e;
+  /* Primary — Scientific Teal (Dynamic Theme Accent) */
+  --color-primary-50:  hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 97%);
+  --color-primary-100: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 90%);
+  --color-primary-200: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 80%);
+  --color-primary-300: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 68%);
+  --color-primary-400: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 55%);
+  --color-primary-500: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 40%);
+  --color-primary-600: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 34%);
+  --color-primary-700: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 26%);
+  --color-primary-800: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 20%);
+  --color-primary-900: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 15%);
+  --color-primary-950: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 8%);
 
   /* Secondary — Intellectual Violet */
   --color-secondary-50:  #f5f3ff;
@@ -189,6 +194,34 @@ html.dark .learner-panel-soft {
   box-shadow:
     0 16px 28px -24px rgba(0, 0, 0, 0.36),
     0 6px 14px -12px rgba(0, 0, 0, 0.2);
+}
+
+/*
+ * Reusable surface utility classes
+ * Used inside dashboard/learner panels for inset sections, inner tiles, and dashed empty states.
+ */
+
+.surface-inset {
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 1);
+  padding: 1rem;
+}
+
+html.dark .surface-inset {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.surface-tile {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.dark .surface-tile {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.72);
 }
 
 /* RTL Support - Arabic */
@@ -417,3 +450,14 @@ html[dir="rtl"] .font-display {
   font-family: var(--font-arabic);
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  40% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+}

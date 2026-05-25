@@ -277,7 +277,7 @@ function GlobalLeaderboardSection({
       ? leaderboard.filter((entry) => {
           return (
             entry.name.toLowerCase().includes(normalizedQuery) ||
-            String(entry.id).toLowerCase().includes(normalizedQuery)
+            String(entry.rank).includes(normalizedQuery)
           )
         })
       : leaderboard
@@ -350,7 +350,7 @@ function TopicLeaderboardSection({
       ? leaderboard.filter((entry) => {
           return (
             entry.name.toLowerCase().includes(normalizedQuery) ||
-            String(entry.id).toLowerCase().includes(normalizedQuery)
+            String(entry.rank).includes(normalizedQuery)
           )
         })
       : leaderboard
@@ -463,7 +463,7 @@ function LeaderboardDisplay({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+                <div className="surface-inset grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                       Streak
@@ -517,13 +517,13 @@ function LeaderboardDisplay({
         <div className="space-y-4 lg:col-span-8">
           <SectionHeading
             title={leaderboardType === 'global' ? 'Top learners' : `${selectedTopicName} leaderboard`}
-            description="Search by learner name or visible entry id."
+            description="Search by learner name or rank."
             action={(
               <div className="w-full sm:w-64">
                 <Input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search learners"
+                  placeholder="Search learners or rank"
                   leftIcon={<Search className="h-4 w-4" />}
                   size="sm"
                 />
@@ -570,8 +570,8 @@ function LeaderboardDisplay({
                           <p className="truncate font-semibold text-neutral-900 dark:text-neutral-100">
                             {entry.name}
                           </p>
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                            Entry ID {entry.id}
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400/80">
+                            Rank #{entry.rank}
                           </p>
                         </div>
                       </div>

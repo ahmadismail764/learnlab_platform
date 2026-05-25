@@ -4,7 +4,7 @@
   "achievementsEarned": "Achievements Earned",
   "achievementsFromBadges": "XP from Achievements",
   "activeTopics": "Active Topics",
-  "allCaughtUp": "All caught up! 🎉",
+  "allCaughtUp": "All caught up!",
   "allCaughtUpDescription": "You have no reviews due today. Great job keeping up with your study schedule!",
   "avgProgress": "Avg Progress",
   "browseByCategory": "Browse by Category",
@@ -34,7 +34,7 @@
   "myProgress": "My Progress",
   "nextReview": "Next Review",
   "nextReviewIn": "Next review",
-  "noReviewsDue": "No reviews due today! Great work! 🎉",
+  "noReviewsDue": "No reviews due today! Great work!",
   "poweredByFSRS": "Powered by FSRS",
   "progressDescription": "Track your learning journey and mastery levels",
   "questions": "questions",
@@ -72,6 +72,6 @@
   "totalTopics": "Total Topics",
   "upcomingReviews": "Upcoming Reviews",
   "week": "Week {{number}}",
-  "welcomeBack": "Welcome back, {{name}}! 👋",
+  "welcomeBack": "Welcome back, {{name}}!",
   "xpEarned": "XP Earned"
 }

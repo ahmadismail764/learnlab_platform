@@ -4,7 +4,7 @@
   "achievementsEarned": "الإنجازات المكتسبة",
   "achievementsFromBadges": "نقاط الخبرة من الإنجازات",
   "activeTopics": "الموضوعات النشطة",
-  "allCaughtUp": "لقد أنهيت كل شيء! 🎉",
+  "allCaughtUp": "لقد أنهيت كل شيء!",
   "allCaughtUpDescription": "لا توجد مراجعات مستحقة اليوم. عمل رائع في الحفاظ على جدول دراستك!",
   "avgProgress": "متوسط التقدم",
   "browseByCategory": "تصفح حسب الفئة",
@@ -34,7 +34,7 @@
   "myProgress": "تقدمي",
   "nextReview": "المراجعة القادمة",
   "nextReviewIn": "المراجعة القادمة",
-  "noReviewsDue": "لا توجد مراجعات مستحقة اليوم! عمل رائع! 🎉",
+  "noReviewsDue": "لا توجد مراجعات مستحقة اليوم! عمل رائع!",
   "poweredByFSRS": "مدعوم بخوارزمية FSRS",
   "progressDescription": "تتبع رحلة تعلمك ومستويات إتقانك",
   "questions": "أسئلة",
@@ -72,6 +72,6 @@
   "totalTopics": "إجمالي الموضوعات",
   "upcomingReviews": "المراجعات القادمة",
   "week": "الأسبوع {{number}}",
-  "welcomeBack": "مرحباً بعودتك، {{name}}! 👋",
+  "welcomeBack": "مرحباً بعودتك، {{name}}!",
   "xpEarned": "نقاط الخبرة المكتسبة"
 }

@@ -6,6 +6,13 @@ import {
   throwApiError,
 } from "./api";
 
+import {
+  coerceBackendUser,
+  type BackendAuthUser,
+} from "./mappers/backendUser";
+
+export type { BackendAuthUser } from "./mappers/backendUser";
+
 const AUTH_USER_SNAPSHOT_KEY = "learnlab_user_snapshot";
 
 export interface LoginCredentials {
@@ -30,18 +37,6 @@ export class AuthRequestError extends Error {
     this.name = "AuthRequestError";
     this.fieldErrors = fieldErrors;
   }
-}
-
-export interface BackendAuthUser {
-  id: number | string;
-  email: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  role: "learner" | "admin" | string;
-  is_staff: boolean;
-  date_joined: string;
-  joined_at?: string;
 }
 
 export interface UpdateCurrentUserPayload {
@@ -137,25 +132,6 @@ function decodeJwtPayload(token: string | null): Record<string, unknown> | null 
   } catch {
     return null;
   }
-}
-
-function coerceBackendUser(partial: Partial<BackendAuthUser>): BackendAuthUser {
-  const now = new Date().toISOString();
-  const username = partial.username || partial.email?.split("@")[0] || "learner";
-
-  const dateJoined = partial.date_joined ?? partial.joined_at ?? now;
-
-  return {
-    id: partial.id ?? username,
-    email: partial.email ?? "",
-    username,
-    first_name: partial.first_name ?? "",
-    last_name: partial.last_name ?? "",
-    role: partial.role ?? (partial.is_staff ? "admin" : "learner"),
-    is_staff: partial.is_staff ?? partial.role === "admin",
-    date_joined: dateJoined,
-    joined_at: partial.joined_at,
-  };
 }
 
 function saveUserSnapshot(user: Partial<BackendAuthUser>) {

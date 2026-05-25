@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar, type SidebarProps } from './Sidebar'
 import { Header } from './Header'
-import { DataSourceBreakdown, ErrorBoundary } from '@/components/common'
+import { ErrorBoundary } from '@/components/common'
 import { cn } from '@/utils/cn'
 import type { UserRole } from '@/types'
 
@@ -32,7 +32,6 @@ export function DashboardLayout({
   onLogout,
 }: DashboardLayoutProps) {
   const isDashboard = Boolean(role)
-  const showDataSourceBreakdown = false
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -108,11 +107,6 @@ export function DashboardLayout({
           isDashboard ? 'px-4 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7' : 'p-4 sm:p-6 lg:p-8',
         )}>
           <div className={cn('w-full', isDashboard && 'mx-auto max-w-[1420px] space-y-6 xl:space-y-7')}>
-            {showDataSourceBreakdown && (
-              <div className="mb-6">
-                <DataSourceBreakdown compact />
-              </div>
-            )}
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>

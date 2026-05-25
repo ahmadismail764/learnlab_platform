@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle,
   XCircle,
-  Trophy,
-  Zap,
   PlayCircle,
-  PartyPopper,
   Clock,
   TestTube2,
   Lightbulb,
@@ -15,7 +12,7 @@ import {
   ArrowRight,
   Mic2,
 } from 'lucide-react'
-import { Card, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
+import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { MathInput } from '@/components/MathInput'
 import { practiceService } from '@/services/practice'
@@ -67,6 +64,9 @@ function normalizePracticeQuestion(raw: Partial<Question> & { subtopic_name?: st
 
 export function PracticePage() {
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const topicId = searchParams.get('topic') || undefined
+
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -83,7 +83,7 @@ export function PracticePage() {
   const startSession = async () => {
     setIsLoading(true)
     try {
-      const data = await practiceService.generateAdaptiveSession()
+      const data = await practiceService.generateAdaptiveSession(topicId)
 
       // Handle "all caught up" — no questions available
       if (!data.questions || data.questions.length === 0) {
@@ -275,7 +275,7 @@ export function PracticePage() {
             tone="secondary"
           />
           <PageStatCard
-            icon={<Zap className="h-5 w-5" />}
+            icon={<XpBadge size="lg" variant="amber" />}
             label="Reward"
             value="Tier XP"
             helper="More for harder items"
@@ -289,7 +289,7 @@ export function PracticePage() {
             description="Answer each question, then rate how easy recall felt so the scheduler can adapt future reviews."
           />
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 1. Solve
               </p>
@@ -297,7 +297,7 @@ export function PracticePage() {
                 Complete each question in order with either a multiple-choice answer or a math entry.
               </p>
             </div>
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 2. Reflect
               </p>
@@ -305,7 +305,7 @@ export function PracticePage() {
                 After each answer, rate how hard recall felt so FSRS can tune the next interval.
               </p>
             </div>
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 3. Keep momentum
               </p>
@@ -326,7 +326,7 @@ export function PracticePage() {
           eyebrow="Session complete"
           title="Nice work"
           description="Your practice session is finished. The results have been sent back into the review schedule so the next queue can stay aligned."
-          icon={<PartyPopper className="h-6 w-6" />}
+          icon={<CheckCircle2 className="h-6 w-6 text-green-500" />}
           tone="success"
           actions={(
             <Link to="/learner/progress">
@@ -339,7 +339,7 @@ export function PracticePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <PageStatCard
-            icon={<Trophy className="h-5 w-5" />}
+            icon={<XpBadge size="lg" variant="amber" />}
             label="XP earned"
             value={`+${earnedXp}`}
             tone="accent"
@@ -561,7 +561,7 @@ export function PracticePage() {
 
         <div className="space-y-4 lg:col-span-4">
           <PageStatCard
-            icon={<Zap className="h-5 w-5" />}
+            icon={<XpBadge size="lg" />}
             label="Session XP"
             value={`+${earnedXp}`}
             helper="Updates during the set"
@@ -574,7 +574,7 @@ export function PracticePage() {
               description="Small, useful telemetry instead of a second oversized panel."
             />
             <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+              <div className="surface-inset grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                     Elapsed
@@ -585,10 +585,10 @@ export function PracticePage() {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Question ID
+                    Difficulty
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    #{currentQuestion.id}
+                    Tier {currentQuestion.tier}
                   </p>
                 </div>
               </div>

@@ -1,4 +1,8 @@
+# Framework imports
 from rest_framework import permissions, viewsets, generics
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.response import Response
+# Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from accounts.models import User
 from accounts.serializers import LearnerProfileSerializer
@@ -8,8 +12,7 @@ from .serializers import (
     PracticeSessionCreateSerializer, 
     QuestionSerializer
 )
-from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.response import Response
+from constants import XP_PER_CORRECT_ANSWER
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -64,7 +67,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             process_review(session.learner, response.question.subtopic, response)
             
             if response.is_correct:
-                session.total_xp_earned += 10
+                session.total_xp_earned += XP_PER_CORRECT_ANSWER
                 session.save()
                 
             return Response(QuestionResponseSerializer(response).data, status=201)
@@ -83,7 +86,7 @@ class LeaderboardView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = User.objects.filter(is_staff=False)
-        topic_id = self.request.query_params.get('topic')
+        topic_id = self.request.query_params.get('topic') # type: ignore
         if topic_id:
             # Filter distinct users having mastery under this topic
             queryset = queryset.filter(masteries__subtopic__topic_id=topic_id).distinct()
@@ -121,13 +124,15 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         # Sort by most overdue first (lowest retrievability)
         due_subtopic_ids = list(
             mastery_qs.order_by('next_review').values_list('subtopic_id', flat=True)
-        )
+        )   
 
         # Pull questions from due subtopics first
-        due_questions = list(
-            Question.objects.filter(subtopic_id__in=due_subtopic_ids)
-            .order_by('subtopic__next_review')[:limit]
-        )
+        due_questions_qs = Question.objects.filter(id=due_subtopic_ids)
+        subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
+        due_questions = sorted(
+            due_questions_qs,
+            key=lambda q: subtopic_order_map.get(q.id, 9999)
+        )[:limit]
 
         # Fill remaining slots with unseen questions (no mastery record yet)
         if len(due_questions) < limit:
@@ -154,4 +159,9 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
         })
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return QuestionResponse.objects.all()
+        return QuestionResponse.objects.filter(session__learner=user)
 

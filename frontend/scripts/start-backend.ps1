@@ -4,6 +4,7 @@
 $ErrorActionPreference = "Stop"
 $ROOT = Resolve-Path "$PSScriptRoot\..\.."
 $BACKEND_DIR = Join-Path $ROOT "backend"
+$env:PYTHONPATH = "$BACKEND_DIR;$(Join-Path $BACKEND_DIR 'practice')"
 
 $pythonCandidates = @(
     $env:LEARNLAB_PYTHON,
@@ -109,8 +110,6 @@ $prevErrorAction = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
 $checkOutput = & $VENV_PYTHON manage.py migrate --check 2>&1
 $checkExit = $LASTEXITCODE
-$ErrorActionPreference = $prevErrorAction
-
 if ($checkExit -ne 0) {
     if ($checkOutput) {
         Write-Host "  [..] migrate --check output:" -ForegroundColor DarkGray
@@ -129,6 +128,7 @@ if ($checkExit -ne 0) {
 } else {
     Write-Host "  [OK] All migrations up to date" -ForegroundColor Green
 }
+$ErrorActionPreference = $prevErrorAction
 
 # --- 4. Start Django server ---
 Write-Host ""

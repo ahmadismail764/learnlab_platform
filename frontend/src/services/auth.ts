@@ -311,23 +311,46 @@ export const authService = {
   },
 
   getCurrentUser: async (options: CurrentUserOptions = {}): Promise<BackendAuthUser> => {
+    let response: Response | null = null;
+
     try {
-      const response = await api.get("/auth/users/me/");
-      if (response.ok) {
-        const data = await response.json();
-        const user = coerceBackendUser(data as Partial<BackendAuthUser>);
-        saveUserSnapshot(user);
-        return user;
+      response = await api.get("/auth/users/me/");
+    } catch (error) {
+      if (options.allowFallback) {
+        console.warn("Auth hydrate fallback: /auth/users/me/ unreachable.", error);
+        return getFallbackCurrentUser();
       }
-    } catch {
-      // Network error — fall through to fallback if allowed.
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch current user from /auth/users/me/.";
+      throw new Error(message);
     }
 
-    // Fallback: use the locally-stored snapshot (useful during network issues).
+    if (response.ok) {
+      const data = await response.json();
+      const user = coerceBackendUser(data as Partial<BackendAuthUser>);
+      saveUserSnapshot(user);
+      return user;
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Authentication expired. Please sign in again.");
+    }
+
     if (options.allowFallback) {
+      console.warn(
+        "Auth hydrate fallback: /auth/users/me/ responded with",
+        response.status,
+      );
       return getFallbackCurrentUser();
     }
-    throw new Error("Failed to fetch current user from /auth/users/me/.");
+
+    const { message } = await parseApiError(
+      response,
+      "Failed to fetch current user.",
+    );
+    throw new Error(`Failed to fetch current user from /auth/users/me/. ${message}`);
   },
 
   updateCurrentUser: async (payload?: UpdateCurrentUserPayload): Promise<BackendAuthUser> => {

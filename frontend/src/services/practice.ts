@@ -66,8 +66,28 @@ export const practiceService = {
       ? `/practice/sessions/generate-adaptive/?topic=${encodeURIComponent(topicId)}`
       : '/practice/sessions/generate-adaptive/';
     const response = await api.get(url);
-    if (!response.ok) throw new Error('Failed to generate adaptive session');
-    return await response.json();
+    if (response.ok) {
+      return await response.json();
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Failed to generate adaptive session');
+    }
+
+    if (response.status >= 500 || isEndpointMissing(response)) {
+      const fallbackResponse = await api.get('/practice/questions/');
+      if (!fallbackResponse.ok) {
+        throw new Error('Failed to generate adaptive session');
+      }
+      const data = await fallbackResponse.json();
+      const list = Array.isArray(data) ? data : data.results ?? [];
+      return {
+        questions: list.slice(0, 10),
+        message: 'Adaptive session unavailable; showing general practice questions.',
+      };
+    }
+
+    throw new Error('Failed to generate adaptive session');
   },
 
   // Backward-compatibility aliases

@@ -6,56 +6,28 @@
 
 ## 🔴 Critical Active Blockers (Immediate Fixes Required)
 
-These issues are current blockers that crash the API with a **500 Internal Server Error** under normal user flows. The frontend is fully integrated and tested, but is blocked by these database/import level issues.
+### 1. `/auth/users/me/` returns non-200 during auth hydration
 
-### 1. FSRS Adaptive Session Generation `FieldError` (Blocks Practice Initialization)
+- **Status:** Active blocker
+- **Symptoms:** Frontend logs `Failed to hydrate user Error: Failed to fetch current user from /auth/users/me/.` immediately after login.
+- **Impact:** Auth context cannot hydrate reliably, causing unexpected logout or cached fallback state.
+- **Repro:** Log in, then call `GET /api/v1/auth/users/me/` with `Authorization: Bearer <access>`.
+- **Recommendation:** Ensure the endpoint returns `200` with `UserDetailSerializer` and confirm JWT auth/permissions are applied.
 
-- **Status:** 🔴 Active Blocker (Critical Bug)
-- **Location:** `backend/practice/views.py` (inside `GenerateAdaptiveSessionView.get()`)
-- **Description:** Attempting to start an adaptive practice session via `GET /practice/sessions/generate-adaptive/` crashes the backend with a **500 Internal Server Error**. The Django log reports:
-  ```text
-  django.core.exceptions.FieldError: Cannot resolve keyword 'next_review' into field. Join on 'subtopic' yields 'Subtopic', which does not have 'next_review' as an attribute.
-  ```
-  This is caused by trying to order the query directly by `subtopic__next_review` on the `Question` model:
-  ```python
-  # Crashes because 'next_review' resides in SubtopicMastery, NOT Subtopic
-  due_questions = list(
-      Question.objects.filter(subtopic_id__in=due_subtopic_ids)
-      .order_by('subtopic__next_review')[:limit]
-  )
-  ```
-- **Fix Recommendation:** Fetch the questions in the due subtopics and sort them in Python memory using the pre-sorted indices of `due_subtopic_ids`:
-  ```python
-  # Fetch the candidate questions
-  due_questions_qs = Question.objects.filter(subtopic_id__in=due_subtopic_ids)
-  # Map subtopic IDs to their sorted position in the due list
-  subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
-  # Sort in memory using the mapping to bypass the ORM compilation FieldError
-  due_questions = sorted(
-      due_questions_qs,
-      key=lambda q: subtopic_order_map.get(q.subtopic_id, 9999)
-  )[:limit]
-  ```
+### 2. Adaptive session generation endpoint fails
 
-### 2. Critical `ImportError` in `fsrs_engine.py` (Blocks Practice Progress & XP Updates)
+- **Status:** Active blocker
+- **Symptoms:** Frontend throws `Failed to generate adaptive session` when starting practice.
+- **Impact:** Learners cannot start practice sessions.
+- **Backend source:** `GenerateAdaptiveSessionView` filters questions with `Question.objects.filter(id=due_subtopic_ids)` and sorts by `q.id`. It should filter by `subtopic_id__in` and order using `q.subtopic_id`.
+- **Recommendation:** Update the query and ordering to match subtopic IDs.
 
-- **Status:** 🔴 Active Blocker (Critical Bug)
-- **Location:** `backend/practice/fsrs_engine.py` (line 5)
-- **Description:** Whenever a user submits a practice answer (`POST /practice/sessions/<uuid:id>/responses/`), the server crashes with a **500 Internal Server Error**. The traceback shows:
-  ```text
-  ImportError: cannot import name 'SubtopicMastery' from 'practice.models' (C:\organize2\learnlab_platform\backend\practice\models.py)
-  ```
-  The crash occurs because the FSRS engine attempts to import `SubtopicMastery` from `practice.models` on line 5:
-  ```python
-  from practice.models import QuestionResponse, Subtopic, SubtopicMastery
-  ```
-  However, both `Subtopic` and `SubtopicMastery` are defined in the `topics.models` module, NOT `practice.models`.
-- **Fix Recommendation:** Correct the import statements in `backend/practice/fsrs_engine.py` to point to their actual native locations:
-  ```python
-  from practice.models import QuestionResponse
-  from topics.models import Subtopic, SubtopicMastery
-  ```
-  _This simple fix will unblock answer submission, allowing responses to be saved, spaced repetition states to progress, and XP to update seamlessly._
+### 3. Incorrect import paths in practice modules
+
+- **Status:** Active blocker
+- **Symptoms:** `ModuleNotFoundError: No module named 'constants'` or `ImportError` for `Subtopic` when practice endpoints execute.
+- **Backend source:** `practice/serializers.py` + `practice/views.py` import `from constants import XP_PER_CORRECT_ANSWER` but the module is `practice.constants`. `practice/fsrs_engine.py` imports `Subtopic` from `practice.models` but it lives in `topics.models`.
+- **Recommendation:** Fix import paths to the correct modules.
 
 ---
 
@@ -160,22 +132,22 @@ All critical blockers and previous suggestions from our early integrations have 
 - **Status:** ✅ Resolved
 - **Verification:** Nested response route `POST /practice/sessions/<uuid:id>/responses/` handles live student practice answers, successfully writing `QuestionResponse` tables and instantly updating FSRS memory mastery metrics and XP scores.
 
-### 4. Bulk & Time-Series Analytics Telemetry
+### 3. Bulk & Time-Series Analytics Telemetry
 
 - **Status:** ✅ Resolved
 - **Verification:** Dedicated aggregated endpoints `/analytics/topics/`, `/analytics/activity/`, and `/analytics/difficulty/` are fully active, powering the admin metrics, difficulty progress rings, and dynamically loaded weekly trends.
 
-### 5. Curriculum Questions Counts and Grouping
+### 4. Curriculum Questions Counts and Grouping
 
 - **Status:** ✅ Resolved
 - **Verification:** `/topics/` responses now correctly expose computed `question_count` properties and `parent_module` grouping fields.
 
-### 6. Topic Typo Resolution (`/topics/`)
+### 5. Topic Typo Resolution (`/topics/`)
 
 - **Status:** ✅ Resolved
 - **Verification:** The backend has stabilized the URL scheme to `/topics/`, letting the frontend service layers transition fully away from `/topcis/` fallbacks.
 
-### 7. User Initials and Avatar Colors in Token Response
+### 6. User Initials and Avatar Colors in Token Response
 
 - **Status:** ✅ Resolved
 - **Verification:** `/auth/users/me/` and `/auth/login/` endpoints now return stable, computed `initials` (e.g., `"JD"`) and beautiful design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). This enables clean client-side dynamic avatar generation without mock colors.

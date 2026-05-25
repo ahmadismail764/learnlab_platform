@@ -6,6 +6,11 @@
  */
 
 import '@testing-library/jest-dom'
+import { cleanup } from '@testing-library/react'
+
+afterEach(() => {
+  cleanup()
+})
 
 // Mock window.matchMedia (used by useMediaQuery, theme detection)
 Object.defineProperty(window, 'matchMedia', {

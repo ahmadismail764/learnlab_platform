@@ -1,12 +1,9 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   CheckCircle,
   XCircle,
-  Trophy,
-  Zap,
   PlayCircle,
-  PartyPopper,
   Clock,
   TestTube2,
   Lightbulb,
@@ -15,11 +12,13 @@ import {
   ArrowRight,
   Mic2,
 } from 'lucide-react'
-import { Card, CardContent, Button, Badge, ProgressBar } from '@/components/ui'
+import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { MathInput } from '@/components/MathInput'
 import { practiceService } from '@/services/practice'
 import { cn } from '@/utils/cn'
+import { useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/hooks'
 
 /**
  * PracticePage (Experiment Mode)
@@ -28,33 +27,50 @@ import { cn } from '@/utils/cn'
 
 type SessionState = 'selecting' | 'practicing' | 'complete'
 type AnswerState = 'unanswered' | 'answered'
-type FIReGrade = 1 | 2 | 3 | 4 // Again, Hard, Good, Easy
+type FSRSGrade = 1 | 2 | 3 | 4 // Again, Hard, Good, Easy
 
 interface Question {
-  id: number
+  id: string | number
   text: string
   choices: string[]
   correct_answer_index: number
   tier: number
-  explanation_video_url?: string
+  explanation_video_url?: string | null
   topic_name: string
-  topic_id: number
+  topic_id?: string | number
 }
 
 interface QuestionState {
-  questionId: number
+  questionId: string | number
   userResponse: string | null
   answerState: AnswerState
   isCorrect: boolean | null
-  grade: FIReGrade | null
+  grade: FSRSGrade | null
   startTime: number
 }
 
+function normalizePracticeQuestion(raw: Partial<Question> & { subtopic_name?: string | null }): Question {
+  return {
+    id: raw.id ?? '',
+    text: raw.text ?? '',
+    choices: Array.isArray(raw.choices) ? raw.choices.map(String) : [],
+    correct_answer_index: Number(raw.correct_answer_index ?? 0),
+    tier: Number(raw.tier ?? 1),
+    explanation_video_url: raw.explanation_video_url ?? null,
+    topic_name: raw.topic_name ?? raw.subtopic_name ?? 'Practice question',
+    topic_id: raw.topic_id,
+  }
+}
+
 export function PracticePage() {
+  const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const topicId = searchParams.get('topic') || undefined
+
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<Question[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [sessionRecord, setSessionRecord] = useState<{ id: number; session_type: string } | null>(null)
+  const [sessionRecord, setSessionRecord] = useState<{ id: string | number; session_type?: string } | null>(null)
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -67,7 +83,7 @@ export function PracticePage() {
   const startSession = async () => {
     setIsLoading(true)
     try {
-      const data = await practiceService.generateAdaptiveSession()
+      const data = await practiceService.generateAdaptiveSession(topicId)
 
       // Handle "all caught up" — no questions available
       if (!data.questions || data.questions.length === 0) {
@@ -75,18 +91,18 @@ export function PracticePage() {
         return
       }
 
-      setQuestions(data.questions)
+      const normalizedQuestions = data.questions.map(normalizePracticeQuestion)
+      setQuestions(normalizedQuestions)
 
       // Create session record — backend PracticeSessionCreateSerializer
-      // requires session_type and interactions (can be empty array)
+      // requires responses (can be empty array)
       const session = await practiceService.createSession({
-        session_type: 'adaptive',
-        interactions: []
+        responses: []
       })
       setSessionRecord(session)
 
       const initialStates: Record<number, QuestionState> = {}
-      data.questions.forEach((q: Question, idx: number) => {
+      normalizedQuestions.forEach((q: Question, idx: number) => {
         initialStates[idx] = {
           questionId: q.id,
           userResponse: null,
@@ -107,8 +123,8 @@ export function PracticePage() {
     }
   }
 
-  const handleAnswer = (choice: string) => {
-    if (!currentStatus || currentStatus.answerState === 'answered') return
+  const handleAnswer = useCallback((choice: string) => {
+    if (!currentQuestion || !currentStatus || currentStatus.answerState === 'answered') return
     const isCorrect = currentQuestion.choices.indexOf(choice) === currentQuestion.correct_answer_index
     setQuestionStates((prev) => ({
       ...prev,
@@ -120,10 +136,10 @@ export function PracticePage() {
       }
     }))
     if (isCorrect) setEarnedXp(prev => prev + 10 * currentQuestion.tier)
-  }
+  }, [currentQuestion, currentStatus, currentIndex])
 
-  const handleSubmitMathAnswer = () => {
-    if (!mathValue || !currentStatus || currentStatus.answerState === 'answered') return
+  const handleSubmitMathAnswer = useCallback(() => {
+    if (!currentQuestion || !mathValue || !currentStatus || currentStatus.answerState === 'answered') return
     setQuestionStates(prev => ({
       ...prev,
       [currentIndex]: {
@@ -134,9 +150,27 @@ export function PracticePage() {
       }
     }))
     setEarnedXp(prev => prev + 15 * currentQuestion.tier)
-  }
+  }, [currentQuestion, currentStatus, currentIndex, mathValue])
 
-  const handleGrade = async (grade: FIReGrade) => {
+  const completeSession = useCallback(async () => {
+    setSessionState('complete')
+    if (sessionRecord) {
+      try {
+        await practiceService.completeSession(sessionRecord.id, earnedXp)
+        // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
+        queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
+        queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.global })
+        queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
+        queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
+        queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
+      } catch (e) {
+        console.error('Failed to complete session', e)
+      }
+    }
+  }, [earnedXp, queryClient, sessionRecord])
+
+  const handleGrade = useCallback(async (grade: FSRSGrade) => {
     if (!currentStatus || !sessionRecord || !currentQuestion) return
     const timeTaken = Math.round((Date.now() - currentStatus.startTime) / 1000)
     setQuestionStates((prev) => ({
@@ -166,14 +200,44 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }
+  }, [completeSession, currentIndex, currentQuestion, currentStatus, mathValue, questions.length, sessionRecord])
 
-  const completeSession = () => {
-    setSessionState('complete')
-    if (sessionRecord) {
-      practiceService.completeSession(sessionRecord.id, earnedXp)
-    }
-  }
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in an input field
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable) {
+        // Only intercept Enter for MathInput if we are not answered
+        if (e.key === 'Enter' && (!currentStatus || currentStatus.answerState !== 'answered')) {
+          e.preventDefault();
+          handleSubmitMathAnswer();
+        }
+        return;
+      }
+
+      if (sessionState !== 'practicing' || !currentQuestion || !currentStatus) return;
+
+      const key = e.key;
+      const isMCQ = currentQuestion.choices && currentQuestion.choices.length > 0;
+      const isAnswered = currentStatus.answerState === 'answered';
+
+      if (!isAnswered && isMCQ) {
+        if (key === '1' && currentQuestion.choices[0]) handleAnswer(currentQuestion.choices[0]);
+        if (key === '2' && currentQuestion.choices[1]) handleAnswer(currentQuestion.choices[1]);
+        if (key === '3' && currentQuestion.choices[2]) handleAnswer(currentQuestion.choices[2]);
+        if (key === '4' && currentQuestion.choices[3]) handleAnswer(currentQuestion.choices[3]);
+      }
+
+      if (isAnswered) {
+        if (key === '1') handleGrade(1);
+        if (key === '2') handleGrade(2);
+        if (key === '3') handleGrade(3);
+        if (key === '4') handleGrade(4);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentQuestion, currentStatus, handleAnswer, handleGrade, handleSubmitMathAnswer, sessionState])
 
   if (sessionState === 'selecting') {
     return (
@@ -181,7 +245,7 @@ export function PracticePage() {
         <PageIntro
           eyebrow="Practice session"
           title="Ready for a focused review?"
-          description="Start an adaptive FIRe session and we will pull the next questions from your learner queue without changing the rest of the site structure."
+          description="Start an adaptive FSRS session and we will pull the next questions from your learner queue without changing the rest of the site structure."
           icon={<TestTube2 className="h-6 w-6" />}
           tone="primary"
           actions={(
@@ -211,7 +275,7 @@ export function PracticePage() {
             tone="secondary"
           />
           <PageStatCard
-            icon={<Zap className="h-5 w-5" />}
+            icon={<XpBadge size="lg" variant="amber" />}
             label="Reward"
             value="Tier XP"
             helper="More for harder items"
@@ -225,7 +289,7 @@ export function PracticePage() {
             description="Answer each question, then rate how easy recall felt so the scheduler can adapt future reviews."
           />
           <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 1. Solve
               </p>
@@ -233,15 +297,15 @@ export function PracticePage() {
                 Complete each question in order with either a multiple-choice answer or a math entry.
               </p>
             </div>
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 2. Reflect
               </p>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                After each answer, rate how hard recall felt so FIRe can tune the next interval.
+                After each answer, rate how hard recall felt so FSRS can tune the next interval.
               </p>
             </div>
-            <div className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+            <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
                 3. Keep momentum
               </p>
@@ -262,7 +326,7 @@ export function PracticePage() {
           eyebrow="Session complete"
           title="Nice work"
           description="Your practice session is finished. The results have been sent back into the review schedule so the next queue can stay aligned."
-          icon={<PartyPopper className="h-6 w-6" />}
+          icon={<CheckCircle2 className="h-6 w-6 text-green-500" />}
           tone="success"
           actions={(
             <Link to="/learner/progress">
@@ -275,7 +339,7 @@ export function PracticePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <PageStatCard
-            icon={<Trophy className="h-5 w-5" />}
+            icon={<XpBadge size="lg" variant="amber" />}
             label="XP earned"
             value={`+${earnedXp}`}
             tone="accent"
@@ -388,7 +452,7 @@ export function PracticePage() {
                       onClick={() => handleAnswer(choice)}
                       disabled={isAnswered}
                       className={cn(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-left transition-colors',
+                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
                         currentStatus.userResponse === choice
                           ? currentStatus.isCorrect
                             ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'
@@ -396,7 +460,14 @@ export function PracticePage() {
                           : 'border-neutral-200 bg-white hover:border-primary-400 hover:bg-primary-50/40 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-primary-950/20',
                       )}
                     >
-                      <span className="text-base font-medium">{choice}</span>
+                      <div className="flex items-center gap-3">
+                        {!isAnswered && (
+                          <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                            {index + 1}
+                          </kbd>
+                        )}
+                        <span className="text-base font-medium">{choice}</span>
+                      </div>
                       <span className="shrink-0">
                         {isAnswered && index === currentQuestion.correct_answer_index ? (
                           <CheckCircle className={cn(
@@ -427,8 +498,11 @@ export function PracticePage() {
                   />
 
                   {!isAnswered ? (
-                    <Button onClick={handleSubmitMathAnswer} disabled={!mathValue}>
+                    <Button onClick={handleSubmitMathAnswer} disabled={!mathValue} className="gap-2">
                       Submit answer
+                      <kbd className="hidden sm:inline-flex h-5 items-center justify-center rounded border border-primary-400/30 bg-primary-600 px-1.5 font-sans text-[10px] font-medium text-white shadow-sm">
+                        Enter
+                      </kbd>
                     </Button>
                   ) : (
                     <Card className="border-green-200 bg-green-50/70 dark:border-green-900/40 dark:bg-green-950/20">
@@ -465,13 +539,18 @@ export function PracticePage() {
                 ].map((button) => (
                   <button
                     key={button.grade}
-                    onClick={() => handleGrade(button.grade as FIReGrade)}
+                    onClick={() => handleGrade(button.grade as FSRSGrade)}
                     className={cn(
                       'rounded-2xl px-4 py-4 text-center text-white transition-transform hover:-translate-y-0.5',
                       button.tone,
                     )}
                   >
-                    <p className="text-sm font-semibold">{button.label}</p>
+                    <p className="text-sm font-semibold flex items-center justify-center gap-2">
+                      <kbd className="inline-flex h-5 w-5 items-center justify-center rounded border border-white/30 bg-white/10 font-sans text-[10px] font-bold text-white">
+                        {button.grade}
+                      </kbd>
+                      {button.label}
+                    </p>
                     <p className="mt-1 text-xs text-white/80">{button.sub}</p>
                   </button>
                 ))}
@@ -482,7 +561,7 @@ export function PracticePage() {
 
         <div className="space-y-4 lg:col-span-4">
           <PageStatCard
-            icon={<Zap className="h-5 w-5" />}
+            icon={<XpBadge size="lg" />}
             label="Session XP"
             value={`+${earnedXp}`}
             helper="Updates during the set"
@@ -495,7 +574,7 @@ export function PracticePage() {
               description="Small, useful telemetry instead of a second oversized panel."
             />
             <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+              <div className="surface-inset grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                     Elapsed
@@ -506,10 +585,10 @@ export function PracticePage() {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Question ID
+                    Difficulty
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    #{currentQuestion.id}
+                    Tier {currentQuestion.tier}
                   </p>
                 </div>
               </div>
@@ -525,7 +604,7 @@ export function PracticePage() {
               </div>
 
               <Badge variant="outline" size="sm">
-                Adaptive FIRe scheduling enabled
+                Adaptive FSRS scheduling enabled
               </Badge>
             </div>
           </Card>
@@ -544,7 +623,7 @@ export function PracticePage() {
                 </p>
                 <Button
                   variant="outline"
-                  onClick={() => window.open(currentQuestion.explanation_video_url, '_blank')}
+                  onClick={() => window.open(currentQuestion.explanation_video_url ?? undefined, '_blank')}
                 >
                   Watch explanation
                 </Button>

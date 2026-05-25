@@ -10,7 +10,7 @@
  * Stakeholders:
  * - Learner: Primary user - solves problems, views leaderboard, progresses as learner
  * - Admin: Content manager - manages question bank, monitors learner analytics
- */
+ */
 
 // ============================================
 // User & Role Types
@@ -31,6 +31,7 @@ export interface User {
   lastName: string
   role: UserRole
   avatarUrl?: string
+  avatarColor?: string
   createdAt: string
   updatedAt: string
 }
@@ -42,10 +43,6 @@ export interface LearnerProfile extends User {
   level: number
   lastActiveAt: string
 }
-
-// ============================================
-// Course & Topic Types (OCP: Configurable)
-// ============================================
 
 /**
  * Course configuration - designed for extensibility
@@ -80,14 +77,13 @@ export interface Topic {
 }
 
 // ============================================
-// FIRe (Fast Interval Repetition Engine (FIRe)) Types
+// FSRS (Free Spaced Repetition Scheduler) Types
 // ============================================
 
 /**
- * FIRe scheduling data for a topic
- * Based on the FIRe-4.5 algorithm
+ * FSRS scheduling data for a topic.
  */
-export interface FIReData {
+export interface FSRSData {
   /** Stability: Expected retention period (days) */
   stability: number
   /** Difficulty: How hard the topic is for this user (0-10) */
@@ -105,11 +101,11 @@ export interface FIReData {
 }
 
 /**
- * Topic with user's FIRe scheduling data
+ * Topic with user's FSRS scheduling data
  */
 export interface UserTopic {
   topic: Topic
-  fire: FIReData
+  fsrs: FSRSData
   /** User's mastery percentage (0-100) */
   mastery: number
 }

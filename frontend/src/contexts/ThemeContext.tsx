@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ThemeContext, type Theme, type ThemeContextValue } from './themeContextValue'
 
 /**
  * ThemeContext
@@ -8,23 +9,6 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
  * - Manual toggle override
  * - localStorage persistence
  */
-
-type Theme = 'light' | 'dark' | 'system'
-
-interface ThemeContextValue {
-  /** Current theme setting (light, dark, or system) */
-  theme: Theme
-  /** Resolved theme (always light or dark based on system or manual) */
-  resolvedTheme: 'light' | 'dark'
-  /** Whether dark mode is currently active */
-  isDark: boolean
-  /** Set theme to light, dark, or system */
-  setTheme: (theme: Theme) => void
-  /** Toggle between light and dark (ignores system) */
-  toggleTheme: () => void
-}
-
-const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 const STORAGE_KEY = 'learnlab_theme'
 
@@ -106,15 +90,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       {children}
     </ThemeContext.Provider>
   )
-}
-
-/**
- * Hook to access theme context
- */
-export function useTheme(): ThemeContextValue {
-  const context = useContext(ThemeContext)
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider')
-  }
-  return context
 }

@@ -44,10 +44,8 @@ class QuestionResponse(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     # response data
     is_correct = models.BooleanField(default=False)
-    """
-    in our current implemenation of the FSRS, we are not going to use the Hard and Easy ratings,
-    instead the correctness of the response is going to be mapped either to Again or to Good
-    """
+    time_taken_seconds = models.IntegerField(default=0)
+    confidence_rating = models.IntegerField(default=3) # e.g. 1 to 5 scale
 
     def __str__(self):
         return f"{self.session.learner}'s Response to Q:{self.question.id} in Session:{self.session.id}"

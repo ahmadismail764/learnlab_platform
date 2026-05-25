@@ -1,15 +1,13 @@
-import { api } from './api';
-import type { BackendAuthUser } from './auth';
+import { authService, type BackendAuthUser } from './auth';
 
 export interface AdminProfile {
-  id: number;
+  id: number | string;
   user: BackendAuthUser;
 }
 
 export const adminsService = {
-  getCurrentProfile: async () => {
-    const response = await api.get('/auth/admin/me/');
-    if (!response.ok) throw new Error('Failed to fetch admin profile');
-    return await response.json() as AdminProfile;
-  }
+  getCurrentProfile: async (): Promise<AdminProfile> => {
+    const user = await authService.getCurrentUser({ allowFallback: true });
+    return { id: user.id, user };
+  },
 };

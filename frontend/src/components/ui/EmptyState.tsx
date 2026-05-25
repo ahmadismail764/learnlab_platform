@@ -16,6 +16,8 @@ interface EmptyStateProps {
   preset?: EmptyStatePreset
   /** Custom icon */
   icon?: ReactNode
+  /** Custom SVG illustration — takes precedence over icon */
+  illustration?: ReactNode
   /** Title text */
   title?: string
   /** Description text */
@@ -65,6 +67,7 @@ const presets: Record<EmptyStatePreset, { icon: typeof Inbox; title: string; des
 export function EmptyState({
   preset = 'default',
   icon,
+  illustration,
   title,
   description,
   action,
@@ -78,10 +81,14 @@ export function EmptyState({
 
   return (
     <div className={cn('flex flex-col items-center justify-center py-12 px-4 text-center', className)}>
-      {/* Icon */}
-      <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-        {icon ?? (Icon && <Icon className="w-8 h-8 text-neutral-400" />)}
-      </div>
+      {/* Illustration or Icon */}
+      {illustration ? (
+        <div className="mb-4">{illustration}</div>
+      ) : (
+        <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
+          {icon ?? (Icon && <Icon className="w-8 h-8 text-neutral-400" />)}
+        </div>
+      )}
 
       {/* Text */}
       <h3 className="text-lg font-semibold text-neutral-800 mb-1">

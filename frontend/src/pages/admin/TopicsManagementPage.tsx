@@ -1,24 +1,20 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
   Search,
-  Edit2,
-  Trash2,
   ChevronRight,
   ChevronDown,
   FolderTree,
   BookOpen,
-  Save,
-  X,
   AlertTriangle,
   FileText,
-  Loader2,
   RefreshCw,
 } from 'lucide-react'
-import { Card, Button, Badge, Input, EmptyState } from '@/components/ui'
-import { topicsService } from '@/services/topics'
-import { useToast } from '@/contexts/ToastContext'
+import { Card, Button, Badge, Input, EmptyState, Skeleton } from '@/components/ui'
+import { useSuspenseTopics } from '@/hooks'
+import { TopicFormModal } from '@/components/admin/TopicFormModal'
+import { DeleteTopicDialog } from '@/components/admin/DeleteTopicDialog'
 
 /**
  * TopicsManagementPage - Admin Curriculum Structure (UC-07)
@@ -31,8 +27,6 @@ import { useToast } from '@/contexts/ToastContext'
  *
  * Topics are grouped by `parent_module` field.
  */
-
-// --- Interfaces matching backend serializer ---
 
 interface BackendTopic {
   id: number
@@ -47,69 +41,87 @@ interface ModuleGroup {
   topics: BackendTopic[]
 }
 
-type FormMode = 'create' | 'edit'
+function TopicsManagementPageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Title skeleton */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24 rounded-lg" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
+        </div>
+      </div>
 
-interface TopicFormData {
-  name: string
-  description: string
-  parent_module: string
-}
+      {/* Stats cards */}
+      <div className="grid grid-cols-3 gap-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="p-4 space-y-2">
+            <div className="flex items-center gap-3">
+              <Skeleton variant="circular" width={40} height={40} />
+              <div className="flex-grow space-y-2">
+                <Skeleton className="h-6 w-12" />
+                <Skeleton className="h-3.5 w-20" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-const EMPTY_FORM: TopicFormData = {
-  name: '',
-  description: '',
-  parent_module: '',
+      {/* Search bar */}
+      <Skeleton className="h-10 w-full rounded-lg" />
+
+      {/* Module lists */}
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 flex-grow">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <div className="space-y-2 flex-grow max-w-sm">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-3.5 w-24" />
+                </div>
+              </div>
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function TopicsManagementPage() {
-  const { t } = useTranslation(['admin', 'common', 'topics'])
-  const { showSuccess, showError } = useToast()
+  return (
+    <Suspense fallback={<TopicsManagementPageSkeleton />}>
+      <TopicsManagementContent />
+    </Suspense>
+  )
+}
 
-  // Data state
-  const [topics, setTopics] = useState<BackendTopic[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+function TopicsManagementContent() {
+  const { t } = useTranslation(['admin', 'common', 'topics'])
+
+  // Data fetching via React Query
+  const { data: rawTopics, error: queryError, refetch: fetchTopics } = useSuspenseTopics()
+  const topics = useMemo(
+    () => (rawTopics ?? []) as BackendTopic[],
+    [rawTopics]
+  )
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load topics') : ''
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
 
-  // Form state
+  // Modal / Form state
   const [showForm, setShowForm] = useState(false)
-  const [formMode, setFormMode] = useState<FormMode>('create')
-  const [formData, setFormData] = useState<TopicFormData>({ ...EMPTY_FORM })
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
-  const [editingTopicId, setEditingTopicId] = useState<number | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
-
-  // Delete confirmation state
+  const [editingTopic, setEditingTopic] = useState<BackendTopic | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BackendTopic | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  // --- Data fetching ---
-
-  const fetchTopics = useCallback(async () => {
-    setIsLoading(true)
-    setLoadError('')
-    try {
-      const data = await topicsService.getTopics()
-      // Handle both paginated and unpaginated responses
-      const items: BackendTopic[] = Array.isArray(data) ? data : (data.results ?? [])
-      setTopics(items)
-      // Auto-expand first two modules
-      const modules = [...new Set(items.map(t => t.parent_module || 'Uncategorized'))]
-      setExpandedModules(new Set(modules.slice(0, 2)))
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load topics'
-      setLoadError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchTopics()
-  }, [fetchTopics])
 
   // --- Computed data ---
 
@@ -124,11 +136,6 @@ export function TopicsManagementPage() {
     return Object.entries(grouped)
       .map(([parentModule, topicList]) => ({ parentModule, topics: topicList }))
       .sort((a, b) => a.parentModule.localeCompare(b.parentModule))
-  }, [topics])
-
-  // Get all unique parent modules for the form dropdown
-  const parentModuleOptions = useMemo(() => {
-    return [...new Set(topics.map(t => t.parent_module).filter(Boolean))].sort()
   }, [topics])
 
   const totalTopics = topics.length
@@ -164,121 +171,28 @@ export function TopicsManagementPage() {
   // --- Form handlers ---
 
   const openCreateForm = useCallback(() => {
-    setFormData({ ...EMPTY_FORM })
-    setFormErrors({})
-    setFormMode('create')
-    setEditingTopicId(null)
+    setEditingTopic(null)
     setShowForm(true)
   }, [])
 
   const openEditForm = useCallback((topic: BackendTopic) => {
-    setFormData({
-      name: topic.name,
-      description: topic.description,
-      parent_module: topic.parent_module,
-    })
-    setFormErrors({})
-    setFormMode('edit')
-    setEditingTopicId(topic.id)
+    setEditingTopic(topic)
     setShowForm(true)
   }, [])
 
   const closeForm = useCallback(() => {
     setShowForm(false)
-    setFormData({ ...EMPTY_FORM })
-    setFormErrors({})
-    setEditingTopicId(null)
+    setEditingTopic(null)
   }, [])
 
-  const validateForm = useCallback((): boolean => {
-    const errors: Record<string, string> = {}
-
-    if (!formData.name.trim()) {
-      errors.name = t('admin:topicsManagement.form.errorName')
-    }
-
-    // Check duplicate name within same module (client-side, backend also validates)
-    if (formData.name.trim()) {
-      const duplicate = topics.find(
-        t => t.name.toLowerCase() === formData.name.trim().toLowerCase()
-          && t.id !== editingTopicId
-      )
-      if (duplicate) {
-        errors.name = t('admin:topicsManagement.form.errorDuplicate')
-      }
-    }
-
-    setFormErrors(errors)
-    return Object.keys(errors).length === 0
-  }, [formData, editingTopicId, topics, t])
-
-  const handleSave = useCallback(async () => {
-    if (!validateForm()) return
-
-    setIsSaving(true)
-    try {
-      const payload = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        parent_module: formData.parent_module.trim(),
-      }
-
-      if (formMode === 'create') {
-        await topicsService.createTopic(payload)
-        showSuccess(t('admin:topicsManagement.form.createSuccess'))
-      } else if (editingTopicId !== null) {
-        await topicsService.updateTopic(editingTopicId, payload)
-        showSuccess(t('admin:topicsManagement.form.updateSuccess'))
-      }
-
-      closeForm()
-      await fetchTopics() // Refresh data
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Save failed'
-      showError(message)
-      // Try to extract field errors from the message
-      if (message.includes('name')) {
-        setFormErrors(prev => ({ ...prev, name: message }))
-      }
-    } finally {
-      setIsSaving(false)
-    }
-  }, [validateForm, formMode, formData, editingTopicId, closeForm, fetchTopics, showSuccess, showError, t])
-
-  const handleDelete = useCallback(async () => {
-    if (!deleteTarget) return
-
-    setIsDeleting(true)
-    try {
-      await topicsService.deleteTopic(deleteTarget.id)
-      showSuccess(t('admin:topicsManagement.form.deleteSuccess'))
-      setDeleteTarget(null)
-      await fetchTopics()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Delete failed'
-      showError(message)
-    } finally {
-      setIsDeleting(false)
-    }
-  }, [deleteTarget, fetchTopics, showSuccess, showError, t])
-
   // --- Loading & Error states ---
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-        <p className="text-sm font-medium text-neutral-500">Loading topics from backend...</p>
-      </div>
-    )
-  }
 
   if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
-        <Button variant="outline" onClick={fetchTopics} leftIcon={<RefreshCw className="w-4 h-4" />}>
+        <Button variant="outline" onClick={() => fetchTopics()} leftIcon={<RefreshCw className="w-4 h-4" />}>
           Retry
         </Button>
       </div>
@@ -298,7 +212,7 @@ export function TopicsManagementPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchTopics} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          <Button variant="outline" onClick={() => fetchTopics()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             {t('common:refresh')}
           </Button>
           <Button leftIcon={<Plus className="w-4 h-4" />} onClick={openCreateForm}>
@@ -416,7 +330,7 @@ export function TopicsManagementPage() {
                         }`}
                       >
                         <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-sm font-mono font-bold text-neutral-500 shrink-0">
-                          {topic.id}
+                          {index + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
@@ -432,11 +346,32 @@ export function TopicsManagementPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => openEditForm(topic)} title={t('common:edit')}>
-                            <Edit2 className="w-4 h-4" />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditForm(topic)}
+                            title={t('common:edit')}
+                            aria-label="Edit topic"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
                           </Button>
-                          <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(topic)} title={t('common:delete')} className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
-                            <Trash2 className="w-4 h-4" />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeleteTarget(topic)}
+                            title={t('common:delete')}
+                            className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
+                            aria-label="Delete topic"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                              <line x1="10" y1="11" x2="10" y2="17" />
+                              <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
                           </Button>
                         </div>
                       </div>
@@ -449,156 +384,22 @@ export function TopicsManagementPage() {
         )}
       </div>
 
-      {/* ═══════ Create / Edit Form Modal ═══════ */}
-      {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            {/* Form header */}
-            <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                  {formMode === 'create'
-                    ? t('admin:topicsManagement.form.createTitle')
-                    : t('admin:topicsManagement.form.editTitle')}
-                </h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                  {t('admin:topicsManagement.form.subtitle')}
-                </p>
-              </div>
-              <button onClick={closeForm} className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800">
-                <X className="w-5 h-5 text-neutral-500" />
-              </button>
-            </div>
+      {/* Extracted Form Modal */}
+      <TopicFormModal
+        isOpen={showForm}
+        onClose={closeForm}
+        onSuccess={fetchTopics}
+        editingTopic={editingTopic}
+        topics={topics}
+      />
 
-            {/* Form body */}
-            <div className="p-6 space-y-5">
-              {/* Topic Name */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  {t('admin:topicsManagement.form.topicName')} <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={formData.name}
-                  onChange={e => {
-                    setFormData(prev => ({ ...prev, name: e.target.value }))
-                    if (formErrors.name) setFormErrors(prev => ({ ...prev, name: '' }))
-                  }}
-                  placeholder={t('admin:topicsManagement.form.namePlaceholder')}
-                  className={formErrors.name ? 'border-red-500 dark:border-red-500' : ''}
-                  disabled={isSaving}
-                />
-                {formErrors.name && (
-                  <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    {formErrors.name}
-                  </p>
-                )}
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  {t('admin:topicsManagement.form.description')} <span className="text-neutral-400 text-xs">({t('common:optional')})</span>
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder={t('admin:topicsManagement.form.descriptionPlaceholder')}
-                  rows={3}
-                  disabled={isSaving}
-                  className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors resize-none"
-                />
-              </div>
-
-              {/* Parent Module — now a combobox: select existing or type new */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  {t('admin:topicsManagement.form.parentModule')} <span className="text-neutral-400 text-xs">({t('common:optional')})</span>
-                </label>
-                <Input
-                  value={formData.parent_module}
-                  onChange={e => setFormData(prev => ({ ...prev, parent_module: e.target.value }))}
-                  placeholder="e.g. Discrete Math > Logic"
-                  disabled={isSaving}
-                  list="parent-module-options"
-                />
-                <datalist id="parent-module-options">
-                  {parentModuleOptions.map(mod => (
-                    <option key={mod} value={mod} />
-                  ))}
-                </datalist>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Select an existing module or type a new one. Leave empty for uncategorized.
-                </p>
-              </div>
-            </div>
-
-            {/* Form footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-neutral-700">
-              <Button variant="outline" onClick={closeForm} disabled={isSaving}>
-                {t('common:cancel')}
-              </Button>
-              <Button
-                leftIcon={isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                onClick={handleSave}
-                disabled={isSaving}
-              >
-                {isSaving
-                  ? t('common:loading')
-                  : formMode === 'create'
-                    ? t('admin:topicsManagement.form.saveTopic')
-                    : t('admin:topicsManagement.form.updateTopic')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══════ Delete Confirmation Dialog ═══════ */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-md mx-4">
-            <div className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
-                  <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                    {t('admin:topicsManagement.delete.title')}
-                  </h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
-                    {t('admin:topicsManagement.delete.description')}
-                  </p>
-                  <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                    <p className="text-sm text-red-700 dark:text-red-300 font-medium">
-                      {t('admin:topicsManagement.delete.cascadeWarning')}
-                    </p>
-                  </div>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3">
-                    {t('admin:topicsManagement.delete.topicLabel')}: <strong>{deleteTarget.name}</strong>
-                    <br />
-                    {t('admin:topicsManagement.delete.questionsAffected', { count: deleteTarget.question_count })}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-neutral-200 dark:border-neutral-700">
-              <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
-                {t('common:cancel')}
-              </Button>
-              <Button
-                className="bg-red-600 hover:bg-red-700 text-white"
-                leftIcon={isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? t('common:loading') : t('common:delete')}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Extracted Delete confirmation Dialog */}
+      <DeleteTopicDialog
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onSuccess={fetchTopics}
+        topic={deleteTarget}
+      />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useMemo, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Plus,
@@ -9,85 +9,166 @@ import {
   Eye,
   ChevronDown,
   BookOpen,
-  GraduationCap,
-  Layers,
-  Crown,
   X,
   AlertTriangle,
-  Loader2,
   RefreshCw,
   Info,
+  SignalLow,
+  SignalMedium,
+  SignalHigh,
 } from 'lucide-react'
-import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState } from '@/components/ui'
-import { questionsService, type BackendQuestion } from '@/services/questions'
-import { useToast } from '@/contexts/ToastContext'
-
-/**
- * QuestionsPage - Admin Question Bank Management (UC-05)
- *
- * Backend-integrated (READ):
- * - List all questions via GET /api/v1/practice/questions/
- * - Filter by topic and tier via query params
- * - View question details
- *
- * Note: The backend QuestionViewSet is ReadOnlyModelViewSet.
- * Create/Edit/Delete are shown in the UI but disabled with a notice
- * that the backend API does not yet support write operations for questions.
- */
+import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState, Skeleton } from '@/components/ui'
+import type { BackendQuestion } from '@/services/questions'
+import { useSuspenseQuestions } from '@/hooks'
+import { QuestionPreviewModal } from '@/components/admin/QuestionPreviewModal'
+import { QuestionFormModal } from '@/components/admin/QuestionFormModal'
+import { DeleteQuestionDialog } from '@/components/admin/DeleteQuestionDialog'
 
 type FilterTier = 'all' | 1 | 2 | 3
 
-export function QuestionsPage() {
-  const { t } = useTranslation(['admin', 'common', 'topics'])
-  const { showError } = useToast()
+function QuestionsPageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      {/* Title skeleton */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-24 rounded-lg" />
+          <Skeleton className="h-10 w-36 rounded-lg" />
+        </div>
+      </div>
 
-  // Data state
-  const [questions, setQuestions] = useState<BackendQuestion[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [loadError, setLoadError] = useState('')
+      {/* Info banner skeleton */}
+      <Skeleton className="h-16 w-full rounded-xl" />
+
+      {/* Stats Cards Skeleton */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Skeleton variant="circular" width={40} height={40} />
+              <div className="flex-grow space-y-2">
+                <Skeleton className="h-3.5 w-16" />
+                <Skeleton className="h-6 w-12" />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search & Filters Skeleton */}
+      <Card className="p-4">
+        <div className="flex gap-4">
+          <Skeleton className="h-10 flex-1 rounded-lg" />
+          <Skeleton className="h-10 w-24 rounded-lg" />
+        </div>
+      </Card>
+
+      {/* Table Skeleton */}
+      <Card>
+        <div className="p-5 border-b border-neutral-200 dark:border-neutral-700">
+          <Skeleton className="h-6 w-48" />
+        </div>
+        <div className="p-0 overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
+              <tr>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <th key={i} className="px-4 py-3 text-start">
+                    <Skeleton className="h-4 w-20" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
+              {Array.from({ length: 5 }).map((_, rowIndex) => (
+                <tr key={rowIndex}>
+                  <td className="px-4 py-4"><Skeleton className="h-4 w-8" /></td>
+                  <td className="px-4 py-4"><Skeleton className="h-4 w-60" /></td>
+                  <td className="px-4 py-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                  <td className="px-4 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                  <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
+                  <td className="px-4 py-4 flex justify-end gap-2">
+                    <Skeleton variant="circular" width={28} height={28} />
+                    <Skeleton variant="circular" width={28} height={28} />
+                    <Skeleton variant="circular" width={28} height={28} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+export function QuestionsPage() {
+  return (
+    <Suspense fallback={<QuestionsPageSkeleton />}>
+      <QuestionsContent />
+    </Suspense>
+  )
+}
+
+function QuestionsContent() {
+  const { t } = useTranslation(['admin', 'common', 'topics'])
+
+  // Data fetching via React Query
+  const { data: rawQuestions, error: queryError, refetch: fetchQuestions } = useSuspenseQuestions()
+  const questions = useMemo(
+    () => (rawQuestions ?? []) as BackendQuestion[],
+    [rawQuestions]
+  )
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load questions') : ''
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
   const [filterTier, setFilterTier] = useState<FilterTier>('all')
+  const [filterTopic, setFilterTopic] = useState<string>('all')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Selected question for preview
+  // Selected question / form states
   const [selectedQuestion, setSelectedQuestion] = useState<BackendQuestion | null>(null)
+  const [isQuestionFormOpen, setIsQuestionFormOpen] = useState(false)
+  const [editingQuestion, setEditingQuestion] = useState<BackendQuestion | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<BackendQuestion | null>(null)
+  
+  // Notification states
+  const [actionError, setActionError] = useState('')
+  const [actionMessage, setActionMessage] = useState('')
 
-  // --- Data fetching ---
+  const handleActionSuccess = (message: string) => {
+    setActionMessage(message)
+    setActionError('')
+  }
 
-  const fetchQuestions = useCallback(async () => {
-    setIsLoading(true)
-    setLoadError('')
-    try {
-      const data = await questionsService.getQuestions()
-      setQuestions(data)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to load questions'
-      setLoadError(message)
-      showError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [showError])
+  const openCreateForm = () => {
+    setEditingQuestion(null)
+    setIsQuestionFormOpen(true)
+    setActionError('')
+    setActionMessage('')
+  }
 
-  useEffect(() => {
-    fetchQuestions()
-  }, [fetchQuestions])
+  const openEditForm = (question: BackendQuestion) => {
+    setEditingQuestion(question)
+    setIsQuestionFormOpen(true)
+    setActionError('')
+    setActionMessage('')
+  }
 
-  // --- Computed data ---
-
-  // Get unique topic names
+  // Get unique topic names for filtering
   const topicNames = useMemo(() => {
-    const names = [...new Set(questions.map(q => q.topic_name).filter(Boolean))]
+    const names = [...new Set(questions.map((q) => q.topic_name).filter(Boolean))]
     return names.sort()
   }, [questions])
 
-  const [filterTopic, setFilterTopic] = useState<string>('all')
-
-  // Filter questions
+  // Filtered questions
   const filteredQuestions = useMemo(() => {
-    return questions.filter(q => {
+    return questions.filter((q) => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase()
@@ -109,19 +190,25 @@ export function QuestionsPage() {
   // Stats
   const stats = useMemo(() => ({
     total: questions.length,
-    tier1: questions.filter(q => q.tier === 1).length,
-    tier2: questions.filter(q => q.tier === 2).length,
-    tier3: questions.filter(q => q.tier === 3).length,
+    tier1: questions.filter((q) => q.tier === 1).length,
+    tier2: questions.filter((q) => q.tier === 2).length,
+    tier3: questions.filter((q) => q.tier === 3).length,
   }), [questions])
 
   const getTierBadge = (tier: number) => {
-    const configs: Record<number, { variant: 'success' | 'secondary' | 'accent'; label: string }> = {
-      1: { variant: 'success', label: t('admin:questions.difficulty.basic') },
-      2: { variant: 'secondary', label: t('admin:questions.difficulty.intermediate') },
-      3: { variant: 'accent', label: t('admin:questions.difficulty.advanced') },
+    const configs: Record<number, { variant: 'success' | 'secondary' | 'accent'; label: string; icon: typeof SignalLow }> = {
+      1: { variant: 'success', label: t('admin:questions.difficulty.basic'), icon: SignalLow },
+      2: { variant: 'secondary', label: t('admin:questions.difficulty.intermediate'), icon: SignalMedium },
+      3: { variant: 'accent', label: t('admin:questions.difficulty.advanced'), icon: SignalHigh },
     }
-    const config = configs[tier] || { variant: 'secondary' as const, label: `Tier ${tier}` }
-    return <Badge variant={config.variant}>{config.label}</Badge>
+    const config = configs[tier] || { variant: 'secondary' as const, label: `Tier ${tier}`, icon: null }
+    const IconComponent = config.icon
+    return (
+      <Badge variant={config.variant} size="sm" className="inline-flex items-center">
+        {IconComponent && <IconComponent className="w-3.5 h-3.5 me-1 shrink-0" />}
+        {config.label}
+      </Badge>
+    )
   }
 
   const clearFilters = () => {
@@ -132,23 +219,14 @@ export function QuestionsPage() {
 
   const hasActiveFilters = filterTopic !== 'all' || filterTier !== 'all' || searchQuery !== ''
 
-  // --- Loading & Error states ---
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-        <p className="text-sm font-medium text-neutral-500">Loading questions from backend...</p>
-      </div>
-    )
-  }
+  // Loading state (Premium Skeleton Grid & Table Loader)
 
   if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
-        <Button variant="outline" onClick={fetchQuestions} leftIcon={<RefreshCw className="w-4 h-4" />}>
+        <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
           Retry
         </Button>
       </div>
@@ -164,27 +242,39 @@ export function QuestionsPage() {
           <p className="mt-1 text-neutral-600 dark:text-neutral-400">{t('admin:questions.subtitle')}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={fetchQuestions} leftIcon={<RefreshCw className="w-4 h-4" />}>
+          <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             {t('common:refresh')}
           </Button>
-          <Button className="gap-2" disabled title="Backend API is read-only for questions (ReadOnlyModelViewSet)">
+          <Button className="gap-2" onClick={openCreateForm}>
             <Plus className="h-4 w-4" />
             {t('admin:questions.addQuestion')}
           </Button>
         </div>
       </div>
 
-      {/* Read-only notice */}
-      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-        <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      {/* Integration notice */}
+      <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800">
+        <Info className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Questions are read-only from the backend</p>
-          <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
-            The backend API uses <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">ReadOnlyModelViewSet</code> for questions. 
-            Create, edit, and delete must be done via Django Admin until the backend team upgrades the viewset.
+          <p className="text-sm font-medium text-sky-800 dark:text-sky-200">Connected to backend API</p>
+          <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
+            All CRUD operations call <code className="bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/practice/questions/</code>.{' '}
+            Changes are persisted to the database in real time.
           </p>
         </div>
       </div>
+
+      {(actionError || actionMessage) && (
+        <div
+          className={`rounded-xl border px-4 py-3 text-sm ${
+            actionError
+              ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300'
+              : 'border-green-200 bg-green-50 text-green-700 dark:border-green-900/50 dark:bg-green-900/20 dark:text-green-300'
+          }`}
+        >
+          {actionError || actionMessage}
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -203,7 +293,7 @@ export function QuestionsPage() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-              <GraduationCap className="h-5 w-5" />
+              <SignalLow className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.basic')}</p>
@@ -215,7 +305,7 @@ export function QuestionsPage() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary-100 dark:bg-secondary-900/30 text-secondary-600 dark:text-secondary-400">
-              <Layers className="h-5 w-5" />
+              <SignalMedium className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.intermediate')}</p>
@@ -227,7 +317,7 @@ export function QuestionsPage() {
         <Card className="p-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-100 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400">
-              <Crown className="h-5 w-5" />
+              <SignalHigh className="h-5 w-5" />
             </div>
             <div>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:questions.stats.advanced')}</p>
@@ -242,15 +332,14 @@ export function QuestionsPage() {
         <CardContent className="p-4">
           <div className="flex flex-col gap-4 sm:flex-row">
             {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-              <Input
-                placeholder={t('admin:questions.searchPlaceholder')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+            <Input
+              placeholder={t('admin:questions.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              leftIcon={<Search className="h-4 w-4" />}
+              fullWidth={false}
+              className="flex-1"
+            />
 
             {/* Filter Toggle */}
             <Button
@@ -286,7 +375,7 @@ export function QuestionsPage() {
                   className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:text-neutral-100"
                 >
                   <option value="all">{t('admin:questions.allTopics')}</option>
-                  {topicNames.map(name => (
+                  {topicNames.map((name) => (
                     <option key={name} value={name}>
                       {name}
                     </option>
@@ -301,7 +390,7 @@ export function QuestionsPage() {
                 </label>
                 <select
                   value={filterTier === 'all' ? 'all' : String(filterTier)}
-                  onChange={(e) => setFilterTier(e.target.value === 'all' ? 'all' : Number(e.target.value) as 1 | 2 | 3)}
+                  onChange={(e) => setFilterTier(e.target.value === 'all' ? 'all' : (Number(e.target.value) as 1 | 2 | 3))}
                   aria-label={t('admin:questions.filterDifficulty')}
                   className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:text-neutral-100"
                 >
@@ -321,7 +410,7 @@ export function QuestionsPage() {
         <CardHeader>
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
             {t('admin:questions.questionBank')}
-            <span className="ml-2 text-sm font-normal text-neutral-500 dark:text-neutral-400">
+            <span className="ms-2 text-sm font-normal text-neutral-500 dark:text-neutral-400">
               ({filteredQuestions.length} {t('admin:questions.questionsCount')})
             </span>
           </h2>
@@ -335,53 +424,53 @@ export function QuestionsPage() {
                   questions.length === 0
                     ? 'No questions in the database'
                     : hasActiveFilters
-                      ? t('admin:questions.noMatchingQuestions')
-                      : t('admin:questions.noQuestions')
+                    ? t('admin:questions.noMatchingQuestions')
+                    : t('admin:questions.noQuestions')
                 }
                 description={
                   questions.length === 0
                     ? 'Questions must be added via Django Admin or the management command until the backend supports write operations.'
                     : hasActiveFilters
-                      ? t('admin:questions.tryDifferentFilters')
-                      : t('admin:questions.addFirstQuestion')
+                    ? t('admin:questions.tryDifferentFilters')
+                    : t('admin:questions.addFirstQuestion')
                 }
                 action={hasActiveFilters ? { label: t('common:clearFilters'), onClick: clearFilters } : undefined}
               />
             </div>
           ) : (
-            <div className="overflow-x-auto scrollbar-styled">
+            <div className="overflow-x-auto scrollbar-styled font-sans">
               <table className="w-full">
                 <thead className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
-                      ID
+                    <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                      #
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                    <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.question')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                    <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.topic')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                    <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.difficulty')}
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                    <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       Choices
                     </th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                    <th className="px-4 py-3 text-end text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.actions')}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                  {filteredQuestions.map((question) => (
+                  {filteredQuestions.map((question, index) => (
                     <tr
                       key={question.id}
                       className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
                       onClick={() => setSelectedQuestion(question)}
                     >
                       <td className="px-4 py-4">
-                        <span className="text-xs font-mono text-neutral-400">#{question.id}</span>
+                        <span className="text-xs font-mono text-neutral-400">#{index + 1}</span>
                       </td>
                       <td className="px-4 py-4">
                         <p className="max-w-md truncate text-sm text-neutral-900 dark:text-neutral-100">
@@ -389,44 +478,40 @@ export function QuestionsPage() {
                         </p>
                       </td>
                       <td className="px-4 py-4">
-                        <Badge variant="secondary" size="sm">{question.topic_name || 'Unlinked'}</Badge>
+                        <Badge variant="secondary" size="sm">
+                          {question.topic_name || 'Unlinked'}
+                        </Badge>
                       </td>
-                      <td className="px-4 py-4">
-                        {getTierBadge(question.tier)}
-                      </td>
+                      <td className="px-4 py-4">{getTierBadge(question.tier)}</td>
                       <td className="px-4 py-4">
                         <span className="text-sm text-neutral-500">{question.choices?.length || 0} options</span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setSelectedQuestion(question)
-                            }}
+                            aria-label="Preview question"
+                            onClick={() => setSelectedQuestion(question)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled
-                            title="Edit requires backend write support"
-                            onClick={(e) => e.stopPropagation()}
+                            aria-label="Edit question"
+                            onClick={() => openEditForm(question)}
                           >
-                            <Edit2 className="h-4 w-4 opacity-30" />
+                            <Edit2 className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            disabled
-                            title="Delete requires backend write support"
+                            aria-label="Delete question"
                             className="text-red-600 hover:bg-red-50 hover:text-red-700"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={() => setDeleteTarget(question)}
                           >
-                            <Trash2 className="h-4 w-4 opacity-30" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -439,118 +524,39 @@ export function QuestionsPage() {
         </CardContent>
       </Card>
 
-      {/* Question Preview Modal */}
-      {selectedQuestion && (
-        <div className="bg-black/50 fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedQuestion(null)}>
-          <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto scrollbar-styled" onClick={(e) => e.stopPropagation()}>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                  {t('admin:questions.preview.title')}
-                </h2>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400">Question #{selectedQuestion.id}</p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedQuestion(null)}>
-                <X className="h-5 w-5" />
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Badges */}
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">{selectedQuestion.topic_name || 'Unlinked'}</Badge>
-                {getTierBadge(selectedQuestion.tier)}
-                <Badge variant="primary">{selectedQuestion.choices?.length || 0} choices</Badge>
-              </div>
+      {/* Standalone Question Preview Modal */}
+      <QuestionPreviewModal
+        isOpen={!!selectedQuestion}
+        onClose={() => setSelectedQuestion(null)}
+        question={selectedQuestion}
+        onEdit={() => {
+          if (selectedQuestion) openEditForm(selectedQuestion)
+          setSelectedQuestion(null)
+        }}
+        onDelete={() => {
+          if (selectedQuestion) setDeleteTarget(selectedQuestion)
+          setSelectedQuestion(null)
+        }}
+      />
 
-              {/* Question Text */}
-              <div>
-                <h3 className="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  {t('admin:questions.preview.question')}
-                </h3>
-                <p className="text-neutral-900 dark:text-neutral-100 whitespace-pre-wrap">
-                  {selectedQuestion.text}
-                </p>
-              </div>
+      {/* Standalone Question Form Modal */}
+      <QuestionFormModal
+        isOpen={isQuestionFormOpen}
+        onClose={() => {
+          setIsQuestionFormOpen(false)
+          setEditingQuestion(null)
+        }}
+        onSuccess={handleActionSuccess}
+        editingQuestion={editingQuestion}
+      />
 
-              {/* Choices */}
-              {selectedQuestion.choices && selectedQuestion.choices.length > 0 && (
-                <div>
-                  <h3 className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Answer Choices
-                  </h3>
-                  <div className="space-y-2">
-                    {selectedQuestion.choices.map((choice, i) => (
-                      <div
-                        key={i}
-                        className={`flex items-start gap-3 p-3 rounded-lg border ${
-                          i === selectedQuestion.correct_answer_index
-                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
-                            : 'bg-neutral-50 dark:bg-neutral-800/50 border-neutral-200 dark:border-neutral-700'
-                        }`}
-                      >
-                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-medium ${
-                          i === selectedQuestion.correct_answer_index
-                            ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
-                            : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
-                        }`}>
-                          {String.fromCharCode(65 + i)}
-                        </span>
-                        <span className={`text-sm ${
-                          i === selectedQuestion.correct_answer_index
-                            ? 'text-green-800 dark:text-green-200 font-medium'
-                            : 'text-neutral-700 dark:text-neutral-300'
-                        }`}>
-                          {choice}
-                        </span>
-                        {i === selectedQuestion.correct_answer_index && (
-                          <Badge variant="success" size="sm" className="ml-auto">✓ Correct</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Correct Answer Index */}
-              <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                <div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Correct Answer Index</p>
-                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                    {selectedQuestion.correct_answer_index} ({String.fromCharCode(65 + selectedQuestion.correct_answer_index)})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Knowledge Point ID</p>
-                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                    {selectedQuestion.knowledge_point ?? 'None'}
-                  </p>
-                </div>
-              </div>
-
-              {selectedQuestion.explanation_video_url && (
-                <div>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Explanation Video</p>
-                  <a
-                    href={selectedQuestion.explanation_video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-primary-600 dark:text-primary-400 hover:underline break-all"
-                  >
-                    {selectedQuestion.explanation_video_url}
-                  </a>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                <Button variant="outline" onClick={() => setSelectedQuestion(null)}>
-                  {t('common:close')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Standalone Question Delete Dialog */}
+      <DeleteQuestionDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onSuccess={handleActionSuccess}
+        question={deleteTarget}
+      />
     </div>
   )
 }

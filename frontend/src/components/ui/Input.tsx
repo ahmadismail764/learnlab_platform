@@ -62,7 +62,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         
         <div className="relative">
           {leftIcon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
+            <div className="absolute start-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
               {leftIcon}
             </div>
           )}
@@ -80,8 +80,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               // Size
               sizeStyles[size],
               // Icon padding
-              leftIcon && 'pl-10',
-              rightIcon && 'pr-10',
+              leftIcon && 'ps-10',
+              rightIcon && 'pe-10',
               // Error state
               hasError
                 ? 'border-error focus:ring-error/30'
@@ -96,7 +96,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           />
           
           {rightIcon && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
+            <div className="absolute end-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500">
               {rightIcon}
             </div>
           )}

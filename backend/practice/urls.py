@@ -1,7 +1,20 @@
 from rest_framework.routers import DefaultRouter
-from django.urls import path
-from practice.views import QuestionViewSet, PracticeSessionViewSet, get_all_questions
+from django.urls import path, include
+from practice.views import (
+    QuestionViewSet, 
+    PracticeSessionViewSet, 
+    LearnerProfileListView, 
+    LeaderboardView,
+    GenerateAdaptiveSessionView,
+)
+
+router = DefaultRouter()
+router.register(r'questions', QuestionViewSet, basename='question')
+router.register(r'sessions', PracticeSessionViewSet, basename='session')
 
 urlpatterns = [
-    path('questions/', get_all_questions, name='question-list')
+    path('learners/', LearnerProfileListView.as_view(), name='learner-list'),
+    path('learners/leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
+    path('sessions/generate-adaptive/', GenerateAdaptiveSessionView.as_view(), name='generate-adaptive'),
+    path('', include(router.urls)),
 ]

@@ -56,7 +56,7 @@ export function PageIntro({
   return (
     <Card
       className={cn(
-        'border-neutral-200/80 bg-white/90 dark:border-neutral-800/80 dark:bg-neutral-900/70',
+        'dashboard-panel border-0',
         className,
       )}
       {...props}
@@ -129,7 +129,7 @@ export function PageStatCard({
     <Card
       padding="sm"
       className={cn(
-        'h-full border-neutral-200/80 bg-white/90 dark:border-neutral-800/80 dark:bg-neutral-900/70',
+        'dashboard-panel-soft h-full border-0',
         className,
       )}
       {...props}

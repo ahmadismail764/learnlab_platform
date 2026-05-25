@@ -11,15 +11,10 @@ import {
   Users,
   FileQuestion,
   Activity,
-  BarChart3,
-  Settings,
-  Clock,
-  CheckCircle,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
 import { PageIntro, PageStatCard } from '@/components/common'
-import { useAuth, useCurrentUser } from '@/contexts'
-import { useToast } from '@/contexts/ToastContext'
+import { useAuth, useCurrentUser, useToast } from '@/contexts'
 import { analyticsService, authService, learnersService } from '@/services'
 
 /**
@@ -50,10 +45,9 @@ export function AdminProfilePage() {
   })
 
   const [systemStats, setSystemStats] = useState({
-    totalLearners: 245,
-    totalQuestions: 1280,
-    activeToday: 42,
-    systemUptime: '99.9%',
+    totalLearners: 0,
+    totalQuestions: 0,
+    activeToday: 0,
   })
   const [statsError, setStatsError] = useState('')
 
@@ -79,9 +73,8 @@ export function AdminProfilePage() {
 
         setSystemStats({
           totalLearners: leaderboard.length,
-          totalQuestions: aggregated.review_count,
-          activeToday: aggregated.active_users['7_days'],
-          systemUptime: 'Live',
+          totalQuestions: aggregated?.review_count ?? 0,
+          activeToday: aggregated?.active_users?.['7_days'] ?? 0,
         })
       } catch (error) {
         if (!isMounted) return
@@ -136,23 +129,7 @@ export function AdminProfilePage() {
     }
   }
 
-  // Mock recent admin actions
-  const recentActions = [
-    { type: 'question' as const, descKey: 'profile:addedQuestion', detail: 'Propositional Logic - Tier 2', time: '1h ago' },
-    { type: 'settings' as const, descKey: 'profile:updatedSettings', detail: 'Notification preferences', time: '3h ago' },
-    { type: 'review' as const, descKey: 'profile:reviewedContent', detail: '5 questions approved', time: '1d ago' },
-    { type: 'export' as const, descKey: 'profile:exportedData', detail: 'Learner analytics CSV', time: '2d ago' },
-  ]
 
-  function getActionIcon(type: string) {
-    switch (type) {
-      case 'question': return <FileQuestion className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-      case 'settings': return <Settings className="w-4 h-4 text-secondary-600 dark:text-secondary-400" />
-      case 'review': return <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-      case 'export': return <BarChart3 className="w-4 h-4 text-accent-600 dark:text-accent-400" />
-      default: return <Activity className="w-4 h-4 text-neutral-500" />
-    }
-  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
@@ -192,6 +169,7 @@ export function AdminProfilePage() {
           <Avatar
             name={`${user.firstName} ${user.lastName}`}
             src={user.avatarUrl}
+            avatarColor={user.avatarColor}
             size="xl"
           />
           <div className="flex-1 min-w-0">
@@ -279,7 +257,7 @@ export function AdminProfilePage() {
               subtitle={t('profile:systemOverviewDescription')}
             />
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <PageStatCard
                   icon={<Users className="h-5 w-5" />}
                   label={t('profile:totalLearners')}
@@ -298,53 +276,11 @@ export function AdminProfilePage() {
                   value={systemStats.activeToday}
                   tone="success"
                 />
-                <PageStatCard
-                  icon={<Clock className="h-5 w-5" />}
-                  label={t('profile:systemUptime')}
-                  value={systemStats.systemUptime}
-                  tone="accent"
-                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Admin Actions */}
-          <Card>
-            <CardHeader
-              title={t('profile:recentAdminActions')}
-              subtitle={t('profile:recentAdminActionsDescription')}
-            />
-            <CardContent>
-              <div className="space-y-2">
-                {recentActions.map((action, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 p-3.5 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                  >
-                    <div className={`p-2 rounded-lg ${
-                      action.type === 'question' ? 'bg-primary-100 dark:bg-primary-900/30' :
-                      action.type === 'settings' ? 'bg-secondary-100 dark:bg-secondary-900/30' :
-                      action.type === 'review' ? 'bg-green-100 dark:bg-green-900/30' :
-                      'bg-accent-100 dark:bg-accent-900/30'
-                    }`}>
-                      {getActionIcon(action.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
-                        {t(action.descKey)}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {action.detail}
-                      </p>
-                    </div>
-                    <span className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
-                      {action.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Right column */}

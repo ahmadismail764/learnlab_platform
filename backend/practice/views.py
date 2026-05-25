@@ -1,4 +1,8 @@
+# Framework imports
 from rest_framework import permissions, viewsets, generics
+from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.response import Response
+# Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from accounts.models import User
 from accounts.serializers import LearnerProfileSerializer
@@ -8,8 +12,7 @@ from .serializers import (
     PracticeSessionCreateSerializer, 
     QuestionSerializer
 )
-from rest_framework.decorators import api_view, permission_classes, action
-from rest_framework.response import Response
+from constants import XP_PER_CORRECT_ANSWER
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -64,7 +67,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             process_review(session.learner, response.question.subtopic, response)
             
             if response.is_correct:
-                session.total_xp_earned += 10
+                session.total_xp_earned += XP_PER_CORRECT_ANSWER
                 session.save()
                 
             return Response(QuestionResponseSerializer(response).data, status=201)

@@ -2,7 +2,8 @@
 from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
-from practice.models import QuestionResponse, Subtopic, SubtopicMastery
+from practice.models import QuestionResponse, Subtopic
+from topics.models import SubtopicMastery
 
 
 # the logic here is just arbitrary to avoid errors

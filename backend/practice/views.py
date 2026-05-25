@@ -121,13 +121,15 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         # Sort by most overdue first (lowest retrievability)
         due_subtopic_ids = list(
             mastery_qs.order_by('next_review').values_list('subtopic_id', flat=True)
-        )
+        )   
 
         # Pull questions from due subtopics first
-        due_questions = list(
-            Question.objects.filter(subtopic_id__in=due_subtopic_ids)
-            .order_by('subtopic__next_review')[:limit]
-        )
+        due_questions_qs = Question.objects.filter(id=due_subtopic_ids)
+        subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
+        due_questions = sorted(
+            due_questions_qs,
+            key=lambda q: subtopic_order_map.get(q.id, 9999)
+        )[:limit]
 
         # Fill remaining slots with unseen questions (no mastery record yet)
         if len(due_questions) < limit:

@@ -92,7 +92,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
       }
 
       try {
-        const backendUser = await authService.getCurrentUser();
+        const backendUser = await authService.getCurrentUser({ allowFallback: true });
         const user = mapBackendUser(backendUser);
 
         setState({

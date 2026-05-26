@@ -1,5 +1,6 @@
 import { forwardRef, type SVGProps } from 'react'
 import { cn } from '@/utils/cn'
+import { useLanguage } from '@/hooks/useLanguage'
 
 export type XpBadgeSize = 'sm' | 'md' | 'lg' | 'xl'
 export type XpBadgeVariant = 'primary' | 'amber'
@@ -35,16 +36,28 @@ export const XpBadge = forwardRef<SVGSVGElement, XpBadgeProps>(
     },
     ref
   ) => {
+    const { language } = useLanguage()
+    const isArabic = language === 'ar'
     const isBadge = type === 'badge'
 
     // Shield path coordinate drawing (enlarged to max viewport bounds)
     const shieldPath = 'M12 0.5L1.5 3.5v8.5c0 7 5 10.5 10.5 11.5c5.5-1 10.5-4.5 10.5-11.5V3.5L12 0.5z'
     
+    // Rub el Hizb (8-pointed geometric star) for Arabic theme
+    const starPath = 'M12 0.5 L14.9 5.1 L20.1 3.9 L18.9 9.2 L23.5 12 L18.9 14.8 L20.1 20.1 L14.9 18.9 L12 23.5 L9.1 18.9 L3.9 20.1 L5.1 14.8 L0.5 12 L5.1 9.2 L3.9 3.9 L9.1 5.1 Z'
+
+    const badgePath = isArabic ? starPath : shieldPath
+
     // Centered "XP" vector characters (enlarged to maximize visual weight)
     const pathX1 = 'M5 6.5L11 17.5'
     const pathX2 = 'M11 6.5L5 17.5'
     const pathPStem = 'M13.5 6.5v11'
     const pathPLoop = 'M13.5 6.5h3.5c1.5 0 2.5 1 2.5 2.75s-1 2.75-2.5 2.75H13.5'
+
+    // Beautiful calligraphic vector paths for "خ" (Arabic Experience - "Kha")
+    const pathDot = 'M13 4.5 L13 4.5'
+    const pathKhaHead = 'M16.5 8.5 C14.5 8.5 11 8.5 8.5 9.5'
+    const pathKhaBody = 'M8.5 9.5 C5.5 12.5 6.5 18 11.5 18 C15.5 18 17 15.5 17 13.5'
 
     return (
       <svg
@@ -91,17 +104,17 @@ export const XpBadge = forwardRef<SVGSVGElement, XpBadgeProps>(
             <stop offset="100%" stopColor="white" stopOpacity="0" />
           </linearGradient>
 
-          {/* Clipping mask using the shield path to bound the shimmer shine */}
+          {/* Clipping mask using the badge path to bound the shimmer shine */}
           <mask id="xp-shield-mask">
-            <path d={shieldPath} fill="white" />
+            <path d={badgePath} fill="white" />
           </mask>
         </defs>
 
         {isBadge ? (
           <>
-            {/* Filled background shield with vibrant gradient */}
+            {/* Filled background badge with vibrant gradient */}
             <path
-              d={shieldPath}
+              d={badgePath}
               fill={variant === 'primary' ? 'url(#xp-primary-gradient)' : 'url(#xp-amber-gradient)'}
               stroke={variant === 'primary' ? 'var(--color-primary-300, #5eead4)' : '#fde68a'}
               strokeWidth="1.5"
@@ -131,22 +144,42 @@ export const XpBadge = forwardRef<SVGSVGElement, XpBadgeProps>(
 
             {/* Premium drop-shadowed vector letterforms */}
             <g stroke="white" strokeWidth="2.5" className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]">
-              <path d={pathX1} />
-              <path d={pathX2} />
-              <path d={pathPStem} />
-              <path d={pathPLoop} />
+              {isArabic ? (
+                <>
+                  <path d={pathDot} strokeLinecap="round" />
+                  <path d={pathKhaHead} />
+                  <path d={pathKhaBody} />
+                </>
+              ) : (
+                <>
+                  <path d={pathX1} />
+                  <path d={pathX2} />
+                  <path d={pathPStem} />
+                  <path d={pathPLoop} />
+                </>
+              )}
             </g>
           </>
         ) : (
           <>
-            {/* Outline shield shape */}
-            <path d={shieldPath} />
+            {/* Outline badge shape */}
+            <path d={badgePath} />
 
             {/* Outlined letterforms */}
-            <path d={pathX1} />
-            <path d={pathX2} />
-            <path d={pathPStem} />
-            <path d={pathPLoop} />
+            {isArabic ? (
+              <>
+                <path d={pathDot} strokeLinecap="round" strokeWidth="2.5" />
+                <path d={pathKhaHead} />
+                <path d={pathKhaBody} />
+              </>
+            ) : (
+              <>
+                <path d={pathX1} />
+                <path d={pathX2} />
+                <path d={pathPStem} />
+                <path d={pathPLoop} />
+              </>
+            )}
           </>
         )}
       </svg>

@@ -3,8 +3,8 @@ from rest_framework import serializers
 from django.utils import timezone as django_timezone
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
+from practice.constants import XP_PER_CORRECT_ANSWER
 from accounts.serializers import UserDetailSerializer
-from constants import XP_PER_CORRECT_ANSWER
 
 class QuestionSerializer(serializers.ModelSerializer):
     subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
@@ -22,6 +22,11 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
         fields = ['id', 'question', 'is_correct']
+
+class QuestionResponseCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionResponse
+        fields = ['question', 'is_correct']
 
 class PracticeSessionSerializer(serializers.ModelSerializer):
     learner = UserDetailSerializer(read_only=True)
@@ -60,10 +65,6 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
             learner.save()
 
         return instance
-class QuestionResponseCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = QuestionResponse
-        fields = ['question', 'is_correct']
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
     responses = QuestionResponseCreateSerializer(many=True, required=False)

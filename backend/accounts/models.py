@@ -55,8 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
 
-    # The str method is already implemented perfectly 
-    # in the parent class AbstractBaseUser, we don't need to override it
+    # our custom fields
     current_xp = models.IntegerField(default=0)
     streak_count = models.IntegerField(default=0) # This represents the number of consecutive times he practiced on time
     last_practice_date = models.DateField(null=True, blank=True) # might be useful for customization purposes

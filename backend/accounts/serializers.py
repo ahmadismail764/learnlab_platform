@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'first_name', 'last_name']
 
     def create(self, validated_data):
-        user = User.objects.create_user( # type: ignore
+        user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
@@ -79,7 +79,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             initials = f"{first[0]}{last[0]}".upper()
         elif first:
             initials = first[0].upper()
-        elif self.user.username:
+        elif self.user.username: 
             initials = self.user.username[0].upper()
         else:
             initials = "??"
@@ -100,20 +100,3 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'avatar_color': avatar_color,
         }
         return data
-
-class LearnerProfileSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
-    total_xp = serializers.IntegerField(source='current_xp')
-
-    class Meta:
-        model = User
-        fields = ['id', 'user', 'total_xp', 'streak_count', 'last_practice_date']
-
-    def get_user(self, obj):
-        return {
-            'id': str(obj.id),
-            'username': obj.username,
-            'email': obj.email,
-            'first_name': getattr(obj, 'first_name', ''),
-            'last_name': getattr(obj, 'last_name', ''),
-        }

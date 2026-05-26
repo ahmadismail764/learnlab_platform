@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'silk',
+    # 'rest_framework_simplejwt.token_blacklist',
 
     'accounts',
     'practice',

@@ -35,7 +35,4 @@ class Migration(migrations.Migration):
             name='streak_count',
             field=models.IntegerField(default=0),
         ),
-        migrations.DeleteModel(
-            name='LearnerProfile',
-        ),
     ]

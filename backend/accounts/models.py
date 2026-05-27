@@ -17,49 +17,16 @@ So, we need to define a custom manager
 
 
 """
-
-class UserManager(BaseUserManager):
-    def create_user(self, username, email, password=None, **extra_fields):
-        if not email:
-            raise ValueError('The Email field must be set')
-        if not username:
-            raise ValueError('The Username field must be set')
-        if not password:
-            raise ValueError('The Password field must be set')
-        
-        email = self.normalize_email(email)
-        user = self.model(username=username, email=email, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, username, email, password=None, **extra_fields):
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_staff', True)
-        return self.create_user(username, email, password, **extra_fields)
-
-class User(AbstractBaseUser, PermissionsMixin):
+class User(AbstractUser):
+    # Original field overwrites
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
-    first_name = models.CharField(max_length=150, blank=True)
-    last_name = models.CharField(max_length=150, blank=True)
-    joined_at = models.DateTimeField(auto_now_add=True)
-    
-    objects = UserManager()
-    # we need to set the following two ourselves
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['email'] # username and password are already automatically required
 
-    # Django admin/auth requirements
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-
-    # our custom fields
+    # Fields specific to LearnLa
+    # These are for learners only
     current_xp = models.IntegerField(default=0)
-    streak_count = models.IntegerField(default=0) # This represents the number of consecutive times he practiced on time
-    last_practice_date = models.DateField(null=True, blank=True) # might be useful for customization purposes
+    streak_count = models.IntegerField(default=0)
+    last_practice_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"Admin: {self.username}" if self.is_superuser else f"Learner: {self.username}"
-        

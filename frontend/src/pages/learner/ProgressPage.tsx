@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   Activity,
   ArrowRight,
@@ -16,6 +17,7 @@ import { PageStatCard, SectionHeading } from '@/components/common'
 import { Skeleton } from '@/components/ui/Loading'
 import { useLearnerProfile, useTopicMastery } from '@/hooks'
 import { MASTERY_STATUS_BADGE_VARIANT, type TopicMastery } from '@/constants/mastery'
+import { getTopicDisplayName } from '@/utils/topicLabels'
 
 /**
  * ProgressPage
@@ -28,6 +30,7 @@ import { MASTERY_STATUS_BADGE_VARIANT, type TopicMastery } from '@/constants/mas
  */
 
 export function ProgressPage() {
+  const { t } = useTranslation(['learner', 'topics'])
   const [renderTimestamp] = useState(() => Date.now())
   const { data: profile, isLoading: profileLoading } = useLearnerProfile()
   const { data: rawMasteries, isLoading: masteryLoading } = useTopicMastery()
@@ -102,6 +105,19 @@ export function ProgressPage() {
     )
   }, [masteries])
 
+  const statusLabel = (status: TopicMastery['status']) => {
+    const labels: Record<TopicMastery['status'], string> = {
+      new: t('stateNew'),
+      learning: t('stateLearning'),
+      learned: t('stateMastered'),
+      struggling: t('stateStruggling'),
+    }
+    return labels[status]
+  }
+
+  const formatStabilityDays = (days: number) =>
+    t('daysShort', { count: Number(days.toFixed(1)) })
+
   // Topic cards sorted by status priority: struggling → learning → new → learned
   const topicCards = useMemo(() => {
     const priority: Record<string, number> = {
@@ -118,49 +134,49 @@ export function ProgressPage() {
   const overviewStats = [
     {
       icon: <Target className="h-5 w-5" />,
-      label: 'Topics tracked',
+      label: t('topicsTracked'),
       value: weeklyStats.totalTopics,
-      helper: `${weeklyStats.topicsReviewed} reviewed at least once`,
+      helper: t('topicsReviewedCount', { count: weeklyStats.topicsReviewed }),
       tone: 'primary' as const,
     },
     {
       icon: <Clock className="h-5 w-5" />,
-      label: 'Due now',
+      label: t('dueNow'),
       value: dueNowCount,
-      helper: 'Topics that should be revisited first',
+      helper: t('topicsRevisitedFirst'),
       tone: 'accent' as const,
     },
     {
       icon: <TrendingUp className="h-5 w-5" />,
-      label: 'Strong recall',
+      label: t('strongRecall'),
       value: strongTopics,
-      helper: 'Topics already sitting in a stable range',
+      helper: t('strongRecallHelper'),
       tone: 'success' as const,
     },
     {
       icon: <Zap className="h-5 w-5" />,
-      label: 'Practice streak',
-      value: `${weeklyStats.streak} days`,
-      helper: 'The easiest way to protect retention',
+      label: t('practiceStreak'),
+      value: t('streakDaysValue', { count: weeklyStats.streak }),
+      helper: t('practiceStreakHelper'),
       tone: 'secondary' as const,
     },
     {
       icon: <XpBadge size="lg" />,
-      label: 'Total XP',
+      label: t('totalXP'),
       value: weeklyStats.xpEarned.toLocaleString(),
-      helper: 'Overall experience points',
+      helper: t('overallExperiencePoints'),
       tone: 'accent' as const,
     },
   ]
 
   // Format next_due as relative text
   const formatDue = (nextDue: string | null): string => {
-    if (!nextDue) return 'Not scheduled'
+    if (!nextDue) return t('notScheduled')
     const diff = new Date(nextDue).getTime() - renderTimestamp
-    if (diff <= 0) return 'Due now'
+    if (diff <= 0) return t('dueNow')
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24))
-    if (days === 1) return 'Tomorrow'
-    return `In ${days} days`
+    if (days === 1) return t('tomorrow')
+    return t('inDays', { count: days })
   }
 
   return (
@@ -170,33 +186,33 @@ export function ProgressPage() {
         <div className="relative z-10 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(310px,0.92fr)]">
           <div className="space-y-4">
             <Badge variant="secondary" size="sm">
-              Learning analytics
+              {t('learningAnalytics')}
             </Badge>
             <div>
               <h1 className="font-display text-3xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50 sm:text-[2.4rem]">
-                Progress that tells you what to do next
+                {t('progressNextActionTitle')}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-neutral-600 dark:text-neutral-400 sm:text-base">
-                FSRS data is most useful when it reduces ambiguity. This view is tuned to show what is stable, what is drifting, and where a short review buys the most.
+                {t('progressSpacedRepetitionDescription')}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline" size="sm">
-                {weeklyStats.totalTopics} tracked
+                {t('topicsTracked')}: {weeklyStats.totalTopics}
               </Badge>
               <Badge variant={dueNowCount > 0 ? 'warning' : 'success'} size="sm">
-                {dueNowCount > 0 ? `${dueNowCount} due now` : 'Queue under control'}
+                {dueNowCount > 0 ? t('topicDueCount', { count: dueNowCount }) : t('queueUnderControl')}
               </Badge>
               <Badge variant="primary" size="sm">
-                {weeklyStats.averageAccuracy}% average memory
+                {weeklyStats.averageAccuracy}% {t('memoryLabel')}
               </Badge>
             </div>
           </div>
 
           <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/90 p-5 text-neutral-950 shadow-[0_18px_32px_-26px_rgba(15,23,42,0.22)] dark:border-neutral-700 dark:bg-neutral-900/72 dark:text-white">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 dark:text-white/60">
-              Retention index
+              {t('retentionIndex')}
             </p>
 
             {isLoading ? (
@@ -226,10 +242,10 @@ export function ProgressPage() {
                   </p>
                   <p className="mt-1 text-sm text-neutral-600 dark:text-white/70">
                     {overallMastery >= 70
-                      ? 'Strong recall across the course.'
+                      ? t('strongRecallCourse')
                       : overallMastery >= 40
-                        ? 'Good shape, but a few weak spots need regular review.'
-                        : 'Early retention stage. Frequent practice will matter most.'}
+                        ? t('goodRetentionShape')
+                        : t('earlyRetentionStage')}
                   </p>
                 </div>
               </div>
@@ -238,7 +254,7 @@ export function ProgressPage() {
             <div className="mt-5">
               <Link to="/learner/practice">
                 <Button rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}>
-                  Start practice
+                  {t('startSession')}
                 </Button>
               </Link>
             </div>
@@ -275,8 +291,8 @@ export function ProgressPage() {
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
         <Card className="learner-panel">
           <SectionHeading
-            title="Mastery overview"
-            description="Sorted so weak and fragile topics surface first."
+            title={t('masteryOverview')}
+            description={t('masteryOverviewDescription')}
           />
 
           <div className="mt-5 space-y-3">
@@ -300,10 +316,10 @@ export function ProgressPage() {
               <div className="surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800 px-6 py-10 text-center">
                 <EmptyDataIllustration className="mx-auto" />
                 <p className="mt-4 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                  No mastery data yet
+                  {t('noMasteryYet')}
                 </p>
                 <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-                  Complete a few practice sessions and your topic strengths will show up here.
+                  {t('noMasteryDescription')}
                 </p>
               </div>
             ) : (
@@ -317,14 +333,14 @@ export function ProgressPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
-                          {topic.topic_name}
+                          {getTopicDisplayName(t, topic.topic_name)}
                         </p>
                         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                          {topic.rep_num} review{topic.rep_num !== 1 ? 's' : ''} • {formatDue(topic.next_due)}
+                          {t('reviewCount', { count: topic.rep_num })} • {formatDue(topic.next_due)}
                         </p>
                       </div>
                       <Badge variant={MASTERY_STATUS_BADGE_VARIANT[topic.status] ?? 'outline'} size="sm">
-                        {topic.status} • {progress}%
+                        {statusLabel(topic.status)} • {progress}%
                       </Badge>
                     </div>
 
@@ -347,7 +363,7 @@ export function ProgressPage() {
             <div className="flex items-center gap-2">
               <Activity className="h-5 w-5 text-secondary-600 dark:text-secondary-300" />
               <h2 className="font-display text-xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-                FSRS signals
+                {t('spacedRepetitionSignals')}
               </h2>
             </div>
 
@@ -355,42 +371,42 @@ export function ProgressPage() {
               <div className="surface-tile">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                    Strong topics
+                    {t('strongTopics')}
                   </span>
                   <span className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
                     {strongTopics}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  High-memory or fully learned topics
+                  {t('strongTopicsHelper')}
                 </p>
               </div>
 
               <div className="surface-tile">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                    Needs attention
+                    {t('needsAttention')}
                   </span>
                   <span className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
                     {needsAttention}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  Weak-memory or struggling topics
+                  {t('weakTopicsHelper')}
                 </p>
               </div>
 
               <div className="surface-tile">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
-                    Average speed
+                    {t('speed')}
                   </span>
                   <span className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
-                    {averageSpeed.toFixed(1)}d
+                    {formatStabilityDays(averageSpeed)}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                  Approximate FSRS interval pace
+                  {t('approximateSpacedRepetitionPace')}
                 </p>
               </div>
             </div>
@@ -400,7 +416,7 @@ export function ProgressPage() {
             <div className="flex items-center gap-2">
               <History className="h-5 w-5 text-neutral-500" />
               <h2 className="font-display text-xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-                What to do with this
+                {t('whatToDoWithThis')}
               </h2>
             </div>
 
@@ -413,12 +429,12 @@ export function ProgressPage() {
                 )}
                 <div>
                   <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                    Queue advice
+                    {t('queueAdviceTitle')}
                   </p>
                   <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
                     {dueNowCount > 0
-                      ? 'Review the due topics before chasing new XP. That protects the strongest parts of your progress and prevents weak topics from compounding.'
-                      : 'Your queue is controlled, so you can practice for reinforcement or expand into fresh topics without creating avoidable review debt.'}
+                      ? t('queueAdviceDue')
+                      : t('queueControlledAdvice')}
                   </p>
                 </div>
               </div>
@@ -427,7 +443,7 @@ export function ProgressPage() {
             <div className="mt-5">
               <Link to="/learner/topics">
                 <Button fullWidth variant="outline">
-                  Review topics
+                  {t('reviewTopics')}
                 </Button>
               </Link>
             </div>
@@ -437,8 +453,8 @@ export function ProgressPage() {
 
       <section className="space-y-4">
         <SectionHeading
-          title="Topic breakdown"
-          description="Detailed FSRS-backed topic cards, still sorted by where attention matters most."
+          title={t('topicBreakdown')}
+          description={t('topicBreakdownDescription')}
         />
 
         {isLoading ? (
@@ -467,7 +483,7 @@ export function ProgressPage() {
           <Card className="learner-panel border-0">
             <div className="py-8 text-center">
               <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                Complete some practice sessions and your topic breakdown will appear here.
+                {t('completePracticeForBreakdown')}
               </p>
             </div>
           </Card>
@@ -480,25 +496,25 @@ export function ProgressPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-secondary-100 text-sm font-semibold text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300">
-                        P
+                        <Brain className="h-5 w-5" aria-hidden="true" />
                       </div>
                       <div>
                         <h3 className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
-                          {topic.topic_name}
+                          {getTopicDisplayName(t, topic.topic_name)}
                         </h3>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {topic.rep_num} review{topic.rep_num !== 1 ? 's' : ''}
+                          {t('reviewCount', { count: topic.rep_num })}
                         </p>
                       </div>
                     </div>
                     <Badge variant={MASTERY_STATUS_BADGE_VARIANT[topic.status] ?? 'outline'} size="sm">
-                      {topic.status}
+                      {statusLabel(topic.status)}
                     </Badge>
                   </div>
 
                   <div className="mt-5 space-y-3">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-neutral-500 dark:text-neutral-400">Mastery</span>
+                      <span className="text-neutral-500 dark:text-neutral-400">{t('mastery')}</span>
                       <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                         {progress}%
                       </span>
@@ -513,7 +529,7 @@ export function ProgressPage() {
                   <div className="surface-tile mt-5 grid grid-cols-3 gap-3 text-sm">
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500">
-                        Memory
+                        {t('memoryLabel')}
                       </p>
                       <p className="mt-1 font-semibold text-neutral-950 dark:text-neutral-50">
                         {progress}%
@@ -521,15 +537,15 @@ export function ProgressPage() {
                     </div>
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500">
-                        Speed
+                        {t('speed')}
                       </p>
                       <p className="mt-1 font-semibold text-neutral-950 dark:text-neutral-50">
-                        {(topic.speed || 0).toFixed(1)}d
+                        {formatStabilityDays(topic.speed || 0)}
                       </p>
                     </div>
                     <div>
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-400 dark:text-neutral-500">
-                        Next
+                        {t('nextReview')}
                       </p>
                       <p className="mt-1 font-semibold text-neutral-950 dark:text-neutral-50">
                         {formatDue(topic.next_due)}

@@ -7,13 +7,10 @@ interface SessionCreatePayload {
 interface ResponsePayload {
   question?: EntityId;
   is_correct?: boolean;
-  time_taken_seconds?: number;
-  confidence_rating?: number;
 }
 
 interface SessionUpdatePayload {
   end_time?: string;
-  total_xp_earned?: number;
 }
 
 function isEndpointMissing(response: Response): boolean {
@@ -83,7 +80,7 @@ export const practiceService = {
       const list = Array.isArray(data) ? data : data.results ?? [];
       return {
         questions: list.slice(0, 10),
-        message: 'Adaptive session unavailable; showing general practice questions.',
+        fallback_reason: 'adaptive_unavailable',
       };
     }
 
@@ -107,24 +104,18 @@ export const practiceService = {
     session: EntityId;
     question: EntityId;
     is_correct: boolean;
-    user_response?: string;
-    time_taken_seconds?: number;
-    confidence_rating?: number;
   }) => {
     const response = await api.post(`/practice/sessions/${data.session}/responses/`, {
       question: data.question,
       is_correct: data.is_correct,
-      time_taken_seconds: data.time_taken_seconds,
-      confidence_rating: data.confidence_rating,
     });
     if (!response.ok) throw new Error('Failed to submit interaction');
     return await parseOptionalJson(response);
   },
 
-  completeSession: async (sessionId: EntityId, earnedXp: number) => {
+  completeSession: async (sessionId: EntityId) => {
     const response = await api.patch(`/practice/sessions/${sessionId}/`, {
       end_time: new Date().toISOString(),
-      total_xp_earned: earnedXp,
     });
     if (!response.ok) throw new Error('Failed to complete session');
     return await response.json();

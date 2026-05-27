@@ -32,9 +32,15 @@ This document lists temporary frontend fallback behaviors that exist only to kee
 - **Impact:** Session history UI appears empty even when sessions exist.
 - **Removal condition:** Sessions list endpoint is available and returns `200`.
 
+### 5. Practice response payload compatibility
+- **Trigger:** `QuestionResponseCreateSerializer` currently accepts only `question` and `is_correct` for live practice responses.
+- **Fallback behavior:** Submit the minimal supported response payload and keep FSRS confidence, time-on-question, and free-form response text out of the request until the backend contract expands.
+- **Impact:** The backend receives correctness for scheduling/XP, but richer practice telemetry is temporarily unavailable server-side.
+- **Removal condition:** Backend exposes and documents response fields for confidence rating, elapsed time, and learner answer text.
+
 ## Auth API Compatibility
 
-### 5. Password reset endpoint scanning
+### 6. Password reset endpoint scanning
 - **Trigger:** Backend does not expose a single, stable password-reset route.
 - **Fallback behavior:** Try the following in order until one works:
   - `POST /api/v1/auth/password-reset/`
@@ -48,7 +54,7 @@ This document lists temporary frontend fallback behaviors that exist only to kee
 
 ## API Base URL Recovery
 
-### 6. API root retry when base URL is misconfigured
+### 7. API root retry when base URL is misconfigured
 - **Trigger:** Requests to the configured base URL return 404, and the base includes `/api/`.
 - **Fallback behavior:** Retry the request against the API root (origin-only).
 - **Impact:** Hides base URL misconfiguration; can mask environment errors.

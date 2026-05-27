@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FileQuestion, Inbox, Search, Users, BookOpen } from 'lucide-react'
 import { Button } from './Button'
 import { cn } from '@/utils/cn'
@@ -36,31 +37,31 @@ interface EmptyStateProps {
   className?: string
 }
 
-const presets: Record<EmptyStatePreset, { icon: typeof Inbox; title: string; description: string }> = {
+const presets: Record<EmptyStatePreset, { icon: typeof Inbox; titleKey: string; descriptionKey: string }> = {
   default: {
     icon: Inbox,
-    title: 'No items yet',
-    description: 'Get started by creating your first item.',
+    titleKey: 'empty.default.title',
+    descriptionKey: 'empty.default.description',
   },
   search: {
     icon: Search,
-    title: 'No results found',
-    description: 'Try adjusting your search or filters to find what you\'re looking for.',
+    titleKey: 'empty.search.title',
+    descriptionKey: 'empty.search.description',
   },
   learners: {
     icon: Users,
-    title: 'No learners yet',
-    description: 'Learners will appear here once they join your class.',
+    titleKey: 'empty.learners.title',
+    descriptionKey: 'empty.learners.description',
   },
   content: {
     icon: BookOpen,
-    title: 'No content available',
-    description: 'Check back later for new learning materials.',
+    titleKey: 'empty.content.title',
+    descriptionKey: 'empty.content.description',
   },
   noResults: {
     icon: FileQuestion,
-    title: 'Nothing here',
-    description: 'This section is empty right now.',
+    titleKey: 'empty.noResults.title',
+    descriptionKey: 'empty.noResults.description',
   },
 }
 
@@ -74,10 +75,11 @@ export function EmptyState({
   secondaryAction,
   className,
 }: EmptyStateProps) {
+  const { t } = useTranslation('common')
   const config = presets[preset]
   const Icon = icon ? null : config.icon
-  const displayTitle = title ?? config.title
-  const displayDescription = description ?? config.description
+  const displayTitle = title ?? t(config.titleKey)
+  const displayDescription = description ?? t(config.descriptionKey)
 
   return (
     <div className={cn('flex flex-col items-center justify-center py-12 px-4 text-center', className)}>

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, useSuspenseQuery, skipToken } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { learnersService, type LearnerProfile, type LeaderboardLearner } from '@/services/learners'
 import { topicsService } from '@/services/topics'
 import {
@@ -129,10 +129,10 @@ export function useSuspenseGlobalLeaderboard() {
   })
 }
 
-export function useSuspenseTopicLeaderboard(topicId: string | number | null) {
-  return useSuspenseQuery<LeaderboardLearner[], Error, LeaderboardLearner[], any>({
-    queryKey: topicId ? queryKeys.leaderboard.topic(topicId) : skipToken,
-    queryFn: (topicId ? () => learnersService.getTopicLeaderboard(topicId) : skipToken) as any,
+export function useSuspenseTopicLeaderboard(topicId: string | number) {
+  return useSuspenseQuery<LeaderboardLearner[]>({
+    queryKey: queryKeys.leaderboard.topic(topicId),
+    queryFn: () => learnersService.getTopicLeaderboard(topicId),
   })
 }
 

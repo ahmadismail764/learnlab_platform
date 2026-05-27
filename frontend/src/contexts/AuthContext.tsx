@@ -5,6 +5,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
+import { useTranslation } from "react-i18next";
 import type { User, UserRole } from "@/types";
 import {
   authService,
@@ -66,6 +67,7 @@ function mapBackendUser(userData: BackendAuthUser): User {
 }
 
 export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
+  const { t } = useTranslation("common");
   const [state, setState] = useState<AuthState>(() => {
     if (!initialUser) {
       return initialState;
@@ -162,7 +164,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     // Show a minimal loading state while hydrating
     return (
       <div className="flex items-center justify-center min-h-screen">
-        Loading...
+        {t("loading")}
       </div>
     );
   }

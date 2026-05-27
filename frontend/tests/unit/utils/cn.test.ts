@@ -7,8 +7,11 @@ describe('cn utility', () => {
   })
 
   it('handles conditionally falsy and truthy arguments', () => {
-    expect(cn('class1', false && 'class2', 'class3', null, undefined, '')).toBe('class1 class3')
-    expect(cn('class1', true && 'class2')).toBe('class1 class2')
+    const includeSecond: boolean = false
+    const includeThird: boolean = true
+
+    expect(cn('class1', includeSecond && 'class2', 'class3', null, undefined, '')).toBe('class1 class3')
+    expect(cn('class1', includeThird && 'class2')).toBe('class1 class2')
   })
 
   it('handles object structures correctly', () => {
@@ -20,7 +23,9 @@ describe('cn utility', () => {
   })
 
   it('handles nested arrays and mixed parameters', () => {
-    expect(cn(['class1', 'class2'], ['class3', false && 'class4'], 'class5')).toBe('class1 class2 class3 class5')
+    const includeNestedClass: boolean = false
+
+    expect(cn(['class1', 'class2'], ['class3', includeNestedClass && 'class4'], 'class5')).toBe('class1 class2 class3 class5')
   })
 
   it('resolves Tailwind CSS conflicts correctly (last one wins)', () => {

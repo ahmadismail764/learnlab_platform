@@ -22,6 +22,8 @@ export interface QuestionMutationPayload {
   explanation_video_url?: string | null;
 }
 
+type BackendQuestionMutationPayload = Omit<QuestionMutationPayload, 'explanation_video_url'>;
+
 interface PaginatedResponse<T> {
   count: number;
   next: string | null;
@@ -38,7 +40,7 @@ function normalizeQuestion(raw: Partial<BackendQuestion>): BackendQuestion {
     id: raw.id ?? '',
     subtopic: raw.subtopic ?? null,
     subtopic_name: raw.subtopic_name ?? null,
-    topic_name: raw.topic_name ?? raw.subtopic_name ?? 'Unlinked',
+    topic_name: raw.topic_name ?? raw.subtopic_name ?? '',
     text: raw.text ?? '',
     choices,
     correct_answer_index: Number(raw.correct_answer_index ?? 0),
@@ -49,6 +51,16 @@ function normalizeQuestion(raw: Partial<BackendQuestion>): BackendQuestion {
 function toQuestionList(data: BackendQuestion[] | PaginatedResponse<BackendQuestion>) {
   const rows = Array.isArray(data) ? data : data.results ?? [];
   return rows.map(normalizeQuestion);
+}
+
+function toBackendMutationPayload(data: QuestionMutationPayload): BackendQuestionMutationPayload {
+  return {
+    text: data.text,
+    choices: data.choices,
+    correct_answer_index: data.correct_answer_index,
+    tier: data.tier,
+    subtopic: data.subtopic ?? null,
+  };
 }
 
 export const questionsService = {
@@ -70,7 +82,7 @@ export const questionsService = {
   },
 
   createQuestion: async (data: QuestionMutationPayload): Promise<BackendQuestion> => {
-    const response = await api.post('/practice/questions/', data);
+    const response = await api.post('/practice/questions/', toBackendMutationPayload(data));
     if (!response.ok) {
       await throwApiError(response, 'Failed to create question');
     }
@@ -79,7 +91,7 @@ export const questionsService = {
   },
 
   updateQuestion: async (id: EntityId, data: QuestionMutationPayload): Promise<BackendQuestion> => {
-    const response = await api.put(`/practice/questions/${id}/`, data);
+    const response = await api.put(`/practice/questions/${id}/`, toBackendMutationPayload(data));
     if (!response.ok) {
       await throwApiError(response, 'Failed to update question');
     }

@@ -10,11 +10,14 @@ import {
   AlertTriangle,
   FileText,
   RefreshCw,
+  Edit2,
+  Trash2,
 } from 'lucide-react'
 import { Card, Button, Badge, Input, EmptyState, Skeleton } from '@/components/ui'
 import { useSuspenseTopics } from '@/hooks'
 import { TopicFormModal } from '@/components/admin/TopicFormModal'
 import { DeleteTopicDialog } from '@/components/admin/DeleteTopicDialog'
+import { getTopicDisplayName, getTopicModuleDisplayName } from '@/utils/topicLabels'
 
 /**
  * TopicsManagementPage - Admin Curriculum Structure (UC-07)
@@ -105,6 +108,7 @@ export function TopicsManagementPage() {
 
 function TopicsManagementContent() {
   const { t } = useTranslation(['admin', 'common', 'topics'])
+  const uncategorizedLabel = t('admin:uncategorized')
 
   // Data fetching via React Query
   const { data: rawTopics, error: queryError, refetch: fetchTopics } = useSuspenseTopics()
@@ -112,7 +116,7 @@ function TopicsManagementContent() {
     () => (rawTopics ?? []) as BackendTopic[],
     [rawTopics]
   )
-  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load topics') : ''
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : t('admin:failedToLoadTopics')) : ''
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
@@ -129,14 +133,14 @@ function TopicsManagementContent() {
   const moduleGroups = useMemo<ModuleGroup[]>(() => {
     const grouped: Record<string, BackendTopic[]> = {}
     for (const topic of topics) {
-      const key = topic.parent_module || 'Uncategorized'
+      const key = topic.parent_module || uncategorizedLabel
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(topic)
     }
     return Object.entries(grouped)
       .map(([parentModule, topicList]) => ({ parentModule, topics: topicList }))
       .sort((a, b) => a.parentModule.localeCompare(b.parentModule))
-  }, [topics])
+  }, [topics, uncategorizedLabel])
 
   const totalTopics = topics.length
   const totalQuestions = topics.reduce((sum, t) => sum + t.question_count, 0)
@@ -193,7 +197,7 @@ function TopicsManagementContent() {
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
         <Button variant="outline" onClick={() => fetchTopics()} leftIcon={<RefreshCw className="w-4 h-4" />}>
-          Retry
+          {t('common:tryAgain')}
         </Button>
       </div>
     )
@@ -275,8 +279,8 @@ function TopicsManagementContent() {
           topics.length === 0 ? (
             <EmptyState
               icon={<BookOpen className="w-8 h-8" />}
-              title="No topics yet"
-              description="Create your first topic to get started. Topics are the building blocks of the curriculum."
+              title={t('admin:topicsManagement.noTopicsYet')}
+              description={t('admin:topicsManagement.noTopicsYetDescription')}
               action={{ label: t('admin:topicsManagement.addTopic'), onClick: openCreateForm }}
             />
           ) : (
@@ -290,6 +294,7 @@ function TopicsManagementContent() {
           filteredModules.map((mod) => {
             const isExpanded = expandedModules.has(mod.parentModule)
             const moduleQuestions = mod.topics.reduce((sum, t) => sum + t.question_count, 0)
+            const moduleDisplayName = getTopicModuleDisplayName(t, mod.parentModule)
 
             return (
               <Card key={mod.parentModule} className="overflow-hidden">
@@ -297,13 +302,13 @@ function TopicsManagementContent() {
                 <button
                   onClick={() => toggleModule(mod.parentModule)}
                   className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                >
-                  <span className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
-                    {mod.parentModule.charAt(0).toUpperCase()}
+                  >
+                    <span className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
+                    {moduleDisplayName.charAt(0).toUpperCase()}
                   </span>
                   <div className="flex-1 text-start">
                     <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                      {mod.parentModule || 'Uncategorized'}
+                      {moduleDisplayName}
                     </h3>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">
                       {t('admin:topicsManagement.topicCount', { count: mod.topics.length })} · {t('admin:topicsManagement.questionCount', { count: moduleQuestions })}
@@ -334,7 +339,7 @@ function TopicsManagementContent() {
                         </span>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                            {topic.name}
+                            {getTopicDisplayName(t, topic.name)}
                           </h4>
                           {topic.description && (
                             <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 truncate">
@@ -351,12 +356,9 @@ function TopicsManagementContent() {
                             size="sm"
                             onClick={() => openEditForm(topic)}
                             title={t('common:edit')}
-                            aria-label="Edit topic"
+                            aria-label={t('admin:topicsManagement.editTopic')}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                            </svg>
+                            <Edit2 className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -364,14 +366,9 @@ function TopicsManagementContent() {
                             onClick={() => setDeleteTarget(topic)}
                             title={t('common:delete')}
                             className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                            aria-label="Delete topic"
+                            aria-label={t('admin:topicsManagement.deleteTopic')}
                           >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              <line x1="10" y1="11" x2="10" y2="17" />
-                              <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>

@@ -35,9 +35,9 @@
 
 ### 1. Backend-Side XP Validation on Practice Session Finalization (Anti-Cheat)
 
-- **Status:** Suggestion (High Value / Security)
-- **Description:** Currently, when completing a practice session, the frontend submits a `PATCH` request to `/practice/sessions/<id>/` containing `total_xp_earned`. The backend `PracticeSessionSerializer.update` trusts this client-side value and increments the user's `current_xp` by this amount. This introduces a vulnerability where a user can send a modified, inflated `total_xp_earned` payload to artificially boost their XP on the leaderboard.
-- **Recommendation:** Calculate the XP earned dynamically on the server-side upon session finalization by counting the verified correct `QuestionResponse` records linked to that session in the database:
+- **Status:** Resolved backend invariant / monitor
+- **Description:** Earlier frontend builds submitted `total_xp_earned` during session completion, which would have allowed a modified client payload to inflate XP if trusted by the backend. The current frontend now sends only `end_time` on completion and relies on verified `QuestionResponse` rows for XP.
+- **Recommendation:** Keep XP calculation fully server-side by counting the verified correct `QuestionResponse` records linked to the session:
   ```python
   # Instead of: learner.current_xp += total_xp_earned
   correct_responses = instance.responses.filter(is_correct=True).count()

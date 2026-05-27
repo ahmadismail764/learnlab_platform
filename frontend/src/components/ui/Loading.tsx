@@ -1,4 +1,5 @@
 import { Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/utils/cn'
 
 /**
@@ -16,6 +17,7 @@ interface SpinnerProps {
  * Spinner - simple rotating spinner
  */
 export function Spinner({ size = 'md', className }: SpinnerProps) {
+  const { t } = useTranslation('common')
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
@@ -25,7 +27,7 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
   return (
     <Loader2
       className={cn('animate-spin text-primary-500', sizeClasses[size], className)}
-      aria-label="Loading"
+      aria-label={t('loading')}
     />
   )
 }
@@ -44,10 +46,13 @@ interface LoadingOverlayProps {
  */
 export function LoadingOverlay({
   isLoading,
-  text = 'Loading...',
+  text,
   blur = true,
 }: LoadingOverlayProps) {
+  const { t } = useTranslation('common')
   if (!isLoading) return null
+
+  const displayText = text ?? t('loading')
 
   return (
     <div
@@ -59,7 +64,7 @@ export function LoadingOverlay({
     >
       <div className="flex flex-col items-center gap-3">
         <Spinner size="lg" />
-        {text && <p className="text-sm text-neutral-600 dark:text-neutral-400">{text}</p>}
+        {displayText && <p className="text-sm text-neutral-600 dark:text-neutral-400">{displayText}</p>}
       </div>
     </div>
   )
@@ -72,7 +77,10 @@ interface PageLoaderProps {
 /**
  * PageLoader - full page loading state
  */
-export function PageLoader({ text = 'Loading...' }: PageLoaderProps) {
+export function PageLoader({ text }: PageLoaderProps) {
+  const { t } = useTranslation('common')
+  const displayText = text ?? t('loading')
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 dark:bg-neutral-950">
       <div className="flex flex-col items-center gap-4">
@@ -80,7 +88,7 @@ export function PageLoader({ text = 'Loading...' }: PageLoaderProps) {
           <div className="w-16 h-16 border-4 border-primary-200 dark:border-primary-800 rounded-full" />
           <div className="absolute inset-0 w-16 h-16 border-4 border-primary-500 rounded-full border-t-transparent animate-spin" />
         </div>
-        <p className="text-neutral-600 dark:text-neutral-400 font-medium">{text}</p>
+        <p className="text-neutral-600 dark:text-neutral-400 font-medium">{displayText}</p>
       </div>
     </div>
   )

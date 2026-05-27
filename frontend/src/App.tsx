@@ -59,7 +59,7 @@ function AppRouter() {
 
 export default function App() {
   return (
-    <Suspense fallback={<PageLoader text="Loading..." />}>
+    <Suspense fallback={<PageLoader />}>
       <ErrorBoundary>
         <ThemeProvider>
           <QueryProvider>

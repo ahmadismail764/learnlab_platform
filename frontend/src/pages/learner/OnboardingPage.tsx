@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Rocket, 
@@ -16,6 +17,7 @@ import {
 import { Button, Card, CardContent } from '@/components/ui'
 import { useCurrentUser } from '@/contexts'
 import { cn } from '@/utils/cn'
+import { getTopicDisplayName, getTopicModuleDisplayName } from '@/utils/topicLabels'
 import { useTopics } from '@/hooks'
 
 /**
@@ -26,9 +28,9 @@ import { useTopics } from '@/hooks'
  */
 
 const GOALS = [
-  { id: 'casual', label: 'Casual', desc: '5 mins/day', icon: Sparkles, color: 'text-blue-500' },
-  { id: 'regular', label: 'Regular', desc: '15 mins/day', icon: Target, color: 'text-green-500' },
-  { id: 'serious', label: 'Serious', desc: '30+ mins/day', icon: Rocket, color: 'text-orange-500' },
+  { id: 'casual', labelKey: 'onboardingGoalCasual', descKey: 'onboardingGoalCasualTime', icon: Sparkles, color: 'text-blue-500' },
+  { id: 'regular', labelKey: 'onboardingGoalRegular', descKey: 'onboardingGoalRegularTime', icon: Target, color: 'text-green-500' },
+  { id: 'serious', labelKey: 'onboardingGoalSerious', descKey: 'onboardingGoalSeriousTime', icon: Rocket, color: 'text-orange-500' },
 ]
 
 interface OnboardingTopic {
@@ -38,6 +40,7 @@ interface OnboardingTopic {
 }
 
 export function OnboardingPage() {
+  const { t } = useTranslation(['learner', 'common', 'topics'])
   const navigate = useNavigate()
   const user = useCurrentUser()
   const { data: topicsData, isLoading: topicsLoading } = useTopics()
@@ -121,13 +124,13 @@ export function OnboardingPage() {
                   <BrainCircuit className="w-10 h-10 text-primary-600 dark:text-primary-400" />
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-neutral-900 dark:text-white mb-4 tracking-tight">
-                  Welcome to LearnLab
+                  {t('learner:onboardingWelcomeTitle')}
                 </h1>
                 <p className="text-lg text-neutral-600 dark:text-neutral-400 max-w-md mx-auto mb-10 leading-relaxed">
-                  The adaptive learning platform that uses FSRS to help you remember what you learn.
+                  {t('learner:onboardingWelcomeDescription')}
                 </p>
-                <Button size="lg" onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4" />} className="w-full sm:w-auto px-8 py-6 text-lg rounded-2xl shadow-lg shadow-primary-500/20">
-                  Get Started
+                <Button size="lg" onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />} className="w-full sm:w-auto px-8 py-6 text-lg rounded-2xl shadow-lg shadow-primary-500/20">
+                  {t('learner:onboardingGetStarted')}
                 </Button>
               </motion.div>
             )}
@@ -145,8 +148,8 @@ export function OnboardingPage() {
                 className="absolute inset-0 flex flex-col p-8 sm:p-12"
               >
                 <div className="mb-8 text-center">
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Set your daily goal</h2>
-                  <p className="text-neutral-600 dark:text-neutral-400">Consistency is the key to mastery. How much time can you commit?</p>
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">{t('learner:onboardingGoalTitle')}</h2>
+                  <p className="text-neutral-600 dark:text-neutral-400">{t('learner:onboardingGoalDescription')}</p>
                 </div>
 
                 <div className="space-y-4 flex-1">
@@ -171,8 +174,8 @@ export function OnboardingPage() {
                           <Icon className={cn("w-6 h-6", goal.color)} />
                         </div>
                         <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{goal.label}</h3>
-                          <p className="text-neutral-500 dark:text-neutral-400">{goal.desc}</p>
+                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{t(`learner:${goal.labelKey}`)}</h3>
+                          <p className="text-neutral-500 dark:text-neutral-400">{t(`learner:${goal.descKey}`)}</p>
                         </div>
                         <div className={cn(
                           "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors",
@@ -186,8 +189,8 @@ export function OnboardingPage() {
                 </div>
 
                 <div className="flex items-center justify-between mt-8 pt-4 border-t border-neutral-100 dark:border-neutral-800/50">
-                  <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4 rtl:rotate-180" />}>Back</Button>
-                  <Button onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}>Continue</Button>
+                  <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4 rtl:rotate-180" />}>{t('common:back')}</Button>
+                  <Button onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}>{t('common:continue')}</Button>
                 </div>
               </motion.div>
             )}
@@ -205,8 +208,8 @@ export function OnboardingPage() {
                 className="absolute inset-0 flex flex-col p-8 sm:p-12"
               >
                 <div className="mb-6 text-center">
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">What do you want to learn?</h2>
-                  <p className="text-neutral-600 dark:text-neutral-400">Select a few topics to kickstart your adaptive queue.</p>
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">{t('learner:onboardingTopicsTitle')}</h2>
+                  <p className="text-neutral-600 dark:text-neutral-400">{t('learner:onboardingTopicsDescription')}</p>
                 </div>
 
                 <div className="flex-1 overflow-y-auto pe-2 -me-2 space-y-3 custom-scrollbar">
@@ -228,22 +231,22 @@ export function OnboardingPage() {
                         >
                           <BookOpen className={cn("w-5 h-5 me-3 shrink-0", isSelected ? "text-primary-600 dark:text-primary-400" : "text-neutral-400")} />
                           <div className="flex-1">
-                            <h4 className="font-medium text-neutral-900 dark:text-white">{topic.name}</h4>
-                            {topic.parent_module && <p className="text-xs text-neutral-500 mt-0.5">{topic.parent_module}</p>}
+                            <h4 className="font-medium text-neutral-900 dark:text-white">{getTopicDisplayName(t, topic.name)}</h4>
+                            {topic.parent_module && <p className="text-xs text-neutral-500 mt-0.5">{getTopicModuleDisplayName(t, topic.parent_module)}</p>}
                           </div>
                           {isSelected && <CheckCircle2 className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />}
                         </button>
                       )
                     })
                   ) : (
-                    <div className="text-center py-10 text-neutral-500">No topics available to select yet.</div>
+                    <div className="text-center py-10 text-neutral-500">{t('learner:onboardingNoTopics')}</div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-800/50">
-                  <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4" />}>Back</Button>
-                  <Button onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4" />} disabled={selectedTopics.length === 0 && topics.length > 0}>
-                    Continue
+                  <Button variant="ghost" onClick={handleBack} leftIcon={<ArrowLeft className="w-4 h-4 rtl:rotate-180" />}>{t('common:back')}</Button>
+                  <Button onClick={handleNext} rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />} disabled={selectedTopics.length === 0 && topics.length > 0}>
+                    {t('common:continue')}
                   </Button>
                 </div>
               </motion.div>
@@ -264,16 +267,16 @@ export function OnboardingPage() {
                 <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mb-8 shadow-2xl">
                   <CheckCircle2 className="w-12 h-12 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-4">You're all set!</h2>
+                <h2 className="text-3xl font-bold text-white mb-4">{t('learner:onboardingReadyTitle')}</h2>
                 <p className="text-primary-100 max-w-sm mx-auto mb-10 text-lg">
-                  We've personalized your learning queue based on your preferences. Time to earn your first XP!
+                  {t('learner:onboardingReadyDescription')}
                 </p>
                 <Button 
                   size="lg" 
                   onClick={handleComplete} 
                   className="bg-white text-primary-700 hover:bg-neutral-50 px-10 py-6 text-lg rounded-2xl shadow-xl hover:-translate-y-1 transition-transform"
                 >
-                  Enter Dashboard
+                  {t('learner:onboardingEnterDashboard')}
                 </Button>
               </motion.div>
             )}

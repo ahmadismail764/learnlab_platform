@@ -18,10 +18,14 @@ api_v1_patterns = [
 ]
 
 urlpatterns = [
+    # API v1 Blueprint
+    # This is for the actual data we are supposed to serve
+    # The other endpoints are mainly managerial
+    path('api/v1/', include(api_v1_patterns)),
+
+    # The django admin interface, pretty useful
     path('admin/', admin.site.urls),
 
-    # API v1 Blueprint
-    path('api/v1/', include(api_v1_patterns)),
 
     # DRF Spectacular Docs
     path('schema/', SpectacularAPIView.as_view(), name='schema'),

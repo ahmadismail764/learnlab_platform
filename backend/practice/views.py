@@ -3,16 +3,15 @@ from rest_framework import permissions, viewsets, generics
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 # Our imports
-from practice.models import Question, PracticeSession, QuestionResponse
 from accounts.models import User
-from accounts.serializers import LearnerProfileSerializer
-from .serializers import (
+from practice.serializers import (
     QuestionResponseSerializer, 
     PracticeSessionSerializer, 
     PracticeSessionCreateSerializer, 
     QuestionSerializer
 )
-from constants import XP_PER_CORRECT_ANSWER
+from practice.models import Question, PracticeSession, QuestionResponse
+from practice.constants import XP_PER_CORRECT_ANSWER
 
 class IsAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
@@ -20,6 +19,7 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return True
         return request.user and request.user.is_authenticated and request.user.is_staff
 
+# This is a test-only endpoint to quickly view all questions in the system.
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def get_all_questions(request):
@@ -73,33 +73,34 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             return Response(QuestionResponseSerializer(response).data, status=201)
         return Response(serializer.errors, status=400)
 
-class LearnerProfileListView(generics.ListAPIView):
-    serializer_class = LearnerProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# class LearnerProfileListView(generics.ListAPIView):
+#     serializer_class = LearnerProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        return User.objects.filter(is_staff=False).order_by('-current_xp')
+#     def get_queryset(self):
+#         return User.objects.filter(is_staff=False).order_by('-current_xp')
 
-class LeaderboardView(generics.ListAPIView):
-    serializer_class = LearnerProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# class LeaderboardView(generics.ListAPIView):
+#     serializer_class = LearnerProfileSerializer
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def get_queryset(self):
-        queryset = User.objects.filter(is_staff=False)
-        topic_id = self.request.query_params.get('topic') # type: ignore
-        if topic_id:
-            # Filter distinct users having mastery under this topic
-            queryset = queryset.filter(masteries__subtopic__topic_id=topic_id).distinct()
+#     def get_queryset(self):
+#         queryset = User.objects.filter(is_staff=False)
+#         topic_id = self.request.query_params.get('topic') # type: ignore
+#         if topic_id:
+#             # Filter distinct users having mastery under this topic
+#             queryset = queryset.filter(masteries__subtopic__topic_id=topic_id).distinct()
         
-        return queryset.order_by('-current_xp')
+#         return queryset.order_by('-current_xp')
 
 
 class GenerateAdaptiveSessionView(generics.GenericAPIView):
     """
-    GET /practice/sessions/generate-adaptive/
-    Returns the next recommended set of questions for the learner.
-    Due/overdue FSRS items appear first; falls back to unseen questions.
-    Supports optional ?topic=<uuid> filter and ?limit=<int> (default 10).
+        GET /practice/sessions/generate-adaptive/
+        Returns the next recommended set of questions for the learner.
+        Due/overdue FSRS items appear first; falls back to unseen questions.
+        
+        NOTE: Supports optional ?topic=<uuid> filter and ?limit=<int> (default 10).
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = QuestionSerializer
@@ -159,6 +160,7 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
         })
+    
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:

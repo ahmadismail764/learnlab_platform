@@ -12,7 +12,7 @@ class EmailOrUsernameModelBackend(ModelBackend):
             user = UserModel.objects.filter(Q(username__iexact=username) | Q(email__iexact=username)).first()
         except UserModel.DoesNotExist:
             return None
-        
-        if user and user.check_password(password) and self.user_can_authenticate(user):
-            return user
-        return None
+        if password:
+            if user and user.check_password(password) and self.user_can_authenticate(user):
+                return user
+            return None

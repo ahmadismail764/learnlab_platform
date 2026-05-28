@@ -11,7 +11,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = str(os.getenv('ALLOWED_HOSTS')).split(',') 
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     'silk',
+    'rest_framework_simplejwt.token_blacklist',
 
     'accounts',
     'practice',

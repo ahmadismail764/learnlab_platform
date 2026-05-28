@@ -1,12 +1,16 @@
+import math
+# Django imports
+from django.db.models import Avg, Count
+from django.utils import timezone
+# DRF imports
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Avg, Count, Q
+# Internal imports
 from accounts.models import User
 from practice.models import PracticeSession, QuestionResponse
 from topics.models import SubtopicMastery, Topic
-import math
-from django.utils import timezone
+
 
 class AggregatedMetricsView(APIView):
     permission_classes = [IsAuthenticated]

@@ -6,9 +6,9 @@ This document outlines the API endpoints, payload structures, schemas, and confi
 
 ## 🚀 Base Configuration
 
-* **Base URL**: `http://localhost:8000/api/v1` (or local docker/development ports)
-* **URL Typo Fallback**: The backend accepts requests on both `/api/v1/topics/` and `/api/v1/topcis/` prefixes. Either route handles subtopics and mastery queries identically.
-* **CORS Settings**: Development configurations allow all origins, including `http://localhost:5173`, `http://localhost:3000`, and `http://127.0.0.1:5173`.
+- **Base URL**: `http://localhost:8000/api/v1` (or local docker/development ports)
+- **URL Typo Fallback**: The backend accepts requests on both `/api/v1/topics/` and `/api/v1/topcis/` prefixes. Either route handles subtopics and mastery queries identically.
+- **CORS Settings**: Development configurations allow all origins, including `http://localhost:5173`, `http://localhost:3000`, and `http://127.0.0.1:5173`.
 
 ---
 
@@ -17,16 +17,17 @@ This document outlines the API endpoints, payload structures, schemas, and confi
 All endpoints are grouped under `/auth/`.
 
 ### Login (Custom SimpleJWT)
-* **Endpoint**: `POST /auth/login/`
-* **Payload**:
+
+- **Endpoint**: `POST /auth/login/`
+- **Payload**:
   ```json
   {
     "username": "learner_username_or_email",
     "password": "learner_password"
   }
   ```
-  *(Supports case-insensitive matches on both username or registered email).*
-* **Response (200 OK)**:
+  _(Supports case-insensitive matches on both username or registered email)._
+- **Response (200 OK)**:
   ```json
   {
     "refresh": "eyJhbGciOi...",
@@ -44,13 +45,15 @@ All endpoints are grouped under `/auth/`.
   ```
 
 ### Refresh Token
-* **Endpoint**: `POST /auth/refresh/`
-* **Payload**: `{"refresh": "refresh_token"}`
-* **Response (200 OK)**: `{"access": "new_access_token"}`
+
+- **Endpoint**: `POST /auth/refresh/`
+- **Payload**: `{"refresh": "refresh_token"}`
+- **Response (200 OK)**: `{"access": "new_access_token"}`
 
 ### Registration
-* **Endpoint**: `POST /auth/register/`
-* **Payload**:
+
+- **Endpoint**: `POST /auth/register/`
+- **Payload**:
   ```json
   {
     "username": "john_doe",
@@ -62,8 +65,9 @@ All endpoints are grouped under `/auth/`.
   ```
 
 ### Current User Details
-* **Endpoint**: `GET /auth/users/me/` (Requires JWT Authentication header)
-* **Response (200 OK)**:
+
+- **Endpoint**: `GET /auth/users/me/` (Requires JWT Authentication header)
+- **Response (200 OK)**:
   ```json
   {
     "id": "c3b88934-2e99-4c8d-b988-1bcb0b03390b",
@@ -79,10 +83,11 @@ All endpoints are grouped under `/auth/`.
     "role": "learner"
   }
   ```
-* **Updates**: `PUT /auth/users/me/` or `PATCH /auth/users/me/` allows updating `first_name` and `last_name`.
+- **Updates**: `PUT /auth/users/me/` or `PATCH /auth/users/me/` allows updating `first_name` and `last_name`.
 
 ### Password Reset (Mock workflow)
-* **Request Reset**: `POST /auth/password-reset/`
+
+- **Request Reset**: `POST /auth/password-reset/`
   - **Payload**: `{"email": "john@example.com"}`
   - **Behavior**: Generates `uid` and `token` and logs them inside the backend server stdout console for development usage. Returns:
     ```json
@@ -92,7 +97,7 @@ All endpoints are grouped under `/auth/`.
       "token": "csa11a-..."
     }
     ```
-* **Confirm Reset**: `POST /auth/password-reset/confirm/`
+- **Confirm Reset**: `POST /auth/password-reset/confirm/`
   - **Payload**:
     ```json
     {
@@ -109,13 +114,14 @@ All endpoints are grouped under `/auth/`.
 All endpoints are grouped under `/practice/`.
 
 ### Questions CRUD
-* **List Questions**: `GET /practice/questions/`
-* **Detail / Create / Update / Delete**:
+
+- **List Questions**: `GET /practice/questions/`
+- **Detail / Create / Update / Delete**:
   - `GET /practice/questions/<uuid:id>/`
   - `POST /practice/questions/` (Admin only)
   - `PUT /practice/questions/<uuid:id>/` (Admin only)
   - `DELETE /practice/questions/<uuid:id>/` (Admin only)
-* **Question Schema**:
+- **Question Schema**:
   ```json
   {
     "id": "5285701c-66f8-4e89-9831-299f104d41fa",
@@ -129,8 +135,9 @@ All endpoints are grouped under `/practice/`.
   ```
 
 ### Sessions Creation (Triggers FSRS scheduling, XP, and Streaks)
-* **Endpoint**: `POST /practice/sessions/`
-* **Payload**:
+
+- **Endpoint**: `POST /practice/sessions/`
+- **Payload**:
   ```json
   {
     "responses": [
@@ -143,7 +150,7 @@ All endpoints are grouped under `/practice/`.
     ]
   }
   ```
-* **Response (201 Created)**:
+- **Response (201 Created)**:
   ```json
   {
     "id": "e3c88934-2e99-4c8d-b988-1bcb0b03390b",
@@ -169,9 +176,10 @@ All endpoints are grouped under `/practice/`.
   ```
 
 ### Leaderboards & Learners
-* **Learner List**: `GET /practice/learners/`
-* **Leaderboard**: `GET /practice/learners/leaderboard/` (Supports filter `?topic=<uuid:topic_id>`)
-* **Response Schema**:
+
+- **Learner List**: `GET /practice/learners/`
+- **Leaderboard**: `GET /practice/learners/leaderboard/` (Supports filter `?topic=<uuid:topic_id>`)
+- **Response Schema**:
   ```json
   [
     {
@@ -195,8 +203,9 @@ All endpoints are grouped under `/practice/`.
 Grouped under `/topics/` (or `/topcis/`).
 
 ### Topics List
-* **Endpoint**: `GET /topcis/topics/`
-* **Response**:
+
+- **Endpoint**: `GET /topcis/topics/`
+- **Response**:
   ```json
   [
     {
@@ -208,8 +217,9 @@ Grouped under `/topics/` (or `/topcis/`).
   ```
 
 ### Subtopics List
-* **Endpoint**: `GET /topcis/subtopics/`
-* **Response**:
+
+- **Endpoint**: `GET /topcis/subtopics/`
+- **Response**:
   ```json
   [
     {
@@ -224,8 +234,9 @@ Grouped under `/topics/` (or `/topcis/`).
   ```
 
 ### Topic Mastery Records (Direct frontend mapping)
-* **Endpoint**: `GET /topcis/mastery/` (Requires JWT Authentication; returns logged-in user's records)
-* **Response**:
+
+- **Endpoint**: `GET /topcis/mastery/` (Requires JWT Authentication; returns logged-in user's records)
+- **Response**:
   ```json
   [
     {
@@ -250,8 +261,9 @@ Grouped under `/topics/` (or `/topcis/`).
 Grouped under `/analytics/`.
 
 ### Aggregated Performance Metrics
-* **Endpoint**: `GET /analytics/aggregated/` (Requires JWT Authentication)
-* **Response**:
+
+- **Endpoint**: `GET /analytics/aggregated/` (Requires JWT Authentication)
+- **Response**:
   ```json
   {
     "review_count": 10,
@@ -268,8 +280,9 @@ Grouped under `/analytics/`.
   ```
 
 ### Topic-specific Analytics Distribution
-* **Endpoint**: `GET /analytics/topics/<uuid:topic_id>/` (Requires JWT Authentication)
-* **Response**:
+
+- **Endpoint**: `GET /analytics/topics/<uuid:topic_id>/` (Requires JWT Authentication)
+- **Response**:
   ```json
   {
     "topic_id": "a1ba01cc-55b8-4c8d-b988-1bcb0b03390a",
@@ -292,7 +305,7 @@ Grouped under `/analytics/`.
 
 Use these pre-seeded logins for direct integration verification:
 
-| Account Type | Username | Password | Role |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin` | `admin123` | Can read/write questions & view analytics |
-| **Learner** | `learner` | `learner123` | Can practice, update streak/XP & load masteries |
+| Account Type      | Username  | Password     | Role                                            |
+| :---------------- | :-------- | :----------- | :---------------------------------------------- |
+| **Administrator** | `admin`   | `admin123`   | Can read/write questions & view analytics       |
+| **Learner**       | `learner` | `learner123` | Can practice, update streak/XP & load masteries |

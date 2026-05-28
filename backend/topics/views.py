@@ -2,11 +2,16 @@ from rest_framework import viewsets, permissions
 from topics.models import Topic, Subtopic, SubtopicMastery
 from topics.serializers import TopicSerializer, SubtopicSerializer, SubtopicMasterySerializer
 
+"""
+    The following three are viewsets that handle all CRUD operations for topics, subtopics, and subtopic mastery records.
+    The mastery viewset is permission-protected to only allow access to the learner's own mastery records, 
+    while the topic and subtopic viewsets are open to all authenticated users for browsing.
+"""
+
 class TopicViewSet(viewsets.ModelViewSet):
     queryset = Topic.objects.prefetch_related('subtopics')
     serializer_class = TopicSerializer
 
-# Handles operations for Subtopics (e.g., Algebra, Geometry).set
 class SubtopicViewSet(viewsets.ModelViewSet):
     queryset = Subtopic.objects.all()
     serializer_class = SubtopicSerializer

@@ -94,7 +94,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
       }
 
       try {
-        const backendUser = await authService.getCurrentUser({ allowFallback: true });
+        const backendUser = await authService.getCurrentUser();
         const user = mapBackendUser(backendUser);
 
         setState({
@@ -123,7 +123,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     // Setting isLoading on the context would render the global "Loading..." screen
     // which blocks the login form and hides any error messages.
     await authService.login(credentials);
-    const backendUser = await authService.getCurrentUser({ allowFallback: true });
+    const backendUser = await authService.getCurrentUser();
     const user = mapBackendUser(backendUser);
 
     setState({

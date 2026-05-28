@@ -64,10 +64,6 @@ export function PracticePage() {
     try {
       const data = await practiceService.generateAdaptiveSession(topicId)
 
-      if (data.fallback_reason === 'adaptive_unavailable') {
-        showWarning(t('practice:adaptiveSessionFallback'))
-      }
-
       // Handle "all caught up" — no questions available
       if (!data.questions || data.questions.length === 0) {
         showWarning(t('practice:noQuestionsAvailable'))
@@ -172,6 +168,9 @@ export function PracticePage() {
         session: sessionRecord.id,
         question: currentQuestion.id,
         is_correct: submittedIsCorrect,
+        time_taken_seconds: Math.max(0, Math.round((Date.now() - currentStatus.startTime) / 1000)),
+        confidence_rating: grade,
+        answer_text: currentStatus.userResponse,
       })
     } catch (err) {
       console.error("Failed to submit interaction", err)

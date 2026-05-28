@@ -7,14 +7,13 @@ interface SessionCreatePayload {
 interface ResponsePayload {
   question?: EntityId;
   is_correct?: boolean;
+  time_taken_seconds?: number;
+  confidence_rating?: number;
+  answer_text?: string | null;
 }
 
 interface SessionUpdatePayload {
   end_time?: string;
-}
-
-function isEndpointMissing(response: Response): boolean {
-  return response.status === 404 || response.status === 405;
 }
 
 async function parseOptionalJson(response: Response) {
@@ -32,7 +31,6 @@ async function parseOptionalJson(response: Response) {
 export const practiceService = {
   getSessions: async () => {
     const response = await api.get("/practice/sessions/");
-    if (isEndpointMissing(response)) return [];
     if (!response.ok) throw new Error("Failed to fetch sessions");
     const data = await response.json();
     return Array.isArray(data) ? data : data.results ?? [];
@@ -49,7 +47,11 @@ export const practiceService = {
     const payload = { responses: data.responses ?? [] };
     const response = await api.post("/practice/sessions/", payload);
     if (!response.ok) throw new Error("Failed to create session");
-    return await response.json();
+    const session = await response.json();
+    if (!session?.id) {
+      throw new Error("Practice session response is missing an id");
+    }
+    return session;
   },
 
   updateSession: async (id: EntityId, data: SessionUpdatePayload) => {
@@ -65,23 +67,6 @@ export const practiceService = {
     const response = await api.get(url);
     if (response.ok) {
       return await response.json();
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      throw new Error('Failed to generate adaptive session');
-    }
-
-    if (response.status >= 500 || isEndpointMissing(response)) {
-      const fallbackResponse = await api.get('/practice/questions/');
-      if (!fallbackResponse.ok) {
-        throw new Error('Failed to generate adaptive session');
-      }
-      const data = await fallbackResponse.json();
-      const list = Array.isArray(data) ? data : data.results ?? [];
-      return {
-        questions: list.slice(0, 10),
-        fallback_reason: 'adaptive_unavailable',
-      };
     }
 
     throw new Error('Failed to generate adaptive session');
@@ -104,10 +89,16 @@ export const practiceService = {
     session: EntityId;
     question: EntityId;
     is_correct: boolean;
+    time_taken_seconds?: number;
+    confidence_rating?: number;
+    answer_text?: string | null;
   }) => {
     const response = await api.post(`/practice/sessions/${data.session}/responses/`, {
       question: data.question,
       is_correct: data.is_correct,
+      time_taken_seconds: data.time_taken_seconds,
+      confidence_rating: data.confidence_rating,
+      answer_text: data.answer_text,
     });
     if (!response.ok) throw new Error('Failed to submit interaction');
     return await parseOptionalJson(response);

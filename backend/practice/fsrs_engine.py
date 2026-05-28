@@ -4,24 +4,33 @@ from django.db import transaction
 from django.utils import timezone
 from practice.models import QuestionResponse, Subtopic
 from topics.models import SubtopicMastery
+import fsrs
 
 
-# the logic here is just arbitrary to avoid errors
-# this is not for actual functionality of course
-def get_rating(interaction: QuestionResponse) -> int:
+def get_rating(interaction: QuestionResponse) -> fsrs.Rating:
     if not interaction.is_correct:
-        return 1  # Again
+        return fsrs.Rating.Again
     
     # Map confidence to FSRS rating scale if available (usually 1 to 5)
     confidence = getattr(interaction, 'confidence_rating', None)
-    if confidence is not None and confidence > 0:
-        return confidence
+    if confidence is not None:
+        # FSRS Rating scale: 1=Again, 2=Hard, 3=Good, 4=Easy
+        if confidence <= 1:
+            return fsrs.Rating.Again
+        elif confidence == 2:
+            return fsrs.Rating.Hard
+        elif confidence == 3:
+            return fsrs.Rating.Good
+        else:
+            return fsrs.Rating.Easy
     
-    return 3  # Good by default
+    return fsrs.Rating.Good
 
 
-# TODO: replace stub with full FSRS-5 implementation
-def apply_fsrs(mastery: SubtopicMastery, rating: int) -> SubtopicMastery:
+scheduler = fsrs.Scheduler()
+
+
+def apply_fsrs(mastery: SubtopicMastery, rating: fsrs.Rating) -> SubtopicMastery:
     """
     Apply FSRS scheduling to a SubtopicMastery record.
 
@@ -30,17 +39,47 @@ def apply_fsrs(mastery: SubtopicMastery, rating: int) -> SubtopicMastery:
     """
     now = timezone.now()
 
-    if rating >= 3:
-        mastery.stability = mastery.stability * 2
-        mastery.reps += 1
-        mastery.state = 'REVIEW'
-    else:
-        mastery.lapses += 1
-        mastery.stability = max(1.0, mastery.stability * 0.5)
-        mastery.state = 'RELEARNING'
+    # Map SubtopicMastery state to fsrs.State
+    state_mapping = {
+        'NEW': fsrs.State.Learning,
+        'LEARNING': fsrs.State.Learning,
+        'REVIEW': fsrs.State.Review,
+        'RELEARNING': fsrs.State.Relearning
+    }
+    fsrs_state = state_mapping.get(mastery.state, fsrs.State.Learning)
 
-    mastery.last_review = now
-    mastery.next_review = now + timedelta(days=int(mastery.stability))
+    # Initialize FSRS Card
+    card = fsrs.Card(
+        state=fsrs_state,
+        stability=mastery.stability if mastery.state != 'NEW' else None,
+        difficulty=mastery.difficulty if mastery.state != 'NEW' else None,
+        due=mastery.next_review,
+        last_review=mastery.last_review,
+    )
+
+    # Run scheduler
+    card, log = scheduler.review_card(card, rating, now)
+
+    # Map updated Card back to SubtopicMastery
+    state_reverse_mapping = {
+        fsrs.State.Learning: 'LEARNING',
+        fsrs.State.Review: 'REVIEW',
+        fsrs.State.Relearning: 'RELEARNING'
+    }
+    mastery.state = state_reverse_mapping.get(card.state, 'LEARNING')
+
+    if card.stability is not None:
+        mastery.stability = card.stability
+    if card.difficulty is not None:
+        mastery.difficulty = card.difficulty
+
+    mastery.last_review = card.last_review
+    mastery.next_review = card.due
+
+    if rating == fsrs.Rating.Again:
+        mastery.lapses += 1
+    else:
+        mastery.reps += 1
 
     return mastery
 

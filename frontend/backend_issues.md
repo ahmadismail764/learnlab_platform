@@ -6,28 +6,28 @@
 
 ## 🔴 Critical Active Blockers (Immediate Fixes Required)
 
-### 1. `/auth/users/me/` returns non-200 during auth hydration
+### 1. `/auth/users/me/` and session list fail after successful JWT login
 
-- **Status:** Active blocker
-- **Symptoms:** Frontend logs `Failed to hydrate user Error: Failed to fetch current user from /auth/users/me/.` immediately after login.
-- **Impact:** Auth context cannot hydrate reliably, causing unexpected logout or cached fallback state.
-- **Repro:** Log in, then call `GET /api/v1/auth/users/me/` with `Authorization: Bearer <access>`.
-- **Recommendation:** Ensure the endpoint returns `200` with `UserDetailSerializer` and confirm JWT auth/permissions are applied.
+- **Status:** Active backend blocker, verified 2026-05-28 after migrations were applied
+- **Symptoms:** `POST /api/v1/auth/login/` succeeds for learner and admin accounts, but authenticated `GET /api/v1/auth/users/me/` and `GET /api/v1/practice/sessions/` return `500`.
+- **Observed error:** `Field name joined_at is not valid for model User in accounts.serializers.UserDetailSerializer.`
+- **Impact:** The frontend cannot safely remove auth/profile error handling or rely on the canonical current-user profile contract.
+- **Recommendation:** Align `UserDetailSerializer` with the migrated `User` model field name, or expose `joined_at` via a serializer source/alias if the API contract should keep that response key.
 
-### 2. Adaptive session generation endpoint fails
+### 2. Adaptive session generation returns `500`
 
-- **Status:** Active blocker
-- **Symptoms:** Frontend throws `Failed to generate adaptive session` when starting practice.
-- **Impact:** Learners cannot start practice sessions.
-- **Backend source:** `GenerateAdaptiveSessionView` filters questions with `Question.objects.filter(id=due_subtopic_ids)` and sorts by `q.id`. It should filter by `subtopic_id__in` and order using `q.subtopic_id`.
-- **Recommendation:** Update the query and ordering to match subtopic IDs.
+- **Status:** Active backend blocker, verified 2026-05-28 after migrations were applied
+- **Symptoms:** Authenticated `GET /api/v1/practice/sessions/generate-adaptive/` returns `500`.
+- **Observed error:** `['“[]” is not a valid UUID.']`
+- **Impact:** Learners cannot start adaptive practice from the frontend without a backend fix. The frontend no longer falls back to generic question-bank practice because that hides the failed adaptive contract.
+- **Recommendation:** Ensure adaptive generation treats an empty due-subtopic set as an empty queue or a valid default query, not as a UUID filter value.
 
-### 3. Incorrect import paths in practice modules
+### 3. Practice session creation response omits `id`
 
-- **Status:** Active blocker
-- **Symptoms:** `ModuleNotFoundError: No module named 'constants'` or `ImportError` for `Subtopic` when practice endpoints execute.
-- **Backend source:** `practice/serializers.py` + `practice/views.py` import `from constants import XP_PER_CORRECT_ANSWER` but the module is `practice.constants`. `practice/fsrs_engine.py` imports `Subtopic` from `practice.models` but it lives in `topics.models`.
-- **Recommendation:** Fix import paths to the correct modules.
+- **Status:** Active backend blocker, verified 2026-05-28 after migrations were applied
+- **Symptoms:** `POST /api/v1/practice/sessions/` with `{ "responses": [] }` returns `201` and body `{ "responses": [] }`.
+- **Impact:** The frontend cannot call `POST /practice/sessions/<uuid:id>/responses/` or complete the session because the created session id is missing.
+- **Recommendation:** Return the created `PracticeSession` resource with `id`, `learner`, `start_time`, `end_time`, `total_xp_earned`, and `responses`, matching the documented session contract.
 
 ---
 
@@ -35,9 +35,9 @@
 
 ### 1. Backend-Side XP Validation on Practice Session Finalization (Anti-Cheat)
 
-- **Status:** Suggestion (High Value / Security)
-- **Description:** Currently, when completing a practice session, the frontend submits a `PATCH` request to `/practice/sessions/<id>/` containing `total_xp_earned`. The backend `PracticeSessionSerializer.update` trusts this client-side value and increments the user's `current_xp` by this amount. This introduces a vulnerability where a user can send a modified, inflated `total_xp_earned` payload to artificially boost their XP on the leaderboard.
-- **Recommendation:** Calculate the XP earned dynamically on the server-side upon session finalization by counting the verified correct `QuestionResponse` records linked to that session in the database:
+- **Status:** Resolved backend invariant / monitor
+- **Description:** Earlier frontend builds submitted `total_xp_earned` during session completion, which would have allowed a modified client payload to inflate XP if trusted by the backend. The current frontend now sends only `end_time` on completion and relies on verified `QuestionResponse` rows for XP.
+- **Recommendation:** Keep XP calculation fully server-side by counting the verified correct `QuestionResponse` records linked to the session:
   ```python
   # Instead of: learner.current_xp += total_xp_earned
   correct_responses = instance.responses.filter(is_correct=True).count()
@@ -118,9 +118,9 @@
 
 ---
 
-## 🎉 Successfully Resolved Integration Milestones
+## 🎉 Previously Resolved Integration Milestones
 
-All critical blockers and previous suggestions from our early integrations have been **fully resolved** by the backend engineering team! Excellent work on these!
+The following older integration milestones were previously verified. They do not override the active blockers listed above; the current running backend still needs the authenticated contracts fixed before the frontend can re-verify the full practice flow.
 
 ### 1. Practice Session Completion XP Awarding Bug (Critical Bug)
 
@@ -150,4 +150,4 @@ All critical blockers and previous suggestions from our early integrations have 
 ### 6. User Initials and Avatar Colors in Token Response
 
 - **Status:** ✅ Resolved
-- **Verification:** `/auth/users/me/` and `/auth/login/` endpoints now return stable, computed `initials` (e.g., `"JD"`) and beautiful design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). This enables clean client-side dynamic avatar generation without mock colors.
+- **Verification:** `/auth/login/` returns stable, computed `initials` (e.g., `"JD"`) and design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). `/auth/users/me/` is currently covered by the active serializer blocker above.

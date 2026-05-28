@@ -4,6 +4,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import {
@@ -126,13 +127,15 @@ function ToastContainer({
   toasts: Toast[]
   removeToast: (id: string) => void
 }) {
+  const { t } = useTranslation('common')
+
   if (toasts.length === 0) return null
 
   return (
     <div
       className="fixed bottom-4 end-4 z-50 flex flex-col gap-2 max-w-sm w-full"
       role="region"
-      aria-label="Notifications"
+      aria-label={t('notifications')}
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
@@ -145,6 +148,7 @@ function ToastContainer({
  * Individual Toast Item
  */
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  const { t } = useTranslation('common')
   const variantConfig: Record<
     ToastVariant,
     { icon: typeof CheckCircle; bg: string; border: string; iconColor: string }
@@ -193,7 +197,8 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       <button
         onClick={onClose}
         className="flex-shrink-0 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-        aria-label="Dismiss notification"
+        aria-label={t('dismissNotification')}
+        title={t('dismissNotification')}
       >
         <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
       </button>

@@ -7,8 +7,11 @@
     "title": "Combinatorics"
   },
   "discreteMath": "Discrete Mathematics",
+  "title": "Topics",
+  "uncategorized": "Uncategorized",
   "graphTheory": {
     "basics": "Graph Basics",
+    "graphsDegrees": "Graphs and Degrees",
     "paths": "Paths & Circuits",
     "planarity": "Planarity",
     "title": "Graph Theory",
@@ -17,12 +20,14 @@
   "logic": {
     "predicates": "Predicate Logic",
     "proofTechniques": "Proof Techniques",
+    "propositionsConnectives": "Propositions and Connectives",
     "propositional": "Propositional Logic",
     "quantifiers": "Quantifiers",
     "title": "Logic"
   },
   "numberTheory": {
     "divisibility": "Divisibility",
+    "divisibilityGcd": "Divisibility and GCD",
     "gcd": "GCD & LCM",
     "modularArithmetic": "Modular Arithmetic",
     "primes": "Prime Numbers",
@@ -37,6 +42,7 @@
   },
   "sets": {
     "cartesianProduct": "Cartesian Product",
+    "identities": "Set Identities",
     "operations": "Set Operations",
     "powerSets": "Power Sets",
     "title": "Set Theory",

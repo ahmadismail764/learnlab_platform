@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import { Sidebar, type SidebarProps } from './Sidebar'
 import { Header } from './Header'
 import { ErrorBoundary } from '@/components/common'
@@ -31,6 +33,7 @@ export function DashboardLayout({
   pageTitle,
   onLogout,
 }: DashboardLayoutProps) {
+  const { t } = useTranslation('nav')
   const isDashboard = Boolean(role)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -81,12 +84,9 @@ export function DashboardLayout({
             <button
               onClick={() => setMobileMenuOpen(false)}
               className="absolute top-3 end-3 p-1.5 rounded-lg bg-neutral-200/80 dark:bg-neutral-700/80 hover:bg-neutral-300 dark:hover:bg-neutral-600 text-neutral-600 dark:text-neutral-300 transition-colors z-[60]"
-              aria-label="Close menu"
+              aria-label={t('closeMenu')}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>

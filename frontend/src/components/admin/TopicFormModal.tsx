@@ -112,7 +112,7 @@ export function TopicFormModal({
       onClose()
       onSuccess()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Save failed'
+      const message = error instanceof Error ? error.message : t('admin:topicsManagement.form.saveError')
       showError(message)
       if (message.toLowerCase().includes('name')) {
         setFormErrors((prev) => ({ ...prev, name: message }))
@@ -161,7 +161,7 @@ export function TopicFormModal({
                 onClick={onClose}
                 disabled={isSaving}
                 className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                aria-label="Close dialog"
+                aria-label={t('common:close')}
               >
                 <X className="w-5 h-5 text-neutral-500" />
               </button>
@@ -216,7 +216,7 @@ export function TopicFormModal({
                 <Input
                   value={formData.parent_module}
                   onChange={(e) => setFormData((prev) => ({ ...prev, parent_module: e.target.value }))}
-                  placeholder="e.g. Discrete Math > Logic"
+                  placeholder={t('admin:topicsManagement.form.parentModulePlaceholder')}
                   disabled={isSaving}
                   list="parent-module-options"
                 />
@@ -226,7 +226,7 @@ export function TopicFormModal({
                   ))}
                 </datalist>
                 <p className="text-xs text-neutral-400 mt-1">
-                  Select an existing module or type a new one. Leave empty for uncategorized.
+                  {t('admin:topicsManagement.form.parentModuleHelp')}
                 </p>
               </div>
             </div>

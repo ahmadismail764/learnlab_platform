@@ -2,5 +2,6 @@
   "arabic": "العربية",
   "english": "English",
   "languageChanged": "Language changed to {{language}}",
-  "switchLanguage": "Switch Language"
+  "switchLanguage": "Change language",
+  "switchToLanguage": "Switch to {{language}}"
 }

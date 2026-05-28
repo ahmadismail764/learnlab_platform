@@ -433,7 +433,7 @@ export function AnalyticsPage() {
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
                       {learner.questionsAnswered > 0
                         ? `${learner.questionsAnswered} ${t('admin:questionsAnswered')}`
-                        : `${t('admin:questionsAnswered')}: --`} • {learner.xp} XP
+                        : `${t('admin:questionsAnswered')}: --`} • {t('admin:experiencePointsValue', { value: learner.xp })}
                     </p>
                   </div>
                   <Badge 

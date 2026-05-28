@@ -1,5 +1,15 @@
-import { useMemo } from "react";
-import { BookOpen, ChevronRight, Clock3, Flame, Target } from "lucide-react";
+import { useMemo, type ReactNode } from "react";
+import {
+  BookOpen,
+  CheckCircle2,
+  ChevronRight,
+  CircleDot,
+  Clock3,
+  Flame,
+  Repeat2,
+  Target,
+  TriangleAlert,
+} from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -15,9 +25,9 @@ import { PageStatCard, SectionHeading } from "@/components/common";
 import { Skeleton } from "@/components/ui/Loading";
 import { useCurrentUser } from "@/contexts";
 import { useLearnerProfile, useTopicMastery } from "@/hooks";
+import { getTopicDisplayName } from "@/utils/topicLabels";
 import {
   MASTERY_STATUS_BADGE_VARIANT,
-  MASTERY_STATUS_ICONS,
   type TopicMastery,
 } from "@/constants/mastery";
 
@@ -108,6 +118,27 @@ export function LearnerDashboard() {
       }));
   }, [topicsDueForReview, masteries]);
 
+  const statusLabel = (status: TopicMastery["status"]) => {
+    const labels: Record<TopicMastery["status"], string> = {
+      new: t("learner:stateNew"),
+      learning: t("learner:stateLearning"),
+      learned: t("learner:stateMastered"),
+      struggling: t("learner:stateStruggling"),
+    };
+    return labels[status];
+  };
+
+  const statusIcon = (status: TopicMastery["status"]) => {
+    const iconClass = "h-5 w-5";
+    const icons: Record<TopicMastery["status"], ReactNode> = {
+      new: <CircleDot className={iconClass} aria-hidden="true" />,
+      learning: <Repeat2 className={iconClass} aria-hidden="true" />,
+      learned: <CheckCircle2 className={iconClass} aria-hidden="true" />,
+      struggling: <TriangleAlert className={iconClass} aria-hidden="true" />,
+    };
+    return icons[status];
+  };
+
   const shouldRedirectToOnboarding = Boolean(
     user && !localStorage.getItem(`onboarding_done_${user.id}`),
   );
@@ -117,35 +148,35 @@ export function LearnerDashboard() {
       icon: <Target className="h-5 w-5" />,
       label: t("learner:questionsMastered"),
       value: stats.totalMastered,
-      helper: `${masteredShare}% stable coverage`,
+      helper: t("learner:stableCoverage", { percent: masteredShare }),
       tone: "primary" as const,
     },
     {
       icon: <BookOpen className="h-5 w-5" />,
       label: t("learner:activeTopics"),
       value: stats.topicsInProgress,
-      helper: "Still in circulation",
+      helper: t("learner:stillInCirculation"),
       tone: "secondary" as const,
     },
     {
       icon: <Clock3 className="h-5 w-5" />,
       label: t("learner:dueForReview"),
       value: stats.topicsDue,
-      helper: stats.topicsDue > 0 ? "Ready for review" : "Nothing urgent",
+      helper: stats.topicsDue > 0 ? t("learner:readyForReview") : t("learner:nothingUrgent"),
       tone: "accent" as const,
     },
     {
       icon: <Flame className="h-5 w-5" />,
-      label: t("learner:thisWeek", "Streak"),
-      value: `${stats.streak} ${t("common:days", "days")}`,
-      helper: "Consistency pays off",
+      label: t("learner:practiceStreak"),
+      value: t("learner:streakDaysValue", { count: stats.streak }),
+      helper: t("learner:consistencyPaysOff"),
       tone: "success" as const,
     },
     {
       icon: <XpBadge size="lg" />,
-      label: t("learner:totalXP", "Total XP"),
+      label: t("learner:totalXP"),
       value: stats.totalXP.toLocaleString(),
-      helper: "Overall experience points",
+      helper: t("learner:overallExperiencePoints"),
       tone: "accent" as const,
     },
   ];
@@ -160,7 +191,7 @@ export function LearnerDashboard() {
         <div className="space-y-5">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary-700/80 dark:text-primary-300/80">
-              Today
+              {t("learner:today")}
             </p>
             <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50 sm:text-[2.4rem]">
               {t("learner:welcomeBack", { name: user.firstName })}
@@ -169,33 +200,28 @@ export function LearnerDashboard() {
               {stats.topicsDue > 0
                 ? t("learner:dashboardHeroDueDescription", {
                     count: stats.topicsDue,
-                    defaultValue:
-                      "You have {{count}} topics ready for review. Start there first and the rest of the week stays lighter.",
                   })
-                : t("learner:dashboardHeroCalmDescription", {
-                    defaultValue:
-                      "Your queue is under control. This is a good moment to reinforce strong topics or push into something new.",
-                  })}
+                : t("learner:dashboardHeroCalmDescription")}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-neutral-500 dark:text-neutral-400">
             <span className="inline-flex items-center gap-2">
-              <span>Due now</span>
+              <span>{t("learner:dueNow")}</span>
               <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                 {isLoading ? "--" : stats.topicsDue}
               </span>
             </span>
             <span className="inline-flex items-center gap-2">
-              <span>Retention</span>
+              <span>{t("learner:retention")}</span>
               <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                 {isLoading ? "--" : `${overallRetention}%`}
               </span>
             </span>
             <span className="inline-flex items-center gap-2">
-              <span>Streak</span>
+              <span>{t("learner:practiceStreak")}</span>
               <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                {isLoading ? "--" : `${stats.streak} ${t("common:days", "days")}`}
+                {isLoading ? "--" : t("learner:streakDaysValue", { count: stats.streak })}
               </span>
             </span>
           </div>
@@ -211,7 +237,7 @@ export function LearnerDashboard() {
             </Link>
             <Link to="/learner/topics">
               <Button variant="ghost" className="rounded-full px-5">
-                {t("topics:title", "Browse topics")}
+                {t("topics:title")}
               </Button>
             </Link>
           </div>
@@ -219,7 +245,7 @@ export function LearnerDashboard() {
 
         <Card className="learner-panel">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
-            Today&apos;s focus
+            {t("learner:todaysFocus")}
           </p>
 
           {isLoading ? (
@@ -232,24 +258,24 @@ export function LearnerDashboard() {
             <>
               <p className="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
                 {stats.topicsDue > 0
-                  ? `${stats.topicsDue} topic${stats.topicsDue === 1 ? "" : "s"} due`
-                  : "Queue clear"}
+                  ? t("learner:topicDueCount", { count: stats.topicsDue })
+                  : t("learner:queueClear")}
               </p>
               <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
                 {stats.topicsDue > 0
-                  ? "A short review session will do the most work right now."
-                  : "Use a small session to reinforce strong topics without building pressure."}
+                  ? t("learner:startReviewSessionImpact")
+                  : t("learner:useSmallSession")}
               </p>
 
               <div className="mt-5 space-y-3 border-t border-neutral-200/80 pt-4 dark:border-neutral-800">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">In progress</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t("learner:inProgress")}</span>
                   <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     {stats.topicsInProgress}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Stable topics</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t("learner:stableTopics")}</span>
                   <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     {stats.totalMastered}
                   </span>
@@ -280,8 +306,8 @@ export function LearnerDashboard() {
             title={t("learner:todaysQueue")}
             description={
               displayTopics.length > 0
-                ? "Start with the items that will buy back the most retention."
-                : "There is no urgent review debt right now."
+                ? t("learner:startWithHighestRetention")
+                : t("learner:noUrgentReviewDebt")
             }
           />
 
@@ -303,18 +329,12 @@ export function LearnerDashboard() {
               <div className="surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800 px-6 py-10 text-center">
               <AllCaughtUpIllustration className="mx-auto" />
                 <p className="mt-4 text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                  {t("learner:allCaughtUp", "All caught up!")}
+                  {t("learner:allCaughtUp")}
                 </p>
                 <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-neutral-500 dark:text-neutral-400">
                   {masteries.length === 0
-                    ? t(
-                        "learner:startFirstSession",
-                        "Start a practice session to begin tracking your progress.",
-                      )
-                    : t(
-                        "learner:noTopicsDue",
-                        "No topics are due for review right now. Great work!",
-                      )}
+                    ? t("learner:startFirstSession")
+                    : t("learner:noTopicsDue")}
                 </p>
               </div>
             ) : (
@@ -327,30 +347,24 @@ export function LearnerDashboard() {
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-sm font-semibold text-primary-700 dark:bg-primary-950/30 dark:text-primary-300">
-                        {MASTERY_STATUS_ICONS[topic.status]}
+                        {statusIcon(topic.status)}
                       </div>
 
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="truncate text-sm font-semibold text-neutral-950 dark:text-neutral-50 sm:text-base">
-                            {topic.name}
+                            {getTopicDisplayName(t, topic.name)}
                           </h3>
                           <Badge variant={MASTERY_STATUS_BADGE_VARIANT[topic.status]} size="sm">
-                            {topic.status === "new"
-                              ? t("learner:stateNew")
-                              : topic.status === "learning"
-                                ? t("learner:stateLearning")
-                                : topic.status === "learned"
-                                  ? t("learner:stateMastered")
-                                  : t("learner:stateReview")}
+                            {statusLabel(topic.status)}
                           </Badge>
                         </div>
 
                         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                          {topic.progress}% retained
+                          {topic.progress}% {t("learner:retained")}
                           {topic.status === "struggling"
-                            ? " • Needs a quick reset"
-                            : " • Good candidate for a short review"}
+                            ? ` • ${t("learner:needsQuickReset")}`
+                            : ` • ${t("learner:goodShortReviewCandidate")}`}
                         </p>
 
                         <div className="mt-3 flex items-center gap-3">
@@ -381,17 +395,17 @@ export function LearnerDashboard() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
-                Learning health
+                {t("learner:learningHealth")}
               </p>
               <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-                Keep the system calm
+                {t("learner:keepSystemCalm")}
               </h2>
               <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
-                Small, frequent reviews protect progress better than catch-up sessions.
+                {t("learner:learningHealthDescription")}
               </p>
             </div>
             <Badge variant={stats.topicsDue > 0 ? "warning" : "success"} size="sm">
-              {stats.topicsDue > 0 ? "Needs attention" : "On track"}
+              {stats.topicsDue > 0 ? t("learner:needsAttention") : t("learner:onTrack")}
             </Badge>
           </div>
 
@@ -411,7 +425,7 @@ export function LearnerDashboard() {
             <div className="space-y-4">
               <div>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Retention strength</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t("learner:retentionStrength")}</span>
                   <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     {overallRetention}%
                   </span>
@@ -429,7 +443,7 @@ export function LearnerDashboard() {
 
               <div>
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Covered topics</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t("learner:coveredTopics")}</span>
                   <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     {stats.totalMastered}/{masteries.length || 0}
                   </span>
@@ -447,12 +461,12 @@ export function LearnerDashboard() {
 
               <div className="surface-inset border border-neutral-200/80 dark:border-neutral-800">
                 <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                  Next best move
+                  {t("learner:nextBestMove")}
                 </p>
                 <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
                   {stats.topicsDue > 0
-                    ? "Clear the due queue before opening a new topic. It is the cheapest way to keep retention high."
-                    : "Use one short practice set to reinforce what already feels strong, then expand from there."}
+                    ? t("learner:clearDueQueueFirst")
+                    : t("learner:reinforceThenExpand")}
                 </p>
               </div>
             </div>
@@ -461,7 +475,7 @@ export function LearnerDashboard() {
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             <Link to="/learner/progress">
               <Button fullWidth variant="outline">
-                View progress
+                {t("learner:viewProgress")}
               </Button>
             </Link>
             <Link to="/learner/topics">
@@ -469,7 +483,7 @@ export function LearnerDashboard() {
                 fullWidth
                 rightIcon={<ChevronRight className="h-4 w-4 rtl:rotate-180" />}
               >
-                Browse topics
+                {t("topics:title")}
               </Button>
             </Link>
           </div>

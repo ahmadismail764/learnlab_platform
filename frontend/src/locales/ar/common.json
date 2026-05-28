@@ -1,5 +1,6 @@
 {
   "accent": "مميز",
+  "admin": "مسؤول",
   "appName": "معمل التعلم",
   "back": "رجوع",
   "cancel": "إلغاء",
@@ -11,17 +12,46 @@
   "create": "أنشِئ",
   "delete": "احذف",
   "done": "انتهى",
+  "days": "أيام",
   "edit": "عدِّل",
+  "dismissNotification": "أغلق الإشعار",
   "error": "خطأ",
+  "empty": {
+    "content": {
+      "description": "راجِع لاحقاً لتجد مواد تعلم جديدة.",
+      "title": "لا يوجد محتوى متاح"
+    },
+    "default": {
+      "description": "ابدأ بإنشاء أول عنصر.",
+      "title": "لا توجد عناصر بعد"
+    },
+    "learners": {
+      "description": "سيظهر المتعلمون هنا عند انضمامهم.",
+      "title": "لا يوجد متعلمون بعد"
+    },
+    "noResults": {
+      "description": "هذا القسم فارغ الآن.",
+      "title": "لا شيء هنا"
+    },
+    "search": {
+      "description": "عدِّل البحث أو الفلاتر للوصول لما تريد.",
+      "title": "لا توجد نتائج"
+    }
+  },
   "false": "خطأ",
   "goHome": "عُد للرئيسية",
   "loading": "جارٍ التحميل...",
+  "learner": "متعلم",
   "minutes": "دقائق",
+  "notAvailable": "غير متاح",
   "next": "التالي",
   "noResults": "لا نتائج",
+  "notifications": "الإشعارات",
   "optional": "اختياري",
+  "pageNotFound": "الصفحة غير موجودة",
   "previous": "السابق",
   "primary": "أساسي",
+  "refresh": "تحديث",
   "required": "مطلوب",
   "reset": "أعِد الضبط",
   "save": "احفظ",

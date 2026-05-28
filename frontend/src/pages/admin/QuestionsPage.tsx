@@ -23,6 +23,7 @@ import { useSuspenseQuestions } from '@/hooks'
 import { QuestionPreviewModal } from '@/components/admin/QuestionPreviewModal'
 import { QuestionFormModal } from '@/components/admin/QuestionFormModal'
 import { DeleteQuestionDialog } from '@/components/admin/DeleteQuestionDialog'
+import { getTopicDisplayName } from '@/utils/topicLabels'
 
 type FilterTier = 'all' | 1 | 2 | 3
 
@@ -123,7 +124,7 @@ function QuestionsContent() {
     () => (rawQuestions ?? []) as BackendQuestion[],
     [rawQuestions]
   )
-  const loadError = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load questions') : ''
+  const loadError = queryError ? (queryError instanceof Error ? queryError.message : t('admin:failedToLoadQuestions')) : ''
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
@@ -201,7 +202,7 @@ function QuestionsContent() {
       2: { variant: 'secondary', label: t('admin:questions.difficulty.intermediate'), icon: SignalMedium },
       3: { variant: 'accent', label: t('admin:questions.difficulty.advanced'), icon: SignalHigh },
     }
-    const config = configs[tier] || { variant: 'secondary' as const, label: `Tier ${tier}`, icon: null }
+    const config = configs[tier] || { variant: 'secondary' as const, label: t('admin:questions.tierValue', { tier }), icon: null }
     const IconComponent = config.icon
     return (
       <Badge variant={config.variant} size="sm" className="inline-flex items-center">
@@ -227,7 +228,7 @@ function QuestionsContent() {
         <AlertTriangle className="w-8 h-8 text-rose-500" />
         <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{loadError}</p>
         <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
-          Retry
+          {t('common:tryAgain')}
         </Button>
       </div>
     )
@@ -256,10 +257,11 @@ function QuestionsContent() {
       <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800">
         <Info className="w-5 h-5 text-sky-600 dark:text-sky-400 shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-sky-800 dark:text-sky-200">Connected to backend API</p>
+          <p className="text-sm font-medium text-sky-800 dark:text-sky-200">
+            {t('admin:questions.connectedBackendApi')}
+          </p>
           <p className="text-xs text-sky-600 dark:text-sky-400 mt-0.5">
-            All CRUD operations call <code className="bg-sky-100 dark:bg-sky-900/40 px-1 rounded">/practice/questions/</code>.{' '}
-            Changes are persisted to the database in real time.
+            {t('admin:questions.connectedBackendDescription', { endpoint: '/practice/questions/' })}
           </p>
         </div>
       </div>
@@ -377,7 +379,7 @@ function QuestionsContent() {
                   <option value="all">{t('admin:questions.allTopics')}</option>
                   {topicNames.map((name) => (
                     <option key={name} value={name}>
-                      {name}
+                      {getTopicDisplayName(t, name)}
                     </option>
                   ))}
                 </select>
@@ -395,9 +397,9 @@ function QuestionsContent() {
                   className="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:text-neutral-100"
                 >
                   <option value="all">{t('admin:questions.allDifficulties')}</option>
-                  <option value="1">{t('admin:questions.difficulty.basic')} (Tier 1)</option>
-                  <option value="2">{t('admin:questions.difficulty.intermediate')} (Tier 2)</option>
-                  <option value="3">{t('admin:questions.difficulty.advanced')} (Tier 3)</option>
+                  <option value="1">{t('admin:questions.difficulty.basic')} ({t('admin:questions.tierValue', { tier: 1 })})</option>
+                  <option value="2">{t('admin:questions.difficulty.intermediate')} ({t('admin:questions.tierValue', { tier: 2 })})</option>
+                  <option value="3">{t('admin:questions.difficulty.advanced')} ({t('admin:questions.tierValue', { tier: 3 })})</option>
                 </select>
               </div>
             </div>
@@ -422,14 +424,14 @@ function QuestionsContent() {
                 preset={hasActiveFilters ? 'search' : 'content'}
                 title={
                   questions.length === 0
-                    ? 'No questions in the database'
+                    ? t('admin:questions.noQuestionsInDatabase')
                     : hasActiveFilters
                     ? t('admin:questions.noMatchingQuestions')
                     : t('admin:questions.noQuestions')
                 }
                 description={
                   questions.length === 0
-                    ? 'Questions must be added via Django Admin or the management command until the backend supports write operations.'
+                    ? t('admin:questions.writeFallbackDescription')
                     : hasActiveFilters
                     ? t('admin:questions.tryDifferentFilters')
                     : t('admin:questions.addFirstQuestion')
@@ -455,7 +457,7 @@ function QuestionsContent() {
                       {t('admin:questions.table.difficulty')}
                     </th>
                     <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
-                      Choices
+                      {t('admin:questions.table.choices')}
                     </th>
                     <th className="px-4 py-3 text-end text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.actions')}
@@ -479,19 +481,21 @@ function QuestionsContent() {
                       </td>
                       <td className="px-4 py-4">
                         <Badge variant="secondary" size="sm">
-                          {question.topic_name || 'Unlinked'}
+                          {question.topic_name ? getTopicDisplayName(t, question.topic_name) : t('admin:questions.unlinked')}
                         </Badge>
                       </td>
                       <td className="px-4 py-4">{getTierBadge(question.tier)}</td>
                       <td className="px-4 py-4">
-                        <span className="text-sm text-neutral-500">{question.choices?.length || 0} options</span>
+                        <span className="text-sm text-neutral-500">
+                          {t('admin:questions.optionsCount', { count: question.choices?.length || 0 })}
+                        </span>
                       </td>
                       <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            aria-label="Preview question"
+                            aria-label={t('admin:preview')}
                             onClick={() => setSelectedQuestion(question)}
                           >
                             <Eye className="h-4 w-4" />
@@ -499,7 +503,7 @@ function QuestionsContent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            aria-label="Edit question"
+                            aria-label={t('admin:editQuestion')}
                             onClick={() => openEditForm(question)}
                           >
                             <Edit2 className="h-4 w-4" />
@@ -507,7 +511,7 @@ function QuestionsContent() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            aria-label="Delete question"
+                            aria-label={t('admin:deleteQuestion')}
                             className="text-red-600 hover:bg-red-50 hover:text-red-700"
                             onClick={() => setDeleteTarget(question)}
                           >

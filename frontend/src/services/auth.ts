@@ -13,8 +13,6 @@ import {
 
 export type { BackendAuthUser } from "./mappers/backendUser";
 
-const AUTH_USER_SNAPSHOT_KEY = "learnlab_user_snapshot";
-
 export interface LoginCredentials {
   email: string;
   password: string;
@@ -44,10 +42,6 @@ export interface UpdateCurrentUserPayload {
   username?: string;
   first_name?: string;
   last_name?: string;
-}
-
-export interface CurrentUserOptions {
-  allowFallback?: boolean;
 }
 
 function normalizeAuthError(
@@ -81,104 +75,6 @@ function normalizeAuthError(
   return message;
 }
 
-function isEndpointMissing(response: Response): boolean {
-  return response.status === 404 || response.status === 405;
-}
-
-async function postFirstAvailable(
-  paths: string[],
-  payloads: unknown[],
-): Promise<Response> {
-  let lastResponse: Response | null = null;
-
-  for (const path of paths) {
-    for (const payload of payloads) {
-      const response = await api.postPublic(path, payload);
-
-      if (response.ok) {
-        return response;
-      }
-
-      lastResponse = response;
-
-      if (!isEndpointMissing(response) && response.status !== 400 && response.status !== 401) {
-        return response;
-      }
-    }
-  }
-
-  return lastResponse ?? api.postPublic(paths[0] ?? "/auth/login/", payloads[0] ?? {});
-}
-
-
-function decodeJwtPayload(token: string | null): Record<string, unknown> | null {
-  if (!token) {
-    return null;
-  }
-
-  try {
-    const [, payload] = token.split(".");
-    if (!payload) {
-      return null;
-    }
-    const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`)
-        .join(""),
-    );
-    return JSON.parse(json) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
-function saveUserSnapshot(user: Partial<BackendAuthUser>) {
-  const storage = getTokenStorage();
-  storage.setItem(AUTH_USER_SNAPSHOT_KEY, JSON.stringify(coerceBackendUser(user)));
-}
-
-function readUserSnapshot(): BackendAuthUser | null {
-  const raw =
-    localStorage.getItem(AUTH_USER_SNAPSHOT_KEY) ??
-    sessionStorage.getItem(AUTH_USER_SNAPSHOT_KEY);
-
-  if (!raw) {
-    return null;
-  }
-
-  try {
-    return coerceBackendUser(JSON.parse(raw) as Partial<BackendAuthUser>);
-  } catch {
-    return null;
-  }
-}
-
-function getFallbackCurrentUser(): BackendAuthUser {
-  const snapshot = readUserSnapshot();
-  if (snapshot) {
-    return snapshot;
-  }
-
-  const claims = decodeJwtPayload(getToken("learnlab_auth_token"));
-  const id = claims?.user_id ?? claims?.sub ?? claims?.id ?? "learner";
-  const email = typeof claims?.email === "string" ? claims.email : "";
-  const username =
-    typeof claims?.username === "string"
-      ? claims.username
-      : email.split("@")[0] || String(id);
-  const role = claims?.role === "admin" ? "admin" : "learner";
-
-  return coerceBackendUser({
-    id: String(id),
-    email,
-    username,
-    role,
-    is_staff: role === "admin" || claims?.is_staff === true,
-  });
-}
-
 function normalizeFieldErrors(
   fieldErrors: Record<string, string> | undefined,
   mode: "login" | "register",
@@ -201,10 +97,10 @@ export const authService = {
       const identifier = credentials.email.trim();
 
       // Backend supports both username and email login (case-insensitive).
-      const response = await postFirstAvailable(
-        ["/auth/login/"],
-        [{ username: identifier, password: credentials.password }],
-      );
+      const response = await api.postPublic("/auth/login/", {
+        username: identifier,
+        password: credentials.password,
+      });
       if (!response.ok) {
         const { message, fieldErrors } = await parseApiError(response, "Login failed");
         throw new AuthRequestError(
@@ -231,29 +127,6 @@ export const authService = {
       storage.setItem("learnlab_auth_token", data.access);
       storage.setItem("learnlab_refresh_token", data.refresh);
 
-      // The login response includes a `user` object with full profile data.
-      // Fall back to JWT decode if user object is missing (older backends).
-      if (data.user) {
-        saveUserSnapshot({
-          id: String(data.user.id ?? ""),
-          email: data.user.email ?? "",
-          username: data.user.username ?? identifier,
-          first_name: data.user.first_name ?? "",
-          last_name: data.user.last_name ?? "",
-          role: data.user.role ?? (data.user.is_staff ? "admin" : "learner"),
-          is_staff: data.user.is_staff ?? false,
-        });
-      } else {
-        const claims = decodeJwtPayload(data.access);
-        saveUserSnapshot({
-          id: String(claims?.user_id ?? claims?.sub ?? ""),
-          email: typeof claims?.email === "string" ? claims.email : "",
-          username: typeof claims?.username === "string" ? claims.username : identifier,
-          role: claims?.role === "admin" ? "admin" : (claims?.is_staff === true ? "admin" : "learner"),
-          is_staff: claims?.is_staff === true || claims?.role === "admin",
-        });
-      }
-
       return data;
     } catch (error) {
       if (error instanceof AuthRequestError) {
@@ -266,10 +139,7 @@ export const authService = {
 
   register: async (userData: RegisterPayload) => {
     try {
-      const response = await postFirstAvailable(
-        ["/auth/register/"],
-        [userData],
-      );
+      const response = await api.postPublic("/auth/register/", userData);
       if (!response.ok) {
         const { message, fieldErrors } = await parseApiError(
           response,
@@ -296,10 +166,8 @@ export const authService = {
     localStorage.removeItem("learnlab_auth_token");
     localStorage.removeItem("learnlab_refresh_token");
     localStorage.removeItem("learnlab_persist");
-    localStorage.removeItem(AUTH_USER_SNAPSHOT_KEY);
     sessionStorage.removeItem("learnlab_auth_token");
     sessionStorage.removeItem("learnlab_refresh_token");
-    sessionStorage.removeItem(AUTH_USER_SNAPSHOT_KEY);
   },
 
   refreshToken: async () => {
@@ -310,47 +178,33 @@ export const authService = {
     return await response.json();
   },
 
-  getCurrentUser: async (options: CurrentUserOptions = {}): Promise<BackendAuthUser> => {
+  getCurrentUser: async (): Promise<BackendAuthUser> => {
     let response: Response | null = null;
 
     try {
       response = await api.get("/auth/users/me/");
     } catch (error) {
-      if (options.allowFallback) {
-        console.warn("Auth hydrate fallback: /auth/users/me/ unreachable.", error);
-        return getFallbackCurrentUser();
-      }
       const message =
         error instanceof Error
           ? error.message
-          : "Failed to fetch current user from /auth/users/me/.";
+          : "Current user request failed before reaching /auth/users/me/.";
       throw new Error(message);
     }
 
     if (response.ok) {
       const data = await response.json();
-      const user = coerceBackendUser(data as Partial<BackendAuthUser>);
-      saveUserSnapshot(user);
-      return user;
+      return coerceBackendUser(data as Partial<BackendAuthUser>);
     }
 
     if (response.status === 401 || response.status === 403) {
       throw new Error("Authentication expired. Please sign in again.");
     }
 
-    if (options.allowFallback) {
-      console.warn(
-        "Auth hydrate fallback: /auth/users/me/ responded with",
-        response.status,
-      );
-      return getFallbackCurrentUser();
-    }
-
     const { message } = await parseApiError(
       response,
-      "Failed to fetch current user.",
+      "Current user request failed.",
     );
-    throw new Error(`Failed to fetch current user from /auth/users/me/. ${message}`);
+    throw new Error(`Current user request failed at /auth/users/me/. ${message}`);
   },
 
   updateCurrentUser: async (payload?: UpdateCurrentUserPayload): Promise<BackendAuthUser> => {
@@ -362,27 +216,13 @@ export const authService = {
       await throwApiError(response, "Failed to update profile");
     }
     const data = await response.json();
-    const user = coerceBackendUser(data as Partial<BackendAuthUser>);
-    saveUserSnapshot(user);
-    return user;
+    return coerceBackendUser(data as Partial<BackendAuthUser>);
   },
 
   requestPasswordReset: async (email: string) => {
-    const response = await postFirstAvailable(
-      [
-        "/auth/password-reset/",
-        "/auth/password/reset/",
-        "/auth/forgot-password/",
-      ],
-      [{ email }],
-    );
+    const response = await api.postPublic("/auth/password-reset/", { email });
 
     if (!response.ok) {
-      if (isEndpointMissing(response)) {
-        throw new AuthRequestError(
-          "Password reset is not available on this backend yet.",
-        );
-      }
       await throwApiError(response, "Failed to request password reset");
     }
 
@@ -402,14 +242,7 @@ export const authService = {
     token: string;
     password: string;
   }) => {
-    const response = await postFirstAvailable(
-      [
-        "/auth/password-reset/confirm/",
-        "/auth/password/reset/confirm/",
-        "/auth/reset-password/confirm/",
-      ],
-      [data],
-    );
+    const response = await api.postPublic("/auth/password-reset/confirm/", data);
 
     if (!response.ok) {
       await throwApiError(response, "Failed to reset password");

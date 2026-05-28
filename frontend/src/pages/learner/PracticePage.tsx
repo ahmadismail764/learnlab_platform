@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircle,
   XCircle,
@@ -15,60 +16,38 @@ import {
 import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { MathInput } from '@/components/MathInput'
+import { useToast } from '@/contexts'
 import { practiceService } from '@/services/practice'
 import { cn } from '@/utils/cn'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/hooks'
+import { getTopicDisplayName } from '@/utils/topicLabels'
+import { PracticeGradePanel } from './PracticeGradePanel'
+import {
+  getQuestionXp,
+  normalizePracticeQuestion,
+  resolveSubmittedCorrectness,
+  type FSRSGrade,
+  type PracticeQuestion,
+  type QuestionState,
+  type RawPracticeQuestion,
+  type SessionState,
+} from './practiceSession'
 
 /**
  * PracticePage (Experiment Mode)
  * Re-imagined as a high-stakes focus environment.
  */
 
-type SessionState = 'selecting' | 'practicing' | 'complete'
-type AnswerState = 'unanswered' | 'answered'
-type FSRSGrade = 1 | 2 | 3 | 4 // Again, Hard, Good, Easy
-
-interface Question {
-  id: string | number
-  text: string
-  choices: string[]
-  correct_answer_index: number
-  tier: number
-  explanation_video_url?: string | null
-  topic_name: string
-  topic_id?: string | number
-}
-
-interface QuestionState {
-  questionId: string | number
-  userResponse: string | null
-  answerState: AnswerState
-  isCorrect: boolean | null
-  grade: FSRSGrade | null
-  startTime: number
-}
-
-function normalizePracticeQuestion(raw: Partial<Question> & { subtopic_name?: string | null }): Question {
-  return {
-    id: raw.id ?? '',
-    text: raw.text ?? '',
-    choices: Array.isArray(raw.choices) ? raw.choices.map(String) : [],
-    correct_answer_index: Number(raw.correct_answer_index ?? 0),
-    tier: Number(raw.tier ?? 1),
-    explanation_video_url: raw.explanation_video_url ?? null,
-    topic_name: raw.topic_name ?? raw.subtopic_name ?? 'Practice question',
-    topic_id: raw.topic_id,
-  }
-}
-
 export function PracticePage() {
+  const { t } = useTranslation(['practice', 'learner', 'common', 'topics'])
+  const { showError, showWarning } = useToast()
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const topicId = searchParams.get('topic') || undefined
 
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
-  const [questions, setQuestions] = useState<Question[]>([])
+  const [questions, setQuestions] = useState<PracticeQuestion[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [sessionRecord, setSessionRecord] = useState<{ id: string | number; session_type?: string } | null>(null)
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
@@ -87,11 +66,13 @@ export function PracticePage() {
 
       // Handle "all caught up" — no questions available
       if (!data.questions || data.questions.length === 0) {
-        alert(data.message || 'No questions available right now. Try again later!')
+        showWarning(t('practice:noQuestionsAvailable'))
         return
       }
 
-      const normalizedQuestions = data.questions.map(normalizePracticeQuestion)
+      const normalizedQuestions = data.questions.map((question: RawPracticeQuestion) =>
+        normalizePracticeQuestion(question, t('practice:practiceQuestionFallback')),
+      )
       setQuestions(normalizedQuestions)
 
       // Create session record — backend PracticeSessionCreateSerializer
@@ -102,7 +83,7 @@ export function PracticePage() {
       setSessionRecord(session)
 
       const initialStates: Record<number, QuestionState> = {}
-      normalizedQuestions.forEach((q: Question, idx: number) => {
+      normalizedQuestions.forEach((q: PracticeQuestion, idx: number) => {
         initialStates[idx] = {
           questionId: q.id,
           userResponse: null,
@@ -115,9 +96,9 @@ export function PracticePage() {
       setQuestionStates(initialStates)
       setSessionState('practicing')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to start session'
+      const message = err instanceof Error ? err.message : t('practice:startSessionFailed')
       console.error('Session start error:', message, err)
-      alert(`Could not start session: ${message}`)
+      showError(t('practice:couldNotStartSession', { message }))
     } finally {
       setIsLoading(false)
     }
@@ -135,7 +116,7 @@ export function PracticePage() {
         isCorrect: isCorrect
       }
     }))
-    if (isCorrect) setEarnedXp(prev => prev + 10 * currentQuestion.tier)
+    if (isCorrect) setEarnedXp(prev => prev + getQuestionXp(currentQuestion))
   }, [currentQuestion, currentStatus, currentIndex])
 
   const handleSubmitMathAnswer = useCallback(() => {
@@ -146,17 +127,16 @@ export function PracticePage() {
         ...prev[currentIndex],
         userResponse: mathValue,
         answerState: 'answered',
-        isCorrect: true 
+        isCorrect: null,
       }
     }))
-    setEarnedXp(prev => prev + 15 * currentQuestion.tier)
   }, [currentQuestion, currentStatus, currentIndex, mathValue])
 
   const completeSession = useCallback(async () => {
     setSessionState('complete')
     if (sessionRecord) {
       try {
-        await practiceService.completeSession(sessionRecord.id, earnedXp)
+        await practiceService.completeSession(sessionRecord.id)
         // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
         queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
         queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
@@ -168,11 +148,17 @@ export function PracticePage() {
         console.error('Failed to complete session', e)
       }
     }
-  }, [earnedXp, queryClient, sessionRecord])
+  }, [queryClient, sessionRecord])
 
   const handleGrade = useCallback(async (grade: FSRSGrade) => {
     if (!currentStatus || !sessionRecord || !currentQuestion) return
-    const timeTaken = Math.round((Date.now() - currentStatus.startTime) / 1000)
+    const submittedIsCorrect = resolveSubmittedCorrectness(currentStatus, grade)
+    const shouldAwardSelfGradedXp = currentStatus.isCorrect === null && submittedIsCorrect
+
+    if (shouldAwardSelfGradedXp) {
+      setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
+    }
+
     setQuestionStates((prev) => ({
       ...prev,
       [currentIndex]: { ...prev[currentIndex], grade: grade }
@@ -181,10 +167,10 @@ export function PracticePage() {
       await practiceService.submitInteraction({
         session: sessionRecord.id,
         question: currentQuestion.id,
-        user_response: currentStatus.userResponse || mathValue || 'N/A',
-        is_correct: grade > 1,
-        time_taken_seconds: timeTaken,
-        confidence_rating: grade
+        is_correct: submittedIsCorrect,
+        time_taken_seconds: Math.max(0, Math.round((Date.now() - currentStatus.startTime) / 1000)),
+        confidence_rating: grade,
+        answer_text: currentStatus.userResponse,
       })
     } catch (err) {
       console.error("Failed to submit interaction", err)
@@ -200,7 +186,7 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentQuestion, currentStatus, mathValue, questions.length, sessionRecord])
+  }, [completeSession, currentIndex, currentQuestion, currentStatus, questions.length, sessionRecord])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -243,9 +229,9 @@ export function PracticePage() {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
         <PageIntro
-          eyebrow="Practice session"
-          title="Ready for a focused review?"
-          description="Start an adaptive FSRS session and we will pull the next questions from your learner queue without changing the rest of the site structure."
+          eyebrow={t('practice:practiceSessionEyebrow')}
+          title={t('practice:readyForFocusedReview')}
+          description={t('practice:practiceIntroDescription')}
           icon={<TestTube2 className="h-6 w-6" />}
           tone="primary"
           actions={(
@@ -254,7 +240,7 @@ export function PracticePage() {
               isLoading={isLoading}
               rightIcon={!isLoading ? <ArrowRight className="h-4 w-4 rtl:rotate-180" /> : undefined}
             >
-              Start session
+              {t('practice:startSession')}
             </Button>
           )}
         />
@@ -262,55 +248,55 @@ export function PracticePage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <PageStatCard
             icon={<Target className="h-5 w-5" />}
-            label="Question set"
-            value="Up to 10"
-            helper="Adaptive review mix"
+            label={t('practice:questionSet')}
+            value={t('practice:upToTen')}
+            helper={t('practice:adaptiveReviewMix')}
             tone="primary"
           />
           <PageStatCard
             icon={<Clock className="h-5 w-5" />}
-            label="Estimated time"
-            value="10-15 min"
-            helper="Depends on question type"
+            label={t('practice:estimatedTime')}
+            value={t('practice:tenToFifteenMinutes')}
+            helper={t('practice:dependsOnQuestionType')}
             tone="secondary"
           />
           <PageStatCard
             icon={<XpBadge size="lg" variant="amber" />}
-            label="Reward"
-            value="Tier XP"
-            helper="More for harder items"
+            label={t('practice:reward')}
+            value={t('practice:tierXp')}
+            helper={t('practice:harderItemsReward')}
             tone="accent"
           />
         </div>
 
         <Card>
           <SectionHeading
-            title="How this session works"
-            description="Answer each question, then rate how easy recall felt so the scheduler can adapt future reviews."
+            title={t('practice:howSessionWorks')}
+            description={t('practice:howSessionWorksDescription')}
           />
           <div className="mt-4 grid gap-4 md:grid-cols-3">
             <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                1. Solve
+                {t('practice:solveStep')}
               </p>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                Complete each question in order with either a multiple-choice answer or a math entry.
+                {t('practice:solveDescription')}
               </p>
             </div>
             <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                2. Reflect
+                {t('practice:reflectStep')}
               </p>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                After each answer, rate how hard recall felt so FSRS can tune the next interval.
+                {t('practice:reflectDescription')}
               </p>
             </div>
             <div className="surface-inset">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                3. Keep momentum
+                {t('practice:keepMomentumStep')}
               </p>
               <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                XP is awarded as you move through the set, so even short sessions still push progress forward.
+                {t('practice:keepMomentumDescription')}
               </p>
             </div>
           </div>
@@ -323,15 +309,15 @@ export function PracticePage() {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
         <PageIntro
-          eyebrow="Session complete"
-          title="Nice work"
-          description="Your practice session is finished. The results have been sent back into the review schedule so the next queue can stay aligned."
+          eyebrow={t('practice:sessionCompleteEyebrow')}
+          title={t('practice:niceWork')}
+          description={t('practice:sessionCompleteDescription')}
           icon={<CheckCircle2 className="h-6 w-6 text-green-500" />}
           tone="success"
           actions={(
             <Link to="/learner/progress">
               <Button rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}>
-                View progress
+                {t('practice:viewProgress')}
               </Button>
             </Link>
           )}
@@ -340,21 +326,21 @@ export function PracticePage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <PageStatCard
             icon={<XpBadge size="lg" variant="amber" />}
-            label="XP earned"
+            label={t('practice:xpEarned')}
             value={`+${earnedXp}`}
             tone="accent"
           />
           <PageStatCard
             icon={<Target className="h-5 w-5" />}
-            label="Questions completed"
+            label={t('practice:questionsCompleted')}
             value={questions.length}
             tone="primary"
           />
           <PageStatCard
             icon={<CheckCircle className="h-5 w-5" />}
-            label="Session status"
-            value="Saved"
-            helper="Review data synced"
+            label={t('practice:sessionStatus')}
+            value={t('common:saved')}
+            helper={t('practice:reviewDataSynced')}
             tone="success"
           />
         </div>
@@ -363,14 +349,14 @@ export function PracticePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                Keep the momentum going
+                {t('practice:keepMomentumGoing')}
               </h3>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                You can jump back to the dashboard or review your updated progress before starting another session.
+                {t('practice:completionNextSteps')}
               </p>
             </div>
             <Link to="/learner">
-              <Button variant="outline">Back to dashboard</Button>
+              <Button variant="outline">{t('practice:backToDashboard')}</Button>
             </Link>
           </div>
         </Card>
@@ -384,7 +370,7 @@ export function PracticePage() {
         <div className="space-y-3">
           <TestTube2 className="mx-auto h-10 w-10 text-primary-500" />
           <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-            Loading your current practice question...
+            {t('practice:loadingCurrentQuestion')}
           </p>
         </div>
       </Card>
@@ -403,25 +389,25 @@ export function PracticePage() {
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="primary" size="sm">
-                Question {currentIndex + 1} of {questions.length}
+                {t('practice:questionOf', { current: currentIndex + 1, total: questions.length })}
               </Badge>
               <Badge variant="outline" size="sm">
-                Tier {currentQuestion.tier}
+                {t('practice:tierLabel', { tier: currentQuestion.tier })}
               </Badge>
             </div>
             <div>
               <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
-                Practice in progress
+                {t('practice:practiceInProgress')}
               </h1>
               <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                {currentQuestion.topic_name}
+                {getTopicDisplayName(t, currentQuestion.topic_name)}
               </p>
             </div>
           </div>
 
           <div className="w-full max-w-sm space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-neutral-500 dark:text-neutral-400">Progress</span>
+              <span className="text-neutral-500 dark:text-neutral-400">{t('practice:progress')}</span>
               <span className="font-medium text-neutral-900 dark:text-neutral-100">
                 {Math.round(sessionProgress)}%
               </span>
@@ -437,7 +423,7 @@ export function PracticePage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <p className="text-sm font-medium uppercase tracking-[0.14em] text-primary-600 dark:text-primary-300">
-                  Solve the next prompt
+                  {t('practice:solveNextPrompt')}
                 </p>
                 <h2 className="text-2xl font-semibold leading-8 text-neutral-900 dark:text-neutral-100">
                   {currentQuestion.text}
@@ -486,22 +472,22 @@ export function PracticePage() {
                 <div className="space-y-4">
                   <div className="flex items-start gap-3 rounded-2xl bg-primary-50 p-4 text-sm text-primary-800 dark:bg-primary-950/20 dark:text-primary-200">
                     <Mic2 className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" />
-                    <p>Write your proof, expression, or math answer below and submit it when you are ready.</p>
+                    <p>{t('practice:openAnswerPrompt')}</p>
                   </div>
 
                   <MathInput
                     value={mathValue}
                     onChange={setMathValue}
-                    placeholder="$\text{Write your answer here...}$"
+                    placeholder={t('practice:writeAnswerPlaceholder')}
                     className="min-h-[160px] rounded-2xl bg-white dark:bg-neutral-950"
                     disabled={isAnswered}
                   />
 
                   {!isAnswered ? (
                     <Button onClick={handleSubmitMathAnswer} disabled={!mathValue} className="gap-2">
-                      Submit answer
+                      {t('practice:submitAnswer')}
                       <kbd className="hidden sm:inline-flex h-5 items-center justify-center rounded border border-primary-400/30 bg-primary-600 px-1.5 font-sans text-[10px] font-medium text-white shadow-sm">
-                        Enter
+                        {t('practice:enterKey')}
                       </kbd>
                     </Button>
                   ) : (
@@ -510,7 +496,7 @@ export function PracticePage() {
                         <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-300" />
                         <div>
                           <p className="font-medium text-green-900 dark:text-green-100">
-                            Answer recorded
+                            {t('practice:answerRecorded')}
                           </p>
                           <p className="mt-1 text-sm text-green-800/80 dark:text-green-200/80">
                             {mathValue}
@@ -524,78 +510,46 @@ export function PracticePage() {
             </CardContent>
           </Card>
 
-          {isAnswered && (
-            <Card>
-              <SectionHeading
-                title="How difficult was that recall?"
-                description="Your rating feeds the next interval for this item."
-              />
-              <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {[
-                  { grade: 1, label: 'Again', tone: 'bg-red-500 hover:bg-red-600', sub: 'Very hard' },
-                  { grade: 2, label: 'Hard', tone: 'bg-orange-500 hover:bg-orange-600', sub: 'Needed effort' },
-                  { grade: 3, label: 'Good', tone: 'bg-primary-500 hover:bg-primary-600', sub: 'Solid recall' },
-                  { grade: 4, label: 'Easy', tone: 'bg-green-600 hover:bg-green-700', sub: 'Instant recall' },
-                ].map((button) => (
-                  <button
-                    key={button.grade}
-                    onClick={() => handleGrade(button.grade as FSRSGrade)}
-                    className={cn(
-                      'rounded-2xl px-4 py-4 text-center text-white transition-transform hover:-translate-y-0.5',
-                      button.tone,
-                    )}
-                  >
-                    <p className="text-sm font-semibold flex items-center justify-center gap-2">
-                      <kbd className="inline-flex h-5 w-5 items-center justify-center rounded border border-white/30 bg-white/10 font-sans text-[10px] font-bold text-white">
-                        {button.grade}
-                      </kbd>
-                      {button.label}
-                    </p>
-                    <p className="mt-1 text-xs text-white/80">{button.sub}</p>
-                  </button>
-                ))}
-              </div>
-            </Card>
-          )}
+          {isAnswered && <PracticeGradePanel onGrade={handleGrade} />}
         </div>
 
         <div className="space-y-4 lg:col-span-4">
           <PageStatCard
             icon={<XpBadge size="lg" />}
-            label="Session XP"
+            label={t('practice:sessionXp')}
             value={`+${earnedXp}`}
-            helper="Updates during the set"
+            helper={t('practice:updatesDuringSet')}
             tone="secondary"
           />
 
           <Card>
             <SectionHeading
-              title="Session details"
-              description="Small, useful telemetry instead of a second oversized panel."
+              title={t('practice:sessionDetails')}
+              description={t('practice:sessionDetailsDescription')}
             />
             <div className="mt-4 space-y-4">
               <div className="surface-inset grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Elapsed
+                    {t('practice:elapsed')}
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    {elapsedSeconds}s
+                    {t('practice:secondsShort', { count: elapsedSeconds })}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                    Difficulty
+                    {t('practice:difficultyLabel')}
                   </p>
                   <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
-                    Tier {currentQuestion.tier}
+                    {t('practice:tierLabel', { tier: currentQuestion.tier })}
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Queue progress</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t('practice:queueProgress')}</span>
                   <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                     {Math.round(sessionProgress)}%
                   </span>
@@ -604,7 +558,7 @@ export function PracticePage() {
               </div>
 
               <Badge variant="outline" size="sm">
-                Adaptive FSRS scheduling enabled
+                {t('practice:adaptiveSchedulingEnabled')}
               </Badge>
             </div>
           </Card>
@@ -615,17 +569,17 @@ export function PracticePage() {
                 <div className="flex items-center gap-3">
                   <PlayCircle className="h-5 w-5 text-primary-600 dark:text-primary-300" />
                   <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
-                    Explanation video
+                    {t('practice:explanationVideo')}
                   </h3>
                 </div>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Open the supporting explanation for this question in a new tab.
+                  {t('practice:explanationVideoDescription')}
                 </p>
                 <Button
                   variant="outline"
                   onClick={() => window.open(currentQuestion.explanation_video_url ?? undefined, '_blank')}
                 >
-                  Watch explanation
+                  {t('practice:watchExplanation')}
                 </Button>
               </div>
             </Card>
@@ -636,10 +590,10 @@ export function PracticePage() {
               <Lightbulb className="mt-0.5 h-5 w-5 text-amber-500" />
               <div>
                 <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                  Tip
+                  {t('practice:tip')}
                 </p>
                 <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                  Use the rating buttons after each answer honestly. That is what keeps the next session size and spacing reasonable.
+                  {t('practice:ratingTip')}
                 </p>
               </div>
             </div>

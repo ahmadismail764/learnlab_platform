@@ -37,7 +37,7 @@ export function DeleteQuestionDialog({
       onClose()
     },
     onError: (err) => {
-      setError(getErrorMessage(err, 'Failed to delete question'))
+      setError(getErrorMessage(err, t('admin:questions.deleteDialog.deleteError')))
     },
   })
 
@@ -73,10 +73,10 @@ export function DeleteQuestionDialog({
                 </div>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                    Delete this question?
+                    {t('admin:questions.deleteDialog.title')}
                   </h2>
                   <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                    This will permanently delete this question from the database. This action cannot be undone.
+                    {t('admin:questions.deleteDialog.description')}
                   </p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export function DeleteQuestionDialog({
                   leftIcon={isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   onClick={() => deleteQuestionMutation.mutate(question.id)}
                 >
-                  Delete
+                  {t('admin:questions.deleteDialog.confirm')}
                 </Button>
               </div>
             </Card>

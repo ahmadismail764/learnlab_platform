@@ -30,7 +30,7 @@ export function LanguageSwitcher({
   className,
   showLabel = true 
 }: LanguageSwitcherProps) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('language')
   const [isOpen, setIsOpen] = useState(false)
   const currentLang = i18n.language as SupportedLanguage
 
@@ -64,8 +64,8 @@ export function LanguageSwitcher({
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
             className,
           )}
-          title="Change language"
-          aria-label="Change language"
+          title={t('switchLanguage')}
+          aria-label={t('switchLanguage')}
           aria-expanded={isOpen}
         >
           <Globe className="w-5 h-5" />
@@ -130,7 +130,7 @@ export function LanguageSwitcher({
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           className
         )}
-        title={`Switch to ${nextConfig.name}`}
+        title={t('switchToLanguage', { language: nextConfig.nativeName })}
       >
         <Globe className="w-4 h-4" />
         {showLabel && (
@@ -154,8 +154,8 @@ export function LanguageSwitcher({
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           className
         )}
-        title={languageConfig[nextLang].name}
-        aria-label={`Switch to ${languageConfig[nextLang].name}`}
+        title={languageConfig[nextLang].nativeName}
+        aria-label={t('switchToLanguage', { language: languageConfig[nextLang].nativeName })}
       >
         <Globe className="w-5 h-5" />
       </button>

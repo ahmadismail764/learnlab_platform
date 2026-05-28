@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { LogoMark, LogoFull } from "@/components/brand";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -13,6 +14,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
  */
 
 export function AuthLayout() {
+  const { t } = useTranslation("auth");
 
 
   return (
@@ -139,12 +141,10 @@ export function AuthLayout() {
         {/* Tagline */}
         <div className="relative z-10">
           <h1 className="text-4xl font-bold mb-4 font-display">
-            Learn at your own pace
+            {t("heroTitle")}
           </h1>
           <p className="text-lg text-white/80">
-            Master Discrete Mathematics through spaced repetition and
-            personalized learning paths. Track your progress and achieve your
-            goals.
+            {t("heroDescription")}
           </p>
         </div>
 

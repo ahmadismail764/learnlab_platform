@@ -7,7 +7,7 @@ export interface AdminProfile {
 
 export const adminsService = {
   getCurrentProfile: async (): Promise<AdminProfile> => {
-    const user = await authService.getCurrentUser({ allowFallback: true });
+    const user = await authService.getCurrentUser();
     return { id: user.id, user };
   },
 };

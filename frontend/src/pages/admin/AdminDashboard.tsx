@@ -55,14 +55,14 @@ export function AdminDashboard() {
         <PageIntro
           eyebrow={t('admin:adminDashboard')}
           title={t('admin:welcomeBackAdmin', { name: user.firstName })}
-          description="Keep an eye on learner activity, review volume, and system health without digging through noisy dashboards."
+          description={t('admin:welcomeBackAdminDescription')}
           icon={<BarChart3 className="h-6 w-6" />}
           tone="secondary"
         />
 
         <Card className="dashboard-panel">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
-            System snapshot
+            {t('admin:systemSnapshot')}
           </p>
 
           {isLoading ? (
@@ -74,21 +74,21 @@ export function AdminDashboard() {
           ) : (
             <>
               <p className="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
-                {stats.activeThisWeek} active this week
+                {t('admin:activeThisWeekValue', { count: stats.activeThisWeek })}
               </p>
               <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
-                Learner activity is the quickest signal for whether content and review flow are staying healthy.
+                {t('admin:welcomeBackAdminDescription')}
               </p>
 
               <div className="mt-5 space-y-3 border-t border-neutral-200/80 pt-4 dark:border-neutral-800">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Reviews logged</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t('admin:reviewsLogged')}</span>
                   <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     {stats.totalReviews.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-neutral-500 dark:text-neutral-400">Retention estimate</span>
+                  <span className="text-neutral-500 dark:text-neutral-400">{t('admin:retentionEstimate')}</span>
                   <span className="font-semibold text-neutral-950 dark:text-neutral-50">
                     {stats.avgRetention}%
                   </span>
@@ -104,28 +104,28 @@ export function AdminDashboard() {
           icon={<Users className="h-5 w-5" />}
           label={t('admin:totalLearners')}
           value={isLoading ? '--' : stats.totalLearners}
-          helper="Tracked accounts"
+          helper={t('admin:totalLearnersHelper')}
           tone="secondary"
         />
         <PageStatCard
           icon={<Activity className="h-5 w-5" />}
           label={t('admin:activeThisWeek')}
           value={isLoading ? '--' : stats.activeThisWeek}
-          helper="Learners with recent activity"
+          helper={t('admin:activeThisWeekHelper')}
           tone="success"
         />
         <PageStatCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label={t('admin:totalReviews', 'Total reviews')}
+          label={t('admin:totalReviews')}
           value={isLoading ? '--' : stats.totalReviews.toLocaleString()}
-          helper="All recorded review events"
+          helper={t('admin:totalReviewsHelper')}
           tone="primary"
         />
         <PageStatCard
           icon={<Brain className="h-5 w-5" />}
-          label={t('admin:retention', 'Retention')}
+          label={t('admin:retention')}
           value={isLoading ? '--' : `${stats.avgRetention}%`}
-          helper="Estimated recall health"
+          helper={t('admin:retentionHealthHelper')}
           tone="accent"
         />
       </section>
@@ -134,7 +134,7 @@ export function AdminDashboard() {
         <Card className="dashboard-panel">
           <SectionHeading
             title={t('admin:topLearners')}
-            description="A quick read on who is consistently converting practice into progress."
+            description={t('admin:topLearnersDescription')}
             action={
               <Button variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4 rtl:rotate-180" />}>
                 {t('common:viewAll')}
@@ -161,8 +161,8 @@ export function AdminDashboard() {
             ) : topLearners.length === 0 ? (
               <EmptyState
                 illustration={<EmptyDataIllustration className="mx-auto" />}
-                title={t('admin:noLearnerData', 'No learner data available yet')}
-                description="Once learners start practicing and gaining XP, they will appear in this leaderboard."
+                title={t('admin:noLearnerData')}
+                description={t('admin:noLearnerDataDescription')}
                 className="py-6 surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800"
               />
             ) : (
@@ -186,10 +186,10 @@ export function AdminDashboard() {
 
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" size="sm">
-                        {entry.xp.toLocaleString()} XP
+                        {t('admin:experiencePointsValue', { value: entry.xp.toLocaleString() })}
                       </Badge>
                       <Badge variant="outline" size="sm">
-                        {entry.streak} day streak
+                        {t('admin:dayStreak', { count: entry.streak })}
                       </Badge>
                     </div>
                   </div>
@@ -204,10 +204,10 @@ export function AdminDashboard() {
 
           <Card className="dashboard-panel-soft border-0">
             <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-              Admin note
+              {t('admin:adminNote')}
             </p>
             <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
-              If active users stay healthy while retention drops, the problem is usually content quality or review pacing, not acquisition.
+              {t('admin:adminNoteDescription')}
             </p>
           </Card>
         </div>

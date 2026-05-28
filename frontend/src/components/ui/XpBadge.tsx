@@ -40,24 +40,18 @@ export const XpBadge = forwardRef<SVGSVGElement, XpBadgeProps>(
     const isArabic = language === 'ar'
     const isBadge = type === 'badge'
 
-    // Shield path coordinate drawing (enlarged to max viewport bounds)
     const shieldPath = 'M12 0.5L1.5 3.5v8.5c0 7 5 10.5 10.5 11.5c5.5-1 10.5-4.5 10.5-11.5V3.5L12 0.5z'
-    
-    // Rub el Hizb (8-pointed geometric star) for Arabic theme
-    const starPath = 'M12 0.5 L14.9 5.1 L20.1 3.9 L18.9 9.2 L23.5 12 L18.9 14.8 L20.1 20.1 L14.9 18.9 L12 23.5 L9.1 18.9 L3.9 20.1 L5.1 14.8 L0.5 12 L5.1 9.2 L3.9 3.9 L9.1 5.1 Z'
+    const arabicCoinPath = 'M12 1.6l2.45 1.24 2.74-.08 1.43 2.34 2.42 1.3-.08 2.74L22.2 12l-1.24 2.86.08 2.74-2.42 1.3-1.43 2.34-2.74-.08L12 22.4l-2.45-1.24-2.74.08-1.43-2.34-2.42-1.3.08-2.74L1.8 12l1.24-2.86-.08-2.74 2.42-1.3 1.43-2.34 2.74.08L12 1.6z'
 
-    const badgePath = isArabic ? starPath : shieldPath
+    const badgePath = isArabic ? arabicCoinPath : shieldPath
 
-    // Centered "XP" vector characters (enlarged to maximize visual weight)
+    // Centered Latin letterforms for the English badge.
     const pathX1 = 'M5 6.5L11 17.5'
     const pathX2 = 'M11 6.5L5 17.5'
     const pathPStem = 'M13.5 6.5v11'
     const pathPLoop = 'M13.5 6.5h3.5c1.5 0 2.5 1 2.5 2.75s-1 2.75-2.5 2.75H13.5'
 
-    // Beautiful calligraphic vector paths for "خ" (Arabic Experience - "Kha")
-    const pathDot = 'M13 4.5 L13 4.5'
-    const pathKhaHead = 'M16.5 8.5 C14.5 8.5 11 8.5 8.5 9.5'
-    const pathKhaBody = 'M8.5 9.5 C5.5 12.5 6.5 18 11.5 18 C15.5 18 17 15.5 17 13.5'
+    const arabicLetter = 'خ'
 
     return (
       <svg
@@ -142,20 +136,27 @@ export const XpBadge = forwardRef<SVGSVGElement, XpBadgeProps>(
               </rect>
             )}
 
-            {/* Premium drop-shadowed vector letterforms */}
-            <g stroke="white" strokeWidth="2.5" className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]">
+            <g className="drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.25)]">
               {isArabic ? (
-                <>
-                  <path d={pathDot} strokeLinecap="round" />
-                  <path d={pathKhaHead} />
-                  <path d={pathKhaBody} />
-                </>
+                <text
+                  x="12"
+                  y="12.7"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fontFamily="'Noto Naskh Arabic', 'Amiri', 'Segoe UI', Tahoma, sans-serif"
+                  fontSize="15.25"
+                  fontWeight="800"
+                  fill="white"
+                  stroke="none"
+                >
+                  {arabicLetter}
+                </text>
               ) : (
                 <>
-                  <path d={pathX1} />
-                  <path d={pathX2} />
-                  <path d={pathPStem} />
-                  <path d={pathPLoop} />
+                  <path d={pathX1} stroke="white" strokeWidth="2.5" />
+                  <path d={pathX2} stroke="white" strokeWidth="2.5" />
+                  <path d={pathPStem} stroke="white" strokeWidth="2.5" />
+                  <path d={pathPLoop} stroke="white" strokeWidth="2.5" />
                 </>
               )}
             </g>
@@ -167,11 +168,19 @@ export const XpBadge = forwardRef<SVGSVGElement, XpBadgeProps>(
 
             {/* Outlined letterforms */}
             {isArabic ? (
-              <>
-                <path d={pathDot} strokeLinecap="round" strokeWidth="2.5" />
-                <path d={pathKhaHead} />
-                <path d={pathKhaBody} />
-              </>
+              <text
+                x="12"
+                y="12.7"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontFamily="'Noto Naskh Arabic', 'Amiri', 'Segoe UI', Tahoma, sans-serif"
+                fontSize="15.25"
+                fontWeight="800"
+                fill="currentColor"
+                stroke="none"
+              >
+                {arabicLetter}
+              </text>
             ) : (
               <>
                 <path d={pathX1} />

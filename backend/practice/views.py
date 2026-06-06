@@ -73,27 +73,6 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             return Response(QuestionResponseSerializer(response).data, status=201)
         return Response(serializer.errors, status=400)
 
-# class LearnerProfileListView(generics.ListAPIView):
-#     serializer_class = LearnerProfileSerializer
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_queryset(self):
-#         return User.objects.filter(is_staff=False).order_by('-current_xp')
-
-# class LeaderboardView(generics.ListAPIView):
-#     serializer_class = LearnerProfileSerializer
-#     permission_classes = [permissions.IsAuthenticated]
-
-#     def get_queryset(self):
-#         queryset = User.objects.filter(is_staff=False)
-#         topic_id = self.request.query_params.get('topic') # type: ignore
-#         if topic_id:
-#             # Filter distinct users having mastery under this topic
-#             queryset = queryset.filter(masteries__subtopic__topic_id=topic_id).distinct()
-        
-#         return queryset.order_by('-current_xp')
-
-
 class GenerateAdaptiveSessionView(generics.GenericAPIView):
     """
         GET /practice/sessions/generate-adaptive/
@@ -128,7 +107,7 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         )   
 
         # Pull questions from due subtopics first
-        due_questions_qs = Question.objects.filter(id=due_subtopic_ids)
+        due_questions_qs = Question.objects.filter(subtopic_id__in=due_subtopic_ids)
         subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
         due_questions = sorted(
             due_questions_qs,

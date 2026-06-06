@@ -1,7 +1,6 @@
 const API_BASE = normalizeBaseUrl(
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
 );
-const API_ROOT = getApiRoot(API_BASE);
 
 export type EntityId = string | number;
 
@@ -33,14 +32,6 @@ function normalizeBaseUrl(rawUrl: string): string {
   return url;
 }
 
-function getApiRoot(baseUrl: string): string {
-  try {
-    return new URL(baseUrl).origin;
-  } catch {
-    return window.location.origin;
-  }
-}
-
 function buildUrl(baseUrl: string, path: string): string {
   if (/^https?:\/\//i.test(path)) {
     const targetUrl = new URL(path);
@@ -60,27 +51,12 @@ function buildUrl(baseUrl: string, path: string): string {
   return `${baseUrl}/${path}`;
 }
 
-function shouldRetryFromApiRoot(response: Response, baseUrl: string): boolean {
-  return (
-    response.status === 404 &&
-    baseUrl === API_BASE &&
-    API_BASE !== API_ROOT &&
-    API_BASE.includes("/api/")
-  );
-}
-
 async function fetchFromBase(
   url: string,
   options: RequestInit,
   baseUrl: string,
 ): Promise<Response> {
-  const response = await fetch(buildUrl(baseUrl, url), options);
-
-  if (shouldRetryFromApiRoot(response, baseUrl)) {
-    return fetch(buildUrl(API_ROOT, url), options);
-  }
-
-  return response;
+  return fetch(buildUrl(baseUrl, url), options);
 }
 
 /**
@@ -200,6 +176,30 @@ export async function parseApiError(
     try {
       const text = await response.clone().text();
       if (text.trim()) {
+        const htmlException = text.match(/<pre class="exception_value">([\s\S]*?)<\/pre>/i)?.[1];
+        if (htmlException) {
+          const message = htmlException
+            .replace(/<[^>]+>/g, " ")
+            .replace(/&quot;/g, '"')
+            .replace(/&#x27;/g, "'")
+            .replace(/&lt;/g, "<")
+            .replace(/&gt;/g, ">")
+            .replace(/&amp;/g, "&")
+            .replace(/\s+/g, " ")
+            .trim();
+          if (message) {
+            return { message };
+          }
+        }
+
+        if (/^\s*<!doctype html/i.test(text) || /^\s*<html/i.test(text)) {
+          const title = text
+            .match(/<title>([\s\S]*?)<\/title>/i)?.[1]
+            ?.replace(/\s+/g, " ")
+            .trim();
+          return { message: title || fallback };
+        }
+
         return { message: text.trim() };
       }
     } catch {
@@ -227,7 +227,6 @@ export const api = {
   patch: (url: string, data: unknown) =>
     fetchWithAuth(url, { method: "PATCH", body: JSON.stringify(data) }),
   delete: (url: string) => fetchWithAuth(url, { method: "DELETE" }),
-  getFromRoot: (url: string) => fetchWithAuth(url, {}, API_ROOT),
   postPublic: (url: string, data: unknown) =>
     fetchPublic(url, { method: "POST", body: JSON.stringify(data) }),
 };

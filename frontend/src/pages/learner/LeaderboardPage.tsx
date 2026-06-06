@@ -1,4 +1,5 @@
 import { useState, useMemo, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Medal,
   Flame,
@@ -15,7 +16,9 @@ import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
 import { useSuspenseTopics, useSuspenseGlobalLeaderboard, useSuspenseTopicLeaderboard } from '@/hooks'
 import { cn } from '@/utils/cn'
+import { getTopicDisplayName } from '@/utils/topicLabels'
 import type { LeaderboardLearner } from '@/services/learners'
+import type { User } from '@/types'
 
 interface LeaderboardEntry {
   id: number | string
@@ -167,6 +170,7 @@ export function LeaderboardPage() {
 }
 
 function LeaderboardContent() {
+  const { t } = useTranslation(['learner', 'common', 'topics'])
   const currentUser = useCurrentUser()
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
   const [selectedTopicOverride, setSelectedTopicOverride] = useState<string>('')
@@ -180,15 +184,16 @@ function LeaderboardContent() {
   )
   const selectedTopicId = selectedTopicOverride || topics[0]?.id.toString() || ''
   const selectedTopicName = useMemo(() => {
-    return topics.find((topic) => String(topic.id) === selectedTopicId)?.name ?? 'Selected topic'
-  }, [topics, selectedTopicId])
+    const topic = topics.find((item) => String(item.id) === selectedTopicId)
+    return topic ? getTopicDisplayName(t, topic.name) : t('learner:selectedTopic')
+  }, [topics, selectedTopicId, t])
 
   return (
     <div className="space-y-6">
       <PageIntro
-        eyebrow="Leaderboard"
-        title="Hall of fame"
-        description="A cleaner ranking view that keeps the competitive feel without the oversized full-screen layout."
+        eyebrow={t('learner:leaderboard')}
+        title={t('learner:hallOfFame')}
+        description={t('learner:leaderboardDescription')}
         icon={<Crown className="h-6 w-6" />}
         tone="accent"
         actions={(
@@ -200,7 +205,7 @@ function LeaderboardContent() {
                 variant={leaderboardType === type ? 'accent' : 'outline'}
                 onClick={() => setLeaderboardType(type)}
               >
-                {type === 'global' ? 'Global' : 'By topic'}
+                {type === 'global' ? t('learner:globalLeaderboard') : t('learner:byTopic')}
               </Button>
             ))}
 
@@ -212,7 +217,7 @@ function LeaderboardContent() {
               >
                 {topics.map((topic) => (
                   <option key={topic.id} value={topic.id}>
-                    {topic.name}
+                    {getTopicDisplayName(t, topic.name)}
                   </option>
                 ))}
               </select>
@@ -247,16 +252,17 @@ function GlobalLeaderboardSection({
   searchQuery,
   setSearchQuery,
 }: {
-  currentUser: any
+  currentUser: User
   searchQuery: string
   setSearchQuery: (query: string) => void
 }) {
+  const { t } = useTranslation('learner')
   const { data: globalData } = useSuspenseGlobalLeaderboard()
 
   const leaderboard = useMemo<LeaderboardEntry[]>(() => {
     return ((globalData ?? []) as LeaderboardApiEntry[]).map((entry, index) => ({
       id: entry.id,
-      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : t('unknownLearner'),
       xp: entry.total_xp || 0,
       streak: entry.streak_count || 0,
       accuracy: entry.accuracy || 100,
@@ -264,7 +270,7 @@ function GlobalLeaderboardSection({
       rank_change: entry.rank_change || 0,
       is_current_user: String(entry.user?.id) === String(currentUser.id),
     }))
-  }, [globalData, currentUser.id])
+  }, [globalData, currentUser.id, t])
 
   const currentUserEntry = useMemo(
     () => leaderboard.find((entry) => entry.is_current_user) || null,
@@ -320,16 +326,17 @@ function TopicLeaderboardSection({
 }: {
   topicId: string
   selectedTopicName: string
-  currentUser: any
+  currentUser: User
   searchQuery: string
   setSearchQuery: (query: string) => void
 }) {
+  const { t } = useTranslation('learner')
   const { data: topicData } = useSuspenseTopicLeaderboard(topicId)
 
   const leaderboard = useMemo<LeaderboardEntry[]>(() => {
     return ((topicData ?? []) as LeaderboardApiEntry[]).map((entry, index) => ({
       id: entry.id,
-      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown learner',
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : t('unknownLearner'),
       xp: entry.total_xp || 0,
       streak: entry.streak_count || 0,
       accuracy: entry.accuracy || 100,
@@ -337,7 +344,7 @@ function TopicLeaderboardSection({
       rank_change: entry.rank_change || 0,
       is_current_user: String(entry.user?.id) === String(currentUser.id),
     }))
-  }, [topicData, currentUser.id])
+  }, [topicData, currentUser.id, t])
 
   const currentUserEntry = useMemo(
     () => leaderboard.find((entry) => entry.is_current_user) || null,
@@ -396,6 +403,8 @@ function LeaderboardDisplay({
   setSearchQuery,
   totalCount,
 }: LeaderboardDisplayProps & { totalCount: number }) {
+  const { t } = useTranslation(['learner', 'common'])
+
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-5 w-5 text-amber-500" />
     if (rank === 2) return <Medal className="h-5 w-5 text-neutral-400" />
@@ -408,30 +417,32 @@ function LeaderboardDisplay({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <PageStatCard
           icon={<TrendingUp className="h-5 w-5" />}
-          label="Your rank"
+          label={t('learner:yourRank')}
           value={currentUserEntry ? `#${currentUserEntry.rank}` : '--'}
-          helper={currentUserEntry ? `${currentUserEntry.xp.toLocaleString()} XP` : 'Join a session to appear'}
+          helper={currentUserEntry
+            ? t('learner:experiencePointsValue', { value: currentUserEntry.xp.toLocaleString() })
+            : t('learner:joinSessionToAppear')}
           tone="accent"
         />
         <PageStatCard
           icon={<Users className="h-5 w-5" />}
-          label="Visible entries"
+          label={t('learner:visibleEntries')}
           value={totalCount}
-          helper={leaderboardType === 'topic' ? selectedTopicName : 'Current top results'}
+          helper={leaderboardType === 'topic' ? selectedTopicName : t('learner:currentTopResults')}
           tone="primary"
         />
         <PageStatCard
           icon={<Search className="h-5 w-5" />}
-          label="Average accuracy"
+          label={t('learner:averageAccuracy')}
           value={`${averageAccuracy}%`}
-          helper="Across the current result set"
+          helper={t('learner:acrossCurrentResultSet')}
           tone="success"
         />
         <PageStatCard
           icon={<Flame className="h-5 w-5" />}
-          label="Longest streak"
+          label={t('learner:practiceStreak')}
           value={longestStreak}
-          helper="Best streak in the fetched standings"
+          helper={t('learner:bestStreakFetchedStandings')}
           tone="secondary"
         />
       </div>
@@ -439,8 +450,8 @@ function LeaderboardDisplay({
       <div className="grid gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-4">
           <SectionHeading
-            title="Your position"
-            description="A compact summary of how you compare with the current board."
+            title={t('learner:yourPosition')}
+            description={t('learner:yourPositionDescription')}
           />
 
           <Card className="h-full">
@@ -454,10 +465,10 @@ function LeaderboardDisplay({
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge variant="accent" size="sm">
-                        Rank #{currentUserEntry.rank}
+                        {t('learner:rankValue', { rank: currentUserEntry.rank })}
                       </Badge>
                       <Badge variant="outline" size="sm">
-                        {currentUserEntry.xp.toLocaleString()} XP
+                        {t('learner:experiencePointsValue', { value: currentUserEntry.xp.toLocaleString() })}
                       </Badge>
                     </div>
                   </div>
@@ -466,7 +477,7 @@ function LeaderboardDisplay({
                 <div className="surface-inset grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                      Streak
+                      {t('learner:practiceStreak')}
                     </p>
                     <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
                       <Flame className="h-4 w-4 text-orange-500" />
@@ -475,7 +486,7 @@ function LeaderboardDisplay({
                   </div>
                   <div>
                     <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                      Rank change
+                      {t('learner:rankChange')}
                     </p>
                     <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
                       {currentUserEntry.rank_change >= 0 ? (
@@ -490,7 +501,7 @@ function LeaderboardDisplay({
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-500 dark:text-neutral-400">Accuracy</span>
+                    <span className="text-neutral-500 dark:text-neutral-400">{t('learner:accuracyRate')}</span>
                     <span className="font-semibold text-neutral-900 dark:text-neutral-100">
                       {currentUserEntry.accuracy}%
                     </span>
@@ -503,10 +514,10 @@ function LeaderboardDisplay({
                 <WifiOff className="h-8 w-8 text-neutral-400" />
                 <div className="space-y-1">
                   <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                    No current rank yet
+                    {t('learner:noCurrentRank')}
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Complete more practice to appear in the leaderboard.
+                    {t('learner:completePracticeToRank')}
                   </p>
                 </div>
               </div>
@@ -516,14 +527,14 @@ function LeaderboardDisplay({
 
         <div className="space-y-4 lg:col-span-8">
           <SectionHeading
-            title={leaderboardType === 'global' ? 'Top learners' : `${selectedTopicName} leaderboard`}
-            description="Search by learner name or rank."
+            title={leaderboardType === 'global' ? t('learner:topLearners') : t('learner:topicLeaderboardTitle', { topic: selectedTopicName })}
+            description={t('learner:searchRankDescription')}
             action={(
               <div className="w-full sm:w-64">
                 <Input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search learners or rank"
+                  placeholder={t('learner:searchLearnersOrRank')}
                   leftIcon={<Search className="h-4 w-4" />}
                   size="sm"
                 />
@@ -537,10 +548,10 @@ function LeaderboardDisplay({
                 <Search className="h-8 w-8 text-neutral-400" />
                 <div className="space-y-1">
                   <p className="font-medium text-neutral-900 dark:text-neutral-100">
-                    No matching entries
+                    {t('learner:noMatchingEntries')}
                   </p>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    Try a different learner name or clear the search filter.
+                    {t('learner:tryDifferentLearnerSearch')}
                   </p>
                 </div>
               </div>
@@ -571,7 +582,7 @@ function LeaderboardDisplay({
                             {entry.name}
                           </p>
                           <p className="text-xs text-neutral-500 dark:text-neutral-400/80">
-                            Rank #{entry.rank}
+                            {t('learner:rankValue', { rank: entry.rank })}
                           </p>
                         </div>
                       </div>
@@ -580,7 +591,7 @@ function LeaderboardDisplay({
                     <div className="grid grid-cols-3 gap-4 md:min-w-[320px]">
                       <div>
                         <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                          XP
+                          {t('learner:experiencePointsLabel')}
                         </p>
                         <p className="mt-1 font-semibold text-neutral-900 dark:text-neutral-100">
                           {entry.xp.toLocaleString()}
@@ -588,7 +599,7 @@ function LeaderboardDisplay({
                       </div>
                       <div>
                         <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                          Streak
+                          {t('learner:practiceStreak')}
                         </p>
                         <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
                           <Flame className="h-4 w-4 text-orange-500" />
@@ -597,7 +608,7 @@ function LeaderboardDisplay({
                       </div>
                       <div className="text-start md:text-end">
                         <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                          Accuracy
+                          {t('learner:accuracyRate')}
                         </p>
                         <div className="mt-1 flex items-center gap-2 md:justify-end">
                           <span className="font-semibold text-neutral-900 dark:text-neutral-100">
@@ -605,7 +616,7 @@ function LeaderboardDisplay({
                           </span>
                           {entry.is_current_user && (
                             <Badge variant="primary" size="sm">
-                              You
+                              {t('learner:you')}
                             </Badge>
                           )}
                         </div>

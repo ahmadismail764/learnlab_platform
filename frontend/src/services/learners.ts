@@ -1,5 +1,5 @@
 import { api } from './api';
-import { authService, type BackendAuthUser } from './auth';
+import type { BackendAuthUser } from './auth';
 import { coerceBackendUser } from './mappers/backendUser';
 
 export interface LearnerProfile {
@@ -41,41 +41,13 @@ function normalizeLearnerProfile(raw: RawLearnerProfile | BackendAuthUser): Lear
 
 export const learnersService = {
   getCurrentProfile: async (): Promise<LearnerProfile> => {
-    // Prefer the canonical current-user endpoint (also returns XP / streak fields)
-    try {
-      const response = await api.get('/auth/users/me/');
-      if (response.ok) {
-        const data = await response.json();
-        return normalizeLearnerProfile(data as RawLearnerProfile);
-      }
-    } catch {
-      // Fall through to auth-based profile
+    const response = await api.get('/auth/users/me/');
+    if (!response.ok) {
+      throw new Error('Failed to fetch current learner profile');
     }
 
-    // Fallback: older backends may not expose /auth/users/me/ reliably.
-    // In that case, try the learners list and match the current user ID.
-    try {
-      const currentUser = await authService.getCurrentUser({ allowFallback: true });
-      const response = await api.get('/practice/learners/');
-      if (response.ok) {
-        const data = await response.json();
-        const list = Array.isArray(data) ? data : data.results ?? [];
-        const match = list.find((item: RawLearnerProfile) => {
-          const candidate = item.user?.id ?? item.id;
-          return candidate != null && String(candidate) === String(currentUser.id);
-        });
-        if (match) {
-          return normalizeLearnerProfile(match);
-        }
-      }
-      return normalizeLearnerProfile(currentUser);
-    } catch {
-      // Final fallback: snapshot/JWT-derived user (XP/streak may be missing).
-    }
-
-    return normalizeLearnerProfile(
-      await authService.getCurrentUser({ allowFallback: true }),
-    );
+    const data = await response.json();
+    return normalizeLearnerProfile(data as RawLearnerProfile);
   },
 
   getLeaderboard: async (): Promise<LeaderboardLearner[]> => {

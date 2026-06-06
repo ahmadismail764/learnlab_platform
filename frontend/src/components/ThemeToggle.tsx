@@ -1,4 +1,5 @@
 import { Sun, Moon, Monitor } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useTheme } from '@/contexts'
 import { cn } from '@/utils/cn'
 
@@ -17,7 +18,9 @@ interface ThemeToggleProps {
 }
 
 export function ThemeToggle({ className, showSystemOption = false }: ThemeToggleProps) {
+  const { t } = useTranslation('nav')
   const { isDark, toggleTheme, theme, setTheme } = useTheme()
+  const toggleLabel = isDark ? t('switchToLightMode') : t('switchToDarkMode')
 
   // Simple toggle version
   if (!showSystemOption) {
@@ -30,8 +33,8 @@ export function ThemeToggle({ className, showSystemOption = false }: ThemeToggle
           'dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200',
           className
         )}
-        title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={toggleLabel}
+        aria-label={toggleLabel}
       >
         {isDark ? (
           <Sun className="w-5 h-5" />
@@ -52,7 +55,7 @@ export function ThemeToggle({ className, showSystemOption = false }: ThemeToggle
           'dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200',
           className
         )}
-        aria-label="Theme settings"
+        aria-label={t('themeSettings')}
       >
         {theme === 'system' ? (
           <Monitor className="w-5 h-5" />
@@ -82,7 +85,7 @@ export function ThemeToggle({ className, showSystemOption = false }: ThemeToggle
           )}
         >
           <Sun className="w-4 h-4" />
-          Light
+          {t('lightMode')}
         </button>
         <button
           onClick={() => setTheme('dark')}
@@ -95,7 +98,7 @@ export function ThemeToggle({ className, showSystemOption = false }: ThemeToggle
           )}
         >
           <Moon className="w-4 h-4" />
-          Dark
+          {t('darkMode')}
         </button>
         <button
           onClick={() => setTheme('system')}
@@ -108,7 +111,7 @@ export function ThemeToggle({ className, showSystemOption = false }: ThemeToggle
           )}
         >
           <Monitor className="w-4 h-4" />
-          System
+          {t('systemMode')}
         </button>
       </div>
     </div>

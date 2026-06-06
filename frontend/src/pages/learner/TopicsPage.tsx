@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Card, Button, Badge, Input, ProgressBar, AllCaughtUpIllustration } from "@/components/ui";
 import { useTopicMastery, useTopics } from "@/hooks";
+import { getTopicDisplayName, getTopicModuleDisplayName } from "@/utils/topicLabels";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
@@ -438,7 +439,7 @@ export function TopicsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                        {t(topic.nameKey)}
+                        {getTopicDisplayName(t, topic.name)}
                       </h4>
                       {/* Tier badge (UC-08 Step 5) */}
                       <span
@@ -484,7 +485,12 @@ export function TopicsPage() {
                       </p>
                     </div>
                     <Link to={`/learner/practice?topic=${topic.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                        title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                      >
                         <Play className="w-4 h-4" />
                       </Button>
                     </Link>
@@ -520,7 +526,7 @@ export function TopicsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                        {t(topic.nameKey)}
+                        {getTopicDisplayName(t, topic.name)}
                       </h4>
                       <span
                         className="text-sm"
@@ -553,7 +559,12 @@ export function TopicsPage() {
                       </p>
                     </div>
                     <Link to={`/learner/practice?topic=${topic.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                        title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                      >
                         <Play className="w-4 h-4" />
                       </Button>
                     </Link>
@@ -601,7 +612,7 @@ export function TopicsPage() {
                     <span className="text-2xl">{category.icon}</span>
                     <div className="flex-1 text-start">
                       <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                        {t(category.nameKey)}
+                        {getTopicModuleDisplayName(t, category.nameKey)}
                       </h3>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">
                         {t("learner:categoryInfo", {
@@ -646,7 +657,7 @@ export function TopicsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                                {t(topic.nameKey)}
+                                {getTopicDisplayName(t, topic.name)}
                               </h4>
                               {/* Tier badge (UC-08 Step 5) */}
                               <span
@@ -700,7 +711,12 @@ export function TopicsPage() {
                               </p>
                             </div>
                             <Link to={`/learner/practice?topic=${topic.id}`}>
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                                title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                              >
                                 <Play className="w-4 h-4" />
                               </Button>
                             </Link>

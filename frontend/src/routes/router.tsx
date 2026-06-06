@@ -1,8 +1,9 @@
 import { lazy } from "react";
-import { createBrowserRouter, Link, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthLayout, DashboardLayout } from "@/components/layout";
 import type { User } from "@/types";
 import { LazyRoute } from "./LazyRoute";
+import { NotFoundPage } from "./NotFoundPage";
 
 /**
  * Application Router
@@ -149,20 +150,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
     // Catch all - 404
     {
       path: "*",
-      element: (
-        <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-          <div className="text-center">
-            <h1 className="text-6xl font-bold text-neutral-300">404</h1>
-            <p className="text-neutral-600 mt-2">Page not found</p>
-            <Link
-              to="/"
-              className="text-primary-600 hover:text-primary-700 mt-4 inline-block"
-            >
-              Go home
-            </Link>
-          </div>
-        </div>
-      ),
+      element: <NotFoundPage />,
     },
   ]);
 }

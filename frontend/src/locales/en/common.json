@@ -1,5 +1,6 @@
 {
   "accent": "Accent",
+  "admin": "Admin",
   "appName": "LearnLab",
   "back": "Back",
   "cancel": "Cancel",
@@ -11,17 +12,46 @@
   "create": "Create",
   "delete": "Delete",
   "done": "Done",
+  "days": "days",
   "edit": "Edit",
+  "dismissNotification": "Dismiss notification",
   "error": "Error",
+  "empty": {
+    "content": {
+      "description": "Check back later for new learning materials.",
+      "title": "No content available"
+    },
+    "default": {
+      "description": "Get started by creating your first item.",
+      "title": "No items yet"
+    },
+    "learners": {
+      "description": "Learners will appear here once they join your class.",
+      "title": "No learners yet"
+    },
+    "noResults": {
+      "description": "This section is empty right now.",
+      "title": "Nothing here"
+    },
+    "search": {
+      "description": "Try adjusting your search or filters to find what you're looking for.",
+      "title": "No results found"
+    }
+  },
   "false": "False",
   "goHome": "Go Home",
   "loading": "Loading...",
+  "learner": "Learner",
   "minutes": "minutes",
+  "notAvailable": "N/A",
   "next": "Next",
   "noResults": "No results found",
+  "notifications": "Notifications",
   "optional": "Optional",
+  "pageNotFound": "Page not found",
   "previous": "Previous",
   "primary": "Primary",
+  "refresh": "Refresh",
   "required": "Required",
   "reset": "Reset",
   "save": "Save",

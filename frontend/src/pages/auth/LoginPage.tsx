@@ -26,7 +26,7 @@ import { AuthRequestError } from "@/services/auth";
 /** Quick-fill accounts for the login form */
 const TEST_ACCOUNTS = [
   {
-    label: "Learner",
+    labelKey: "auth:learner",
     icon: GraduationCap,
     username: "learner",
     password: "learner123",
@@ -34,7 +34,7 @@ const TEST_ACCOUNTS = [
     bg: "hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
   },
   {
-    label: "Admin",
+    labelKey: "auth:admin",
     icon: ShieldCheck,
     username: "admin",
     password: "admin123",
@@ -146,7 +146,7 @@ export function LoginPage() {
                 <Icon className={`h-4 w-4 flex-shrink-0 ${account.color}`} />
                 <div className="flex-1 min-w-0">
                   <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                    {account.label}
+                    {t(account.labelKey)}
                   </span>
                   <span className="text-xs text-neutral-500 dark:text-neutral-400 ms-2">
                     {account.username}

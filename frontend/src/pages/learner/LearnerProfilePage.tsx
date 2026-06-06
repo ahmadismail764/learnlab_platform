@@ -20,6 +20,7 @@ import { useLearnerProfile, useTopicMastery } from '@/hooks'
 import { useToast } from '@/contexts'
 import { validateForm, profileSchema } from '@/validation'
 import type { TopicMastery } from '@/constants/mastery'
+import { getTopicDisplayName } from '@/utils/topicLabels'
 
 /**
  * LearnerProfilePage (Researcher Dossier)
@@ -32,7 +33,7 @@ import type { TopicMastery } from '@/constants/mastery'
  */
 
 export function LearnerProfilePage() {
-  const { t } = useTranslation(['profile', 'learner', 'common'])
+  const { t } = useTranslation(['profile', 'learner', 'common', 'topics'])
   const user = useCurrentUser()
   const { updateUser, logout } = useAuth()
   const { showSuccess, showError } = useToast()
@@ -65,8 +66,8 @@ export function LearnerProfilePage() {
 
   const memberSinceYear = useMemo(() => {
     const parsed = new Date(user.createdAt)
-    return Number.isNaN(parsed.getTime()) ? 'N/A' : String(parsed.getFullYear())
-  }, [user.createdAt])
+    return Number.isNaN(parsed.getTime()) ? t('common:notAvailable') : String(parsed.getFullYear())
+  }, [user.createdAt, t])
 
   // Compute mastery index from normalized FSRS retrievability scores.
   const masteryIndex = useMemo(() => {
@@ -85,7 +86,7 @@ export function LearnerProfilePage() {
       },
       {
         label: t('profile:currentStreak'),
-        val: learnerProfile ? `${learnerProfile.streak_count} ${t('profile:days')}` : '--',
+        val: learnerProfile ? t('learner:streakDaysValue', { count: learnerProfile.streak_count }) : '--',
         icon: <Activity className="h-5 w-5" />,
         tone: 'accent' as const,
       },
@@ -97,7 +98,7 @@ export function LearnerProfilePage() {
       },
       {
         label: t('profile:role'),
-        val: user.role === 'admin' ? t('common:admin', 'Admin') : t('common:learner', 'Learner'),
+        val: user.role === 'admin' ? t('common:admin') : t('common:learner'),
         icon: <Shield className="h-5 w-5" />,
         tone: 'success' as const,
       },
@@ -114,18 +115,18 @@ export function LearnerProfilePage() {
       .map((m) => {
         const progress = Math.round(Math.min(1, m.memory || 0) * 100)
         const statusLabels: Record<string, string> = {
-          learned: 'Mastered',
-          learning: 'Learning',
-          struggling: 'Struggling',
-          new: 'New',
+          learned: t('learner:stateMastered'),
+          learning: t('learner:stateLearning'),
+          struggling: t('learner:stateStruggling'),
+          new: t('learner:stateNew'),
         }
         return {
-          name: m.topic_name,
-          level: m.status ? (statusLabels[m.status] || 'New') : 'New',
+          name: getTopicDisplayName(t, m.topic_name),
+          level: m.status ? (statusLabels[m.status] || t('learner:stateNew')) : t('learner:stateNew'),
           progress,
         }
       })
-  }, [topicMasteries])
+  }, [topicMasteries, t])
 
   // Mastery path overall progress
   const overallMastery = useMemo(() => {
@@ -193,7 +194,7 @@ export function LearnerProfilePage() {
   return (
     <div className="space-y-6">
       <PageIntro
-        eyebrow="Profile"
+        eyebrow={t('profile:myProfile')}
         title={`${user.firstName} ${user.lastName}`}
         description={t('profile:profileDescription')}
         icon={<Settings className="h-6 w-6" />}
@@ -228,7 +229,7 @@ export function LearnerProfilePage() {
                 </h2>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Badge variant="primary" size="sm">
-                    {user.role === 'admin' ? t('common:admin', 'Admin') : t('common:learner', 'Learner')}
+                    {user.role === 'admin' ? t('common:admin') : t('common:learner')}
                   </Badge>
                   <Badge variant="outline" size="sm">
                     {t('profile:memberSince')} {memberSinceYear}
@@ -289,7 +290,7 @@ export function LearnerProfilePage() {
             <Card>
               <div className="grid gap-4 md:grid-cols-2">
                 <Input
-                  label={t('profile:username', 'Username')}
+                  label={t('profile:username')}
                   disabled={!isEditing || isSaving}
                   value={profileForm.username}
                   onChange={(event) => setProfileForm((prev) => ({ ...prev, username: event.target.value }))}

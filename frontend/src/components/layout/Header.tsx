@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock, User as UserIcon, LogOut, ChevronDown } from 'lucide-react'
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
@@ -19,9 +20,9 @@ import { cn } from '@/utils/cn'
 interface Notification {
   id: string
   type: 'achievement' | 'reminder' | 'milestone' | 'tip'
-  title: string
-  message: string
-  time: string
+  titleKey: string
+  messageKey: string
+  timeKey: string
   read: boolean
 }
 
@@ -30,33 +31,33 @@ const mockNotifications: Notification[] = [
   {
     id: '1',
     type: 'achievement',
-    title: 'Achievement Unlocked!',
-    message: 'You earned "Topic Master" for reaching 90% mastery in Propositional Logic',
-    time: '2 hours ago',
+    titleKey: 'notificationAchievementTitle',
+    messageKey: 'notificationAchievementMessage',
+    timeKey: 'notificationTwoHoursAgo',
     read: false
   },
   {
     id: '2',
     type: 'reminder',
-    title: 'Topics Due for Review',
-    message: '3 topics are due for review today. Keep your knowledge fresh!',
-    time: '5 hours ago',
+    titleKey: 'notificationReviewTitle',
+    messageKey: 'notificationReviewMessage',
+    timeKey: 'notificationFiveHoursAgo',
     read: false
   },
   {
     id: '3',
     type: 'milestone',
-    title: 'Weekly Milestone',
-    message: 'You answered 50 questions this week! Great progress!',
-    time: '1 day ago',
+    titleKey: 'notificationMilestoneTitle',
+    messageKey: 'notificationMilestoneMessage',
+    timeKey: 'notificationOneDayAgo',
     read: true
   },
   {
     id: '4',
     type: 'tip',
-    title: 'Study Tip',
-    message: 'Review Set Operations before moving to Cartesian Products',
-    time: '2 days ago',
+    titleKey: 'notificationTipTitle',
+    messageKey: 'notificationTipMessage',
+    timeKey: 'notificationTwoDaysAgo',
     read: true
   }
 ]
@@ -78,6 +79,7 @@ export function Header({
   showMenuButton = false,
   onMenuClick,
 }: HeaderProps) {
+  const { t } = useTranslation(['nav', 'common'])
   const dashboardControlButtonClass =
     'rounded-full p-2.5 text-neutral-500 transition-colors hover:bg-white hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900/80 dark:hover:text-neutral-100'
   const [showNotifications, setShowNotifications] = useState(false)
@@ -136,7 +138,7 @@ export function Header({
               'transition-colors lg:hidden',
               dashboardControlButtonClass,
             )}
-            aria-label="Open menu"
+            aria-label={t('nav:openMenu')}
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -170,7 +172,7 @@ export function Header({
               'relative transition-colors',
               dashboardControlButtonClass,
             )}
-            aria-label="Notifications"
+            aria-label={t('nav:notifications')}
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
@@ -197,20 +199,20 @@ export function Header({
                 )}
               >
                 <div className="flex items-center justify-between p-4 border-b border-neutral-100 dark:border-neutral-800">
-                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">Notifications</h3>
+                  <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">{t('nav:notifications')}</h3>
                   <div className="flex items-center gap-1">
                     {unreadCount > 0 && (
                       <button 
                         onClick={markAllAsRead}
                         className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 px-2 py-1"
                       >
-                        Mark all read
+                        {t('nav:markAllRead')}
                       </button>
                     )}
                     <button 
                       onClick={() => setShowNotifications(false)}
-                      aria-label="Close notifications"
-                      title="Close notifications"
+                      aria-label={t('nav:closeNotifications')}
+                      title={t('nav:closeNotifications')}
                       className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors"
                     >
                       <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
@@ -221,14 +223,14 @@ export function Header({
                 <div className="max-h-80 overflow-y-auto scrollbar-styled">
                   {notifications.length === 0 ? (
                     <div className="p-8 text-center text-neutral-500 dark:text-neutral-400">
-                      No notifications
+                      {t('nav:noNotifications')}
                     </div>
                   ) : (
                     notifications.map((notification) => (
                       <button
                         key={notification.id}
                         onClick={() => markAsRead(notification.id)}
-                        aria-label={`Notification: ${notification.title}`}
+                        aria-label={t('nav:notificationAria', { title: t(`nav:${notification.titleKey}`) })}
                         className={`w-full p-4 text-start hover:bg-neutral-50 dark:hover:bg-neutral-800/50 border-b border-neutral-50 dark:border-neutral-800 last:border-0 transition-colors ${
                           !notification.read ? 'bg-primary-50/50 dark:bg-primary-900/20' : ''
                         }`}
@@ -240,17 +242,17 @@ export function Header({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className={`text-sm font-medium ${!notification.read ? 'text-neutral-800 dark:text-neutral-100' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                                {notification.title}
+                                {t(`nav:${notification.titleKey}`)}
                               </p>
                               {!notification.read && (
                                 <span className="w-2 h-2 bg-primary-500 rounded-full shrink-0" />
                               )}
                             </div>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5 line-clamp-2">
-                              {notification.message}
+                              {t(`nav:${notification.messageKey}`)}
                             </p>
                             <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-                              {notification.time}
+                              {t(`nav:${notification.timeKey}`)}
                             </p>
                           </div>
                         </div>
@@ -316,7 +318,7 @@ export function Header({
                       className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
                     >
                       <UserIcon className="w-4 h-4 text-neutral-400" />
-                      Profile
+                      {t('nav:profile')}
                     </Link>
                   </div>
 
@@ -329,7 +331,7 @@ export function Header({
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      {t('nav:logout')}
                     </button>
                   </div>
                 </div>

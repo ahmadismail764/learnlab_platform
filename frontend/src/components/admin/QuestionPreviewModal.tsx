@@ -29,7 +29,7 @@ export function QuestionPreviewModal({
       2: { variant: 'secondary', label: t('admin:questions.difficulty.intermediate') },
       3: { variant: 'accent', label: t('admin:questions.difficulty.advanced') },
     }
-    const config = configs[tier] || { variant: 'secondary' as const, label: `Tier ${tier}` }
+    const config = configs[tier] || { variant: 'secondary' as const, label: t('admin:questions.tierValue', { tier }) }
     return <Badge variant={config.variant}>{config.label}</Badge>
   }
 
@@ -69,9 +69,11 @@ export function QuestionPreviewModal({
               <CardContent className="space-y-6 p-6">
                 {/* Badges */}
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">{question.topic_name || 'Unlinked'}</Badge>
+                  <Badge variant="secondary">{question.topic_name || t('admin:questions.unlinked')}</Badge>
                   {getTierBadge(question.tier)}
-                  <Badge variant="primary">{question.choices?.length || 0} choices</Badge>
+                  <Badge variant="primary">
+                    {t('admin:questions.optionsCount', { count: question.choices?.length || 0 })}
+                  </Badge>
                 </div>
 
                 {/* Question Text */}
@@ -88,7 +90,7 @@ export function QuestionPreviewModal({
                 {question.choices && question.choices.length > 0 && (
                   <div className="space-y-2.5">
                     <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
-                      Answer Choices
+                      {t('admin:questions.preview.answerChoices')}
                     </h3>
                     <div className="space-y-2">
                       {question.choices.map((choice, i) => (
@@ -115,7 +117,9 @@ export function QuestionPreviewModal({
                             {choice}
                           </span>
                           {i === question.correct_answer_index && (
-                            <Badge variant="success" size="sm" className="ms-auto font-medium">✓ Correct</Badge>
+                            <Badge variant="success" size="sm" className="ms-auto font-medium">
+                              ✓ {t('admin:questions.preview.correct')}
+                            </Badge>
                           )}
                         </div>
                       ))}
@@ -126,22 +130,22 @@ export function QuestionPreviewModal({
                 {/* Question Metadata */}
                 <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                   <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Correct Answer Index</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.correctAnswerIndex')}</p>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
                       {question.correct_answer_index} ({String.fromCharCode(65 + question.correct_answer_index)})
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Subtopic</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.subtopic')}</p>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {question.subtopic_name ?? 'General'}
+                      {question.subtopic_name ?? t('admin:questions.preview.general')}
                     </p>
                   </div>
                 </div>
 
                 {question.explanation_video_url && (
                   <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Explanation Video</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('admin:questions.preview.explanationVideo')}</p>
                     <a
                       href={question.explanation_video_url}
                       target="_blank"
@@ -160,14 +164,14 @@ export function QuestionPreviewModal({
                     leftIcon={<Edit2 className="h-4 w-4" />}
                     onClick={onEdit}
                   >
-                    Edit
+                    {t('admin:editQuestion')}
                   </Button>
                   <Button
                     variant="danger"
                     leftIcon={<Trash2 className="h-4 w-4" />}
                     onClick={onDelete}
                   >
-                    Delete
+                    {t('admin:deleteQuestion')}
                   </Button>
                   <Button variant="outline" onClick={onClose}>
                     {t('common:close')}

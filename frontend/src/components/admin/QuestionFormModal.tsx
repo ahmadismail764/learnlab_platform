@@ -71,7 +71,6 @@ export function QuestionFormModal({
           explanationVideoUrl: editingQuestion.explanation_video_url ?? '',
         })
       } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({ ...EMPTY_FORM })
       }
       setError('')
@@ -92,7 +91,7 @@ export function QuestionFormModal({
       onClose()
     },
     onError: (err) => {
-      setError(getErrorMessage(err, 'Failed to create question'))
+      setError(getErrorMessage(err, t('admin:questions.form.createError')))
     },
   })
 
@@ -105,7 +104,7 @@ export function QuestionFormModal({
       onClose()
     },
     onError: (err) => {
-      setError(getErrorMessage(err, 'Failed to update question'))
+      setError(getErrorMessage(err, t('admin:questions.form.updateError')))
     },
   })
 
@@ -174,10 +173,12 @@ export function QuestionFormModal({
               <CardHeader className="flex flex-row items-start justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
                 <div>
                   <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                    {editingQuestion ? 'Edit question' : 'Add question'}
+                    {editingQuestion
+                      ? t('admin:questions.form.editTitle')
+                      : t('admin:questions.form.createTitle')}
                   </h2>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    Keep choices on separate lines. The correct answer index starts at 0.
+                    {t('admin:questions.form.choicesHelp')}
                   </p>
                 </div>
                 <Button
@@ -186,7 +187,7 @@ export function QuestionFormModal({
                   disabled={isSaving}
                   onClick={onClose}
                   className="p-1 rounded-lg"
-                  aria-label="Close dialog"
+                  aria-label={t('common:close')}
                 >
                   <X className="h-5 w-5" />
                 </Button>
@@ -196,7 +197,7 @@ export function QuestionFormModal({
                 {/* Question Text */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Question text <span className="text-red-500">*</span>
+                    {t('admin:questions.form.questionText')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={form.text}
@@ -210,14 +211,14 @@ export function QuestionFormModal({
                 {/* Choices */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Choices (One per line) <span className="text-red-500">*</span>
+                    {t('admin:questions.form.choices')} <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={form.choicesText}
                     onChange={(e) => setForm((prev) => ({ ...prev, choicesText: e.target.value }))}
                     disabled={isSaving}
                     className="min-h-32 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-                    placeholder={'Choice A\nChoice B\nChoice C'}
+                    placeholder={t('admin:questions.form.choicesPlaceholder')}
                     required
                   />
                 </div>
@@ -227,7 +228,7 @@ export function QuestionFormModal({
                   {/* Correct Index */}
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      Correct index
+                      {t('admin:questions.form.correctIndex')}
                     </label>
                     <select
                       value={form.correctAnswerIndex}
@@ -237,7 +238,7 @@ export function QuestionFormModal({
                     >
                       {Array.from({ length: Math.max(choicesArray.length, 1) }).map((_, index) => (
                         <option key={index} value={index}>
-                          {index} (Option {String.fromCharCode(65 + index)})
+                          {index} ({t('admin:questions.form.optionLetter', { letter: String.fromCharCode(65 + index) })})
                         </option>
                       ))}
                     </select>
@@ -246,7 +247,7 @@ export function QuestionFormModal({
                   {/* Tier */}
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      Tier
+                      {t('admin:questions.form.scaffoldingTier')}
                     </label>
                     <select
                       value={form.tier}
@@ -259,28 +260,28 @@ export function QuestionFormModal({
                       disabled={isSaving}
                       className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 h-[38px]"
                     >
-                      <option value="1">Tier 1 (Basic)</option>
-                      <option value="2">Tier 2 (Intermediate)</option>
-                      <option value="3">Tier 3 (Advanced)</option>
+                      <option value="1">{t('admin:tier1')}</option>
+                      <option value="2">{t('admin:tier2')}</option>
+                      <option value="3">{t('admin:tier3')}</option>
                     </select>
                   </div>
 
                   {/* Subtopic ID */}
                   <Input
-                    label="Subtopic ID"
+                    label={t('admin:questions.form.subtopicId')}
                     value={form.relationId}
                     onChange={(e) => setForm((prev) => ({ ...prev, relationId: e.target.value }))}
-                    placeholder="UUID or numeric id"
+                    placeholder={t('admin:questions.form.subtopicIdPlaceholder')}
                     disabled={isSaving}
                   />
                 </div>
 
                 {/* Explanation Video URL */}
                 <Input
-                  label="Explanation video URL"
+                  label={t('admin:questions.form.explanationVideoUrl')}
                   value={form.explanationVideoUrl}
                   onChange={(e) => setForm((prev) => ({ ...prev, explanationVideoUrl: e.target.value }))}
-                  placeholder="https://..."
+                  placeholder={t('admin:questions.form.explanationVideoPlaceholder')}
                   disabled={isSaving}
                 />
 
@@ -302,7 +303,7 @@ export function QuestionFormModal({
                     {t('common:cancel')}
                   </Button>
                   <Button type="submit" isLoading={isSaving} leftIcon={<Save className="w-4 h-4" />}>
-                    {editingQuestion ? 'Save changes' : 'Create question'}
+                    {editingQuestion ? t('common:saveChanges') : t('admin:questions.form.createQuestion')}
                   </Button>
                 </div>
               </form>

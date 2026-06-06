@@ -136,7 +136,7 @@ export function Sidebar({
   onToggleCollapse,
   onLogout,
 }: SidebarProps) {
-  const { t } = useTranslation("auth");
+  const { t } = useTranslation(["auth", "nav"]);
   const location = useLocation();
   const { isDark, toggleTheme } = useTheme();
   const isLearner = user.role === 'learner'
@@ -261,7 +261,7 @@ export function Sidebar({
                 <button
                   onClick={toggleTheme}
                   className="rounded-full p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:text-neutral-500 dark:hover:bg-neutral-800/70 dark:hover:text-neutral-300"
-                  title={isDark ? t('nav:lightMode', 'Light mode') : t('nav:darkMode', 'Dark mode')}
+                  title={isDark ? t('nav:lightMode') : t('nav:darkMode')}
                 >
                   {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
@@ -281,7 +281,7 @@ export function Sidebar({
             <button
               onClick={toggleTheme}
               className="mt-2 mx-auto p-1.5 rounded-lg text-neutral-400 dark:text-neutral-500 hover:text-neutral-600 dark:hover:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800/50 transition-colors flex items-center justify-center"
-              title={isDark ? t('nav:lightMode', 'Light mode') : t('nav:darkMode', 'Dark mode')}
+              title={isDark ? t('nav:lightMode') : t('nav:darkMode')}
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
@@ -289,16 +289,20 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Toggle button floats absolutely outside the inner wrapper, on the right border line! */}
+      {/* Keep the collapse handle below the logo row so it never overlaps the brand. */}
       {onToggleCollapse && (
         <button
+          type="button"
           onClick={onToggleCollapse}
           className={cn(
-            "absolute top-[2.125rem] -translate-y-1/2 z-50 flex h-6 w-6 items-center justify-center rounded-full border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-all duration-150 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 cursor-pointer",
-            "hover:bg-neutral-50 hover:text-neutral-800 dark:hover:bg-neutral-900 dark:hover:text-neutral-200",
-            "-end-3",
+            "absolute top-[5.35rem] -end-3 z-20 flex h-8 w-7 items-center justify-center rounded-full",
+            "border border-neutral-200/80 bg-white text-neutral-500 shadow-md shadow-neutral-900/5",
+            "transition-colors duration-150 hover:bg-neutral-50 hover:text-neutral-900",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40",
+            "dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-100",
           )}
-          title={isCollapsed ? t("nav:expand", "Expand sidebar") : t("nav:collapse", "Collapse sidebar")}
+          aria-label={isCollapsed ? t("nav:expand") : t("nav:collapse")}
+          title={isCollapsed ? t("nav:expand") : t("nav:collapse")}
         >
           <ChevronLeft
             className={cn(

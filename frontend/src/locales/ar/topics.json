@@ -7,8 +7,11 @@
     "title": "التوافقيات"
   },
   "discreteMath": "الرياضيات المتقطعة",
+  "title": "الموضوعات",
+  "uncategorized": "غير مصنف",
   "graphTheory": {
     "basics": "أساسيات الرسوم البيانية",
+    "graphsDegrees": "الرسوم البيانية والدرجات",
     "paths": "المسارات والدوائر",
     "planarity": "التسطيح",
     "title": "نظرية الرسوم البيانية",
@@ -17,12 +20,14 @@
   "logic": {
     "predicates": "منطق المحمولات",
     "proofTechniques": "طرق البرهان",
+    "propositionsConnectives": "القضايا والروابط المنطقية",
     "propositional": "المنطق الاقتراحي",
     "quantifiers": "المحددات الكمية",
     "title": "المنطق"
   },
   "numberTheory": {
     "divisibility": "القسمة",
+    "divisibilityGcd": "القابلية للقسمة والقاسم المشترك الأكبر",
     "gcd": "القاسم المشترك الأكبر والمضاعف المشترك الأصغر",
     "modularArithmetic": "الحساب المعياري",
     "primes": "الأعداد الأولية",
@@ -37,6 +42,7 @@
   },
   "sets": {
     "cartesianProduct": "الضرب الديكارتي",
+    "identities": "هويات المجموعات",
     "operations": "عمليات المجموعات",
     "powerSets": "مجموعة القوة",
     "title": "نظرية المجموعات",

@@ -9,8 +9,6 @@ import enNav from './locales/en/nav.json'
 import enLearner from './locales/en/learner.json'
 import enAdmin from './locales/en/admin.json'
 import enPractice from './locales/en/practice.json'
-import enGamification from './locales/en/gamification.json'
-import enTime from './locales/en/time.json'
 import enTopics from './locales/en/topics.json'
 import enLanguage from './locales/en/language.json'
 import enProfile from './locales/en/profile.json'
@@ -22,8 +20,6 @@ import arNav from './locales/ar/nav.json'
 import arLearner from './locales/ar/learner.json'
 import arAdmin from './locales/ar/admin.json'
 import arPractice from './locales/ar/practice.json'
-import arGamification from './locales/ar/gamification.json'
-import arTime from './locales/ar/time.json'
 import arTopics from './locales/ar/topics.json'
 import arLanguage from './locales/ar/language.json'
 import arProfile from './locales/ar/profile.json'
@@ -44,8 +40,6 @@ import arProfile from './locales/ar/profile.json'
  * - learner: Learner dashboard and features
  * - admin: Admin/System admin features
  * - practice: Practice session and questions
- * - gamification: XP, streaks, achievements
- * - time: Time-related strings
  * - topics: Course topics (Discrete Mathematics)
  * - language: Language switcher
  */
@@ -61,8 +55,6 @@ export const namespaces = [
   'learner',
   'admin',
   'practice',
-  'gamification',
-  'time',
   'topics',
   'language',
   'profile',
@@ -97,8 +89,6 @@ const resources = {
     learner: enLearner,
     admin: enAdmin,
     practice: enPractice,
-    gamification: enGamification,
-    time: enTime,
     topics: enTopics,
     language: enLanguage,
     profile: enProfile,
@@ -110,8 +100,6 @@ const resources = {
     learner: arLearner,
     admin: arAdmin,
     practice: arPractice,
-    gamification: arGamification,
-    time: arTime,
     topics: arTopics,
     language: arLanguage,
     profile: arProfile,

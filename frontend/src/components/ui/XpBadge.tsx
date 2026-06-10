@@ -9,7 +9,7 @@ export type XpBadgeType = 'icon' | 'badge'
 export interface XpBadgeProps extends Omit<SVGProps<SVGSVGElement>, 'size' | 'type'> {
   /** Sizing variant */
   size?: XpBadgeSize
-  /** Styling theme variant (primary coordinates or achievement amber) */
+  /** Styling theme variant (primary coordinates or amber emphasis) */
   variant?: XpBadgeVariant
   /** Renders as lightweight line 'icon' or filled duotone 'badge' */
   type?: XpBadgeType

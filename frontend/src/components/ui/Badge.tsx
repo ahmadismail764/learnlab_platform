@@ -5,7 +5,7 @@ import { cn } from '@/utils/cn'
  * Badge Component
  * 
  * For status indicators, counts, and labels.
- * Great for achievements, levels, and topic tags.
+ * Great for levels, statuses, and topic tags.
  */
 
 export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'error' | 'outline'

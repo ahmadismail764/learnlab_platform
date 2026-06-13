@@ -9,6 +9,7 @@ venv/
 staticfiles/
 .python-version
 *.pyo
+
 # Frontend
 frontend/node_modules/
 frontend/dist/
@@ -19,15 +20,14 @@ frontend/improvement_ideas.md
 # Environments
 .env
 backend/.env
-backend/.env.example
 
 # IDE / Editors
 .vscode/
 .cursor/
+.idea/
 
-# Local database binaries archives
+# Db-related
 pg_binaries.zip
-
-# SQLite
 db.sqlite3
 backend/db.sqlite3
+*.bak

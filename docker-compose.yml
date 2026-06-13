@@ -1,27 +1,21 @@
+# Version B (Role Separation - Highly Secure)
 services:
   db:
     image: postgres:14
     restart: always
     environment:
-      POSTGRES_PASSWORD: SoftwareSQL11__
+      POSTGRES_USER: postgres              # Root Superuser account locked inside container
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD} # Cryptographic administrative key
+      POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-
-  # backend:
-  #   build: ./backend
-  #   restart: always
-  #   ports:
-  #     - "8000:8000"
-  #   volumes:
-  #     - ./backend:/app
-  #     - venv:/app/.venv
-  #   env_file:
-  #     - ./backend/.env
-  #   depends_on:
-  #     - db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:
-  venv:

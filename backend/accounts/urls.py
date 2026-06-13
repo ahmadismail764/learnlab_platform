@@ -5,7 +5,8 @@ from accounts.views import (
     CurrentUserView,
     CustomTokenObtainPairView,
     PasswordResetRequestView,
-    PasswordResetConfirmView
+    PasswordResetConfirmView,
+    LogoutView,
 )
 
 urlpatterns = [
@@ -15,4 +16,5 @@ urlpatterns = [
     path('users/me/', CurrentUserView.as_view(), name='current_user'),
     path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('logout/', LogoutView.as_view(), name='logout'),
 ]

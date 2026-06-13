@@ -71,7 +71,7 @@ class PracticeSessionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PracticeSession
-        fields = ['responses']
+        fields = ['id', 'responses']
 
     def create(self, validated_data):
         responses_data = validated_data.pop('responses', [])

@@ -11,7 +11,23 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+# ==============================================================================
+# SECURITY & HOST CONFIGURATION
+# ==============================================================================
+
+if DEBUG:
+    # In development, allow localhost, local IPs, and internal Docker/VM hostnames
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
+else:
+    # In production, ONLY allow requests explicitly routing to our trusted domains.
+    # This prevents HTTP Host Header injection attacks.
+    # Expects a comma-separated string in .env, e.g., ALLOWED_HOSTS=api.yourdomain.com,yourdomain.com
+    raw_hosts = os.getenv('ALLOWED_HOSTS', '')
+    ALLOWED_HOSTS = [host.strip() for host in raw_hosts.split(',') if host.strip()]
+
+    # Fallback to prevent Django from crashing if the .env variable is missing in prod
+    if not ALLOWED_HOSTS:
+        raise ValueError("CRITICAL SECURITY ERROR: ALLOWED_HOSTS is empty in production mode.")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -116,14 +132,29 @@ AUTH_USER_MODEL = 'accounts.User'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://localhost:8000',
-    'http://127.0.0.1:5173',
-    'http://127.0.0.1:3000',
-]
+# ==============================================================================
+# CORS ORIGIN CONFIGURATION
+# ==============================================================================
+
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+
+# 2. Strict origin checking for production mode
+if not DEBUG:
+    raw_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_origins.split(',') if origin.strip()]
+    
+    # Optional safety fallback
+    if not CORS_ALLOWED_ORIGINS:
+        raise ValueError("CRITICAL SECURITY ERROR: CORS_ALLOWED_ORIGINS is empty in production mode.")
+
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:5173',
+#     'http://localhost:3000',
+#     'http://localhost:8000',
+#     'http://127.0.0.1:5173',
+#     'http://127.0.0.1:3000',
+# ]
+# CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',

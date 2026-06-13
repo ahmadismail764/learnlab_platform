@@ -25,6 +25,6 @@ This document tracks temporary frontend compatibility fallbacks. As of the 2026-
 
 - **API root retry:** Removed origin-root retry when `VITE_API_BASE_URL` is misconfigured. The configured API base URL must point to the deployed API path.
 
-## Current Backend Blockers
+## Current Backend Issue Tracking
 
-The frontend fallbacks above were removed, but the live authenticated practice flow still depends on the backend blockers tracked in `frontend/backend_issues.md`.
+The frontend fallbacks above remain removed. Active backend issues, if any, are tracked in `frontend/backend_issues.md` or GitHub issues; do not reintroduce frontend compatibility fallbacks unless they are explicitly approved and documented with a removal condition.

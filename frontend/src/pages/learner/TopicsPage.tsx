@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { Card, Button, Badge, Input, ProgressBar, AllCaughtUpIllustration } from "@/components/ui";
 import { useTopicMastery, useTopics } from "@/hooks";
-import { getTopicDisplayName, getTopicModuleDisplayName } from "@/utils/topicLabels";
+import { getTopicCategoryDisplayName, getTopicDisplayName } from "@/utils/topicLabels";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
@@ -34,7 +34,7 @@ interface TopicItem {
   name: string;
   nameKey: string;
   description: string;
-  parent_module: string;
+  category: string;
   icon: string;
   progress: number;
   questionsTotal: number;
@@ -64,13 +64,13 @@ export function TopicsPage() {
       const m = masteries.find((mastery) => mastery.topic === t.id);
 
       let icon = "📝";
-      const mod = (t.parent_module || '').toLowerCase();
-      if (mod.includes("logic")) icon = "🔢";
-      else if (mod.includes("set")) icon = "∪";
-      else if (mod.includes("relation")) icon = "≡";
-      else if (mod.includes("combinatorics")) icon = "📊";
-      else if (mod.includes("graph")) icon = "🔗";
-      else if (mod.includes("number")) icon = "🔢";
+      const category = (t.category || '').toLowerCase();
+      if (category.includes("logic")) icon = "🔢";
+      else if (category.includes("set")) icon = "∪";
+      else if (category.includes("relation")) icon = "≡";
+      else if (category.includes("combinatorics")) icon = "📊";
+      else if (category.includes("graph")) icon = "🔗";
+      else if (category.includes("number")) icon = "🔢";
 
       let progress = 0;
       let questionsDue = 0;
@@ -142,7 +142,7 @@ export function TopicsPage() {
         name: t.name,
         nameKey,
         description: t.description,
-        parent_module: t.parent_module || "Uncategorized",
+        category: t.category || "Uncategorized",
         icon,
         progress,
         questionsTotal: t.question_count ?? 10,
@@ -159,11 +159,11 @@ export function TopicsPage() {
   const mappedCategories = useMemo(() => {
     const groups: Record<string, TopicItem[]> = {};
     mappedTopics.forEach((topic) => {
-      const module = topic.parent_module;
-      if (!groups[module]) {
-        groups[module] = [];
+      const category = topic.category;
+      if (!groups[category]) {
+        groups[category] = [];
       }
-      groups[module].push(topic);
+      groups[category].push(topic);
     });
 
     const categoryIcons: Record<string, string> = {
@@ -612,7 +612,7 @@ export function TopicsPage() {
                     <span className="text-2xl">{category.icon}</span>
                     <div className="flex-1 text-start">
                       <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                        {getTopicModuleDisplayName(t, category.nameKey)}
+                        {getTopicCategoryDisplayName(t, category.nameKey)}
                       </h3>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">
                         {t("learner:categoryInfo", {

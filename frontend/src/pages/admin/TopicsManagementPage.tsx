@@ -17,7 +17,7 @@ import { Card, Button, Badge, Input, EmptyState, Skeleton } from '@/components/u
 import { useSuspenseTopics } from '@/hooks'
 import { TopicFormModal } from '@/components/admin/TopicFormModal'
 import { DeleteTopicDialog } from '@/components/admin/DeleteTopicDialog'
-import { getTopicDisplayName, getTopicModuleDisplayName } from '@/utils/topicLabels'
+import { getTopicCategoryDisplayName, getTopicDisplayName } from '@/utils/topicLabels'
 
 /**
  * TopicsManagementPage - Admin Curriculum Structure (UC-07)
@@ -28,19 +28,19 @@ import { getTopicDisplayName, getTopicModuleDisplayName } from '@/utils/topicLab
  * - Edit topic via PUT /api/v1/practice/topics/:id/
  * - Delete topic via DELETE /api/v1/practice/topics/:id/
  *
- * Topics are grouped by `parent_module` field.
+ * Topics are grouped by a frontend-derived category.
  */
 
 interface BackendTopic {
   id: number
   name: string
   description: string
-  parent_module: string
+  category?: string
   question_count: number
 }
 
-interface ModuleGroup {
-  parentModule: string
+interface CategoryGroup {
+  category: string
   topics: BackendTopic[]
 }
 
@@ -77,7 +77,7 @@ function TopicsManagementPageSkeleton() {
       {/* Search bar */}
       <Skeleton className="h-10 w-full rounded-lg" />
 
-      {/* Module lists */}
+      {/* Category lists */}
       <div className="space-y-4">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i} className="p-4 space-y-4">
@@ -120,7 +120,7 @@ function TopicsManagementContent() {
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('')
-  const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
 
   // Modal / Form state
   const [showForm, setShowForm] = useState(false)
@@ -129,44 +129,44 @@ function TopicsManagementContent() {
 
   // --- Computed data ---
 
-  // Group topics by parent_module
-  const moduleGroups = useMemo<ModuleGroup[]>(() => {
+  // Group topics by frontend-derived category
+  const categoryGroups = useMemo<CategoryGroup[]>(() => {
     const grouped: Record<string, BackendTopic[]> = {}
     for (const topic of topics) {
-      const key = topic.parent_module || uncategorizedLabel
+      const key = topic.category || uncategorizedLabel
       if (!grouped[key]) grouped[key] = []
       grouped[key].push(topic)
     }
     return Object.entries(grouped)
-      .map(([parentModule, topicList]) => ({ parentModule, topics: topicList }))
-      .sort((a, b) => a.parentModule.localeCompare(b.parentModule))
+      .map(([category, topicList]) => ({ category, topics: topicList }))
+      .sort((a, b) => a.category.localeCompare(b.category))
   }, [topics, uncategorizedLabel])
 
   const totalTopics = topics.length
   const totalQuestions = topics.reduce((sum, t) => sum + t.question_count, 0)
 
-  // Filtered modules by search
-  const filteredModules = useMemo(() => {
-    if (!searchQuery.trim()) return moduleGroups
+  // Filtered categories by search
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return categoryGroups
     const q = searchQuery.toLowerCase()
-    return moduleGroups
-      .map(mod => ({
-        ...mod,
-        topics: mod.topics.filter(
+    return categoryGroups
+      .map(group => ({
+        ...group,
+        topics: group.topics.filter(
           t => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q)
         ),
       }))
-      .filter(mod => mod.topics.length > 0 || mod.parentModule.toLowerCase().includes(q))
-  }, [searchQuery, moduleGroups])
+      .filter(group => group.topics.length > 0 || group.category.toLowerCase().includes(q))
+  }, [searchQuery, categoryGroups])
 
-  // Toggle module expansion
-  const toggleModule = (moduleKey: string) => {
-    setExpandedModules(prev => {
+  // Toggle category expansion
+  const toggleCategory = (categoryKey: string) => {
+    setExpandedCategories(prev => {
       const newSet = new Set(prev)
-      if (newSet.has(moduleKey)) {
-        newSet.delete(moduleKey)
+      if (newSet.has(categoryKey)) {
+        newSet.delete(categoryKey)
       } else {
-        newSet.add(moduleKey)
+        newSet.add(categoryKey)
       }
       return newSet
     })
@@ -233,8 +233,8 @@ function TopicsManagementContent() {
               <FolderTree className="w-5 h-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{moduleGroups.length}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:topicsManagement.stats.modules')}</p>
+              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{categoryGroups.length}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:topicsManagement.stats.categories')}</p>
             </div>
           </div>
         </Card>
@@ -273,9 +273,9 @@ function TopicsManagementContent() {
         />
       </div>
 
-      {/* Module hierarchy */}
+      {/* Category hierarchy */}
       <div className="space-y-4">
-        {filteredModules.length === 0 ? (
+        {filteredCategories.length === 0 ? (
           topics.length === 0 ? (
             <EmptyState
               icon={<BookOpen className="w-8 h-8" />}
@@ -291,31 +291,31 @@ function TopicsManagementContent() {
             />
           )
         ) : (
-          filteredModules.map((mod) => {
-            const isExpanded = expandedModules.has(mod.parentModule)
-            const moduleQuestions = mod.topics.reduce((sum, t) => sum + t.question_count, 0)
-            const moduleDisplayName = getTopicModuleDisplayName(t, mod.parentModule)
+          filteredCategories.map((group) => {
+            const isExpanded = expandedCategories.has(group.category)
+            const categoryQuestions = group.topics.reduce((sum, t) => sum + t.question_count, 0)
+            const categoryDisplayName = getTopicCategoryDisplayName(t, group.category)
 
             return (
-              <Card key={mod.parentModule} className="overflow-hidden">
-                {/* Module header */}
+              <Card key={group.category} className="overflow-hidden">
+                {/* Category header */}
                 <button
-                  onClick={() => toggleModule(mod.parentModule)}
+                  onClick={() => toggleCategory(group.category)}
                   className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
                     <span className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-sm font-bold text-primary-600 dark:text-primary-400">
-                    {moduleDisplayName.charAt(0).toUpperCase()}
+                    {categoryDisplayName.charAt(0).toUpperCase()}
                   </span>
                   <div className="flex-1 text-start">
                     <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                      {moduleDisplayName}
+                      {categoryDisplayName}
                     </h3>
                     <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                      {t('admin:topicsManagement.topicCount', { count: mod.topics.length })} · {t('admin:topicsManagement.questionCount', { count: moduleQuestions })}
+                      {t('admin:topicsManagement.topicCount', { count: group.topics.length })} · {t('admin:topicsManagement.questionCount', { count: categoryQuestions })}
                     </p>
                   </div>
                   <Badge variant="default" size="sm">
-                    {mod.topics.length} {t('admin:topicsManagement.stats.topics').toLowerCase()}
+                    {group.topics.length} {t('admin:topicsManagement.stats.topics').toLowerCase()}
                   </Badge>
                   {isExpanded ? (
                     <ChevronDown className="w-5 h-5 text-neutral-400" />
@@ -324,14 +324,14 @@ function TopicsManagementContent() {
                   )}
                 </button>
 
-                {/* Topic list within module */}
+                {/* Topic list within category */}
                 {isExpanded && (
                   <div className="border-t border-neutral-100 dark:border-neutral-700">
-                    {mod.topics.map((topic, index) => (
+                    {group.topics.map((topic, index) => (
                       <div
                         key={topic.id}
                         className={`p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 ${
-                          index !== mod.topics.length - 1 ? 'border-b border-neutral-100 dark:border-neutral-700' : ''
+                          index !== group.topics.length - 1 ? 'border-b border-neutral-100 dark:border-neutral-700' : ''
                         }`}
                       >
                         <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-sm font-mono font-bold text-neutral-500 shrink-0">

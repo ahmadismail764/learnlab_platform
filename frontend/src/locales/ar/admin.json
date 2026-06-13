@@ -178,15 +178,12 @@
 "description": "الوصف",
 "descriptionPlaceholder": "وصف مختصر لمحتوى الموضوع...",
 "editTitle": "تعديل الموضوع",
-"errorDuplicate": "يوجد موضوع بهذا الاسم في هذه الوحدة بالفعل.",
+"errorDuplicate": "يوجد موضوع بهذا الاسم بالفعل.",
 "errorName": "اسم الموضوع مطلوب.",
 "namePlaceholder": "أدخل اسم الموضوع...",
-"parentModule": "الوحدة الأم",
-"parentModuleHelp": "اختر وحدة موجودة أو اكتب وحدة جديدة. اترك الحقل فارغًا للموضوعات غير المصنفة.",
-"parentModulePlaceholder": "مثال: الرياضيات المتقطعة > المنطق",
 "saveError": "تعذر الحفظ",
 "saveTopic": "إنشاء الموضوع",
-"subtitle": "حدد اسم الموضوع ووصفه والوحدة الأم",
+"subtitle": "حدد اسم الموضوع ووصفه",
 "topicName": "اسم الموضوع",
 "updateSuccess": "حُدّث الموضوع بنجاح.",
 "updateTopic": "تحديث الموضوع"
@@ -197,7 +194,7 @@
 "questionsLabel": "أسئلة",
 "searchPlaceholder": "البحث في الموضوعات...",
 "stats": {
-"modules": "الوحدات",
+"categories": "التصنيفات",
 "questions": "إجمالي الأسئلة",
 "topics": "الموضوعات"
 },

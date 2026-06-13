@@ -10,7 +10,6 @@ interface BackendTopic {
   id: number
   name: string
   description: string
-  parent_module: string
   question_count: number
 }
 

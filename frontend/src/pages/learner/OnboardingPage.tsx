@@ -17,7 +17,7 @@ import {
 import { Button, Card, CardContent } from '@/components/ui'
 import { useCurrentUser } from '@/contexts'
 import { cn } from '@/utils/cn'
-import { getTopicDisplayName, getTopicModuleDisplayName } from '@/utils/topicLabels'
+import { getTopicCategoryDisplayName, getTopicDisplayName } from '@/utils/topicLabels'
 import { useTopics } from '@/hooks'
 
 /**
@@ -36,7 +36,7 @@ const GOALS = [
 interface OnboardingTopic {
   id: number
   name: string
-  parent_module?: string | null
+  category?: string | null
 }
 
 export function OnboardingPage() {
@@ -232,7 +232,7 @@ export function OnboardingPage() {
                           <BookOpen className={cn("w-5 h-5 me-3 shrink-0", isSelected ? "text-primary-600 dark:text-primary-400" : "text-neutral-400")} />
                           <div className="flex-1">
                             <h4 className="font-medium text-neutral-900 dark:text-white">{getTopicDisplayName(t, topic.name)}</h4>
-                            {topic.parent_module && <p className="text-xs text-neutral-500 mt-0.5">{getTopicModuleDisplayName(t, topic.parent_module)}</p>}
+                            {topic.category && <p className="text-xs text-neutral-500 mt-0.5">{getTopicCategoryDisplayName(t, topic.category)}</p>}
                           </div>
                           {isSelected && <CheckCircle2 className="w-5 h-5 text-primary-600 dark:text-primary-400 shrink-0" />}
                         </button>

@@ -1,9 +1,9 @@
 import { api, type EntityId } from './api';
+import { getTopicCategoryName } from '@/utils/topicLabels';
 
 interface TopicPayload {
   name: string;
   description: string;
-  parent_module?: string;
   question_count?: number;
 }
 
@@ -25,7 +25,7 @@ interface BackendTopic {
   id: EntityId;
   name: string;
   description: string;
-  parent_module?: string;
+  category?: string;
   question_count?: number;
 }
 
@@ -34,7 +34,7 @@ function normalizeTopic(raw: Partial<BackendTopic>): BackendTopic {
     id: raw.id ?? '',
     name: raw.name ?? '',
     description: raw.description ?? '',
-    parent_module: raw.parent_module ?? '',
+    category: raw.category ?? getTopicCategoryName(raw.name),
     question_count: Number(raw.question_count ?? 0),
   };
 }
@@ -71,7 +71,6 @@ export const topicsService = {
     const response = await api.post('/topics/', {
       name: data.name,
       description: data.description,
-      parent_module: data.parent_module ?? '',
     });
     if (!response.ok) throw new Error('Failed to create topic');
     return normalizeTopic(await response.json() as BackendTopic);
@@ -81,7 +80,6 @@ export const topicsService = {
     const response = await api.put(`/topics/${id}/`, {
       name: data.name,
       description: data.description,
-      parent_module: data.parent_module ?? '',
     });
     if (!response.ok) throw new Error('Failed to update topic');
     return normalizeTopic(await response.json() as BackendTopic);

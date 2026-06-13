@@ -48,13 +48,13 @@ src/
 ├── hooks/           # Custom hooks
 │   └── useLocalStorage # Persistent state management
 ├── locales/         # i18n translation files
-│   ├── en/          # English translations (11 namespaces)
+│   ├── en/          # English translations (9 namespaces)
 │   └── ar/          # Arabic translations (RTL)
 ├── types/           # Shared TypeScript types
 ├── validation/      # Centralized input validation schemas (Zod)
 ├── pages/           # Page components
 │   ├── auth/        # Login page
-│   ├── student/     # Student pages (Dashboard, Topics, Practice, Progress, Achievements, Leaderboard, Profile)
+│   ├── learner/     # Learner pages (Dashboard, Topics, Practice, Progress, Achievements, Leaderboard, Profile)
 │   └── admin/       # Admin pages (Dashboard, Curriculum, Questions, Analytics, Settings, Profile)
 └── styles/          # Global styles & Tailwind config
 ```
@@ -85,14 +85,14 @@ src/
 - Offline banner and empty state handling
 
 ### 📚 Curriculum Management (Admin)
-- Topic list organized by module hierarchy
-- Create/Edit topics with name, description, and parent module
+- Topic list organized by frontend-derived categories
+- Create/Edit topics with name and description
 - Duplicate name validation and cascade delete warnings
 
 ### 🌐 Internationalization
 - Full English and Arabic support
 - RTL layout for Arabic
-- 11 translation namespaces (common, auth, nav, student, admin, practice, gamification, time, topics, language, profile)
+- 9 translation namespaces (common, auth, nav, learner, admin, practice, topics, language, profile)
 
 ### 🔔 Notifications
 - Toast notification system
@@ -153,7 +153,7 @@ The name **LearnLab** evokes experimentation and discovery. The logo uses connec
 
 | Role | Description |
 |------|-------------|
-| **Student** | Primary learner - Solves problems, tracks progress, earns achievements |
+| **Learner** | Primary learner - Solves problems, tracks progress, earns achievements |
 | **Admin** | Content Manager - Manages question bank, monitors analytics, configures settings |
 
 ### Admin Features
@@ -161,9 +161,9 @@ The name **LearnLab** evokes experimentation and discovery. The logo uses connec
 | Page | Description |
 |------|-------------|
 | **Dashboard** | System overview with quick stats and recent activity |
-| **Curriculum** | Topic management with module hierarchy, CRUD, and cascade delete warnings |
+| **Curriculum** | Topic management with category grouping, CRUD, and cascade delete warnings |
 | **Questions** | Question bank management with CRUD, filtering, search, and preview |
-| **Analytics** | Student analytics with FSRS metrics, topic search/filter, and export |
+| **Analytics** | Learner analytics with FSRS metrics, topic search/filter, and export |
 | **Settings** | System settings (general, notifications, security, practice, theme) |
 | **Profile** | Admin profile page |
 
@@ -180,6 +180,20 @@ This project follows **SOLID principles**:
 ---
 
 ## Development Notes
+
+### API Contract Reviews
+
+- Use the live Django OpenAPI outputs as the source of truth for endpoint shape:
+  - YAML schema: `http://localhost:8000/schema/`
+  - Interactive docs: `http://localhost:8000/docs/`
+- Do not add static frontend API reference documents that duplicate Swagger/OpenAPI. Frontend-side docs may track frontend implementation decisions, temporary fallbacks, or backend issue summaries, but endpoint contracts should be re-checked against the live schema during audits.
+- Frontend services should consume the backend contract as published. Avoid compatibility fallbacks that hide backend contract failures unless a temporary fallback is explicitly approved and documented with a removal condition.
+
+### Curriculum Naming
+
+- Use `category > topic > subtopic` for frontend naming. A category is the UI grouping for topics, like Math grouping Calculus, Algebra, and Functions.
+- Do not use `parent_module`, `parentModule`, or "module" naming for topic grouping in frontend code, translations, forms, or docs.
+- `/topics/` responses are normalized in `src/services/topics.ts`. Category grouping is derived client-side in `src/utils/topicLabels.ts` unless the backend publishes a clean `category` field.
 
 ### Translation Keys
 

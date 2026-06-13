@@ -178,15 +178,12 @@
       "description": "Description",
       "descriptionPlaceholder": "Brief description of the topic content...",
       "editTitle": "Edit Topic",
-      "errorDuplicate": "A topic with this name already exists in this module.",
+      "errorDuplicate": "A topic with this name already exists.",
       "errorName": "Topic name is required.",
       "namePlaceholder": "Enter topic name...",
-      "parentModule": "Parent Module",
-      "parentModuleHelp": "Select an existing module or type a new one. Leave empty for uncategorized.",
-      "parentModulePlaceholder": "e.g. Discrete Math > Logic",
       "saveError": "Save failed",
       "saveTopic": "Create Topic",
-      "subtitle": "Define the topic name, description, and parent module",
+      "subtitle": "Define the topic name and description",
       "topicName": "Topic Name",
       "updateSuccess": "Topic updated successfully.",
       "updateTopic": "Update Topic"
@@ -197,7 +194,7 @@
     "questionsLabel": "questions",
     "searchPlaceholder": "Search topics...",
     "stats": {
-      "modules": "Modules",
+      "categories": "Categories",
       "questions": "Total Questions",
       "topics": "Topics"
     },

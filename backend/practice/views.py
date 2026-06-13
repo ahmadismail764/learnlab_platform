@@ -75,11 +75,30 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
 class GenerateAdaptiveSessionView(generics.GenericAPIView):
     """
-        GET /practice/sessions/generate-adaptive/
-        Returns the next recommended set of questions for the learner.
-        Due/overdue FSRS items appear first; falls back to unseen questions.
-        
-        NOTE: Supports optional ?topic=<uuid> filter and ?limit=<int> (default 10).
+    GET /practice/sessions/generate-adaptive/
+
+    Returns a list of questions for the learner's next practice session,
+    prioritized by FSRS scheduling.
+
+    Query params:
+        ?topic=<uuid>   Optional. Restrict results to subtopics under
+                         this topic.
+        ?limit=<int>    Optional. Max number of questions to return.
+                         Defaults to 10.
+
+    The question list is built in three tiers, stopping as soon as
+    `limit` questions have been collected:
+
+        Tier 1 (due reviews)   — subtopics where FSRS says a review is
+                                  due now (next_review <= now), ordered
+                                  most overdue first.
+        Tier 2 (unseen)        — subtopics the learner has no mastery
+                                  record for at all (never practiced).
+        Tier 3 (fallback)      — anything else, just to fill the quota.
+
+    This guarantees the endpoint always returns up to `limit` questions
+    as long as that many exist in the system (filtered by topic, if
+    given), even for a brand-new learner with no mastery history.
     """
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = QuestionSerializer
@@ -93,7 +112,15 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         learner = request.user
         now = django_timezone.now()
 
-        # Get subtopics that are due for review (next_review <= now)
+        # ------------------------------------------------------------
+        # TIER 1 — Due reviews
+        #
+        # SubtopicMastery has no direct `topic` field — only a FK to
+        # `subtopic`, and Subtopic has a FK to `topic`. So "mastery
+        # records belonging to this topic" must be expressed via the
+        # `subtopic__topic_id` join. This same join is reused in
+        # Tiers 2 and 3 below for consistency.
+        # ------------------------------------------------------------
         mastery_qs = SubtopicMastery.objects.filter(
             learner=learner,
             next_review__lte=now,
@@ -101,20 +128,34 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         if topic_id:
             mastery_qs = mastery_qs.filter(subtopic__topic_id=topic_id)
 
-        # Sort by most overdue first (lowest retrievability)
+        # Subtopic IDs ordered by how overdue they are — earliest
+        # (most overdue) next_review comes first.
         due_subtopic_ids = list(
             mastery_qs.order_by('next_review').values_list('subtopic_id', flat=True)
-        )   
+        )
 
-        # Pull questions from due subtopics first
+        # Pull every question belonging to a due subtopic...
         due_questions_qs = Question.objects.filter(subtopic_id__in=due_subtopic_ids)
+
+        # ...then sort those questions so the most-overdue subtopic's
+        # questions appear first. `subtopic_order_map` maps each
+        # subtopic_id -> its position in due_subtopic_ids (0 = most
+        # overdue). The sort key MUST be `q.subtopic_id` (the question's
+        # foreign key to its subtopic) — NOT `q.id` (the question's own
+        # primary key, which has no relationship to subtopic ordering).
         subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
         due_questions = sorted(
             due_questions_qs,
-            key=lambda q: subtopic_order_map.get(q.id, 9999)
+            key=lambda q: subtopic_order_map.get(q.subtopic_id, 9999)
         )[:limit]
 
-        # Fill remaining slots with unseen questions (no mastery record yet)
+        # ------------------------------------------------------------
+        # TIER 2 — Unseen subtopics
+        #
+        # If Tier 1 didn't fill the quota, introduce new material:
+        # subtopics this learner has never been assessed on (no
+        # SubtopicMastery row exists yet, regardless of due date).
+        # ------------------------------------------------------------
         if len(due_questions) < limit:
             seen_subtopic_ids = list(
                 SubtopicMastery.objects.filter(learner=learner)
@@ -123,26 +164,29 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
             unseen_qs = Question.objects.exclude(subtopic_id__in=seen_subtopic_ids)
             if topic_id:
                 unseen_qs = unseen_qs.filter(subtopic__topic_id=topic_id)
-            unseen_questions = list(unseen_qs[:limit - len(due_questions)])
-            due_questions += unseen_questions
 
-        # Final fallback: any questions up to limit
+            remaining = limit - len(due_questions)
+            due_questions += list(unseen_qs[:remaining])
+
+        # ------------------------------------------------------------
+        # TIER 3 — Fallback
+        #
+        # Still short (e.g. a learner who has seen every subtopic and
+        # has nothing due)? Grab any remaining questions not already
+        # included, regardless of subtopic/mastery state, just to
+        # reach `limit`.
+        # ------------------------------------------------------------
         if len(due_questions) < limit:
             existing_ids = [q.id for q in due_questions]
             fallback_qs = Question.objects.exclude(id__in=existing_ids)
             if topic_id:
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
-            due_questions += list(fallback_qs[:limit - len(due_questions)])
+
+            remaining = limit - len(due_questions)
+            due_questions += list(fallback_qs[:remaining])
 
         serializer = QuestionSerializer(due_questions, many=True)
         return Response({
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
         })
-    
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_staff:
-            return QuestionResponse.objects.all()
-        return QuestionResponse.objects.filter(session__learner=user)
-

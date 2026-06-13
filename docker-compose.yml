@@ -1,14 +1,42 @@
+version: '3.8'
+
 services:
-  db:
-    image: postgres:14
+  learnlab-db:
+    image: postgres:16-alpine
+    container_name: learnlab_postgres_server
+    env_file:
+      - ./backend/.env
     restart: always
     environment:
-      POSTGRES_PASSWORD: SoftwareSQL11__
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - learnlab_db_data:/var/lib/postgresql/data
+
+  # learnlab-web:
+  #   build: ./backend
+  #   container_name: learnlab_django_app
+  #   env_file:
+  #     - ./backend/.env
+  #   restart: always
+  #   command: python manage.py runserver 0.0.0.0:8000
+  #   environment:
+  #     - SECRET_KEY=${DJANGO_SECRET_KEY}
+  #     - DEBUG=${DJANGO_DEBUG}
+  #     - DB_USER=${DB_USER}
+  #     - DB_PASSWORD=${DB_PASSWORD}
+  #     - DB_NAME=${DB_NAME}
+  #     - DB_HOST=learnlab-db
+  #     - DB_PORT=5432
+  #   volumes:
+  #     - ./backend:/app
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - learnlab-db
 
 volumes:
-  pgdata:
- 
+  learnlab_db_data:

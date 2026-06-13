@@ -1,41 +1,24 @@
 import {
-  createContext,
-  useContext,
   useState,
   useCallback,
   useMemo,
   type ReactNode,
 } from 'react'
+import { useTranslation } from 'react-i18next'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from 'lucide-react'
 import { cn } from '@/utils/cn'
+import {
+  ToastContext,
+  type Toast,
+  type ToastContextValue,
+  type ToastVariant,
+} from './toastContextValue'
 
 /**
  * Toast/Notification Context
  * 
  * Provides app-wide toast notifications for success, error, warning, and info messages.
  */
-
-type ToastVariant = 'success' | 'error' | 'warning' | 'info'
-
-interface Toast {
-  id: string
-  message: string
-  variant: ToastVariant
-  duration?: number
-}
-
-interface ToastContextValue {
-  toasts: Toast[]
-  showToast: (message: string, variant?: ToastVariant, duration?: number) => void
-  showSuccess: (message: string, duration?: number) => void
-  showError: (message: string, duration?: number) => void
-  showWarning: (message: string, duration?: number) => void
-  showInfo: (message: string, duration?: number) => void
-  removeToast: (id: string) => void
-  clearAll: () => void
-}
-
-const ToastContext = createContext<ToastContextValue | null>(null)
 
 // Generate unique IDs
 let toastId = 0
@@ -135,17 +118,6 @@ export function ToastProvider({ children, maxToasts = 5 }: ToastProviderProps) {
 }
 
 /**
- * useToast hook
- */
-export function useToast(): ToastContextValue {
-  const context = useContext(ToastContext)
-  if (!context) {
-    throw new Error('useToast must be used within a ToastProvider')
-  }
-  return context
-}
-
-/**
  * Toast Container - renders toast notifications
  */
 function ToastContainer({
@@ -155,13 +127,15 @@ function ToastContainer({
   toasts: Toast[]
   removeToast: (id: string) => void
 }) {
+  const { t } = useTranslation('common')
+
   if (toasts.length === 0) return null
 
   return (
     <div
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full"
+      className="fixed bottom-4 end-4 z-50 flex flex-col gap-2 max-w-sm w-full"
       role="region"
-      aria-label="Notifications"
+      aria-label={t('notifications')}
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
@@ -174,6 +148,7 @@ function ToastContainer({
  * Individual Toast Item
  */
 function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
+  const { t } = useTranslation('common')
   const variantConfig: Record<
     ToastVariant,
     { icon: typeof CheckCircle; bg: string; border: string; iconColor: string }
@@ -211,7 +186,7 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
     <div
       className={cn(
         'flex items-start gap-3 p-4 rounded-lg border shadow-lg',
-        'animate-in slide-in-from-right-full fade-in duration-300',
+        'animate-in slide-in-from-right-full rtl:slide-in-from-left-full fade-in duration-300',
         config.bg,
         config.border
       )}
@@ -222,7 +197,8 @@ function ToastItem({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       <button
         onClick={onClose}
         className="flex-shrink-0 p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-        aria-label="Dismiss notification"
+        aria-label={t('dismissNotification')}
+        title={t('dismissNotification')}
       >
         <X className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
       </button>

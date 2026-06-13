@@ -1,20 +1,30 @@
 import {
-  createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
   useMemo,
   type ReactNode,
 } from "react";
-import type { User } from "@/types";
-import { authService } from "@/services/auth";
+import { useTranslation } from "react-i18next";
+import type { User, UserRole } from "@/types";
+import {
+  authService,
+  type BackendAuthUser,
+  type LoginCredentials,
+} from "@/services/auth";
+import { getToken } from "@/services/api";
+import { AuthContext, type AuthContextValue } from "./authContextValue";
 
 /**
  * AuthContext
  *
  * Manages authentication state across the application.
  * Single Responsibility: Only handles auth state, not API calls directly (delegates to service).
+ *
+ * Key decisions:
+ * - isLoading is ONLY true during initial hydration (checking if a stored token is still valid)
+ * - Login/register do NOT set isLoading on context — the calling component handles its own loading state
+ *   to avoid the auth provider rendering a blocking "Loading..." overlay during auth requests
  */
 
 interface AuthState {
@@ -22,21 +32,6 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 }
-
-interface AuthContextValue extends AuthState {
-  login: (credentials: { email: string; password: string }) => Promise<User>;
-  register: (userData: {
-    email: string;
-    username: string;
-    password: string;
-    first_name: string;
-    last_name: string;
-  }) => Promise<User>;
-  logout: () => void;
-  updateUser: (updates: Partial<User>) => void;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 // Initial state
 const initialState: AuthState = {
@@ -50,37 +45,57 @@ interface AuthProviderProps {
   initialUser?: User | null;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [state, setState] = useState<AuthState>(initialState);
+function resolveRole(userData: BackendAuthUser): UserRole {
+  if (userData.role === "admin" || userData.role === "learner") {
+    return userData.role;
+  }
+  return userData.is_staff ? "admin" : "learner";
+}
+
+function mapBackendUser(userData: BackendAuthUser): User {
+  return {
+    id: userData.id,
+    username: userData.username,
+    email: userData.email,
+    firstName: userData.first_name,
+    lastName: userData.last_name,
+    role: resolveRole(userData),
+    createdAt: userData.date_joined,
+    updatedAt: userData.date_joined,
+    avatarColor: userData.avatar_color,
+  };
+}
+
+export function AuthProvider({ children, initialUser = null }: AuthProviderProps) {
+  const { t } = useTranslation("common");
+  const [state, setState] = useState<AuthState>(() => {
+    if (!initialUser) {
+      return initialState;
+    }
+
+    return {
+      user: initialUser,
+      isAuthenticated: true,
+      isLoading: false,
+    };
+  });
 
   // Hydrate user on mount
   useEffect(() => {
     const hydrate = async () => {
-      const token = localStorage.getItem("learnlab_auth_token");
+      if (initialUser) {
+        return;
+      }
+
+      const token = getToken("learnlab_auth_token");
       if (!token) {
         setState((prev) => ({ ...prev, isLoading: false }));
         return;
       }
 
-      // Check if we already have a user (to avoid redundant 'me' call on fast clicks/remounts)
-      if (state.user && state.isAuthenticated) {
-        setState((prev) => ({ ...prev, isLoading: false }));
-        return;
-      }
-
       try {
-        // Optimization: Use a local variable to prevent race conditions
-        const userDate = await authService.getCurrentUser();
-        // Map backend user to frontend user
-        const user: User = {
-          id: userDate.id,
-          email: userDate.email,
-          firstName: userDate.first_name,
-          lastName: userDate.last_name,
-          role: userDate.is_staff ? "admin" : "learner",
-          createdAt: userDate.date_joined,
-          updatedAt: userDate.date_joined, // backend doesn't send updated_at yet
-        };
+        const backendUser = await authService.getCurrentUser();
+        const user = mapBackendUser(backendUser);
 
         setState({
           user,
@@ -100,53 +115,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
 
     hydrate();
+  }, [initialUser]);
+
+  const login = useCallback(async (credentials: LoginCredentials) => {
+    // NOTE: We do NOT set isLoading here.
+    // The calling page (LoginPage) manages its own button/loading state.
+    // Setting isLoading on the context would render the global "Loading..." screen
+    // which blocks the login form and hides any error messages.
+    await authService.login(credentials);
+    const backendUser = await authService.getCurrentUser();
+    const user = mapBackendUser(backendUser);
+
+    setState({
+      user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    return user;
   }, []);
-
-  const login = useCallback(async (credentials: any) => {
-    setState((prev) => ({ ...prev, isLoading: true }));
-    try {
-      await authService.login(credentials);
-      const userDate = await authService.getCurrentUser();
-
-      const user: User = {
-        id: userDate.id,
-        email: userDate.email,
-        firstName: userDate.first_name,
-        lastName: userDate.last_name,
-        role: userDate.is_staff ? "admin" : "learner",
-        createdAt: userDate.date_joined,
-        updatedAt: userDate.date_joined,
-      };
-
-      setState({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      return user;
-    } catch (error) {
-      setState((prev) => ({ ...prev, isLoading: false }));
-      throw error;
-    }
-  }, []);
-
-  const register = useCallback(
-    async (userData: any) => {
-      setState((prev) => ({ ...prev, isLoading: true }));
-      try {
-        await authService.register(userData);
-        // Auto login
-        return await login({
-          email: userData.email,
-          password: userData.password,
-        });
-      } catch (error) {
-        setState((prev) => ({ ...prev, isLoading: false }));
-        throw error;
-      }
-    },
-    [login],
-  );
 
   const logout = useCallback(() => {
     authService.logout();
@@ -168,37 +154,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       ...state,
       login,
-      register,
       logout,
       updateUser,
     }),
-    [state, login, register, logout, updateUser],
+    [state, login, logout, updateUser],
   );
 
   if (state.isLoading) {
     // Show a minimal loading state while hydrating
     return (
       <div className="flex items-center justify-center min-h-screen">
-        Loading...
+        {t("loading")}
       </div>
     );
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
-}
-
-export function useCurrentUser(): User {
-  const { user, isAuthenticated } = useAuth();
-  if (!isAuthenticated || !user) {
-    throw new Error("useCurrentUser must be used in an authenticated context");
-  }
-  return user;
 }

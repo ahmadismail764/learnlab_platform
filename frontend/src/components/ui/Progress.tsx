@@ -35,10 +35,10 @@ const barSizeStyles = {
 }
 
 const barColorStyles = {
-  primary: 'bg-primary-500',
-  secondary: 'bg-secondary-500',
-  accent: 'bg-accent-500',
-  success: 'bg-green-500',
+  primary: 'bg-linear-to-r from-primary-500 to-primary-400',
+  secondary: 'bg-linear-to-r from-secondary-500 to-primary-500',
+  accent: 'bg-linear-to-r from-accent-500 to-accent-400',
+  success: 'bg-linear-to-r from-green-500 to-emerald-400',
 }
 
 export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
@@ -68,7 +68,7 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
         )}
         <div
           className={cn(
-            'w-full bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden',
+            'w-full overflow-hidden rounded-full bg-neutral-200/85 shadow-inner ring-1 ring-black/5 dark:bg-neutral-800/85 dark:ring-white/6',
             barSizeStyles[size]
           )}
           role="progressbar"
@@ -78,7 +78,7 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
         >
           <div
             className={cn(
-              'h-full rounded-full',
+              'h-full rounded-full shadow-[0_0_18px_rgba(20,184,166,0.18)]',
               barColorStyles[variant],
               animated && 'transition-all duration-500 ease-out',
               indicatorClassName

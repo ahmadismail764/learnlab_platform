@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   User,
@@ -11,13 +11,11 @@ import {
   Users,
   FileQuestion,
   Activity,
-  BarChart3,
-  Settings,
-  Clock,
-  CheckCircle,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
-import { useCurrentUser } from '@/contexts'
+import { PageIntro, PageStatCard } from '@/components/common'
+import { useAuth, useCurrentUser, useToast } from '@/contexts'
+import { analyticsService, authService, learnersService } from '@/services'
 
 /**
  * AdminProfilePage
@@ -33,41 +31,137 @@ import { useCurrentUser } from '@/contexts'
 export function AdminProfilePage() {
   const { t } = useTranslation(['profile', 'common', 'auth', 'admin'])
   const user = useCurrentUser()
+  const { updateUser } = useAuth()
+  const { showSuccess, showError } = useToast()
   const [isEditing, setIsEditing] = useState(false)
   const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState('')
 
-  // Mock system stats
-  const systemStats = {
-    totalLearners: 245,
-    totalQuestions: 1280,
-    activeToday: 42,
-    systemUptime: '99.9%',
-  }
+  const [profileForm, setProfileForm] = useState({
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+  })
 
-  // Mock recent admin actions
-  const recentActions = [
-    { type: 'question' as const, descKey: 'profile:addedQuestion', detail: 'Propositional Logic - Tier 2', time: '1h ago' },
-    { type: 'settings' as const, descKey: 'profile:updatedSettings', detail: 'Notification preferences', time: '3h ago' },
-    { type: 'review' as const, descKey: 'profile:reviewedContent', detail: '5 questions approved', time: '1d ago' },
-    { type: 'export' as const, descKey: 'profile:exportedData', detail: 'Learner analytics CSV', time: '2d ago' },
-  ]
+  const [systemStats, setSystemStats] = useState({
+    totalLearners: 0,
+    totalQuestions: 0,
+    activeToday: 0,
+  })
+  const [statsError, setStatsError] = useState('')
 
-  function getActionIcon(type: string) {
-    switch (type) {
-      case 'question': return <FileQuestion className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-      case 'settings': return <Settings className="w-4 h-4 text-secondary-600 dark:text-secondary-400" />
-      case 'review': return <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-      case 'export': return <BarChart3 className="w-4 h-4 text-accent-600 dark:text-accent-400" />
-      default: return <Activity className="w-4 h-4 text-neutral-500" />
+  useEffect(() => {
+    setProfileForm({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+    })
+  }, [user.firstName, user.lastName, user.email])
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadStats = async () => {
+      try {
+        const [leaderboard, aggregated] = await Promise.all([
+          learnersService.getLeaderboard(),
+          analyticsService.getAggregatedMetrics(),
+        ])
+
+        if (!isMounted) return
+
+        setSystemStats({
+          totalLearners: leaderboard.length,
+          totalQuestions: aggregated?.review_count ?? 0,
+          activeToday: aggregated?.active_users?.['7_days'] ?? 0,
+        })
+      } catch (error) {
+        if (!isMounted) return
+        // Analytics returns 400 when there's insufficient data — this is expected
+        const message = error instanceof Error ? error.message : 'Failed to load admin metrics'
+        if (message.includes('Insufficient data')) {
+          setStatsError('Insufficient practice data for full analytics (< 10 sessions). Stats show available data.')
+        } else {
+          setStatsError(message)
+        }
+      }
+    }
+
+    loadStats()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleSaveProfile = async () => {
+    setIsSavingProfile(true)
+    setProfileError('')
+
+    try {
+      const updated = await authService.updateCurrentUser({
+        first_name: profileForm.firstName.trim(),
+        last_name: profileForm.lastName.trim(),
+        email: profileForm.email.trim(),
+      })
+
+      updateUser({
+        firstName: updated.first_name,
+        lastName: updated.last_name,
+        email: updated.email,
+        username: updated.username,
+        role: updated.role === 'admin' || updated.role === 'learner'
+          ? updated.role
+          : updated.is_staff
+            ? 'admin'
+            : 'learner',
+      })
+
+      setIsEditing(false)
+      showSuccess('Profile updated successfully.')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile'
+      setProfileError(message)
+      showError(message)
+    } finally {
+      setIsSavingProfile(false)
     }
   }
 
+
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Page Header */}
-      <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-        {t('profile:myProfile')}
-      </h1>
+      <PageIntro
+        eyebrow="Admin profile"
+        title={t('profile:myProfile')}
+        description={t('profile:personalInfoDescription')}
+        icon={<Shield className="h-6 w-6" />}
+        tone="secondary"
+        actions={(
+          <Button
+            variant="outline"
+            size="sm"
+            leftIcon={<Edit3 className="w-4 h-4" />}
+            onClick={() => setIsEditing(!isEditing)}
+          >
+            {t('profile:editProfile')}
+          </Button>
+        )}
+      />
+
+      {profileError && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+          {profileError}
+        </div>
+      )}
+
+      {statsError && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-300">
+          {statsError}
+        </div>
+      )}
 
       {/* Profile Card */}
       <Card>
@@ -75,6 +169,7 @@ export function AdminProfilePage() {
           <Avatar
             name={`${user.firstName} ${user.lastName}`}
             src={user.avatarUrl}
+            avatarColor={user.avatarColor}
             size="xl"
           />
           <div className="flex-1 min-w-0">
@@ -94,14 +189,6 @@ export function AdminProfilePage() {
               </span>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={<Edit3 className="w-4 h-4" />}
-            onClick={() => setIsEditing(!isEditing)}
-          >
-            {t('profile:editProfile')}
-          </Button>
         </div>
       </Card>
 
@@ -116,29 +203,47 @@ export function AdminProfilePage() {
                 <div className="grid sm:grid-cols-2 gap-4">
                   <Input
                     label={t('profile:firstName')}
-                    defaultValue={user.firstName}
+                    value={profileForm.firstName}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, firstName: e.target.value }))}
                     leftIcon={<User className="w-4 h-4" />}
+                    disabled={isSavingProfile}
                   />
                   <Input
                     label={t('profile:lastName')}
-                    defaultValue={user.lastName}
+                    value={profileForm.lastName}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, lastName: e.target.value }))}
                     leftIcon={<User className="w-4 h-4" />}
+                    disabled={isSavingProfile}
                   />
                   <div className="sm:col-span-2">
                     <Input
                       label={t('profile:email')}
-                      defaultValue={user.email}
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))}
                       leftIcon={<Mail className="w-4 h-4" />}
                       type="email"
+                      disabled={isSavingProfile}
                     />
                   </div>
                 </div>
                 <div className="flex justify-end gap-3 mt-4">
-                  <Button variant="ghost" onClick={() => setIsEditing(false)}>
+                  <Button
+                    variant="ghost"
+                    disabled={isSavingProfile}
+                    onClick={() => {
+                      setIsEditing(false)
+                      setProfileError('')
+                      setProfileForm({
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        email: user.email,
+                      })
+                    }}
+                  >
                     {t('common:cancel')}
                   </Button>
-                  <Button variant="primary" onClick={() => setIsEditing(false)}>
-                    {t('common:saveChanges')}
+                  <Button variant="primary" disabled={isSavingProfile} onClick={handleSaveProfile}>
+                    {isSavingProfile ? t('common:loading') : t('common:saveChanges')}
                   </Button>
                 </div>
               </CardContent>
@@ -152,76 +257,30 @@ export function AdminProfilePage() {
               subtitle={t('profile:systemOverviewDescription')}
             />
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
-                  <div className="p-2 bg-primary-100 dark:bg-primary-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <Users className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.totalLearners}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:totalLearners')}</p>
-                </div>
-                <div className="text-center p-3 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl">
-                  <div className="p-2 bg-secondary-100 dark:bg-secondary-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <FileQuestion className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.totalQuestions}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:totalQuestions')}</p>
-                </div>
-                <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                  <div className="p-2 bg-green-100 dark:bg-green-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <Activity className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.activeToday}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:activeToday')}</p>
-                </div>
-                <div className="text-center p-3 bg-accent-50 dark:bg-accent-900/20 rounded-xl">
-                  <div className="p-2 bg-accent-100 dark:bg-accent-800/30 rounded-lg w-fit mx-auto mb-2">
-                    <Clock className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-                  </div>
-                  <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{systemStats.systemUptime}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('profile:systemUptime')}</p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <PageStatCard
+                  icon={<Users className="h-5 w-5" />}
+                  label={t('profile:totalLearners')}
+                  value={systemStats.totalLearners}
+                  tone="primary"
+                />
+                <PageStatCard
+                  icon={<FileQuestion className="h-5 w-5" />}
+                  label={t('profile:totalQuestions')}
+                  value={systemStats.totalQuestions}
+                  tone="secondary"
+                />
+                <PageStatCard
+                  icon={<Activity className="h-5 w-5" />}
+                  label={t('profile:activeToday')}
+                  value={systemStats.activeToday}
+                  tone="success"
+                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Recent Admin Actions */}
-          <Card>
-            <CardHeader
-              title={t('profile:recentAdminActions')}
-              subtitle={t('profile:recentAdminActionsDescription')}
-            />
-            <CardContent>
-              <div className="space-y-2">
-                {recentActions.map((action, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 p-3.5 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                  >
-                    <div className={`p-2 rounded-lg ${
-                      action.type === 'question' ? 'bg-primary-100 dark:bg-primary-900/30' :
-                      action.type === 'settings' ? 'bg-secondary-100 dark:bg-secondary-900/30' :
-                      action.type === 'review' ? 'bg-green-100 dark:bg-green-900/30' :
-                      'bg-accent-100 dark:bg-accent-900/30'
-                    }`}>
-                      {getActionIcon(action.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
-                        {t(action.descKey)}
-                      </p>
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                        {action.detail}
-                      </p>
-                    </div>
-                    <span className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">
-                      {action.time}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Right column */}

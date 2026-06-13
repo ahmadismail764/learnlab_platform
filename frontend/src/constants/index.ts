@@ -17,7 +17,7 @@ export const APP_DESCRIPTION = 'Discrete Mathematics Learning Platform for Colle
 // API Configuration
 // ============================================
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 export const API_TIMEOUT = 30000 // 30 seconds
 
 // ============================================
@@ -48,7 +48,7 @@ export const ROUTES = {
   LEARNER_PRACTICE: '/learner/practice',
   LEARNER_PROGRESS: '/learner/progress',
   LEARNER_TOPICS: '/learner/topics',
-  LEARNER_ACHIEVEMENTS: '/learner/achievements',
+
   
   // Admin (Content Manager)
   ADMIN_DASHBOARD: '/admin',
@@ -111,3 +111,11 @@ export const VALIDATION = {
   USERNAME_MIN_LENGTH: 3,
   USERNAME_MAX_LENGTH: 30,
 } as const
+
+// ============================================
+// Mastery / Topic Status
+// ============================================
+
+export { MASTERY_STATUS_BADGE_VARIANT, MASTERY_STATUS_ICONS } from './mastery'
+export type { TopicMastery } from './mastery'
+

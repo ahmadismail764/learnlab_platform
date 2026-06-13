@@ -22,3 +22,27 @@ export {
   usePrefersReducedMotion 
 } from './useMediaQuery'
 
+// Data fetching (React Query)
+export {
+  useLearnerProfile,
+  useTopicMastery,
+  useGlobalLeaderboard,
+  useTopicLeaderboard,
+  useTopics,
+  useQuestions,
+  useAggregatedMetrics,
+  useBulkTopicAnalytics,
+  useActivityTimeSeries,
+  useDifficultyBreakdown,
+  usePracticeSessions,
+  useUpdateProfile,
+  useSuspenseGlobalLeaderboard,
+  useSuspenseTopicLeaderboard,
+  useSuspenseTopics,
+  useSuspenseQuestions,
+  queryKeys,
+} from './useApi'
+
+// API error interceptor (global)
+export { useApiErrorInterceptor } from './useApiErrorInterceptor'
+export { useLanguage } from './useLanguage'

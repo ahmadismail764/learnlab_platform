@@ -1,60 +1,100 @@
+import { lazy } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AuthLayout, DashboardLayout } from "@/components/layout";
-import {
-  LoginPage,
-  RegisterPage,
-  LearnerDashboard,
-  AdminDashboard,
-  PracticePage,
-  TopicsPage,
-  ProgressPage,
-  AchievementsPage,
-  LearnerProfilePage,
-  QuestionsPage,
-  AnalyticsPage,
-  SettingsPage,
-  AdminProfilePage,
-  LeaderboardPage,
-  TopicsManagementPage,
-} from "@/pages";
 import type { User } from "@/types";
+import { LazyRoute } from "./LazyRoute";
+import { NotFoundPage } from "./NotFoundPage";
 
 /**
  * Application Router
  *
- * Defines all routes and their associated layouts.
- * Protected routes are handled by checking auth state.
+ * Route-level code splitting via React.lazy() keeps the initial bundle
+ * small. Heavy pages (especially PracticePage with mathlive) are loaded
+ * on demand. Each lazy chunk is wrapped in Suspense with a spinner.
+ *
+ * Roles:
+ * - learner: Primary learner - solves problems, views progress
+ * - admin: Content manager - manages questions, monitors analytics
+
+/**
+ * Application Router
+ *
+ * Route-level code splitting via React.lazy() keeps the initial bundle
+ * small. Heavy pages (especially PracticePage with mathlive) are loaded
+ * on demand. Each lazy chunk is wrapped in Suspense with a spinner.
  *
  * Roles:
  * - learner: Primary learner - solves problems, views progress
  * - admin: Content manager - manages questions, monitors analytics
  */
 
+// ── Eagerly loaded (part of initial bundle) ────────────────────────
+// Auth pages load fast and are the first thing users see
+import { ForgotPasswordPage, LoginPage, RegisterPage } from "@/pages/auth";
+
+// ── Lazily loaded (split into separate chunks) ─────────────────────
+const OnboardingPage = lazy(() =>
+  import("@/pages/learner/OnboardingPage.tsx").then((m) => ({ default: m.OnboardingPage }))
+);
+const LearnerDashboard = lazy(() =>
+  import("@/pages/learner/LearnerDashboard.tsx").then((m) => ({ default: m.LearnerDashboard }))
+);
+const TopicsPage = lazy(() =>
+  import("@/pages/learner/TopicsPage.tsx").then((m) => ({ default: m.TopicsPage }))
+);
+const PracticePage = lazy(() =>
+  import("@/pages/learner/PracticePage.tsx").then((m) => ({ default: m.PracticePage }))
+);
+const ProgressPage = lazy(() =>
+  import("@/pages/learner/ProgressPage.tsx").then((m) => ({ default: m.ProgressPage }))
+);
+const LeaderboardPage = lazy(() =>
+  import("@/pages/learner/LeaderboardPage.tsx").then((m) => ({ default: m.LeaderboardPage }))
+);
+const LearnerProfilePage = lazy(() =>
+  import("@/pages/learner/LearnerProfilePage.tsx").then((m) => ({ default: m.LearnerProfilePage }))
+);
+
+const AdminDashboard = lazy(() =>
+  import("@/pages/admin/AdminDashboard.tsx").then((m) => ({ default: m.AdminDashboard }))
+);
+const TopicsManagementPage = lazy(() =>
+  import("@/pages/admin/TopicsManagementPage.tsx").then((m) => ({ default: m.TopicsManagementPage }))
+);
+const QuestionsPage = lazy(() =>
+  import("@/pages/admin/QuestionsPage.tsx").then((m) => ({ default: m.QuestionsPage }))
+);
+const AnalyticsPage = lazy(() =>
+  import("@/pages/admin/AnalyticsPage.tsx").then((m) => ({ default: m.AnalyticsPage }))
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/admin/SettingsPage.tsx").then((m) => ({ default: m.SettingsPage }))
+);
+const AdminProfilePage = lazy(() =>
+  import("@/pages/admin/AdminProfilePage.tsx").then((m) => ({ default: m.AdminProfilePage }))
+);
+
 /**
- * Helper to create dashboard layout with user
- *
- * Note: onLogout is a placeholder that will be replaced when AuthContext
- * is integrated. The actual logout flow should:
- * 1. Call logout() from AuthContext
- * 2. Clear tokens from storage
- * 3. React Router will auto-redirect via the user check
+ * Helper to create dashboard layout with user.
  */
-function createDashboardElement(user: User | null, onLogout?: () => void) {
+function createDashboardElement(
+  user: User | null,
+  requiredRole: User["role"],
+  onLogout?: () => void,
+) {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
+  if (user.role !== requiredRole) {
+    return <Navigate to={getDefaultRoute(user.role)} replace />;
+  }
+
   return (
     <DashboardLayout
+      role={requiredRole}
       user={user}
-      onLogout={
-        onLogout ??
-        (() => {
-          // Placeholder: Will be replaced by AuthContext.logout() in App.tsx
-          // This causes full reload - acceptable for demo, replace for production
-          window.location.href = "/login";
-        })
-      }
+      onLogout={onLogout ?? (() => {})}
     />
   );
 }
@@ -74,61 +114,43 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
         { index: true, element: <Navigate to="/login" replace /> },
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
-        {
-          path: "forgot-password",
-          element: (
-            <div className="text-center">Forgot Password (Coming Soon)</div>
-          ),
-        },
+        { path: "forgot-password", element: <ForgotPasswordPage /> },
       ],
     },
 
     // Learner routes
     {
       path: "/learner",
-      element: createDashboardElement(user, onLogout),
+      element: createDashboardElement(user, "learner", onLogout),
       children: [
-        { index: true, element: <LearnerDashboard /> },
-        { path: "topics", element: <TopicsPage /> },
-        { path: "practice", element: <PracticePage /> },
-        { path: "progress", element: <ProgressPage /> },
-        { path: "achievements", element: <AchievementsPage /> },
-        { path: "leaderboard", element: <LeaderboardPage /> },
-        { path: "profile", element: <LearnerProfilePage /> },
+        { index: true, element: <LazyRoute><LearnerDashboard /></LazyRoute> },
+        { path: "onboarding", element: <LazyRoute><OnboardingPage /></LazyRoute> },
+        { path: "topics", element: <LazyRoute><TopicsPage /></LazyRoute> },
+        { path: "practice", element: <LazyRoute><PracticePage /></LazyRoute> },
+        { path: "progress", element: <LazyRoute><ProgressPage /></LazyRoute> },
+        { path: "leaderboard", element: <LazyRoute><LeaderboardPage /></LazyRoute> },
+        { path: "profile", element: <LazyRoute><LearnerProfilePage /></LazyRoute> },
       ],
     },
 
     // Admin (Content Manager) routes
     {
       path: "/admin",
-      element: createDashboardElement(user, onLogout),
+      element: createDashboardElement(user, "admin", onLogout),
       children: [
-        { index: true, element: <AdminDashboard /> },
-        { path: "topics", element: <TopicsManagementPage /> },
-        { path: "questions", element: <QuestionsPage /> },
-        { path: "analytics", element: <AnalyticsPage /> },
-        { path: "settings", element: <SettingsPage /> },
-        { path: "profile", element: <AdminProfilePage /> },
+        { index: true, element: <LazyRoute><AdminDashboard /></LazyRoute> },
+        { path: "topics", element: <LazyRoute><TopicsManagementPage /></LazyRoute> },
+        { path: "questions", element: <LazyRoute><QuestionsPage /></LazyRoute> },
+        { path: "analytics", element: <LazyRoute><AnalyticsPage /></LazyRoute> },
+        { path: "settings", element: <LazyRoute><SettingsPage /></LazyRoute> },
+        { path: "profile", element: <LazyRoute><AdminProfilePage /></LazyRoute> },
       ],
     },
 
     // Catch all - 404
     {
       path: "*",
-      element: (
-        <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-          <div className="text-center">
-            <h1 className="text-6xl font-bold text-neutral-300">404</h1>
-            <p className="text-neutral-600 mt-2">Page not found</p>
-            <a
-              href="/"
-              className="text-primary-600 hover:text-primary-700 mt-4 inline-block"
-            >
-              Go home
-            </a>
-          </div>
-        </div>
-      ),
+      element: <NotFoundPage />,
     },
   ]);
 }

@@ -30,7 +30,7 @@ export function LanguageSwitcher({
   className,
   showLabel = true 
 }: LanguageSwitcherProps) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation('language')
   const [isOpen, setIsOpen] = useState(false)
   const currentLang = i18n.language as SupportedLanguage
 
@@ -51,7 +51,7 @@ export function LanguageSwitcher({
   // Globe variant - earth icon with dropdown (default, recommended)
   if (variant === 'globe') {
     return (
-      <div className={cn('relative', className)}>
+      <div className="relative">
         <button
           onClick={(e) => {
             e.stopPropagation()
@@ -61,10 +61,11 @@ export function LanguageSwitcher({
             'p-2 rounded-lg transition-colors',
             'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700',
             'dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/30'
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
+            className,
           )}
-          title="Change language"
-          aria-label="Change language"
+          title={t('switchLanguage')}
+          aria-label={t('switchLanguage')}
           aria-expanded={isOpen}
         >
           <Globe className="w-5 h-5" />
@@ -84,7 +85,7 @@ export function LanguageSwitcher({
               'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
               'border border-neutral-200 dark:border-neutral-700',
               'z-50',
-              'ltr:right-0 rtl:left-0'
+              'end-0'
             )}>
               {supportedLanguages.map((lang) => {
                 const config = languageConfig[lang]
@@ -129,7 +130,7 @@ export function LanguageSwitcher({
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           className
         )}
-        title={`Switch to ${nextConfig.name}`}
+        title={t('switchToLanguage', { language: nextConfig.nativeName })}
       >
         <Globe className="w-4 h-4" />
         {showLabel && (
@@ -153,8 +154,8 @@ export function LanguageSwitcher({
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30',
           className
         )}
-        title={languageConfig[nextLang].name}
-        aria-label={`Switch to ${languageConfig[nextLang].name}`}
+        title={languageConfig[nextLang].nativeName}
+        aria-label={t('switchToLanguage', { language: languageConfig[nextLang].nativeName })}
       >
         <Globe className="w-5 h-5" />
       </button>
@@ -227,7 +228,7 @@ export function LanguageSwitcher({
           'bg-white dark:bg-neutral-800 rounded-lg shadow-lg',
           'border border-neutral-200 dark:border-neutral-700',
           'z-50',
-          'ltr:right-0 rtl:left-0'
+          'end-0'
         )}>
           {supportedLanguages.map((lang) => {
             const config = languageConfig[lang]
@@ -255,22 +256,3 @@ export function LanguageSwitcher({
   )
 }
 
-/**
- * useLanguage hook
- * 
- * Provides current language info and change function.
- */
-export function useLanguage() {
-  const { i18n } = useTranslation()
-  const currentLang = i18n.language as SupportedLanguage
-  const config = languageConfig[currentLang] || languageConfig.en
-  
-  return {
-    language: currentLang,
-    dir: config.dir,
-    isRTL: config.dir === 'rtl',
-    config,
-    changeLanguage,
-    supportedLanguages,
-  }
-}

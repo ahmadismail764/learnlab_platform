@@ -1,9 +1,9 @@
 import { Outlet } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { LogoMark, LogoFull } from "@/components/brand";
-import {
-  DataSourceBreakdown,
-  IntegrationStatusBadge,
-} from "@/components/common";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 /**
  * AuthLayout Component
@@ -14,6 +14,9 @@ import {
  */
 
 export function AuthLayout() {
+  const { t } = useTranslation("auth");
+
+
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex">
       {/* Left side - Branding (hidden on mobile) */}
@@ -138,12 +141,10 @@ export function AuthLayout() {
         {/* Tagline */}
         <div className="relative z-10">
           <h1 className="text-4xl font-bold mb-4 font-display">
-            Learn at your own pace
+            {t("heroTitle")}
           </h1>
           <p className="text-lg text-white/80">
-            Master Discrete Mathematics through spaced repetition and
-            personalized learning paths. Track your progress and achieve your
-            goals.
+            {t("heroDescription")}
           </p>
         </div>
 
@@ -152,20 +153,13 @@ export function AuthLayout() {
 
       {/* Right side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 relative">
-        {/* Theme & Language Controls */}
-        {/* <div className="absolute top-4 end-4 flex items-center gap-1">
+        <div className="absolute top-4 end-4 flex items-center gap-1">
           <ThemeToggle />
           <LanguageSwitcher variant="globe" />
-        </div> */}
+        </div>
 
         <div className="w-full max-w-md">
-          <div className="mb-4 flex justify-end">
-            <IntegrationStatusBadge compact />
-          </div>
 
-          <div className="mb-4">
-            <DataSourceBreakdown compact />
-          </div>
 
           {/* Mobile logo */}
           <div className="mb-8 lg:hidden">

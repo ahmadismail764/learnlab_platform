@@ -1,212 +1,217 @@
-import { 
-  Users, 
-  BookOpen, 
+import { useMemo } from 'react'
+import {
   Activity,
+  BarChart3,
+  Brain,
+  ChevronRight,
   TrendingUp,
-  BarChart3
+  Users,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Card, CardHeader, CardContent, Button, Badge, Avatar } from '@/components/ui'
+import { Card, Button, Badge, Avatar, EmptyState, EmptyDataIllustration } from '@/components/ui'
+import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
+import { Skeleton } from '@/components/ui/Loading'
 import { useCurrentUser } from '@/contexts'
-
-/**
- * AdminDashboard
- * 
- * System overview for administrators with branded visual identity.
- * Uses the teal-to-violet gradient for hero section.
- */
+import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
+import type { LearnerProfile } from '@/services/learners'
 
 export function AdminDashboard() {
-  const { t } = useTranslation('admin')
+  const { t } = useTranslation(['admin', 'common', 'auth', 'time'])
   const user = useCurrentUser()
 
-  // Mock data
-  const stats = {
-    totalUsers: 1247,
-    learners: 1150,
-    admins: 8,
-    activeToday: 423,
-    newThisWeek: 34,
-  }
+  const { data: metrics, isLoading: metricsLoading } = useAggregatedMetrics()
+  const { data: leaderboardRaw, isLoading: lbLoading } = useGlobalLeaderboard()
+  const leaderboard = useMemo(
+    () => (leaderboardRaw ?? []) as LearnerProfile[],
+    [leaderboardRaw]
+  )
+  const isLoading = metricsLoading || lbLoading
 
-  const recentUsers = [
-    { id: '1', name: 'يوسف محمد', email: 'youssef@school.com', roleKey: 'auth:learner', hoursAgo: 2 },
-    { id: '3', name: 'زينب  السيد', email: 'zainab@school.com', roleKey: 'auth:learner', daysAgo: 1 },
-  ]
+  const stats = useMemo(() => ({
+    totalLearners: leaderboard.length || 0,
+    activeThisWeek: metrics?.active_users['7_days'] ?? 0,
+    totalReviews: metrics?.review_count ?? 0,
+    avgRetention: metrics?.estimated_retention
+      ? Math.round(metrics.estimated_retention * 100)
+      : 0,
+  }), [metrics, leaderboard])
 
-  const systemHealth = [
-    { nameKey: 'admin:apiResponseTime', value: '45ms', status: 'good' },
-    { nameKey: 'admin:database', value: '99.9%', status: 'good' },
-    { nameKey: 'admin:storage', value: '67%', status: 'warning' },
-    { nameKey: 'admin:activeSessions', value: '423', status: 'good' },
-  ]
+  const topLearners = useMemo(() =>
+    leaderboard.slice(0, 5).map((entry) => ({
+      id: String(entry.id),
+      name: `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username,
+      email: entry.user.email,
+      xp: entry.total_xp,
+      streak: entry.streak_count,
+    })),
+    [leaderboard]
+  )
+
+
 
   return (
     <div className="space-y-6">
-      {/* Hero — branded gradient with admin context */}
-      <Card className="relative overflow-hidden bg-linear-to-br from-secondary-600 via-secondary-500 to-primary-600 text-white border-0">
-        {/* Decorative graph nodes */}
-        <div className="absolute inset-0 opacity-[0.06] pointer-events-none">
-          <svg className="w-full h-full" viewBox="0 0 600 160" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
-            <circle cx="480" cy="30" r="5" fill="white"/>
-            <circle cx="530" cy="70" r="4" fill="white"/>
-            <circle cx="440" cy="90" r="6" fill="white"/>
-            <circle cx="510" cy="130" r="5" fill="white"/>
-            <line x1="480" y1="30" x2="530" y2="70" stroke="white" strokeWidth="1.5"/>
-            <line x1="530" y1="70" x2="510" y2="130" stroke="white" strokeWidth="1.5"/>
-            <line x1="440" y1="90" x2="510" y2="130" stroke="white" strokeWidth="1.5"/>
-            <line x1="480" y1="30" x2="440" y2="90" stroke="white" strokeWidth="1.5"/>
-          </svg>
-        </div>
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-1">
-            <BarChart3 className="w-4 h-4 text-accent-300" />
-            <p className="text-white/70 text-sm">{t('admin:adminDashboard')}</p>
-          </div>
-          <h1 className="text-2xl font-bold font-display">
-            {t('admin:welcomeBackAdmin', { name: user.firstName })}
-          </h1>
-        </div>
-      </Card>
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
+        <PageIntro
+          eyebrow={t('admin:adminDashboard')}
+          title={t('admin:welcomeBackAdmin', { name: user.firstName })}
+          description={t('admin:welcomeBackAdminDescription')}
+          icon={<BarChart3 className="h-6 w-6" />}
+          tone="secondary"
+        />
 
-      {/* Stats Grid — branded */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-secondary-100 dark:bg-secondary-900/30 rounded-xl group-hover:scale-105 transition-transform">
-              <Users className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.totalUsers}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:totalUsers')}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary-100 dark:bg-primary-900/30 rounded-xl group-hover:scale-105 transition-transform">
-              <Activity className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.activeToday}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:activeToday')}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-accent-100 dark:bg-accent-900/30 rounded-xl group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold font-display text-neutral-800 dark:text-neutral-100">+{stats.newThisWeek}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:newThisWeek')}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card padding="sm" className="group hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5 text-secondary-700 dark:text-secondary-300" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">{stats.learners}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:learners')}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
+        <Card className="dashboard-panel">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-neutral-400 dark:text-neutral-500">
+            {t('admin:systemSnapshot')}
+          </p>
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* User Breakdown & Recent Users */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* User Breakdown */}
-          <Card>
-            <CardHeader title={t('admin:userBreakdown')} />
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-primary-50 dark:bg-primary-900/20 rounded-xl">
-                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.learners}</p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:learners')}</p>
+          {isLoading ? (
+            <div className="mt-4 space-y-3">
+              <Skeleton width="58%" height={34} />
+              <Skeleton width="100%" height={14} />
+              <Skeleton width="100%" height={14} />
+            </div>
+          ) : (
+            <>
+              <p className="mt-4 text-3xl font-semibold tracking-tight text-neutral-950 dark:text-neutral-50">
+                {t('admin:activeThisWeekValue', { count: stats.activeThisWeek })}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-neutral-600 dark:text-neutral-400">
+                {t('admin:welcomeBackAdminDescription')}
+              </p>
+
+              <div className="mt-5 space-y-3 border-t border-neutral-200/80 pt-4 dark:border-neutral-800">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">{t('admin:reviewsLogged')}</span>
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
+                    {stats.totalReviews.toLocaleString()}
+                  </span>
                 </div>
-                <div className="text-center p-4 bg-secondary-50 dark:bg-secondary-900/20 rounded-xl">
-                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.totalUsers}</p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:totalUsers')}</p>
-                </div>
-                <div className="text-center p-4 bg-accent-50 dark:bg-accent-900/20 rounded-xl">
-                  <p className="text-3xl font-bold font-display text-neutral-800 dark:text-neutral-100">{stats.admins}</p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:admins')}</p>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-neutral-500 dark:text-neutral-400">{t('admin:retentionEstimate')}</span>
+                  <span className="font-semibold text-neutral-950 dark:text-neutral-50">
+                    {stats.avgRetention}%
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </>
+          )}
+        </Card>
+      </section>
 
-          {/* Recent Users */}
-          <Card>
-            <CardHeader 
-              title={t('admin:recentUsers')} 
-              action={<Button variant="ghost" size="sm">{t('common:viewAll')}</Button>}
-            />
-            <CardContent>
-              <div className="divide-y divide-neutral-100 dark:divide-neutral-700">
-                {recentUsers.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={u.name} size="sm" />
-                      <div>
-                        <p className="font-medium text-neutral-800 dark:text-neutral-100">{u.name}</p>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{u.email}</p>
+      <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <PageStatCard
+          icon={<Users className="h-5 w-5" />}
+          label={t('admin:totalLearners')}
+          value={isLoading ? '--' : stats.totalLearners}
+          helper={t('admin:totalLearnersHelper')}
+          tone="secondary"
+        />
+        <PageStatCard
+          icon={<Activity className="h-5 w-5" />}
+          label={t('admin:activeThisWeek')}
+          value={isLoading ? '--' : stats.activeThisWeek}
+          helper={t('admin:activeThisWeekHelper')}
+          tone="success"
+        />
+        <PageStatCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          label={t('admin:totalReviews')}
+          value={isLoading ? '--' : stats.totalReviews.toLocaleString()}
+          helper={t('admin:totalReviewsHelper')}
+          tone="primary"
+        />
+        <PageStatCard
+          icon={<Brain className="h-5 w-5" />}
+          label={t('admin:retention')}
+          value={isLoading ? '--' : `${stats.avgRetention}%`}
+          helper={t('admin:retentionHealthHelper')}
+          tone="accent"
+        />
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_320px]">
+        <Card className="dashboard-panel">
+          <SectionHeading
+            title={t('admin:topLearners')}
+            description={t('admin:topLearnersDescription')}
+            action={
+              <Button variant="ghost" size="sm" rightIcon={<ChevronRight className="h-4 w-4 rtl:rotate-180" />}>
+                {t('common:viewAll')}
+              </Button>
+            }
+          />
+
+          <div className="mt-5">
+            {isLoading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 border-b border-neutral-100 pb-4 last:border-b-0 last:pb-0 dark:border-neutral-800"
+                  >
+                    <Skeleton variant="circular" width={36} height={36} />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton width="45%" />
+                      <Skeleton width="30%" height={12} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : topLearners.length === 0 ? (
+              <EmptyState
+                illustration={<EmptyDataIllustration className="mx-auto" />}
+                title={t('admin:noLearnerData')}
+                description={t('admin:noLearnerDataDescription')}
+                className="py-6 surface-inset border border-dashed border-neutral-200/80 dark:border-neutral-800"
+              />
+            ) : (
+              <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                {topLearners.map((entry, index) => (
+                  <div key={entry.id} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary-100 text-sm font-semibold text-secondary-700 dark:bg-secondary-900/30 dark:text-secondary-300">
+                        {index + 1}
+                      </div>
+                      <Avatar name={entry.name} size="sm" />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-neutral-800 dark:text-neutral-100">
+                          {entry.name}
+                        </p>
+                        <p className="truncate text-sm text-neutral-500 dark:text-neutral-400">
+                          {entry.email}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <Badge 
-                        variant={u.roleKey === 'auth:admin' ? 'primary' : 'secondary'}
-                        size="sm"
-                      >
-                        {t(u.roleKey)}
-                      </Badge>
-                      <span className="text-sm text-neutral-400">
-                        {u.daysAgo ? t('time:yesterday') : t('time:hoursAgo', { count: u.hoursAgo })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* System Health */}
-        <div className="space-y-6">
-          {/* System Health */}
-          <Card>
-            <CardHeader title={t('admin:systemHealth')} />
-            <CardContent>
-              <div className="space-y-3">
-                {systemHealth.map((item) => (
-                  <div key={item.nameKey} className="flex items-center justify-between">
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">{t(item.nameKey)}</span>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">{item.value}</span>
-                      <Badge 
-                        dot 
-                        variant={item.status === 'good' ? 'success' : 'warning'} 
-                      />
+                      <Badge variant="secondary" size="sm">
+                        {t('admin:experiencePointsValue', { value: entry.xp.toLocaleString() })}
+                      </Badge>
+                      <Badge variant="outline" size="sm">
+                        {t('admin:dayStreak', { count: entry.streak })}
+                      </Badge>
                     </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
+            )}
+          </div>
+        </Card>
+
+        <div className="space-y-6">
+
+
+          <Card className="dashboard-panel-soft border-0">
+            <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              {t('admin:adminNote')}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-neutral-500 dark:text-neutral-400">
+              {t('admin:adminNoteDescription')}
+            </p>
           </Card>
-
-
         </div>
-      </div>
+      </section>
     </div>
   )
 }

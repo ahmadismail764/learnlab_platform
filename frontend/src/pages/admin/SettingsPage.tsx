@@ -11,6 +11,7 @@ import {
   Check,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input } from '@/components/ui'
+import { PageIntro } from '@/components/common'
 
 /**
  * SettingsPage - Admin System Settings
@@ -27,6 +28,39 @@ interface SettingSection {
   id: string
   icon: React.ElementType
   titleKey: string
+}
+
+interface ToggleSwitchProps {
+  checked: boolean
+  onChange: (checked: boolean) => void
+  disabled?: boolean
+}
+
+function ToggleSwitch({ checked, onChange, disabled = false }: ToggleSwitchProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className={`
+        relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full 
+        border-2 border-transparent transition-colors duration-200 ease-in-out
+        focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+        ${checked ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-600'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+      `}
+    >
+      <span
+        className={`
+          pointer-events-none inline-block h-5 w-5 transform rounded-full 
+          bg-white shadow ring-0 transition duration-200 ease-in-out
+          ${checked ? 'translate-x-5 rtl:-translate-x-5' : 'translate-x-0'}
+        `}
+      />
+    </button>
+  )
 }
 
 export function SettingsPage() {
@@ -46,7 +80,6 @@ export function SettingsPage() {
     // Notifications
     emailNotifications: true,
     practiceReminders: true,
-    achievementAlerts: true,
     weeklyDigest: false,
     
     // Security
@@ -93,111 +126,75 @@ export function SettingsPage() {
     setHasChanges(false)
   }
 
-  const ToggleSwitch = ({ 
-    checked, 
-    onChange,
-    disabled = false 
-  }: { 
-    checked: boolean
-    onChange: (checked: boolean) => void
-    disabled?: boolean
-  }) => (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={`
-        relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full 
-        border-2 border-transparent transition-colors duration-200 ease-in-out
-        focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-        ${checked ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-600'}
-        ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-      `}
-    >
-      <span
-        className={`
-          pointer-events-none inline-block h-5 w-5 transform rounded-full 
-          bg-white shadow ring-0 transition duration-200 ease-in-out
-          ${checked ? 'translate-x-5 rtl:-translate-x-5' : 'translate-x-0'}
-        `}
-      />
-    </button>
-  )
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-            {t('admin:systemSettings')}
-          </h1>
-          <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-            {t('admin:settingsDescription')}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {hasChanges && (
-            <Button variant="outline" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={handleReset}>
-              {t('common:reset')}
+      <PageIntro
+        eyebrow="Admin settings"
+        title={t('admin:systemSettings')}
+        description={t('admin:settingsDescription')}
+        icon={<Settings className="h-6 w-6" />}
+        tone="secondary"
+        actions={
+          <>
+            {hasChanges && (
+              <Button variant="outline" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={handleReset}>
+                {t('common:reset')}
+              </Button>
+            )}
+            <Button
+              leftIcon={saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              disabled={!hasChanges}
+              onClick={handleSave}
+            >
+              {saved ? t('common:saved') : t('common:saveChanges')}
             </Button>
-          )}
-          <Button 
-            leftIcon={saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            disabled={!hasChanges}
-            onClick={handleSave}
-          >
-            {saved ? t('common:saved') : t('common:saveChanges')}
-          </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Status Badge */}
       {hasChanges && (
-        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-lg">
-          <Badge variant="warning" dot />
-          {t('admin:unsavedChanges')}
-        </div>
+        <Card className="dashboard-panel-soft border-0" padding="sm">
+          <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+            <Badge variant="warning" dot />
+            {t('admin:unsavedChanges')}
+          </div>
+        </Card>
       )}
 
-      <div className="grid lg:grid-cols-4 gap-6">
+      <Card className="dashboard-panel overflow-hidden" padding="none">
+        <div className="grid lg:grid-cols-[15rem_minmax(0,1fr)]">
         {/* Sidebar Navigation */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardContent className="p-2">
-              <nav className="space-y-1">
-                {sections.map((section) => {
-                  const Icon = section.icon
-                  const isActive = activeSection === section.id
-                  return (
-                    <button
-                      key={section.id}
-                      onClick={() => setActiveSection(section.id)}
-                      className={`
-                        w-full flex items-center gap-3 px-3 py-2 rounded-lg text-start transition-colors
-                        ${isActive 
-                          ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' 
-                          : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
-                        }
-                      `}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="font-medium">{t(section.titleKey)}</span>
-                    </button>
-                  )
-                })}
-              </nav>
-            </CardContent>
-          </Card>
-        </div>
+          <aside className="border-b border-neutral-200/80 p-1.5 dark:border-neutral-800 lg:border-b-0 lg:border-e">
+            <nav className="space-y-1">
+              {sections.map((section) => {
+                const Icon = section.icon
+                const isActive = activeSection === section.id
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => setActiveSection(section.id)}
+                    className={`
+                      w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-start text-sm transition-colors
+                      ${isActive
+                        ? 'bg-white text-secondary-700 shadow-sm ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:text-secondary-300 dark:ring-neutral-700'
+                        : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100/80 dark:hover:bg-neutral-900/60'
+                      }
+                    `}
+                  >
+                    <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-secondary-600 dark:text-secondary-300' : 'text-neutral-400 dark:text-neutral-500'}`} />
+                    <span className="truncate whitespace-nowrap font-medium">{t(section.titleKey)}</span>
+                  </button>
+                )
+              })}
+            </nav>
+          </aside>
 
         {/* Settings Content */}
-        <div className="lg:col-span-3">
+          <div className="min-w-0 p-4 sm:p-6">
           {/* General Settings */}
           {activeSection === 'general' && (
-            <Card>
+            <section>
               <CardHeader 
                 title={t('admin:generalSettings')}
                 subtitle={t('admin:generalSettingsDescription')}
@@ -245,12 +242,12 @@ export function SettingsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </section>
           )}
 
           {/* Notification Settings */}
           {activeSection === 'notifications' && (
-            <Card>
+            <section>
               <CardHeader 
                 title={t('admin:notificationSettings')}
                 subtitle={t('admin:notificationSettingsDescription')}
@@ -278,17 +275,6 @@ export function SettingsPage() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-between py-3 border-b border-neutral-100 dark:border-neutral-700">
-                  <div>
-                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:achievementAlerts')}</p>
-                    <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:achievementAlertsDescription')}</p>
-                  </div>
-                  <ToggleSwitch 
-                    checked={settings.achievementAlerts}
-                    onChange={(checked) => updateSetting('achievementAlerts', checked)}
-                  />
-                </div>
-                
                 <div className="flex items-center justify-between py-3">
                   <div>
                     <p className="font-medium text-neutral-800 dark:text-neutral-100">{t('admin:weeklyDigest')}</p>
@@ -300,12 +286,12 @@ export function SettingsPage() {
                   />
                 </div>
               </CardContent>
-            </Card>
+            </section>
           )}
 
           {/* Security Settings */}
           {activeSection === 'security' && (
-            <Card>
+            <section>
               <CardHeader 
                 title={t('admin:securitySettings')}
                 subtitle={t('admin:securitySettingsDescription')}
@@ -364,12 +350,12 @@ export function SettingsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </section>
           )}
 
           {/* Practice Settings */}
           {activeSection === 'practice' && (
-            <Card>
+            <section>
               <CardHeader 
                 title={t('admin:practiceSettings')}
                 subtitle={t('admin:practiceSettingsDescription')}
@@ -427,12 +413,12 @@ export function SettingsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </section>
           )}
 
           {/* Theme Settings */}
           {activeSection === 'theme' && (
-            <Card>
+            <section>
               <CardHeader 
                 title={t('admin:themeSettings')}
                 subtitle={t('admin:themeSettingsDescription')}
@@ -502,10 +488,11 @@ export function SettingsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </section>
           )}
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   )
 }

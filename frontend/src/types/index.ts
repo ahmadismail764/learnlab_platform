@@ -10,7 +10,7 @@
  * Stakeholders:
  * - Learner: Primary user - solves problems, views leaderboard, progresses as learner
  * - Admin: Content manager - manages question bank, monitors learner analytics
- */
+ */
 
 // ============================================
 // User & Role Types
@@ -24,12 +24,14 @@
 export type UserRole = 'learner' | 'admin'
 
 export interface User {
-  id: string
+  id: string | number
+  username?: string
   email: string
   firstName: string
   lastName: string
   role: UserRole
   avatarUrl?: string
+  avatarColor?: string
   createdAt: string
   updatedAt: string
 }
@@ -41,10 +43,6 @@ export interface LearnerProfile extends User {
   level: number
   lastActiveAt: string
 }
-
-// ============================================
-// Course & Topic Types (OCP: Configurable)
-// ============================================
 
 /**
  * Course configuration - designed for extensibility
@@ -83,8 +81,7 @@ export interface Topic {
 // ============================================
 
 /**
- * FSRS scheduling data for a topic
- * Based on the FSRS-4.5 algorithm
+ * FSRS scheduling data for a topic.
  */
 export interface FSRSData {
   /** Stability: Expected retention period (days) */
@@ -197,25 +194,10 @@ export interface XPTransaction {
   userId: string
   amount: number
   /** Source of XP */
-  source: 'question' | 'achievement' | 'challenge' | 'bonus'
+  source: 'question' | 'challenge' | 'bonus'
   /** Multiplier applied (consistency, etc.) */
   multiplier: number
   createdAt: string
-}
-
-export interface Achievement {
-  id: string
-  nameKey: string
-  descriptionKey: string
-  icon: string
-  /** Condition to unlock (for display) */
-  conditionKey: string
-  xpReward: number
-}
-
-export interface UserAchievement {
-  achievementId: string
-  unlockedAt: string
 }
 
 // ============================================

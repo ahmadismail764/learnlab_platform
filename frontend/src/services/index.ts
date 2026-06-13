@@ -5,3 +5,4 @@ export * from './questions';
 export * from './practice';
 export * from './learners';
 export * from './analytics';
+export * from './admins';

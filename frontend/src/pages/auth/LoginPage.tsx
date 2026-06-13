@@ -1,110 +1,172 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { Button, Input } from "@/components/ui";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { Mail, Lock, Eye, EyeOff, ShieldCheck, GraduationCap, CheckCircle, Copy } from "lucide-react";
+import { Button, Card, Input } from "@/components/ui";
 import { useAuth } from "@/contexts";
-import {
-  addAdminOverrideEmail,
-  removeAdminOverrideEmail,
-} from "@/utils/adminOverride";
+import { useToast } from "@/contexts";
+import { AuthRequestError } from "@/services/auth";
 
 /**
  * LoginPage — UC-02
  *
  * Flow:
  * 1. User opens LearnLab → system shows login form
- * 2. User enters email/password
+ * 2. User enters username/password
  * 3. System validates credentials
  * 4. System authenticates user
  *    - If learner → redirect to learner dashboard
  *    - If admin   → redirect to admin dashboard
  *
  * Alternate Flows:
- * 4a. Invalid credentials → "Invalid email or password" + remaining attempts
+ * 4a. Invalid credentials → "Invalid username or password" + remaining attempts
  * 4b. Account locked → notify user after 5 failed attempts, show lockout timer
  */
+
+/** Quick-fill accounts for the login form */
+const TEST_ACCOUNTS = [
+  {
+    labelKey: "auth:learner",
+    icon: GraduationCap,
+    username: "learner",
+    password: "learner123",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
+  },
+  {
+    labelKey: "auth:admin",
+    icon: ShieldCheck,
+    username: "admin",
+    password: "admin123",
+    color: "text-primary-600 dark:text-primary-400",
+    bg: "hover:bg-primary-50 dark:hover:bg-primary-950/30",
+  },
+];
 
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
+  const { showSuccess } = useToast();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [useAdminTestingMode, setUseAdminTestingMode] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<
-    "idle" | "requesting" | "ok" | "error"
-  >("idle");
+
+  // Show success banner when redirected from registration
+  const justRegistered = searchParams.get("registered") === "true";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setBackendStatus("requesting");
+
+    if (!identifier.trim() || !password.trim()) {
+      setError(t("auth:fieldRequired"));
+      return;
+    }
 
     setIsLoading(true);
 
     try {
-      if (useAdminTestingMode) {
-        addAdminOverrideEmail(email);
-      } else {
-        removeAdminOverrideEmail(email);
-      }
-
-      const user = await login({ email, password });
-      setBackendStatus("ok");
+      const user = await login({ email: identifier.trim(), password, rememberMe });
+      showSuccess(t("auth:loginSuccess", { name: user.firstName || user.username }));
       const nextRoute = user.role === "admin" ? "/admin" : "/learner";
       navigate(nextRoute, { replace: true });
     } catch (err: unknown) {
-      setBackendStatus("error");
-      const message =
-        err instanceof Error ? err.message : t("auth:invalidCredentials");
-      setError(message);
+      if (err instanceof AuthRequestError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        // Network / unexpected errors
+        if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+          setError(t("auth:serverUnreachable"));
+        } else {
+          setError(err.message);
+        }
+      } else {
+        setError(t("auth:loginFailed"));
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  /** Quick-fill a test account */
+  const fillAccount = (account: typeof TEST_ACCOUNTS[number]) => {
+    setIdentifier(account.username);
+    setPassword(account.password);
+    setError("");
+  };
+
   return (
-    <div>
-      {/* Language Switcher & Theme Toggle - top right */}
-      <div className="absolute top-4 end-4 flex items-center gap-1">
-        <ThemeToggle />
-        <LanguageSwitcher variant="globe" />
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-3xl font-bold text-neutral-900 dark:text-neutral-100">
+          {t("auth:welcomeBack")}
+        </h2>
+        <p className="text-neutral-600 dark:text-neutral-400">
+          {t("auth:loginFlowDescription")}
+        </p>
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-        {t("auth:welcomeBack")}
-      </h2>
-      <p className="text-neutral-600 dark:text-neutral-400 mb-8">
-        {t("auth:enterCredentials")}
-      </p>
+      {/* Registration success banner */}
+      {justRegistered && (
+        <Card
+          className="border-green-200 bg-green-50/80 dark:border-green-900/60 dark:bg-green-950/30"
+          padding="sm"
+        >
+          <div className="flex items-center gap-3 text-sm text-green-800 dark:text-green-200">
+            <CheckCircle className="h-4 w-4 flex-shrink-0 text-green-600 dark:text-green-400" />
+            <p>{t("auth:registrationSuccessLogin")}</p>
+          </div>
+        </Card>
+      )}
 
-      <div className="mb-4 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 text-xs text-neutral-600 dark:text-neutral-300">
-        <p className="font-medium">Backend Auth Status</p>
-        {backendStatus === "idle" && <p>Ready to send login request.</p>}
-        {backendStatus === "requesting" && (
-          <p>Sending login request to backend...</p>
-        )}
-        {backendStatus === "ok" && <p>Login successful. Redirecting...</p>}
-        {backendStatus === "error" && (
-          <p>Backend returned an error. See details below.</p>
-        )}
-      </div>
+      {/* Test accounts quick-fill */}
+      <Card
+        className="border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40"
+        padding="sm"
+      >
+        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 mb-3">
+          {t("auth:testAccounts")}
+        </p>
+        <div className="space-y-2">
+          {TEST_ACCOUNTS.map((account) => {
+            const Icon = account.icon;
+            return (
+              <button
+                key={account.username}
+                type="button"
+                onClick={() => fillAccount(account)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-start transition-colors group ${account.bg}`}
+              >
+                <Icon className={`h-4 w-4 flex-shrink-0 ${account.color}`} />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                    {t(account.labelKey)}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 ms-2">
+                    {account.username}
+                  </span>
+                </div>
+                <Copy className="h-3.5 w-3.5 text-neutral-400 dark:text-neutral-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </button>
+            );
+          })}
+        </div>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label={t("auth:email")}
-          type="email"
+          label={t("auth:emailOrUsername")}
+          type="text"
           placeholder={t("auth:emailPlaceholder")}
-          value={email}
+          value={identifier}
           onChange={(e) => {
-            setEmail(e.target.value);
+            setIdentifier(e.target.value);
             setError("");
           }}
           leftIcon={<Mail className="w-4 h-4" />}
@@ -138,15 +200,17 @@ export function LoginPage() {
         />
 
         {error && (
-          <p className="text-sm text-error bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded-lg">
+          <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 px-4 py-3 rounded-xl animate-in slide-in-from-top-2 fade-in duration-300">
             {error}
-          </p>
+          </div>
         )}
 
         <div className="flex items-center justify-between text-sm">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
               className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800"
             />
             <span className="text-neutral-600 dark:text-neutral-400">
@@ -160,18 +224,6 @@ export function LoginPage() {
             {t("auth:forgotPassword")}
           </Link>
         </div>
-
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={useAdminTestingMode}
-            onChange={(e) => setUseAdminTestingMode(e.target.checked)}
-            className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 mt-0.5"
-          />
-          <span className="text-amber-700 dark:text-amber-300">
-            Enable temporary admin access for this email (frontend testing mode)
-          </span>
-        </label>
 
         <Button type="submit" fullWidth isLoading={isLoading}>
           {t("auth:signIn")}
@@ -187,17 +239,6 @@ export function LoginPage() {
           {t("auth:signUp")}
         </Link>
       </p>
-
-      {/* Development helper */}
-      <div className="mt-8 p-4 bg-neutral-100 dark:bg-neutral-800 rounded-lg text-sm">
-        <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-          🧪 {t("auth:testAccounts")}:
-        </p>
-        <div className="space-y-1 text-neutral-600 dark:text-neutral-400">
-          <p>{t("auth:learner")}: learner@learnlab.com / Learner123!</p>
-          <p>{t("auth:admin")}: admin@learnlab.com / Admin123!</p>
-        </div>
-      </div>
     </div>
   );
 }

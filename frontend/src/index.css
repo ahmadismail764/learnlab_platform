@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+:root {
+  --brand-hue: 173;
+  --brand-saturation: 80%;
+}
+
 /* Enable class-based dark mode for manual theme switching */
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -19,18 +24,18 @@
    * Identity: Teal (science/lab) + Violet (discovery) + Amber (energy)
    * ============================================================ */
 
-  /* Primary — Scientific Teal */
-  --color-primary-50:  #f0fdfa;
-  --color-primary-100: #ccfbf1;
-  --color-primary-200: #99f6e4;
-  --color-primary-300: #5eead4;
-  --color-primary-400: #2dd4bf;
-  --color-primary-500: #14b8a6;
-  --color-primary-600: #0d9488;
-  --color-primary-700: #0f766e;
-  --color-primary-800: #115e59;
-  --color-primary-900: #134e4a;
-  --color-primary-950: #042f2e;
+  /* Primary — Scientific Teal (Dynamic Theme Accent) */
+  --color-primary-50:  hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 97%);
+  --color-primary-100: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 90%);
+  --color-primary-200: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 80%);
+  --color-primary-300: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 68%);
+  --color-primary-400: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 55%);
+  --color-primary-500: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 40%);
+  --color-primary-600: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 34%);
+  --color-primary-700: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 26%);
+  --color-primary-800: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 20%);
+  --color-primary-900: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 15%);
+  --color-primary-950: hsl(var(--brand-hue, 173), var(--brand-saturation, 80%), 8%);
 
   /* Secondary — Intellectual Violet */
   --color-secondary-50:  #f5f3ff;
@@ -97,10 +102,126 @@
 
 /* Base styles */
 html {
+  font-size: 100%;
   font-family: var(--font-sans);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+ * Learner dashboard density:
+ * Bring the interface closer to a comfortable 90%-87.5% browser zoom
+ * on desktop without shrinking mobile readability.
+ */
+@media (min-width: 1024px) {
+  html[data-dashboard-role] {
+    font-size: 93.75%;
+  }
+}
+
+@media (min-width: 1200px) {
+  html[data-dashboard-role] {
+    font-size: 90.625%;
+  }
+}
+
+@media (min-width: 1536px) {
+  html[data-dashboard-role] {
+    font-size: 87.5%;
+  }
+}
+
+html[data-dashboard-role] body {
+  background-color: #f6f8fb;
+}
+
+html.dark[data-dashboard-role] body {
+  background-color: #0b1220;
+}
+
+.dashboard-shell,
+.learner-shell {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(246, 248, 251, 0.78) 12rem, transparent 30rem),
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.08) 0%, transparent 24%),
+    radial-gradient(circle at top right, rgba(13, 148, 136, 0.05) 0%, transparent 20%);
+}
+
+html.dark .dashboard-shell,
+html.dark .learner-shell {
+  background:
+    linear-gradient(180deg, rgba(15, 23, 42, 0.88) 0%, rgba(15, 23, 42, 0.72) 10rem, transparent 28rem),
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.1) 0%, transparent 24%),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.07) 0%, transparent 20%);
+}
+
+.dashboard-panel,
+.learner-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.88);
+  box-shadow:
+    0 18px 32px -26px rgba(15, 23, 42, 0.16),
+    0 6px 16px -12px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+html.dark .dashboard-panel,
+html.dark .learner-panel {
+  background: rgba(30, 41, 59, 0.76);
+  border: 1px solid rgba(71, 85, 105, 0.68);
+  box-shadow:
+    0 22px 40px -30px rgba(0, 0, 0, 0.42),
+    0 8px 18px -14px rgba(0, 0, 0, 0.22);
+}
+
+.dashboard-panel-soft,
+.learner-panel-soft {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(226, 232, 240, 0.72);
+  box-shadow:
+    0 14px 26px -24px rgba(15, 23, 42, 0.14),
+    0 4px 12px -10px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html.dark .dashboard-panel-soft,
+html.dark .learner-panel-soft {
+  background: rgba(30, 41, 59, 0.58);
+  border: 1px solid rgba(71, 85, 105, 0.54);
+  box-shadow:
+    0 16px 28px -24px rgba(0, 0, 0, 0.36),
+    0 6px 14px -12px rgba(0, 0, 0, 0.2);
+}
+
+/*
+ * Reusable surface utility classes
+ * Used inside dashboard/learner panels for inset sections, inner tiles, and dashed empty states.
+ */
+
+.surface-inset {
+  border-radius: 1rem;
+  background: rgba(248, 250, 252, 1);
+  padding: 1rem;
+}
+
+html.dark .surface-inset {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.surface-tile {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.76);
+  padding: 1rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+html.dark .surface-tile {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.72);
 }
 
 /* RTL Support - Arabic */
@@ -329,3 +450,14 @@ html[dir="rtl"] .font-display {
   font-family: var(--font-arabic);
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  40% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(150%) skewX(-20deg);
+  }
+}

@@ -1,15 +1,19 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff, CheckCircle } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button, Input } from "@/components/ui";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { useAuth } from "@/contexts";
 import {
-  addAdminOverrideEmail,
-  removeAdminOverrideEmail,
-} from "@/utils/adminOverride";
+  Mail,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  AtSign,
+  GraduationCap,
+  ShieldAlert,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button, Card, Input } from "@/components/ui";
+import { authService, AuthRequestError } from "@/services/auth";
+import { validateForm, registerSchema } from "@/validation";
 
 /**
  * RegisterPage — UC-01
@@ -19,7 +23,10 @@ import {
  * 2. Learner enters unique email and password
  * 3. System validates inputs (client-side: email format, password strength, match, terms)
  * 4. System calls backend register API
- * 5. System authenticates and redirects to learner dashboard
+ * 5. On success → redirect to /login?registered=true so they can sign in
+ *
+ * We do NOT auto-login after registration. This gives the user clean feedback
+ * and avoids double-request complexity. The login page will show a success banner.
  */
 
 type PasswordStrength = "weak" | "medium" | "strong";
@@ -41,6 +48,7 @@ function getPasswordStrength(password: string): PasswordStrength {
 interface FieldErrors {
   firstName?: string;
   lastName?: string;
+  username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -50,11 +58,11 @@ interface FieldErrors {
 export function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { register } = useAuth();
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
+    username: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -64,11 +72,6 @@ export function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [generalError, setGeneralError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<
-    "idle" | "requesting" | "ok" | "error"
-  >("idle");
-  const [grantAdminTestingAccess, setGrantAdminTestingAccess] = useState(false);
 
   // Live password strength
   const passwordStrength = useMemo<PasswordStrength | null>(
@@ -112,97 +115,69 @@ export function RegisterPage() {
     if (generalError) setGeneralError("");
   };
 
-  // Client-side validation
+  // Client-side validation (powered by Zod schema)
   const validate = (): boolean => {
-    const errors: FieldErrors = {};
-
-    if (!formData.firstName.trim()) errors.firstName = t("auth:fieldRequired");
-    if (!formData.lastName.trim()) errors.lastName = t("auth:fieldRequired");
-
-    if (!formData.email.trim()) {
-      errors.email = t("auth:fieldRequired");
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = t("auth:invalidEmail");
+    const result = validateForm(registerSchema, formData)
+    if (result.success) {
+      setFieldErrors({})
+      return true
     }
-
-    if (!formData.password) {
-      errors.password = t("auth:fieldRequired");
-    } else if (formData.password.length < 8) {
-      errors.password = t("auth:passwordTooShort");
-    }
-
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = t("auth:fieldRequired");
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = t("auth:passwordsDoNotMatch");
-    }
-
-    if (!formData.agreedToTerms) {
-      errors.agreedToTerms =
-        t("auth:agreeToTermsRequired") || "You must agree to the terms";
-    }
-
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors(result.fieldErrors as FieldErrors)
+    return false
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setGeneralError("");
-    setBackendStatus("requesting");
 
     if (!validate()) return;
 
     setIsLoading(true);
 
     try {
-      if (grantAdminTestingAccess) {
-        addAdminOverrideEmail(formData.email);
-      } else {
-        removeAdminOverrideEmail(formData.email);
-      }
-
-      const user = await register({
-        email: formData.email,
-        username: formData.email.split("@")[0],
+      await authService.register({
+        email: formData.email.trim(),
+        username: formData.username.trim(),
         password: formData.password,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        first_name: formData.firstName.trim(),
+        last_name: formData.lastName.trim(),
       });
-      setBackendStatus("ok");
-      setSuccess(true);
-      const nextRoute = user.role === "admin" ? "/admin" : "/learner";
-      setTimeout(() => navigate(nextRoute, { replace: true }), 700);
+
+      // On success → redirect to login page with success banner
+      navigate("/login?registered=true", { replace: true });
     } catch (err: unknown) {
-      setBackendStatus("error");
-      const message =
-        err instanceof Error ? err.message : t("auth:registrationFailed");
-      if (message.toLowerCase().includes("email")) {
-        setFieldErrors((prev) => ({ ...prev, email: message }));
+      if (err instanceof AuthRequestError) {
+        // Map backend field errors to our form fields
+        if (err.fieldErrors) {
+          const mapped: FieldErrors = {};
+          if (err.fieldErrors.first_name) mapped.firstName = err.fieldErrors.first_name;
+          if (err.fieldErrors.last_name) mapped.lastName = err.fieldErrors.last_name;
+          if (err.fieldErrors.username) mapped.username = err.fieldErrors.username;
+          if (err.fieldErrors.email) mapped.email = err.fieldErrors.email;
+          if (err.fieldErrors.password) mapped.password = err.fieldErrors.password;
+          setFieldErrors((prev) => ({ ...prev, ...mapped }));
+
+          // Only show general error if it's not just a field-level duplication
+          const fieldCount = Object.keys(mapped).length;
+          if (fieldCount === 0) {
+            setGeneralError(err.message);
+          }
+        } else {
+          setGeneralError(err.message);
+        }
+      } else if (err instanceof Error) {
+        if (err.message.includes("Failed to fetch") || err.message.includes("NetworkError")) {
+          setGeneralError(t("auth:serverUnreachable"));
+        } else {
+          setGeneralError(err.message);
+        }
       } else {
-        setGeneralError(message);
+        setGeneralError(t("auth:registrationFailed"));
       }
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Show success state briefly before redirect
-  if (success) {
-    return (
-      <div className="text-center py-12 animate-in fade-in duration-500">
-        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-green-500/10">
-          <CheckCircle className="w-10 h-10 text-green-600 dark:text-green-400" />
-        </div>
-        <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-          {t("auth:registrationSuccess")}
-        </h2>
-        <p className="text-neutral-600 dark:text-neutral-400">
-          Synchronizing neural profile...
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="stagger-in space-y-6">
@@ -211,33 +186,32 @@ export function RegisterPage() {
           {t("auth:createAccount")}
         </h2>
         <p className="text-neutral-500 dark:text-neutral-400">
-          {t("auth:startLearning")}
+          {t("auth:learnerSignupDescription")}
         </p>
       </div>
 
-      <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 mb-2">
-        {t("auth:createAccount")}
-      </h2>
-      <p className="text-neutral-600 dark:text-neutral-400 mb-8">
-        {t("auth:startLearning")}
-      </p>
+      <Card
+        className="border-emerald-100 bg-emerald-50/80 dark:border-emerald-900/60 dark:bg-emerald-950/20"
+        padding="sm"
+      >
+        <div className="flex items-start gap-3 text-sm text-neutral-700 dark:text-neutral-200">
+          <GraduationCap className="mt-0.5 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+          <p>{t("auth:learnerSignupOnly")}</p>
+        </div>
+      </Card>
 
-      <div className="mb-4 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 text-xs text-neutral-600 dark:text-neutral-300">
-        <p className="font-medium">Backend Auth Status</p>
-        {backendStatus === "idle" && <p>Ready to send registration request.</p>}
-        {backendStatus === "requesting" && (
-          <p>Sending registration request to backend...</p>
-        )}
-        {backendStatus === "ok" && (
-          <p>Registration successful. Auto-login and redirect in progress...</p>
-        )}
-        {backendStatus === "error" && (
-          <p>Backend returned an error. See details below.</p>
-        )}
-      </div>
+      <Card
+        className="border-amber-100 bg-amber-50/80 dark:border-amber-900/60 dark:bg-amber-950/20"
+        padding="sm"
+      >
+        <div className="flex items-start gap-3 text-sm text-neutral-700 dark:text-neutral-200">
+          <ShieldAlert className="mt-0.5 h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <p>{t("auth:adminSignupNotice")}</p>
+        </div>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input
             label={t("auth:firstName")}
             name="firstName"
@@ -260,6 +234,19 @@ export function RegisterPage() {
             className="glass"
           />
         </div>
+
+        <Input
+          label={t("auth:username")}
+          name="username"
+          placeholder={t("auth:usernamePlaceholder")}
+          value={formData.username}
+          onChange={handleChange}
+          leftIcon={<AtSign className="w-4 h-4" />}
+          error={fieldErrors.username}
+          helperText={t("auth:usernameHelper")}
+          required
+          className="glass"
+        />
 
         <Input
           label={t("auth:email")}
@@ -337,7 +324,7 @@ export function RegisterPage() {
         />
 
         {generalError && (
-          <div className="text-sm text-error bg-error/10 border border-error/20 px-4 py-3 rounded-2xl animate-in slide-in-from-top-2">
+          <div className="text-sm text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 px-4 py-3 rounded-xl animate-in slide-in-from-top-2 fade-in duration-300">
             {generalError}
           </div>
         )}
@@ -353,40 +340,29 @@ export function RegisterPage() {
             />
             <span className="text-neutral-600 dark:text-neutral-400 leading-relaxed">
               {t("auth:agreeToTerms")}{" "}
-              <a
-                href="#"
+              <button
+                type="button"
                 className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                title={t("auth:comingSoon", "Coming soon")}
               >
                 {t("auth:termsOfService")}
-              </a>{" "}
+              </button>{" "}
               {t("auth:and")}{" "}
-              <a
-                href="#"
+              <button
+                type="button"
                 className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                title={t("auth:comingSoon", "Coming soon")}
               >
                 {t("auth:privacyPolicy")}
-              </a>
+              </button>
             </span>
           </label>
           {fieldErrors.agreedToTerms && (
-            <p className="text-xs text-error font-medium px-8">
+            <p className="text-xs text-red-600 dark:text-red-400 font-medium px-8">
               {fieldErrors.agreedToTerms}
             </p>
           )}
         </div>
-
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={grantAdminTestingAccess}
-            onChange={(e) => setGrantAdminTestingAccess(e.target.checked)}
-            className="rounded border-neutral-300 dark:border-neutral-600 dark:bg-neutral-800 mt-0.5"
-          />
-          <span className="text-amber-700 dark:text-amber-300">
-            Grant temporary admin access for this account (frontend testing
-            mode)
-          </span>
-        </label>
 
         <Button type="submit" fullWidth isLoading={isLoading}>
           {isLoading ? t("auth:creatingAccount") : t("auth:createAccount")}

@@ -9,395 +9,42 @@ import {
   Clock,
   Play,
   Search,
-  Sparkles,
-  PartyPopper,
+  Calendar,
+  TrendingUp,
 } from "lucide-react";
-import { Card, Button, Badge, ProgressBar } from "@/components/ui";
+import { Card, Button, Badge, Input, ProgressBar, AllCaughtUpIllustration } from "@/components/ui";
+import { useTopicMastery, useTopics } from "@/hooks";
+import { getTopicDisplayName, getTopicModuleDisplayName } from "@/utils/topicLabels";
 
 /**
  * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
  *
  * Browse Discrete Mathematics topics organized by category.
  * Shows FSRS-based progress and review status for each topic.
- *
- * UC-08 Features:
- * - "Due Today" vs "Future Reviews" categorization (Step 3)
- * - FSRS retrievability-based sorting — lowest = highest priority (Step 4)
- * - Tier badges: 🥉 Tier 1 / 🥈 Tier 2 / 🥇 Tier 3 (Step 5)
- * - "Review!" visual cue for due topics (Step 5)
- * - Search / filter bar (Alt Flow 5a)
- * - "All caught up!" state with Study Ahead / New Topics (Alt Flow 3a)
  */
+
+const TIER_BADGE: Record<number, string> = {
+  1: "🥉",
+  2: "🥈",
+  3: "🥇",
+};
 
 interface TopicItem {
   id: string;
+  name: string;
   nameKey: string;
+  description: string;
+  parent_module: string;
   icon: string;
   progress: number;
   questionsTotal: number;
   questionsDue: number;
   lastReviewed?: string;
   state: "new" | "learning" | "review" | "mastered";
-  /** FSRS retrievability 0–1 — lower = more urgent (UC-08 Step 4) */
-  retrievability: number;
-  /** Scaffolding tier 1–3 (UC-08 Step 5) */
+  memory: number;
   tier: 1 | 2 | 3;
-  /** Next scheduled review date label */
   nextReview?: string;
 }
-
-interface TopicCategory {
-  id: string;
-  nameKey: string;
-  icon: string;
-  topics: TopicItem[];
-}
-
-// Mock topic data — includes retrievability & tier for UC-08
-const topicCategories: TopicCategory[] = [
-  {
-    id: "logic",
-    nameKey: "topics:logic.title",
-    icon: "🔢",
-    topics: [
-      {
-        id: "propositional",
-        nameKey: "topics:logic.propositional",
-        icon: "→",
-        progress: 75,
-        questionsTotal: 20,
-        questionsDue: 3,
-        lastReviewed: "2 days ago",
-        state: "review",
-        retrievability: 0.62,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "predicates",
-        nameKey: "topics:logic.predicates",
-        icon: "∀",
-        progress: 45,
-        questionsTotal: 15,
-        questionsDue: 5,
-        lastReviewed: "1 week ago",
-        state: "learning",
-        retrievability: 0.38,
-        tier: 1,
-        nextReview: "today",
-      },
-      {
-        id: "quantifiers",
-        nameKey: "topics:logic.quantifiers",
-        icon: "∃",
-        progress: 20,
-        questionsTotal: 12,
-        questionsDue: 8,
-        state: "learning",
-        retrievability: 0.25,
-        tier: 1,
-        nextReview: "today",
-      },
-      {
-        id: "proofs",
-        nameKey: "topics:logic.proofTechniques",
-        icon: "⊢",
-        progress: 0,
-        questionsTotal: 18,
-        questionsDue: 0,
-        state: "new",
-        retrievability: 1.0,
-        tier: 3,
-      },
-    ],
-  },
-  {
-    id: "sets",
-    nameKey: "topics:sets.title",
-    icon: "∪",
-    topics: [
-      {
-        id: "operations",
-        nameKey: "topics:sets.operations",
-        icon: "∩",
-        progress: 90,
-        questionsTotal: 16,
-        questionsDue: 1,
-        lastReviewed: "1 day ago",
-        state: "mastered",
-        retrievability: 0.92,
-        tier: 2,
-        nextReview: "in 5 days",
-      },
-      {
-        id: "venn",
-        nameKey: "topics:sets.vennDiagrams",
-        icon: "◯",
-        progress: 60,
-        questionsTotal: 10,
-        questionsDue: 2,
-        lastReviewed: "3 days ago",
-        state: "review",
-        retrievability: 0.55,
-        tier: 1,
-        nextReview: "today",
-      },
-      {
-        id: "power",
-        nameKey: "topics:sets.powerSets",
-        icon: "P",
-        progress: 30,
-        questionsTotal: 12,
-        questionsDue: 6,
-        state: "learning",
-        retrievability: 0.3,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "cartesian",
-        nameKey: "topics:sets.cartesianProduct",
-        icon: "×",
-        progress: 0,
-        questionsTotal: 14,
-        questionsDue: 0,
-        state: "new",
-        retrievability: 1.0,
-        tier: 1,
-      },
-    ],
-  },
-  {
-    id: "relations",
-    nameKey: "topics:relations.title",
-    icon: "≡",
-    topics: [
-      {
-        id: "properties",
-        nameKey: "topics:relations.properties",
-        icon: "R",
-        progress: 55,
-        questionsTotal: 18,
-        questionsDue: 4,
-        lastReviewed: "4 days ago",
-        state: "review",
-        retrievability: 0.48,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "equivalence",
-        nameKey: "topics:relations.equivalence",
-        icon: "~",
-        progress: 25,
-        questionsTotal: 14,
-        questionsDue: 7,
-        state: "learning",
-        retrievability: 0.22,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "partial",
-        nameKey: "topics:relations.partialOrders",
-        icon: "≤",
-        progress: 0,
-        questionsTotal: 16,
-        questionsDue: 0,
-        state: "new",
-        retrievability: 1.0,
-        tier: 3,
-      },
-      {
-        id: "functions",
-        nameKey: "topics:relations.functions",
-        icon: "f",
-        progress: 10,
-        questionsTotal: 20,
-        questionsDue: 10,
-        state: "learning",
-        retrievability: 0.15,
-        tier: 1,
-        nextReview: "today",
-      },
-    ],
-  },
-  {
-    id: "combinatorics",
-    nameKey: "topics:combinatorics.title",
-    icon: "📊",
-    topics: [
-      {
-        id: "counting",
-        nameKey: "topics:combinatorics.counting",
-        icon: "#",
-        progress: 80,
-        questionsTotal: 14,
-        questionsDue: 2,
-        lastReviewed: "2 days ago",
-        state: "review",
-        retrievability: 0.7,
-        tier: 1,
-        nextReview: "tomorrow",
-      },
-      {
-        id: "permutations",
-        nameKey: "topics:combinatorics.permutations",
-        icon: "P",
-        progress: 65,
-        questionsTotal: 12,
-        questionsDue: 3,
-        lastReviewed: "5 days ago",
-        state: "review",
-        retrievability: 0.5,
-        tier: 2,
-        nextReview: "tomorrow",
-      },
-      {
-        id: "combinations",
-        nameKey: "topics:combinatorics.combinations",
-        icon: "C",
-        progress: 40,
-        questionsTotal: 12,
-        questionsDue: 5,
-        state: "learning",
-        retrievability: 0.35,
-        tier: 2,
-        nextReview: "in 2 days",
-      },
-      {
-        id: "pigeonhole",
-        nameKey: "topics:combinatorics.pigeonhole",
-        icon: "🕊",
-        progress: 0,
-        questionsTotal: 8,
-        questionsDue: 0,
-        state: "new",
-        retrievability: 1.0,
-        tier: 3,
-      },
-    ],
-  },
-  {
-    id: "graphTheory",
-    nameKey: "topics:graphTheory.title",
-    icon: "🔗",
-    topics: [
-      {
-        id: "basics",
-        nameKey: "topics:graphTheory.basics",
-        icon: "G",
-        progress: 50,
-        questionsTotal: 16,
-        questionsDue: 4,
-        lastReviewed: "3 days ago",
-        state: "review",
-        retrievability: 0.52,
-        tier: 1,
-        nextReview: "today",
-      },
-      {
-        id: "paths",
-        nameKey: "topics:graphTheory.paths",
-        icon: "→",
-        progress: 35,
-        questionsTotal: 14,
-        questionsDue: 6,
-        state: "learning",
-        retrievability: 0.28,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "trees",
-        nameKey: "topics:graphTheory.trees",
-        icon: "🌳",
-        progress: 15,
-        questionsTotal: 12,
-        questionsDue: 8,
-        state: "learning",
-        retrievability: 0.18,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "planarity",
-        nameKey: "topics:graphTheory.planarity",
-        icon: "◇",
-        progress: 0,
-        questionsTotal: 10,
-        questionsDue: 0,
-        state: "new",
-        retrievability: 1.0,
-        tier: 3,
-      },
-    ],
-  },
-  {
-    id: "numberTheory",
-    nameKey: "topics:numberTheory.title",
-    icon: "🔢",
-    topics: [
-      {
-        id: "divisibility",
-        nameKey: "topics:numberTheory.divisibility",
-        icon: "|",
-        progress: 70,
-        questionsTotal: 14,
-        questionsDue: 2,
-        lastReviewed: "1 day ago",
-        state: "review",
-        retrievability: 0.78,
-        tier: 1,
-        nextReview: "in 3 days",
-      },
-      {
-        id: "modular",
-        nameKey: "topics:numberTheory.modularArithmetic",
-        icon: "%",
-        progress: 45,
-        questionsTotal: 16,
-        questionsDue: 5,
-        state: "learning",
-        retrievability: 0.33,
-        tier: 2,
-        nextReview: "today",
-      },
-      {
-        id: "gcd",
-        nameKey: "topics:numberTheory.gcd",
-        icon: "÷",
-        progress: 85,
-        questionsTotal: 10,
-        questionsDue: 1,
-        lastReviewed: "2 days ago",
-        state: "mastered",
-        retrievability: 0.88,
-        tier: 1,
-        nextReview: "in 7 days",
-      },
-      {
-        id: "primes",
-        nameKey: "topics:numberTheory.primes",
-        icon: "p",
-        progress: 20,
-        questionsTotal: 12,
-        questionsDue: 7,
-        state: "learning",
-        retrievability: 0.2,
-        tier: 1,
-        nextReview: "today",
-      },
-    ],
-  },
-];
-
-/** Tier badge emoji (UC-08 Step 5) */
-const TIER_BADGE: Record<number, string> = {
-  1: "🥉",
-  2: "🥈",
-  3: "🥇",
-};
 
 export function TopicsPage() {
   const { t } = useTranslation(["topics", "learner", "common"]);
@@ -405,6 +52,140 @@ export function TopicsPage() {
     new Set(["logic", "sets"]),
   );
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: rawTopics, isLoading: topicsLoading } = useTopics();
+  const { data: rawMasteries } = useTopicMastery();
+
+  const topics = useMemo(() => rawTopics ?? [], [rawTopics]);
+  const masteries = useMemo(() => rawMasteries ?? [], [rawMasteries]);
+
+  const mappedTopics = useMemo(() => {
+    return topics.map((t): TopicItem => {
+      const m = masteries.find((mastery) => mastery.topic === t.id);
+
+      let icon = "📝";
+      const mod = (t.parent_module || '').toLowerCase();
+      if (mod.includes("logic")) icon = "🔢";
+      else if (mod.includes("set")) icon = "∪";
+      else if (mod.includes("relation")) icon = "≡";
+      else if (mod.includes("combinatorics")) icon = "📊";
+      else if (mod.includes("graph")) icon = "🔗";
+      else if (mod.includes("number")) icon = "🔢";
+
+      let progress = 0;
+      let questionsDue = 0;
+      let lastReviewed: string | undefined = undefined;
+      let state: 'new' | 'learning' | 'review' | 'mastered' = 'new';
+      let memory = 1.0;
+      let nextReview: string | undefined = undefined;
+      
+      let tier: 1 | 2 | 3 = 1;
+      const nameLower = t.name.toLowerCase();
+      if (nameLower.includes("proof") || nameLower.includes("partial") || nameLower.includes("pigeon") || nameLower.includes("planar")) {
+        tier = 3;
+      } else if (nameLower.includes("propositional") || nameLower.includes("operation") || nameLower.includes("power") || nameLower.includes("equivalence") || nameLower.includes("permut") || nameLower.includes("combin") || nameLower.includes("path") || nameLower.includes("tree") || nameLower.includes("modular")) {
+        tier = 2;
+      }
+
+      let nameKey = "";
+      if (nameLower.includes("propositional")) nameKey = "logic.propositional";
+      else if (nameLower.includes("predicate")) nameKey = "logic.predicates";
+      else if (nameLower.includes("proof")) nameKey = "logic.proofTechniques";
+      else if (nameLower.includes("quantifier")) nameKey = "logic.quantifiers";
+      else if (nameLower.includes("cartesian")) nameKey = "sets.cartesianProduct";
+      else if (nameLower.includes("operation")) nameKey = "sets.operations";
+      else if (nameLower.includes("power")) nameKey = "sets.powerSets";
+      else if (nameLower.includes("venn")) nameKey = "sets.vennDiagrams";
+      else if (nameLower.includes("equivalence")) nameKey = "relations.equivalence";
+      else if (nameLower.includes("function")) nameKey = "relations.functions";
+      else if (nameLower.includes("partial")) nameKey = "relations.partialOrders";
+      else if (nameLower.includes("properties")) nameKey = "relations.properties";
+      else if (nameLower.includes("counting")) nameKey = "combinatorics.counting";
+      else if (nameLower.includes("permut")) nameKey = "combinatorics.permutations";
+      else if (nameLower.includes("combin")) nameKey = "combinatorics.combinations";
+      else if (nameLower.includes("pigeon")) nameKey = "combinatorics.pigeonhole";
+      else if (nameLower.includes("basic") || nameLower.includes("definition")) nameKey = "graphTheory.basics";
+      else if (nameLower.includes("path") || nameLower.includes("cycle")) nameKey = "graphTheory.paths";
+      else if (nameLower.includes("planar")) nameKey = "graphTheory.planarity";
+      else if (nameLower.includes("tree")) nameKey = "graphTheory.trees";
+      else if (nameLower.includes("divis")) nameKey = "numberTheory.divisibility";
+      else if (nameLower.includes("modular")) nameKey = "numberTheory.modularArithmetic";
+      else if (nameLower.includes("gcd")) nameKey = "numberTheory.gcd";
+      else if (nameLower.includes("prime")) nameKey = "numberTheory.primes";
+      else nameKey = t.name;
+
+      if (m) {
+        const isDue = m.next_due && new Date(m.next_due) <= new Date();
+        const lastReviewedStr = m.last_reviewed
+          ? new Date(m.last_reviewed).toLocaleDateString()
+          : undefined;
+
+        if (m.status === 'learned') {
+          state = isDue ? 'review' : 'mastered';
+        } else if (m.status === 'struggling') {
+          state = 'review';
+        } else if (m.status === 'learning') {
+          state = 'learning';
+        } else if (m.status === 'new') {
+          state = 'new';
+        }
+
+        progress = Math.round((m.memory || 0) * 100);
+        questionsDue = isDue ? 5 : 0;
+        lastReviewed = lastReviewedStr;
+        memory = m.memory || 0;
+        nextReview = isDue ? 'today' : m.next_due ? new Date(m.next_due).toLocaleDateString() : undefined;
+      }
+
+      return {
+        id: t.id.toString(),
+        name: t.name,
+        nameKey,
+        description: t.description,
+        parent_module: t.parent_module || "Uncategorized",
+        icon,
+        progress,
+        questionsTotal: t.question_count ?? 10,
+        questionsDue,
+        lastReviewed,
+        state,
+        memory,
+        tier,
+        nextReview,
+      };
+    });
+  }, [topics, masteries]);
+
+  const mappedCategories = useMemo(() => {
+    const groups: Record<string, TopicItem[]> = {};
+    mappedTopics.forEach((topic) => {
+      const module = topic.parent_module;
+      if (!groups[module]) {
+        groups[module] = [];
+      }
+      groups[module].push(topic);
+    });
+
+    const categoryIcons: Record<string, string> = {
+      "Logic": "🧠",
+      "Sets": "∪",
+      "Relations": "≡",
+      "Combinatorics": "🎲",
+      "Graph Theory": "🔗",
+      "Number Theory": "🧮",
+      "Uncategorized": "📝",
+    };
+
+    return Object.entries(groups).map(([name, groupTopics]) => {
+      const id = name.toLowerCase().replace(/\s+/g, "-");
+      return {
+        id,
+        nameKey: name,
+        icon: categoryIcons[name] ?? "📝",
+        topics: groupTopics,
+      };
+    });
+  }, [mappedTopics]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -446,29 +227,30 @@ export function TopicsPage() {
 
   // --- Search / filter (UC-08 Alt Flow 5a) ---
   const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return topicCategories;
+    if (!searchQuery.trim()) return mappedCategories;
     const q = searchQuery.toLowerCase();
-    return topicCategories
+    return mappedCategories
       .map((cat) => ({
         ...cat,
         topics: cat.topics.filter((topic) =>
-          t(topic.nameKey).toLowerCase().includes(q),
+          topic.name.toLowerCase().includes(q) ||
+          (topic.description || '').toLowerCase().includes(q)
         ),
       }))
       .filter((cat) => cat.topics.length > 0);
-  }, [searchQuery, t]);
+  }, [searchQuery, mappedCategories]);
 
   // --- Due Today vs Future Reviews (UC-08 Step 3) ---
   const allTopics = useMemo(
-    () => topicCategories.flatMap((cat) => cat.topics),
-    [],
+    () => mappedCategories.flatMap((cat) => cat.topics),
+    [mappedCategories],
   );
 
   const dueTodayTopics = useMemo(
     () =>
       allTopics
         .filter((t) => t.nextReview === "today")
-        .sort((a, b) => a.retrievability - b.retrievability), // UC-08 Step 4: lowest retrievability first
+        .sort((a, b) => a.memory - b.memory), // UC-08 Step 4: lowest memory first
     [allTopics],
   );
 
@@ -488,12 +270,20 @@ export function TopicsPage() {
   // Calculate overall stats
   const totalTopics = allTopics.length;
   const topicsDue = dueTodayTopics.length;
-  const avgProgress = Math.round(
+  const avgProgress = totalTopics > 0 ? Math.round(
     allTopics.reduce((sum, t) => sum + t.progress, 0) / totalTopics,
-  );
+  ) : 0;
 
   // UC-08 Alt Flow 3a: All caught up?
   const allCaughtUp = topicsDue === 0;
+
+  if (topicsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("common:loading")}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -559,22 +349,20 @@ export function TopicsPage() {
       </div>
 
       {/* Search bar (UC-08 Alt Flow 5a) */}
-      <div className="relative">
-        <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t("learner:searchTopics")}
-          className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors"
-        />
-      </div>
+      <Input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={t("learner:searchTopics")}
+        leftIcon={<Search className="h-4 w-4" />}
+        size="md"
+        className="rounded-xl py-2.5"
+      />
 
       {/* ═══ All Caught Up state (UC-08 Alt Flow 3a) ═══ */}
       {allCaughtUp ? (
         <Card className="text-center py-8">
           <div className="flex flex-col items-center gap-3">
-            <PartyPopper className="w-12 h-12 text-primary-500" />
+            <AllCaughtUpIllustration className="mx-auto" />
             <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
               {t("learner:allCaughtUp")}
             </h2>
@@ -586,7 +374,7 @@ export function TopicsPage() {
                 <Link to="/learner/practice">
                   <Button
                     variant="outline"
-                    leftIcon={<Sparkles className="w-4 h-4" />}
+                    leftIcon={<TrendingUp className="w-4 h-4" />}
                   >
                     {t("learner:studyAhead")}
                   </Button>
@@ -627,7 +415,7 @@ export function TopicsPage() {
         </Card>
       )}
 
-      {/* ═══ Due Today section (UC-08 Step 3) — sorted by retrievability ═══ */}
+      {/* ═══ Due Today section (UC-08 Step 3) — sorted by memory ═══ */}
       {dueTodayTopics.length > 0 && !searchQuery && (
         <div>
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
@@ -651,7 +439,7 @@ export function TopicsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                        {t(topic.nameKey)}
+                        {getTopicDisplayName(t, topic.name)}
                       </h4>
                       {/* Tier badge (UC-08 Step 5) */}
                       <span
@@ -680,8 +468,8 @@ export function TopicsPage() {
                         {topic.questionsDue} {t("learner:due")}
                       </span>
                       <span>
-                        {t("learner:retrievabilityLabel")}:{" "}
-                        {Math.round(topic.retrievability * 100)}%
+                        {t("learner:memoryLabel")}:{" "}
+                        {Math.round(topic.memory * 100)}%
                       </span>
                     </div>
                   </div>
@@ -697,7 +485,12 @@ export function TopicsPage() {
                       </p>
                     </div>
                     <Link to={`/learner/practice?topic=${topic.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                        title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                      >
                         <Play className="w-4 h-4" />
                       </Button>
                     </Link>
@@ -713,7 +506,7 @@ export function TopicsPage() {
       {futureReviewTopics.length > 0 && !searchQuery && (
         <div>
           <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-500" />
+            <Calendar className="w-5 h-5 text-amber-500" />
             {t("learner:futureReviews")}
             <Badge variant="default" size="sm">
               {futureReviewTopics.length}
@@ -733,7 +526,7 @@ export function TopicsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                        {t(topic.nameKey)}
+                        {getTopicDisplayName(t, topic.name)}
                       </h4>
                       <span
                         className="text-sm"
@@ -766,7 +559,12 @@ export function TopicsPage() {
                       </p>
                     </div>
                     <Link to={`/learner/practice?topic=${topic.id}`}>
-                      <Button variant="ghost" size="sm">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                        title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                      >
                         <Play className="w-4 h-4" />
                       </Button>
                     </Link>
@@ -814,7 +612,7 @@ export function TopicsPage() {
                     <span className="text-2xl">{category.icon}</span>
                     <div className="flex-1 text-start">
                       <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                        {t(category.nameKey)}
+                        {getTopicModuleDisplayName(t, category.nameKey)}
                       </h3>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400">
                         {t("learner:categoryInfo", {
@@ -859,7 +657,7 @@ export function TopicsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                                {t(topic.nameKey)}
+                                {getTopicDisplayName(t, topic.name)}
                               </h4>
                               {/* Tier badge (UC-08 Step 5) */}
                               <span
@@ -913,7 +711,12 @@ export function TopicsPage() {
                               </p>
                             </div>
                             <Link to={`/learner/practice?topic=${topic.id}`}>
-                              <Button variant="ghost" size="sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                                title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
+                              >
                                 <Play className="w-4 h-4" />
                               </Button>
                             </Link>

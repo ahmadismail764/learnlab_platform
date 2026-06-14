@@ -1,4 +1,5 @@
-from rest_framework import generics, permissions, status
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import generics, status, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -36,6 +37,31 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        description="Request a password reset link for a given email address.",
+        request=inline_serializer(
+            name='PasswordResetRequest',
+            fields={
+                'email': serializers.EmailField()
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='PasswordResetRequestResponse',
+                fields={
+                    'message': serializers.CharField(),
+                    'uid': serializers.CharField(required=False),
+                    'token': serializers.CharField(required=False),
+                }
+            ),
+            400: inline_serializer(
+                name='PasswordResetRequestError',
+                fields={
+                    'email': serializers.ListField(child=serializers.CharField())
+                }
+            )
+        }
+    )
     def post(self, request):
         email = request.data.get('email')
         if not email:
@@ -64,6 +90,31 @@ class PasswordResetRequestView(APIView):
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        description="Confirm a password reset with a valid uid, token, and new password.",
+        request=inline_serializer(
+            name='PasswordResetConfirmRequest',
+            fields={
+                'uid': serializers.CharField(),
+                'token': serializers.CharField(),
+                'password': serializers.CharField(),
+            }
+        ),
+        responses={
+            200: inline_serializer(
+                name='PasswordResetConfirmResponse',
+                fields={
+                    'message': serializers.CharField(),
+                }
+            ),
+            400: inline_serializer(
+                name='PasswordResetConfirmError',
+                fields={
+                    'error': serializers.CharField(),
+                }
+            )
+        }
+    )
     def post(self, request):
         uidb64 = request.data.get('uid')
         token = request.data.get('token')
@@ -89,6 +140,30 @@ class PasswordResetConfirmView(APIView):
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        description="Log out a user by blacklisting their refresh token.",
+        request=inline_serializer(
+            name='LogoutRequest',
+            fields={
+                'refresh': serializers.CharField(),
+            }
+        ),
+        responses={
+            205: inline_serializer(
+                name='LogoutResponse',
+                fields={
+                    'message': serializers.CharField(),
+                }
+            ),
+            400: inline_serializer(
+                name='LogoutError',
+                fields={
+                    'refresh': serializers.ListField(child=serializers.CharField(), required=False),
+                    'error': serializers.CharField(required=False),
+                }
+            )
+        }
+    )
     def post(self, request):
         refresh_token = request.data.get('refresh')
         if not refresh_token:

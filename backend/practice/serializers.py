@@ -4,8 +4,19 @@ from django.utils import timezone as django_timezone
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
+from accounts.models import User
 from accounts.serializers import UserDetailSerializer
 from practice.fsrs_engine import process_review
+
+# ===================================================
+# Leaderboard serializers
+# ===================================================
+
+class LeaderboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'current_xp', 'streak_count']
+
 
 # ===================================================
 # Question serializers

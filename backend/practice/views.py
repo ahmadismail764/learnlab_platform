@@ -1,5 +1,6 @@
 # Framework imports
-from rest_framework import permissions, viewsets, generics
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter, OpenApiTypes
+from rest_framework import permissions, viewsets, generics, serializers
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -11,7 +12,8 @@ from practice.serializers import (
     QuestionResponseSerializer, 
     PracticeSessionSerializer, 
     PracticeSessionCreateSerializer, 
-    QuestionSerializer
+    QuestionSerializer,
+    LeaderboardSerializer
 )
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
@@ -107,6 +109,22 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = QuestionSerializer
 
+    @extend_schema(
+        description="Returns the next recommended set of questions for the learner. Due/overdue FSRS items appear first; falls back to unseen questions.",
+        parameters=[
+            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name='limit', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, default=10),
+        ],
+        responses={
+            200: inline_serializer(
+                name='GenerateAdaptiveSessionResponse',
+                fields={
+                    'questions': QuestionSerializer(many=True),
+                    'message': serializers.CharField(),
+                }
+            )
+        }
+    )
     def get(self, request):
         from django.utils import timezone as django_timezone
         from topics.models import SubtopicMastery
@@ -193,3 +211,34 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         return Response({
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
+        })
+
+class LeaderboardView(generics.ListAPIView):
+    """
+    GET /practice/leaderboard/
+
+    Returns all learners ranked by XP descending.
+    Staff accounts are excluded — leaderboard is learners only.
+    Optionally filter by topic: ?topic=<uuid> (returns learners
+    who have at least one mastery record under that topic, still
+    ranked by overall XP).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LeaderboardSerializer
+
+    def get_queryset(self):
+        topic_id = self.request.query_params.get('topic')
+
+        # Base queryset — exclude staff, order by XP descending
+        qs = User.objects.filter(is_staff=False).order_by('-current_xp')
+
+        # Optional topic filter — only include learners who have
+        # at least one SubtopicMastery record under this topic
+        if topic_id:
+            from topics.models import SubtopicMastery
+            learner_ids = SubtopicMastery.objects.filter(
+                subtopic__topic_id=topic_id
+            ).values_list('learner_id', flat=True).distinct()
+            qs = qs.filter(id__in=learner_ids)
+
+        return qs

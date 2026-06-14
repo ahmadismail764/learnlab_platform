@@ -11,7 +11,8 @@ from practice.serializers import (
     QuestionResponseSerializer, 
     PracticeSessionSerializer, 
     PracticeSessionCreateSerializer, 
-    QuestionSerializer
+    QuestionSerializer,
+    LeaderboardSerializer
 )
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
@@ -193,3 +194,34 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         return Response({
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
+        })
+
+class LeaderboardView(generics.ListAPIView):
+    """
+    GET /practice/leaderboard/
+
+    Returns all learners ranked by XP descending.
+    Staff accounts are excluded — leaderboard is learners only.
+    Optionally filter by topic: ?topic=<uuid> (returns learners
+    who have at least one mastery record under that topic, still
+    ranked by overall XP).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LeaderboardSerializer
+
+    def get_queryset(self):
+        topic_id = self.request.query_params.get('topic')
+
+        # Base queryset — exclude staff, order by XP descending
+        qs = User.objects.filter(is_staff=False).order_by('-current_xp')
+
+        # Optional topic filter — only include learners who have
+        # at least one SubtopicMastery record under this topic
+        if topic_id:
+            from topics.models import SubtopicMastery
+            learner_ids = SubtopicMastery.objects.filter(
+                subtopic__topic_id=topic_id
+            ).values_list('learner_id', flat=True).distinct()
+            qs = qs.filter(id__in=learner_ids)
+
+        return qs

@@ -1,5 +1,5 @@
-from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiTypes
-from rest_framework import generics, permissions, status, serializers
+from drf_spectacular.utils import extend_schema, inline_serializer
+from rest_framework import generics, status, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response

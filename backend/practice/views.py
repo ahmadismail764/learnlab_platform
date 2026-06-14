@@ -20,8 +20,9 @@ class IsAdminOrReadOnly(permissions.BasePermission):
         return request.user and request.user.is_authenticated and request.user.is_staff
 
 # This is a test-only endpoint to quickly view all questions in the system.
+# SECURITY FIX: Restricted to admin users only to prevent data exposure in production.
 @api_view(['GET'])
-@permission_classes([permissions.AllowAny])
+@permission_classes([permissions.IsAdminUser])
 def get_all_questions(request):
     questions = Question.objects.prefetch_related('subtopic__topic')
     serializer = QuestionSerializer(questions, many=True)
@@ -145,4 +146,3 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         if user.is_staff:
             return QuestionResponse.objects.all()
         return QuestionResponse.objects.filter(session__learner=user)
-

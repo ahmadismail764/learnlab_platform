@@ -1,10 +1,13 @@
 # Framework imports
 from rest_framework import permissions, viewsets, generics
 from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 # Our imports
 from accounts.models import User
+from practice.fsrs_engine import process_review
 from practice.serializers import (
+    QuestionResponseCreateSerializer,
     QuestionResponseSerializer, 
     PracticeSessionSerializer, 
     PracticeSessionCreateSerializer, 
@@ -19,13 +22,6 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return True
         return request.user and request.user.is_authenticated and request.user.is_staff
 
-# This is a test-only endpoint to quickly view all questions in the system.
-@api_view(['GET'])
-@permission_classes([permissions.AllowAny])
-def get_all_questions(request):
-    questions = Question.objects.prefetch_related('subtopic__topic')
-    serializer = QuestionSerializer(questions, many=True)
-    return Response(serializer.data)
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.prefetch_related('subtopic__topic')
@@ -55,21 +51,30 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def responses(self, request, pk=None):
         session = self.get_object()
         if session.learner != request.user:
-            from rest_framework.exceptions import PermissionDenied
             raise PermissionDenied("Not your session.")
-            
-        from .serializers import QuestionResponseCreateSerializer
+
         serializer = QuestionResponseCreateSerializer(data=request.data)
+
         if serializer.is_valid():
-            response = QuestionResponse.objects.create(session=session, **serializer.validated_data)
-            
-            from practice.fsrs_engine import process_review
+            validated = serializer.validated_data
+            question = validated['question']
+            selected = validated['selected_answer_index']
+
+            # compute correctness (server-side, of course)
+            is_correct = (selected == question.correct_answer_index)
+
+            response = QuestionResponse.objects.create(
+                session=session,
+                is_correct=is_correct,
+                **validated
+            )
+
             process_review(session.learner, response.question.subtopic, response)
-            
+
             if response.is_correct:
                 session.total_xp_earned += XP_PER_CORRECT_ANSWER
                 session.save()
-                
+
             return Response(QuestionResponseSerializer(response).data, status=201)
         return Response(serializer.errors, status=400)
 

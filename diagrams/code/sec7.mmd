@@ -1,0 +1,59 @@
+sequenceDiagram
+    autonumber
+    actor Admin
+    participant CurriculumDashboard as Curriculum Dashboard
+    participant CurriculumController as Curriculum Controller
+    participant Database
+
+    Note over Admin, Database: UC-07: Manage Topics (Curriculum Structure)
+
+    Admin->>CurriculumDashboard: Selects "Create New Topic"
+    CurriculumDashboard-->>Admin: Display input fields (Name, Description, Parent Module)
+    Admin->>CurriculumDashboard: Enters details & clicks "Save"
+    CurriculumDashboard->>CurriculumController: createTopic(name, description, parentId)
+    CurriculumController->>Database: checkTopicNameUniqueness(name, parentId)
+    Database-->>CurriculumController: isUnique
+
+    alt Duplicate Topic Name
+        CurriculumController-->>CurriculumDashboard: Error: "A topic with this name already exists"
+        CurriculumDashboard-->>Admin: Block creation & show error
+    else Input Valid / Unique
+        CurriculumController->>Database: create_topic(name, description)
+        Database-->>CurriculumController: return new topicId
+        Note right of CurriculumController: Step 7: Enable immediate adaptive practice
+        par Initialize Student Mastery
+            CurriculumController->>Database: fetchAllStudentIds()
+            Database-->>CurriculumController: list of students
+            CurriculumController->>Database: bulkInsertTopicMastery(topicId, stability=0, difficulty=5.0)
+        end
+        CurriculumController-->>CurriculumDashboard: Topic created successfully
+        CurriculumDashboard-->>Admin: Show confirmation: "Ready to add questions"
+    end
+
+    Note over Admin, Database: Management Flow (Edit or Delete)
+
+    alt Admin chooses to Edit
+        Admin->>CurriculumDashboard: Selects existing topic
+        CurriculumDashboard->>CurriculumController: getTopicDetails(id)
+        CurriculumController->>Database: fetchTopicData(id)
+        Database-->>CurriculumController: topic_details
+        CurriculumController-->>CurriculumDashboard: Display edit form
+        Admin->>CurriculumDashboard: Updates fields & clicks "Save"
+        CurriculumDashboard->>CurriculumController: updateTopic(id, data)
+        CurriculumController->>Database: update_details(name, description)
+        Database-->>CurriculumController: success
+        CurriculumController-->>CurriculumDashboard: update confirmed
+    else Admin chooses to Delete
+        Admin->>CurriculumDashboard: Clicks "Delete"
+        CurriculumDashboard-->>Admin: Warning: "Cascade delete will remove questions/mastery"
+        Admin->>CurriculumDashboard: Confirm "Delete Forever"
+        CurriculumDashboard->>CurriculumController: performCascadeDelete(id)
+        par Delete Linked Entities
+            CurriculumController->>Database: deleteLinkedQuestions(id)
+            CurriculumController->>Database: deleteTopicMastery(id)
+            CurriculumController->>Database: deleteTopic(id)
+        end
+        Database-->>CurriculumController: success
+        CurriculumController-->>CurriculumDashboard: removal confirmed
+        CurriculumDashboard-->>Admin: Refresh curriculum view
+    end

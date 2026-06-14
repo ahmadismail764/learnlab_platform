@@ -1,4 +1,5 @@
 import { api, type EntityId } from "./api";
+import { parseApiError } from "./api";
 
 interface SessionCreatePayload {
   responses?: ResponsePayload[];
@@ -6,10 +7,7 @@ interface SessionCreatePayload {
 
 interface ResponsePayload {
   question?: EntityId;
-  is_correct?: boolean;
-  time_taken_seconds?: number;
-  confidence_rating?: number;
-  answer_text?: string | null;
+  selected_answer_index?: number;
 }
 
 interface SessionUpdatePayload {
@@ -69,7 +67,8 @@ export const practiceService = {
       return await response.json();
     }
 
-    throw new Error('Failed to generate adaptive session');
+    const { message } = await parseApiError(response, 'Failed to generate adaptive session');
+    throw new Error(message);
   },
 
   // Backward-compatibility aliases
@@ -88,17 +87,11 @@ export const practiceService = {
   submitInteraction: async (data: {
     session: EntityId;
     question: EntityId;
-    is_correct: boolean;
-    time_taken_seconds?: number;
-    confidence_rating?: number;
-    answer_text?: string | null;
+    selected_answer_index: number;
   }) => {
     const response = await api.post(`/practice/sessions/${data.session}/responses/`, {
       question: data.question,
-      is_correct: data.is_correct,
-      time_taken_seconds: data.time_taken_seconds,
-      confidence_rating: data.confidence_rating,
-      answer_text: data.answer_text,
+      selected_answer_index: data.selected_answer_index,
     });
     if (!response.ok) throw new Error('Failed to submit interaction');
     return await parseOptionalJson(response);

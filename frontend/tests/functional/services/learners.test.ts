@@ -84,7 +84,7 @@ describe('learnersService', () => {
 
       const leaderboard = await learnersService.getLeaderboard();
 
-      expect(api.get).toHaveBeenCalledWith('/practice/learners/leaderboard/');
+      expect(api.get).toHaveBeenCalledWith('/practice/leaderboard/');
       expect(leaderboard).toHaveLength(2);
       expect(leaderboard[0].id).toBe('user-1');
       expect(leaderboard[0].total_xp).toBe(500);
@@ -112,7 +112,7 @@ describe('learnersService', () => {
 
       await learnersService.getTopicLeaderboard('topic-uuid-abc');
 
-      expect(api.get).toHaveBeenCalledWith('/practice/learners/leaderboard/?topic=topic-uuid-abc');
+      expect(api.get).toHaveBeenCalledWith('/practice/leaderboard/?topic=topic-uuid-abc');
     });
   });
 });

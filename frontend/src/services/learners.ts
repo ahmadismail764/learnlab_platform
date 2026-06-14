@@ -51,7 +51,7 @@ export const learnersService = {
   },
 
   getLeaderboard: async (): Promise<LeaderboardLearner[]> => {
-    const response = await api.get('/practice/learners/leaderboard/');
+    const response = await api.get('/practice/leaderboard/');
     if (!response.ok) {
       console.warn('Leaderboard fetch failed with status:', response.status);
       return [];
@@ -62,7 +62,7 @@ export const learnersService = {
   },
 
   getTopicLeaderboard: async (topicId: string | number): Promise<LeaderboardLearner[]> => {
-    const response = await api.get(`/practice/learners/leaderboard/?topic=${topicId}`);
+    const response = await api.get(`/practice/leaderboard/?topic=${topicId}`);
     if (!response.ok) {
       console.warn('Topic leaderboard fetch failed with status:', response.status);
       return [];

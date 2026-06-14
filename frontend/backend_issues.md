@@ -2,13 +2,38 @@
 
 > **For the backend team.** This document tracks unresolved API suggestions, architectural improvements, and security warnings, as well as successfully completed milestones for the LearnLab Django backend, as compiled by the frontend engineering team.
 >
-> **Latest verification:** 2026-06-13 after pulling `origin/interface` at merge commit `dcda7f0`.
+> **Latest verification:** 2026-06-14 on `interface` after pulling backend merge `8329e3a`.
 
 ---
 
 ## 🔴 Critical Active Blockers (Immediate Fixes Required)
 
-No active critical backend blockers are currently verified after the latest `origin/interface` merge. Keep this section reserved for frontend-blocking backend regressions.
+### 1. Password reset request exposes reset credentials in the API response
+
+- **Status:** Active security/backend blocker, re-verified 2026-06-14 after backend merge `8329e3a`
+- **Endpoint:** `POST /api/v1/auth/password-reset/`
+- **Symptoms:** For an existing account email, the endpoint returns `200` with `message`, `uid`, and `token`; for a missing email, it returns only `message`.
+- **Smoke result:** Existing-account request returned keys `['message', 'token', 'uid']`; missing-account request returned keys `['message']`.
+- **Impact:** A caller who knows or guesses an email can receive a valid reset token directly from the public endpoint. The response shape also reveals whether an email exists, creating an account-enumeration side channel. The current frontend expects email instructions and does not consume returned reset credentials.
+- **Recommendation:** Send the reset link/token out-of-band through configured email delivery, do not include `uid` or `token` in the JSON response, and return the same generic response shape for existing and non-existing emails.
+
+### 2. `selected_answer_index` model change is missing a `practice` migration
+
+- **Status:** Active backend blocker, verified 2026-06-14 after backend merge `8329e3a`
+- **Affected contract:** `POST /api/v1/practice/sessions/<uuid:id>/responses/`
+- **Symptoms:** The backend model and serializers now require `QuestionResponse.selected_answer_index`, but no `practice` migration for that field was committed.
+- **Smoke result:** `manage.py makemigrations --check --dry-run` reports a new pending migration: `practice/migrations/0003_questionresponse_selected_answer_index.py`. Local DB introspection confirms `practice_questionresponse` does not contain `selected_answer_index`.
+- **Impact:** The frontend has been updated to send `selected_answer_index` instead of client-supplied correctness, but deployed databases will not have the required column unless the missing migration is created and applied.
+- **Recommendation:** Commit the generated `practice` migration for `QuestionResponse.selected_answer_index`, then run migrations in each environment before relying on server-side answer validation.
+
+### 3. Adaptive session generation returns `500` because `QuestionSerializer` omits a declared field
+
+- **Status:** Active backend blocker, verified 2026-06-14 after backend merge `8329e3a`
+- **Endpoint:** `GET /api/v1/practice/sessions/generate-adaptive/`
+- **Symptoms:** Starting a practice session fails because the adaptive endpoint returns a Django debug HTML `500`.
+- **Smoke result:** APIClient smoke produced `AssertionError: The field 'subtopic_name' was declared on serializer QuestionSerializer, but has not been included in the 'fields' option.`
+- **Impact:** Learners cannot start adaptive practice even though the frontend is calling the canonical endpoint.
+- **Recommendation:** Add `subtopic_name` to `QuestionSerializer.Meta.fields`, or remove the declared serializer field if it should no longer be exposed.
 
 ---
 
@@ -81,9 +106,10 @@ No active critical backend blockers are currently verified after the latest `ori
 
 ### 9. Short-Lived Redis Caching for Analytics Routes (`/analytics/*`)
 
-- **Status:** Optimization Suggestion
+- **Status:** Implemented upstream / local verification blocked
 - **Description:** The student and admin analytics dashboards aggregate telemetry datasets (topics, difficulty tier breakdowns, and activity time-series). Under high concurrency (e.g., during active exams or lectures), repeated aggregation queries will place unnecessary database load on PostgreSQL.
-- **Recommendation:** Implement a short-lived Redis cache (e.g., 5-minute Time-To-Live) for the `GET /analytics/*` endpoints. These charts do not require second-by-second accuracy to be effective.
+- **Verification note:** Backend merge `8329e3a` added Redis-backed caching. Local endpoint smoke for `/api/v1/practice/leaderboard/` currently returns `500` in the existing venv because the Redis Python dependency/service is not available locally (`ModuleNotFoundError: No module named 'redis'`).
+- **Recommendation:** Ensure local and deployment environments install the updated backend dependencies and run Redis, or provide a development cache fallback when Redis is unavailable.
 
 ---
 

@@ -26,7 +26,6 @@ import { PracticeGradePanel } from './PracticeGradePanel'
 import {
   getQuestionXp,
   normalizePracticeQuestion,
-  resolveSubmittedCorrectness,
   type FSRSGrade,
   type PracticeQuestion,
   type QuestionState,
@@ -87,6 +86,7 @@ export function PracticePage() {
         initialStates[idx] = {
           questionId: q.id,
           userResponse: null,
+          selectedAnswerIndex: null,
           answerState: 'unanswered',
           isCorrect: null,
           grade: null,
@@ -104,14 +104,17 @@ export function PracticePage() {
     }
   }
 
-  const handleAnswer = useCallback((choice: string) => {
+  const handleAnswer = useCallback((choice: string, selectedAnswerIndex: number) => {
     if (!currentQuestion || !currentStatus || currentStatus.answerState === 'answered') return
-    const isCorrect = currentQuestion.choices.indexOf(choice) === currentQuestion.correct_answer_index
+    const isCorrect = currentQuestion.correct_answer_index === null
+      ? null
+      : selectedAnswerIndex === currentQuestion.correct_answer_index
     setQuestionStates((prev) => ({
       ...prev,
       [currentIndex]: {
         ...prev[currentIndex],
         userResponse: choice,
+        selectedAnswerIndex,
         answerState: 'answered',
         isCorrect: isCorrect
       }
@@ -126,6 +129,7 @@ export function PracticePage() {
       [currentIndex]: {
         ...prev[currentIndex],
         userResponse: mathValue,
+        selectedAnswerIndex: null,
         answerState: 'answered',
         isCorrect: null,
       }
@@ -152,11 +156,9 @@ export function PracticePage() {
 
   const handleGrade = useCallback(async (grade: FSRSGrade) => {
     if (!currentStatus || !sessionRecord || !currentQuestion) return
-    const submittedIsCorrect = resolveSubmittedCorrectness(currentStatus, grade)
-    const shouldAwardSelfGradedXp = currentStatus.isCorrect === null && submittedIsCorrect
-
-    if (shouldAwardSelfGradedXp) {
-      setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
+    if (currentStatus.selectedAnswerIndex === null) {
+      showError(t('practice:couldNotSubmitAnswer'))
+      return
     }
 
     setQuestionStates((prev) => ({
@@ -164,16 +166,23 @@ export function PracticePage() {
       [currentIndex]: { ...prev[currentIndex], grade: grade }
     }))
     try {
-      await practiceService.submitInteraction({
+      const response = await practiceService.submitInteraction({
         session: sessionRecord.id,
         question: currentQuestion.id,
-        is_correct: submittedIsCorrect,
-        time_taken_seconds: Math.max(0, Math.round((Date.now() - currentStatus.startTime) / 1000)),
-        confidence_rating: grade,
-        answer_text: currentStatus.userResponse,
+        selected_answer_index: currentStatus.selectedAnswerIndex,
       })
+      const backendIsCorrect = Boolean(response?.is_correct)
+      if (currentStatus.isCorrect === null && backendIsCorrect) {
+        setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
+      }
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: { ...prev[currentIndex], isCorrect: backendIsCorrect }
+      }))
     } catch (err) {
       console.error("Failed to submit interaction", err)
+      showError(t('practice:couldNotSubmitAnswer'))
+      return
     }
     setMathValue('')
     if (currentIndex < questions.length - 1) {
@@ -186,7 +195,7 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentQuestion, currentStatus, questions.length, sessionRecord])
+  }, [completeSession, currentIndex, currentQuestion, currentStatus, questions.length, sessionRecord, showError, t])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -207,10 +216,10 @@ export function PracticePage() {
       const isAnswered = currentStatus.answerState === 'answered';
 
       if (!isAnswered && isMCQ) {
-        if (key === '1' && currentQuestion.choices[0]) handleAnswer(currentQuestion.choices[0]);
-        if (key === '2' && currentQuestion.choices[1]) handleAnswer(currentQuestion.choices[1]);
-        if (key === '3' && currentQuestion.choices[2]) handleAnswer(currentQuestion.choices[2]);
-        if (key === '4' && currentQuestion.choices[3]) handleAnswer(currentQuestion.choices[3]);
+        if (key === '1' && currentQuestion.choices[0]) handleAnswer(currentQuestion.choices[0], 0);
+        if (key === '2' && currentQuestion.choices[1]) handleAnswer(currentQuestion.choices[1], 1);
+        if (key === '3' && currentQuestion.choices[2]) handleAnswer(currentQuestion.choices[2], 2);
+        if (key === '4' && currentQuestion.choices[3]) handleAnswer(currentQuestion.choices[3], 3);
       }
 
       if (isAnswered) {
@@ -435,14 +444,16 @@ export function PracticePage() {
                   {currentQuestion.choices.map((choice: string, index: number) => (
                     <button
                       key={index}
-                      onClick={() => handleAnswer(choice)}
+                      onClick={() => handleAnswer(choice, index)}
                       disabled={isAnswered}
                       className={cn(
                         'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
                         currentStatus.userResponse === choice
                           ? currentStatus.isCorrect
                             ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'
-                            : 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/20 dark:text-red-200'
+                            : currentStatus.isCorrect === false
+                              ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/20 dark:text-red-200'
+                              : 'border-primary-500 bg-primary-50 text-primary-900 dark:bg-primary-950/20 dark:text-primary-200'
                           : 'border-neutral-200 bg-white hover:border-primary-400 hover:bg-primary-50/40 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-primary-950/20',
                       )}
                     >
@@ -455,7 +466,7 @@ export function PracticePage() {
                         <span className="text-base font-medium">{choice}</span>
                       </div>
                       <span className="shrink-0">
-                        {isAnswered && index === currentQuestion.correct_answer_index ? (
+                        {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
                           <CheckCircle className={cn(
                             'h-5 w-5',
                             currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',

@@ -6,6 +6,7 @@
   "closeKeyboard": "Close",
   "completionNextSteps": "You can jump back to the dashboard or review your updated progress before starting another session.",
   "couldNotStartSession": "Could not start session: {{message}}",
+  "couldNotSubmitAnswer": "Could not submit your answer. Please try again.",
   "dependsOnQuestionType": "Depends on question type",
   "difficultyLabel": "Difficulty",
   "difficultyPromptDescription": "Your rating feeds the next interval for this item.",

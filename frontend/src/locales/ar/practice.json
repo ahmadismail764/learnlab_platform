@@ -6,6 +6,7 @@
   "closeKeyboard": "إغلاق",
   "completionNextSteps": "يمكنك العودة إلى لوحة التعلم أو مراجعة تقدمك المحدّث قبل بدء جلسة أخرى.",
   "couldNotStartSession": "تعذر بدء الجلسة: {{message}}",
+  "couldNotSubmitAnswer": "تعذر إرسال إجابتك. حاول مرة أخرى.",
   "dependsOnQuestionType": "يعتمد على نوع السؤال",
   "difficultyLabel": "الصعوبة",
   "difficultyPromptDescription": "يحدد تقييمك الفاصل التالي لهذا السؤال.",

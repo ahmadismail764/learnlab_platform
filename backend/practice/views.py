@@ -22,7 +22,6 @@ class IsAdminOrReadOnly(permissions.BasePermission):
             return True
         return request.user and request.user.is_authenticated and request.user.is_staff
 
-
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.prefetch_related('subtopic__topic')
     serializer_class = QuestionSerializer
@@ -194,4 +193,3 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         return Response({
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
-        })

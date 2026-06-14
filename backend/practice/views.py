@@ -4,6 +4,8 @@ from rest_framework import permissions, viewsets, generics, serializers
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 # Our imports
 from accounts.models import User
 from practice.fsrs_engine import process_review
@@ -213,6 +215,8 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
             'message': f'Generated adaptive session with {len(due_questions)} question(s)',
         })
 
+
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class LeaderboardView(generics.ListAPIView):
     """
     GET /practice/leaderboard/

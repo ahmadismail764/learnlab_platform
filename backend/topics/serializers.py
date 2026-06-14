@@ -8,7 +8,7 @@ class TopicSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Topic
-        fields = ['id', 'name', 'description', 'parent_module', 'question_count']
+        fields = ['id', 'name', 'description', 'question_count']
 
     id = serializers.UUIDField(read_only=True)
 

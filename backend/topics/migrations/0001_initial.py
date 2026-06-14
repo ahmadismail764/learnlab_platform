@@ -5,7 +5,7 @@ import uuid
 from django.conf import settings
 from django.db import migrations, models
 
-
+# topic includes (subtopics which includes questions)
 class Migration(migrations.Migration):
 
     initial = True

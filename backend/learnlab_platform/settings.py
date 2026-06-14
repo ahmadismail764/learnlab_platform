@@ -9,7 +9,8 @@ load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
+# Security fix: default DEBUG to False in production to prevent exposure of sensitive data
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # ==============================================================================
 # SECURITY & HOST CONFIGURATION

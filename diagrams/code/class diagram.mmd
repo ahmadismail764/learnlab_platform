@@ -1,0 +1,93 @@
+classDiagram
+    class User {
+        +int id
+        +string email
+        +string password_hash
+        +string role // 'student', 'admin'
+        +int failed_login_attempts // default: 0
+        +DateTime account_locked_until // nullable
+        +login(email, pass) bool
+        +register(email, pass) bool
+        +is_locked() bool
+    }
+
+    class Admin {
+        +create_topic(name, desc)
+        +manage_users()
+        +view_system_analytics()
+    }
+
+    class Student {
+        +int total_xp // default: 0
+        +int streak_count
+        +DateTime last_practice_date
+        +get_analytics() dict
+        +increment_streak()
+        +add_xp(amount)
+    }
+
+    class Topic {
+        +int id
+        +string name
+        +string description
+        +add_question(data)
+        +remove_question(id)
+        +get_questions_by_tier(tier)
+        +update_details(name, desc)
+    }
+
+    class Question {
+        +int id
+        +int topic_id // FK: Topic.id
+        +string text
+        +string choices_json // ["A", "B", "C", "D"]
+        +int correct_index // 0-3
+        +int tier // 1=Foundational, 2=Inter, 3=Adv
+        +string explanation_video_url // nullable
+        +update_content(text, choices)
+        +get_correct_answer()
+    }
+
+    class PracticeSession {
+        +int id
+        +int student_id // FK: User.id
+        +string session_type // 'adaptive', 'quiz', 'review'
+        +DateTime start_time
+        +int total_xp_earned
+        +DateTime end_time // nullable(if active)
+        +start_session()
+        +complete_session()
+        +calculate_duration()
+    }
+
+    class TopicMastery {
+        +int id
+        +int student_id // FK: User.id
+        +int topic_id // FK: Topic.id
+        +float difficulty // range: 1.0-10.0
+        +float stability // unit: days
+        +DateTime last_review_date
+        +DateTime next_review_date
+        +is_due() bool
+        +update_fsrs(grade, elapsed_days) // grade: 0.0-1.0
+    }
+
+    class SingleQuestionInteraction {
+        +int id
+        +int session_id // FK: PracticeSession.id
+        +int question_id // FK: Question.id
+        +string user_response
+        +bool is_correct
+        +float time_taken_seconds
+        +int confidence_rating // range: 1-5(1=Guess, 5=Sure)
+        +grade_answer()
+    }
+
+    User <|-- Admin
+    User <|-- Student
+    Student "1" --> "*" PracticeSession : initiates
+    Student "1" --> "*" TopicMastery : tracks
+    Topic "1" --> "*" TopicMastery : mastered_by
+    Topic "1" --> "*" Question : contains
+    PracticeSession "1" --> "*" SingleQuestionInteraction : logs
+    Question "1" --> "*" SingleQuestionInteraction : answered_in

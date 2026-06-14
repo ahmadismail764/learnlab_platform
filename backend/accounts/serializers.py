@@ -28,8 +28,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name', 
-            'is_staff', 'date_joined', 'current_xp', 'streak_count',
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_staff', 'date_joined', 'current_xp', 'streak_count', 
             'last_practice_date', 'role', 'initials', 'avatar_color'
         ]
         read_only_fields = [

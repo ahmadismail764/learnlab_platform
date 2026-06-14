@@ -1,0 +1,36 @@
+sequenceDiagram
+    actor Student
+    participant LeaderboardUI as Leaderboard UI
+    participant LeaderboardController as Leaderboard Controller
+    participant Database
+
+    Note over Student,LeaderboardUI: UC-06: View Leaderboard
+
+    Student->>LeaderboardUI: Selects "Leaderboard" tab
+
+    alt Offline Mode (PWA)
+        LeaderboardUI->>LeaderboardUI: Load most recently cached data
+        LeaderboardUI-->>Student: Display cached rankings with "Outdated" banner
+    else Online
+        LeaderboardUI->>LeaderboardController: getRankings(filter="All Time")
+        LeaderboardController->>Database: queryRankings(filter)
+        Database-->>LeaderboardController: return top_students (xp, streak, name)
+        LeaderboardController->>LeaderboardController: calculateCurrentStudentRank()
+        LeaderboardController->>Database: logEngagementEvent("leaderboard_viewed_at")
+        LeaderboardController-->>LeaderboardUI: return leaderboard_data
+
+        alt Fewer than 2 active students
+            LeaderboardUI-->>Student: Display "Be the first to claim the
+        else Data exists
+            LeaderboardUI-->>Student: Display Top 10 + current student position & streak_count
+        end
+    end
+
+    opt Filter Rankings
+        Student->>LeaderboardUI: Selects time filter (e.g., "This Week")
+        LeaderboardUI->>LeaderboardController: getRankings(filter="Weekly")
+        LeaderboardController->>Database: queryRankings(time_window)
+        Database-->>LeaderboardController: return filtered_students
+        LeaderboardController-->>LeaderboardUI: refresh rankings view
+        LeaderboardUI-->>Student: Update dashboard rankings
+    end

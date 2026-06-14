@@ -42,6 +42,7 @@ class QuestionResponse(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(PracticeSession, on_delete=models.CASCADE, related_name='responses')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    selected_answer_index = models.IntegerField(null=True)
     # response data
     is_correct = models.BooleanField(default=False)
     time_taken_seconds = models.IntegerField(default=0)

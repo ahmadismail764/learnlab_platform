@@ -2,6 +2,8 @@ import math
 # Django imports
 from django.db.models import Avg, Count
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 # DRF imports
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -12,6 +14,7 @@ from practice.models import PracticeSession, QuestionResponse
 from topics.models import SubtopicMastery, Topic
 
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class AggregatedMetricsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -68,6 +71,7 @@ class AggregatedMetricsView(APIView):
             'estimated_retention': estimated_retention,
         })
 
+
 class TopicAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -116,6 +120,8 @@ class TopicAnalyticsView(APIView):
         })
 
 
+
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class BulkTopicAnalyticsView(APIView):
     """
     GET /analytics/topics/
@@ -165,6 +171,7 @@ class BulkTopicAnalyticsView(APIView):
         return Response({'results': results})
 
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class ActivityTimeSeriesView(APIView):
     """
     GET /analytics/activity/

@@ -83,7 +83,7 @@ export const ProgressBar = forwardRef<HTMLDivElement, ProgressBarProps>(
               animated && 'transition-all duration-500 ease-out',
               indicatorClassName
             )}
-            style={{ width: `${percentage}%` }}
+            style={{ width: `${percentage}%` } as any}
           />
         </div>
       </div>

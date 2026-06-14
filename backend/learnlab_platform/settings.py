@@ -9,7 +9,8 @@ load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 'yes')
+# Security fix: default DEBUG to False in production to prevent exposure of sensitive data
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 # ==============================================================================
 # SECURITY & HOST CONFIGURATION
@@ -138,23 +139,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
-# 2. Strict origin checking for production mode
 if not DEBUG:
     raw_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
     CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_origins.split(',') if origin.strip()]
-    
-    # Optional safety fallback
+
     if not CORS_ALLOWED_ORIGINS:
         raise ValueError("CRITICAL SECURITY ERROR: CORS_ALLOWED_ORIGINS is empty in production mode.")
 
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:5173',
-#     'http://localhost:3000',
-#     'http://localhost:8000',
-#     'http://127.0.0.1:5173',
-#     'http://127.0.0.1:3000',
-# ]
-# CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
@@ -192,4 +183,11 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'LearnLab API',
     'DESCRIPTION': 'Mastery-based learning backend',
     'VERSION': '1.0.0',
+}
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"),
+    }
 }

@@ -4,19 +4,38 @@ from django.utils import timezone as django_timezone
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
+from accounts.models import User
 from accounts.serializers import UserDetailSerializer
+from practice.fsrs_engine import process_review
 
+# ===================================================
+# Leaderboard serializers
+# ===================================================
+
+class LeaderboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'current_xp', 'streak_count']
+
+
+# ===================================================
+# Question serializers
+# ===================================================
 class QuestionSerializer(serializers.ModelSerializer):
     subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
 
     class Meta:
         model = Question
-        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'correct_answer_index', 'tier']
+        fields = ['id', 'subtopic', 'text', 'choices', 'tier']
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ['id', 'subtopic', 'text', 'choices', 'correct_answer_index', 'tier']
+
+# ===================================================
+# QuestionResponse serializers
+# ===================================================
 
 class QuestionResponseSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,8 +45,11 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
 class QuestionResponseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
-        fields = ['question', 'is_correct']
+        fields = ['question', 'selected_answer_index']
 
+# ===================================================
+# PracticeSession serializers
+# ===================================================
 class PracticeSessionSerializer(serializers.ModelSerializer):
     learner = UserDetailSerializer(read_only=True)
     responses = QuestionResponseSerializer(many=True, read_only=True)
@@ -79,16 +101,22 @@ class PracticeSessionCreateSerializer(serializers.ModelSerializer):
         
         correct_count = 0
         for response_data in responses_data:
-            response = QuestionResponse.objects.create(session=session, **response_data)
-            if response.is_correct:
-                correct_count += 1
+            question = response_data['question']
+            selected = response_data['selected_answer_index']
+            # validating the user's answers
+            is_correct = (selected == question.correct_answer_index)
             
-            # Call FSRS process_review to update subtopic mastery
-            from practice.fsrs_engine import process_review
-            process_review(session.learner, response.question.subtopic, response)
+            corrected_response = QuestionResponse.objects.create(
+                session=session,
+                is_correct=is_correct,
+                **response_data
+            )
+            if corrected_response.is_correct:
+                correct_count += 1
+            process_review(session.learner, corrected_response.question.subtopic, corrected_response)
         
         # Calculate and award XP (10 XP per correct response)
-        xp_earned = correct_count * 10
+        xp_earned = correct_count * XP_PER_CORRECT_ANSWER
         session.total_xp_earned = xp_earned
         session.save()
         

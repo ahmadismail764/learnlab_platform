@@ -1,5 +1,6 @@
 # Framework imports
-from rest_framework import permissions, viewsets, generics
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter, OpenApiTypes
+from rest_framework import permissions, viewsets, generics, serializers
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
@@ -108,6 +109,22 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = QuestionSerializer
 
+    @extend_schema(
+        description="Returns the next recommended set of questions for the learner. Due/overdue FSRS items appear first; falls back to unseen questions.",
+        parameters=[
+            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter(name='limit', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, default=10),
+        ],
+        responses={
+            200: inline_serializer(
+                name='GenerateAdaptiveSessionResponse',
+                fields={
+                    'questions': QuestionSerializer(many=True),
+                    'message': serializers.CharField(),
+                }
+            )
+        }
+    )
     def get(self, request):
         from django.utils import timezone as django_timezone
         from topics.models import SubtopicMastery

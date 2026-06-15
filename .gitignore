@@ -16,6 +16,7 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 frontend/improvement_ideas.md
+frontend/public/brand-suggestions/
 
 # Environments
 .env

@@ -1,16 +1,22 @@
+import os
+# DRF Imports
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import generics, status, serializers
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
+# Core django imports
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError
-
+# Our imports
 from accounts.models import User
 from accounts.serializers import (
     UserSerializer, 
@@ -37,55 +43,45 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
 
-    @extend_schema(
-        description="Request a password reset link for a given email address.",
-        request=inline_serializer(
-            name='PasswordResetRequest',
-            fields={
-                'email': serializers.EmailField()
-            }
-        ),
-        responses={
-            200: inline_serializer(
-                name='PasswordResetRequestResponse',
-                fields={
-                    'message': serializers.CharField(),
-                    'uid': serializers.CharField(required=False),
-                    'token': serializers.CharField(required=False),
-                }
-            ),
-            400: inline_serializer(
-                name='PasswordResetRequestError',
-                fields={
-                    'email': serializers.ListField(child=serializers.CharField())
-                }
-            )
-        }
-    )
     def post(self, request):
         email = request.data.get('email')
         if not email:
-            return Response({'email': ['This field is required.']}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {'email': ['This field is required.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         UserModel = get_user_model()
         user = UserModel.objects.filter(email__iexact=email).first()
+
         if user:
-            # Generate uid and token
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            # Log password reset token for easy local development / testing
-            print(f"--- PASSWORD RESET REQUEST ---")
-            print(f"User: {user.username}")
-            print(f"UID: {uid}")
-            print(f"Token: {token}")
-            print(f"------------------------------")
-            return Response({
-                'message': 'Password reset link sent.',
-                'uid': uid,
-                'token': token
-            }, status=status.HTTP_200_OK)
-        
-        return Response({'message': 'Password reset link sent.'}, status=status.HTTP_200_OK)
+            reset_link = f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/reset-password?uid={uid}&token={token}"
+
+            email_body = render_to_string('accounts/emails/password_reset.txt', {
+                'first_name': user.first_name or user.username,
+                'reset_link': reset_link,
+            })
+
+            send_mail(
+                subject='LearnLab — Password Reset Request',
+                message=email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+            if settings.DEBUG:
+                print(f"--- PASSWORD RESET ---")
+                print(f"User: {user.username}")
+                print(f"Reset link: {reset_link}")
+                print(f"----------------------")
+
+        return Response(
+            {'message': 'If an account with this email exists, a password reset link has been sent.'},
+            status=status.HTTP_200_OK
+        )
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]

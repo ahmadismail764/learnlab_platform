@@ -26,7 +26,7 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        fields = ['id', 'subtopic', 'text', 'choices', 'tier']
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier']
 
 class QuestionCreateSerializer(serializers.ModelSerializer):
     class Meta:

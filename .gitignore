@@ -31,3 +31,5 @@ pg_binaries.zip
 db.sqlite3
 backend/db.sqlite3
 *.bak
+
+*.json

@@ -1,7 +1,4 @@
 {
-  "arabic": "العربية",
-  "english": "English",
-  "languageChanged": "غُيّرت اللغة إلى {{language}}",
   "switchLanguage": "تغيير اللغة",
   "switchToLanguage": "بدّل إلى {{language}}"
 }

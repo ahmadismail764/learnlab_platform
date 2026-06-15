@@ -33,13 +33,11 @@ export const createTopicSchema = (
         }
       ),
     description: z.string().trim().optional(),
-    parent_module: z.string().trim().optional(),
   })
 
 export type TopicFormData = {
   name: string
   description: string
-  parent_module: string
 }
 
 // ── Questions Validation ────────────────────────────────────────────

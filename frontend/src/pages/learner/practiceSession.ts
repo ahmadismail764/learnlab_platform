@@ -8,7 +8,7 @@ export interface PracticeQuestion {
   id: EntityId
   text: string
   choices: string[]
-  correct_answer_index: number
+  correct_answer_index: number | null
   tier: number
   explanation_video_url?: string | null
   topic_name: string
@@ -22,6 +22,7 @@ export interface RawPracticeQuestion extends Partial<PracticeQuestion> {
 export interface QuestionState {
   questionId: EntityId
   userResponse: string | null
+  selectedAnswerIndex: number | null
   answerState: AnswerState
   isCorrect: boolean | null
   grade: FSRSGrade | null
@@ -68,7 +69,7 @@ export function normalizePracticeQuestion(
     id: raw.id ?? '',
     text: raw.text ?? '',
     choices: Array.isArray(raw.choices) ? raw.choices.map(String) : [],
-    correct_answer_index: Number(raw.correct_answer_index ?? 0),
+    correct_answer_index: typeof raw.correct_answer_index === 'number' ? raw.correct_answer_index : null,
     tier: Number(raw.tier ?? 1),
     explanation_video_url: raw.explanation_video_url ?? null,
     topic_name: raw.topic_name ?? raw.subtopic_name ?? fallbackTopicName,
@@ -78,11 +79,4 @@ export function normalizePracticeQuestion(
 
 export function getQuestionXp(question: PracticeQuestion): number {
   return 10 * Math.max(1, question.tier)
-}
-
-export function resolveSubmittedCorrectness(
-  status: QuestionState,
-  grade: FSRSGrade,
-): boolean {
-  return status.isCorrect ?? grade > 1
 }

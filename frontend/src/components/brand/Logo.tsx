@@ -9,7 +9,7 @@
  * Brand palette:
  *   Primary  — Teal   (#0d9488 / #14b8a6)  scientific, fresh
  *   Secondary — Violet (#7c3aed / #a78bfa)  depth, discovery
- *   Accent   — Amber  (#f59e0b)             energy, achievement
+ *   Accent   — Amber  (#f59e0b)             energy, momentum
  */
 
 import { cn } from '@/utils/cn'

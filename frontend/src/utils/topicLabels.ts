@@ -38,6 +38,15 @@ const TOPIC_KEY_BY_NAME: Record<string, string> = {
   'prime numbers': 'numberTheory.primes',
 }
 
+const CATEGORY_BY_TOPIC_KEY_PREFIX: Record<string, string> = {
+  logic: 'Logic',
+  sets: 'Sets',
+  relations: 'Relations',
+  combinatorics: 'Combinatorics',
+  graphTheory: 'Graph Theory',
+  numberTheory: 'Number Theory',
+}
+
 function normalizeLabel(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, ' ')
 }
@@ -48,7 +57,56 @@ export function getTopicDisplayName(t: TFunction, name?: string | null) {
   return key ? t(`topics:${key}`) : name
 }
 
-export function getTopicModuleDisplayName(t: TFunction, name?: string | null) {
+export function getTopicCategoryName(name?: string | null) {
+  if (!name) return 'Uncategorized'
+
+  const normalizedName = normalizeLabel(name)
+  const topicKey = TOPIC_KEY_BY_NAME[normalizedName]
+  const prefix = topicKey?.split('.')[0]
+  if (prefix && CATEGORY_BY_TOPIC_KEY_PREFIX[prefix]) {
+    return CATEGORY_BY_TOPIC_KEY_PREFIX[prefix]
+  }
+
+  if (normalizedName.includes('logic') || normalizedName.includes('proof') || normalizedName.includes('quantifier')) {
+    return 'Logic'
+  }
+  if (normalizedName.includes('set') || normalizedName.includes('venn') || normalizedName.includes('cartesian')) {
+    return 'Sets'
+  }
+  if (normalizedName.includes('relation') || normalizedName.includes('function') || normalizedName.includes('order')) {
+    return 'Relations'
+  }
+  if (
+    normalizedName.includes('counting') ||
+    normalizedName.includes('permut') ||
+    normalizedName.includes('combin') ||
+    normalizedName.includes('pigeon')
+  ) {
+    return 'Combinatorics'
+  }
+  if (
+    normalizedName.includes('graph') ||
+    normalizedName.includes('path') ||
+    normalizedName.includes('cycle') ||
+    normalizedName.includes('planar') ||
+    normalizedName.includes('tree')
+  ) {
+    return 'Graph Theory'
+  }
+  if (
+    normalizedName.includes('number') ||
+    normalizedName.includes('divis') ||
+    normalizedName.includes('modular') ||
+    normalizedName.includes('gcd') ||
+    normalizedName.includes('prime')
+  ) {
+    return 'Number Theory'
+  }
+
+  return 'Uncategorized'
+}
+
+export function getTopicCategoryDisplayName(t: TFunction, name?: string | null) {
   if (!name || normalizeLabel(name) === 'uncategorized') {
     return t('topics:uncategorized')
   }

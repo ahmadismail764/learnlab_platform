@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, Loader2, Save, AlertTriangle } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -11,7 +11,6 @@ interface BackendTopic {
   id: number
   name: string
   description: string
-  parent_module: string
   question_count: number
 }
 
@@ -26,13 +25,11 @@ interface TopicFormModalProps {
 interface TopicFormData {
   name: string
   description: string
-  parent_module: string
 }
 
 const EMPTY_FORM: TopicFormData = {
   name: '',
   description: '',
-  parent_module: '',
 }
 
 export function TopicFormModal({
@@ -49,11 +46,6 @@ export function TopicFormModal({
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
 
-  // Memoized existing parent modules for dropdown suggestions
-  const parentModuleOptions = useMemo(() => {
-    return [...new Set(topics.map((t) => t.parent_module).filter(Boolean))].sort()
-  }, [topics])
-
   // Sync form state when modal opens or active topic changes
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +53,6 @@ export function TopicFormModal({
         setFormData({
           name: editingTopic.name,
           description: editingTopic.description,
-          parent_module: editingTopic.parent_module || '',
         })
       } else {
         setFormData({ ...EMPTY_FORM })
@@ -98,7 +89,6 @@ export function TopicFormModal({
       const payload = {
         name: formData.name.trim(),
         description: formData.description.trim(),
-        parent_module: formData.parent_module.trim(),
       }
 
       if (!editingTopic) {
@@ -205,29 +195,6 @@ export function TopicFormModal({
                   disabled={isSaving}
                   className="w-full px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-100 placeholder:text-neutral-400 dark:placeholder:text-neutral-500 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-colors resize-none"
                 />
-              </div>
-
-              {/* Parent Module */}
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1.5">
-                  {t('admin:topicsManagement.form.parentModule')}{' '}
-                  <span className="text-neutral-400 text-xs">({t('common:optional')})</span>
-                </label>
-                <Input
-                  value={formData.parent_module}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, parent_module: e.target.value }))}
-                  placeholder={t('admin:topicsManagement.form.parentModulePlaceholder')}
-                  disabled={isSaving}
-                  list="parent-module-options"
-                />
-                <datalist id="parent-module-options">
-                  {parentModuleOptions.map((mod) => (
-                    <option key={mod} value={mod} />
-                  ))}
-                </datalist>
-                <p className="text-xs text-neutral-400 mt-1">
-                  {t('admin:topicsManagement.form.parentModuleHelp')}
-                </p>
               </div>
             </div>
 

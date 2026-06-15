@@ -33,6 +33,10 @@ interface AuthState {
   isLoading: boolean;
 }
 
+function isExpectedAuthExpiry(error: unknown) {
+  return error instanceof Error && error.message === "Authentication expired. Please sign in again.";
+}
+
 // Initial state
 const initialState: AuthState = {
   user: null,
@@ -103,7 +107,9 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
           isLoading: false,
         });
       } catch (error) {
-        console.error("Failed to hydrate user", error);
+        if (!isExpectedAuthExpiry(error)) {
+          console.error("Failed to hydrate user", error);
+        }
         // Clear tokens if invalid
         authService.logout();
         setState({

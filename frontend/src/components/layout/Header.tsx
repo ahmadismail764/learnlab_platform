@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { Menu, Bell, X, Trophy, BookOpen, Zap, Clock, User as UserIcon, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, Bell, X, BookOpen, Zap, Clock, User as UserIcon, LogOut, ChevronDown } from 'lucide-react'
 import { Avatar } from '@/components/ui'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -19,7 +19,7 @@ import { cn } from '@/utils/cn'
 
 interface Notification {
   id: string
-  type: 'achievement' | 'reminder' | 'milestone' | 'tip'
+  type: 'reminder' | 'milestone' | 'tip'
   titleKey: string
   messageKey: string
   timeKey: string
@@ -30,14 +30,6 @@ interface Notification {
 const mockNotifications: Notification[] = [
   {
     id: '1',
-    type: 'achievement',
-    titleKey: 'notificationAchievementTitle',
-    messageKey: 'notificationAchievementMessage',
-    timeKey: 'notificationTwoHoursAgo',
-    read: false
-  },
-  {
-    id: '2',
     type: 'reminder',
     titleKey: 'notificationReviewTitle',
     messageKey: 'notificationReviewMessage',
@@ -45,7 +37,7 @@ const mockNotifications: Notification[] = [
     read: false
   },
   {
-    id: '3',
+    id: '2',
     type: 'milestone',
     titleKey: 'notificationMilestoneTitle',
     messageKey: 'notificationMilestoneMessage',
@@ -53,7 +45,7 @@ const mockNotifications: Notification[] = [
     read: true
   },
   {
-    id: '4',
+    id: '3',
     type: 'tip',
     titleKey: 'notificationTipTitle',
     messageKey: 'notificationTipMessage',
@@ -115,7 +107,6 @@ export function Header({
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
-      case 'achievement': return <Trophy className="w-4 h-4 text-accent-500" />
       case 'reminder': return <Clock className="w-4 h-4 text-primary-500" />
       case 'milestone': return <Zap className="w-4 h-4 text-green-500" />
       case 'tip': return <BookOpen className="w-4 h-4 text-secondary-500" />

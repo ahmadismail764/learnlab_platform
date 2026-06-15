@@ -268,9 +268,11 @@ function GlobalLeaderboardSection({
       accuracy: entry.accuracy || 100,
       rank: index + 1,
       rank_change: entry.rank_change || 0,
-      is_current_user: String(entry.user?.id) === String(currentUser.id),
+      is_current_user:
+        String(entry.user?.id) === String(currentUser.id) ||
+        entry.user?.username === currentUser.username,
     }))
-  }, [globalData, currentUser.id, t])
+  }, [globalData, currentUser.id, currentUser.username, t])
 
   const currentUserEntry = useMemo(
     () => leaderboard.find((entry) => entry.is_current_user) || null,
@@ -342,9 +344,11 @@ function TopicLeaderboardSection({
       accuracy: entry.accuracy || 100,
       rank: index + 1,
       rank_change: entry.rank_change || 0,
-      is_current_user: String(entry.user?.id) === String(currentUser.id),
+      is_current_user:
+        String(entry.user?.id) === String(currentUser.id) ||
+        entry.user?.username === currentUser.username,
     }))
-  }, [topicData, currentUser.id, t])
+  }, [topicData, currentUser.id, currentUser.username, t])
 
   const currentUserEntry = useMemo(
     () => leaderboard.find((entry) => entry.is_current_user) || null,

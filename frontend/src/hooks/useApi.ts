@@ -70,14 +70,7 @@ export function useLearnerProfile() {
 export function useTopicMastery() {
   return useQuery({
     queryKey: queryKeys.learner.mastery,
-    queryFn: async () => {
-      try {
-        return await topicsService.getTopicMastery()
-      } catch (e) {
-        console.warn('Backend TopicMastery API is currently returning 500. Falling back to empty array.', e)
-        return []
-      }
-    },
+    queryFn: () => topicsService.getTopicMastery(),
   })
 }
 

@@ -1,33 +1,39 @@
 # LearnLab Backend Issues & Suggestions (API Audit)
 
 > **For the backend team.** This document tracks unresolved API suggestions, architectural improvements, and security warnings, as well as successfully completed milestones for the LearnLab Django backend, as compiled by the frontend engineering team.
+>
+> **Latest verification:** 2026-06-14 on `interface` after pulling backend merge `8329e3a`.
 
 ---
 
 ## 🔴 Critical Active Blockers (Immediate Fixes Required)
 
-### 1. `/auth/users/me/` and session list fail after successful JWT login
+### 1. Password reset request exposes reset credentials in the API response
 
-- **Status:** Active backend blocker, verified 2026-05-28 after migrations were applied
-- **Symptoms:** `POST /api/v1/auth/login/` succeeds for learner and admin accounts, but authenticated `GET /api/v1/auth/users/me/` and `GET /api/v1/practice/sessions/` return `500`.
-- **Observed error:** `Field name joined_at is not valid for model User in accounts.serializers.UserDetailSerializer.`
-- **Impact:** The frontend cannot safely remove auth/profile error handling or rely on the canonical current-user profile contract.
-- **Recommendation:** Align `UserDetailSerializer` with the migrated `User` model field name, or expose `joined_at` via a serializer source/alias if the API contract should keep that response key.
+- **Status:** Active security/backend blocker, re-verified 2026-06-14 after backend merge `8329e3a`
+- **Endpoint:** `POST /api/v1/auth/password-reset/`
+- **Symptoms:** For an existing account email, the endpoint returns `200` with `message`, `uid`, and `token`; for a missing email, it returns only `message`.
+- **Smoke result:** Existing-account request returned keys `['message', 'token', 'uid']`; missing-account request returned keys `['message']`.
+- **Impact:** A caller who knows or guesses an email can receive a valid reset token directly from the public endpoint. The response shape also reveals whether an email exists, creating an account-enumeration side channel. The current frontend expects email instructions and does not consume returned reset credentials.
+- **Recommendation:** Send the reset link/token out-of-band through configured email delivery, do not include `uid` or `token` in the JSON response, and return the same generic response shape for existing and non-existing emails.
 
-### 2. Adaptive session generation returns `500`
+### 2. `selected_answer_index` model change is missing a `practice` migration
 
-- **Status:** Active backend blocker, verified 2026-05-28 after migrations were applied
-- **Symptoms:** Authenticated `GET /api/v1/practice/sessions/generate-adaptive/` returns `500`.
-- **Observed error:** `['“[]” is not a valid UUID.']`
-- **Impact:** Learners cannot start adaptive practice from the frontend without a backend fix. The frontend no longer falls back to generic question-bank practice because that hides the failed adaptive contract.
-- **Recommendation:** Ensure adaptive generation treats an empty due-subtopic set as an empty queue or a valid default query, not as a UUID filter value.
+- **Status:** Active backend blocker, verified 2026-06-14 after backend merge `8329e3a`
+- **Affected contract:** `POST /api/v1/practice/sessions/<uuid:id>/responses/`
+- **Symptoms:** The backend model and serializers now require `QuestionResponse.selected_answer_index`, but no `practice` migration for that field was committed.
+- **Smoke result:** `manage.py makemigrations --check --dry-run` reports a new pending migration: `practice/migrations/0003_questionresponse_selected_answer_index.py`. Local DB introspection confirms `practice_questionresponse` does not contain `selected_answer_index`.
+- **Impact:** The frontend has been updated to send `selected_answer_index` instead of client-supplied correctness, but deployed databases will not have the required column unless the missing migration is created and applied.
+- **Recommendation:** Commit the generated `practice` migration for `QuestionResponse.selected_answer_index`, then run migrations in each environment before relying on server-side answer validation.
 
-### 3. Practice session creation response omits `id`
+### 3. Adaptive session generation returns `500` because `QuestionSerializer` omits a declared field
 
-- **Status:** Active backend blocker, verified 2026-05-28 after migrations were applied
-- **Symptoms:** `POST /api/v1/practice/sessions/` with `{ "responses": [] }` returns `201` and body `{ "responses": [] }`.
-- **Impact:** The frontend cannot call `POST /practice/sessions/<uuid:id>/responses/` or complete the session because the created session id is missing.
-- **Recommendation:** Return the created `PracticeSession` resource with `id`, `learner`, `start_time`, `end_time`, `total_xp_earned`, and `responses`, matching the documented session contract.
+- **Status:** Active backend blocker, verified 2026-06-14 after backend merge `8329e3a`
+- **Endpoint:** `GET /api/v1/practice/sessions/generate-adaptive/`
+- **Symptoms:** Starting a practice session fails because the adaptive endpoint returns a Django debug HTML `500`.
+- **Smoke result:** APIClient smoke produced `AssertionError: The field 'subtopic_name' was declared on serializer QuestionSerializer, but has not been included in the 'fields' option.`
+- **Impact:** Learners cannot start adaptive practice even though the frontend is calling the canonical endpoint.
+- **Recommendation:** Add `subtopic_name` to `QuestionSerializer.Meta.fields`, or remove the declared serializer field if it should no longer be exposed.
 
 ---
 
@@ -53,9 +59,9 @@
 
 ### 3. Conditional CORS Origin Restraints in Production Settings
 
-- **Status:** Security Suggestion
-- **Description:** The backend `settings.py` currently has `CORS_ALLOW_ALL_ORIGINS = True` hardcoded. While helpful for local development across various hostnames, allowing all origins globally is insecure for production environments.
-- **Recommendation:** Restrict wildcard origins to local development mode by setting `CORS_ALLOW_ALL_ORIGINS = DEBUG` and configuring production hostnames in `CORS_ALLOWED_ORIGINS`.
+- **Status:** Resolved, verified 2026-06-13
+- **Description:** The backend now sets `CORS_ALLOW_ALL_ORIGINS = DEBUG` and requires `CORS_ALLOWED_ORIGINS` in production mode.
+- **Recommendation:** Keep production origin configuration environment-driven.
 
 ### 4. Admin Audit Logs API (`GET /admin/audit-logs/`)
 
@@ -100,9 +106,10 @@
 
 ### 9. Short-Lived Redis Caching for Analytics Routes (`/analytics/*`)
 
-- **Status:** Optimization Suggestion
+- **Status:** Implemented upstream / local verification blocked
 - **Description:** The student and admin analytics dashboards aggregate telemetry datasets (topics, difficulty tier breakdowns, and activity time-series). Under high concurrency (e.g., during active exams or lectures), repeated aggregation queries will place unnecessary database load on PostgreSQL.
-- **Recommendation:** Implement a short-lived Redis cache (e.g., 5-minute Time-To-Live) for the `GET /analytics/*` endpoints. These charts do not require second-by-second accuracy to be effective.
+- **Verification note:** Backend merge `8329e3a` added Redis-backed caching. Local endpoint smoke for `/api/v1/practice/leaderboard/` currently returns `500` in the existing venv because the Redis Python dependency/service is not available locally (`ModuleNotFoundError: No module named 'redis'`).
+- **Recommendation:** Ensure local and deployment environments install the updated backend dependencies and run Redis, or provide a development cache fallback when Redis is unavailable.
 
 ---
 
@@ -120,34 +127,49 @@
 
 ## 🎉 Previously Resolved Integration Milestones
 
-The following older integration milestones were previously verified. They do not override the active blockers listed above; the current running backend still needs the authenticated contracts fixed before the frontend can re-verify the full practice flow.
+The following integration milestones have been verified. They do not override any future active blockers listed above.
 
-### 1. Practice Session Completion XP Awarding Bug (Critical Bug)
+### 1. Current User Serializer Date Field
+
+- **Status:** ✅ Resolved, verified 2026-06-13
+- **Verification:** `UserDetailSerializer` now exposes `date_joined` instead of the removed `joined_at` field. Smoke test: authenticated `GET /api/v1/auth/users/me/` returned `200`, included `date_joined`, and did not include `joined_at`.
+
+### 2. Adaptive Session Generation UUID/Subtopic Query Bug
+
+- **Status:** ✅ Resolved, verified 2026-06-13
+- **Verification:** `GenerateAdaptiveSessionView` now queries due questions with `subtopic_id__in=due_subtopic_ids` and orders by `q.subtopic_id`. Smoke test: authenticated `GET /api/v1/practice/sessions/generate-adaptive/` returned `200` with `questions` and `message`.
+
+### 3. Practice Session Creation Returns `id`
+
+- **Status:** ✅ Resolved, verified 2026-06-13
+- **Verification:** `PracticeSessionCreateSerializer` now includes `id` in its response fields after remote merge commit `dcda7f0`. Smoke test: authenticated `POST /api/v1/practice/sessions/` with `{ "responses": [] }` returned `201` with `id` and `responses`, allowing the frontend to submit nested responses against the newly created session.
+
+### 4. Practice Session Completion XP Awarding Bug (Critical Bug)
 
 - **Status:** ✅ Resolved
 - **Verification:** The backend `PracticeSessionSerializer` now overrides `update()` to award the learner's `current_xp` and increment their practice streak upon session completion (PATCH request with `end_time`).
 
-### 2. Interactive Practice Response Submission Endpoint
+### 5. Interactive Practice Response Submission Endpoint
 
 - **Status:** ✅ Resolved
 - **Verification:** Nested response route `POST /practice/sessions/<uuid:id>/responses/` handles live student practice answers, successfully writing `QuestionResponse` tables and instantly updating FSRS memory mastery metrics and XP scores.
 
-### 3. Bulk & Time-Series Analytics Telemetry
+### 6. Bulk & Time-Series Analytics Telemetry
 
 - **Status:** ✅ Resolved
 - **Verification:** Dedicated aggregated endpoints `/analytics/topics/`, `/analytics/activity/`, and `/analytics/difficulty/` are fully active, powering the admin metrics, difficulty progress rings, and dynamically loaded weekly trends.
 
-### 4. Curriculum Questions Counts and Grouping
+### 7. Curriculum Questions Counts
 
 - **Status:** ✅ Resolved
-- **Verification:** `/topics/` responses now correctly expose computed `question_count` properties and `parent_module` grouping fields.
+- **Verification:** `/topics/` responses expose computed `question_count` properties. The older backend grouping field has been removed from the contract as of the latest merge; frontend grouping is now derived client-side using category naming.
 
-### 5. Topic Typo Resolution (`/topics/`)
+### 8. Topic Typo Resolution (`/topics/`)
 
 - **Status:** ✅ Resolved
 - **Verification:** The backend has stabilized the URL scheme to `/topics/`, letting the frontend service layers transition fully away from `/topcis/` fallbacks.
 
-### 6. User Initials and Avatar Colors in Token Response
+### 9. User Initials and Avatar Colors in Token Response
 
 - **Status:** ✅ Resolved
-- **Verification:** `/auth/login/` returns stable, computed `initials` (e.g., `"JD"`) and design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). `/auth/users/me/` is currently covered by the active serializer blocker above.
+- **Verification:** `/auth/login/` returns stable, computed `initials` (e.g., `"JD"`) and design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). `/auth/users/me/` now also uses the fixed `date_joined` serializer field.

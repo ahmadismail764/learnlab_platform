@@ -9,6 +9,7 @@ vi.mock('@/services/api', () => {
       post: vi.fn(),
       patch: vi.fn(),
     },
+    parseApiError: vi.fn(async (_response: Response, fallback: string) => ({ message: fallback })),
   };
 });
 
@@ -51,7 +52,7 @@ describe('practiceService', () => {
     );
   });
 
-  it('submits rich live response telemetry to the nested session response endpoint', async () => {
+  it('submits the selected answer index to the nested session response endpoint', async () => {
     vi.mocked(api.post).mockResolvedValueOnce({
       ok: true,
       status: 201,
@@ -61,18 +62,12 @@ describe('practiceService', () => {
     await practiceService.submitInteraction({
       session: 'session-1',
       question: 'question-1',
-      is_correct: true,
-      time_taken_seconds: 12,
-      confidence_rating: 4,
-      answer_text: 'A',
+      selected_answer_index: 2,
     });
 
     expect(api.post).toHaveBeenCalledWith('/practice/sessions/session-1/responses/', {
       question: 'question-1',
-      is_correct: true,
-      time_taken_seconds: 12,
-      confidence_rating: 4,
-      answer_text: 'A',
+      selected_answer_index: 2,
     });
   });
 });

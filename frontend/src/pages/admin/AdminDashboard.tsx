@@ -16,7 +16,7 @@ import { useAggregatedMetrics, useGlobalLeaderboard } from '@/hooks'
 import type { LearnerProfile } from '@/services/learners'
 
 export function AdminDashboard() {
-  const { t } = useTranslation(['admin', 'common', 'auth', 'time'])
+  const { t } = useTranslation(['admin', 'common', 'auth'])
   const user = useCurrentUser()
 
   const { data: metrics, isLoading: metricsLoading } = useAggregatedMetrics()

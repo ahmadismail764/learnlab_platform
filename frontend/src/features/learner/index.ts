@@ -6,7 +6,6 @@
  * - Question practice
  * - Progress tracking
  * - Subject selection
- * - Achievements
  */
 
 // Structure to create:

@@ -1,0 +1,31 @@
+topic,subtopic,tier,text,choices,correct_answer_index
+Discrete Mathematics,Propositional Logic,1,What does the symbol '^' represent in logic?,"[""OR"", ""AND"", ""NOT"", ""XOR""]",1
+Discrete Mathematics,Propositional Logic,1,What is the negation of True?,"[""True"", ""False"", ""Both"", ""Undefined""]",1
+Discrete Mathematics,Propositional Logic,1,"In an implication p -> q, what is p called?","[""Conclusion"", ""Hypothesis"", ""Converse"", ""Inverse""]",1
+Discrete Mathematics,Propositional Logic,1,Which law states that ~(p ^ q) is logically equivalent to ~p v ~q?,"[""Modus Ponens"", ""De Morgan's Law"", ""Absorption Law"", ""Domination Law""]",1
+Discrete Mathematics,Propositional Logic,1,What is a compound proposition that is always true called?,"[""Contradiction"", ""Contingency"", ""Tautology"", ""Equivalence""]",2
+Discrete Mathematics,Propositional Logic,2,"If p is True and q is False, what is the truth value of p XOR q?","[""True"", ""False"", ""Cannot be determined"", ""Both""]",0
+Discrete Mathematics,Propositional Logic,2,Translate into logic: You can access the internet from campus only if you are a computer science major or you are not a freshman.,"[""a -> (c v ~f)"", ""a ^ (c v ~f)"", ""(c v ~f) -> a"", ""a <-> (c v ~f)""]",0
+Discrete Mathematics,Propositional Logic,2,Which of the following is the contrapositive of p -> q?,"[""q -> p"", ""~p -> ~q"", ""~q -> ~p"", ""~q -> p""]",2
+Discrete Mathematics,Propositional Logic,3,Prove by truth table: Show that (p -> q) ^ (q -> r) -> (p -> r) is a tautology. How many rows in this truth table will evaluate to True?,"[""8"", ""4"", ""2"", ""0""]",0
+Discrete Mathematics,Propositional Logic,3,Which logical equivalence correctly simplifies p v (p ^ q)?,"[""q"", ""p"", ""p ^ q"", ""True""]",1
+Discrete Mathematics,Set Theory,1,What is a set that contains no elements called?,"[""Universal set"", ""Power set"", ""Empty set"", ""Subset""]",2
+Discrete Mathematics,Set Theory,1,What denotes the number of elements in a set A?,"[""|A|"", ""A*"", ""A^n"", ""Set(A)""]",0
+Discrete Mathematics,Set Theory,1,What is the set of all subsets of a set A called?,"[""Intersection"", ""Power set"", ""Union"", ""Complement""]",1
+Discrete Mathematics,Set Theory,1,Two sets are called disjoint if their intersection is:,"[""The universal set"", ""The empty set"", ""Infinite"", ""Equal to their union""]",1
+Discrete Mathematics,Set Theory,1,What does A U B represent?,"[""Elements in both A and B"", ""Elements in A or B or both"", ""Elements in A but not B"", ""The Cartesian product""]",1
+Discrete Mathematics,Set Theory,2,"If |A| = 3, how many elements are in the power set of A?","[""3"", ""6"", ""8"", ""9""]",2
+Discrete Mathematics,Set Theory,2,"If A = {1, 2} and B = {a, b}, what is the size of the Cartesian product A x B?","[""2"", ""4"", ""6"", ""8""]",1
+Discrete Mathematics,Set Theory,2,"Using the Principle of Inclusion-Exclusion, |A U B| is equal to:","[""|A| + |B|"", ""|A| + |B| + |A n B|"", ""|A| + |B| - |A n B|"", ""|A| * |B|""]",2
+Discrete Mathematics,Set Theory,3,"Let A, B, and C be sets. Simplify (A U B) n (A U C) using distributive laws.","[""A U (B n C)"", ""A n (B U C)"", ""(A n B) U C"", ""A U B U C""]",0
+Discrete Mathematics,Set Theory,3,"If the symmetric difference of A and B is empty, what must be true?","[""A and B are disjoint"", ""A is a subset of B"", ""A = B"", ""A and B are empty""]",2
+Abstract Algebra,Groups and Subgroups,1,What is the identity element for addition in the set of real numbers?,"[""1"", ""0"", ""-1"", ""Infinity""]",1
+Abstract Algebra,Groups and Subgroups,1,Which property is NOT required for a set and operation to form a Group?,"[""Associativity"", ""Identity element"", ""Inverse element"", ""Commutativity""]",3
+Abstract Algebra,Groups and Subgroups,1,A group that is commutative is also called:,"[""An Abelian group"", ""A cyclic group"", ""A symmetric group"", ""A normal group""]",0
+Abstract Algebra,Groups and Subgroups,1,What is the inverse of the element 3 in the group of integers under addition?,"[""1/3"", ""-3"", ""0"", ""3""]",1
+Abstract Algebra,Groups and Subgroups,1,"In a group G, the equation ax = b always has:","[""No solutions"", ""Multiple solutions"", ""Exactly one solution"", ""Infinite solutions""]",2
+Abstract Algebra,Groups and Subgroups,2,Which of the following is a group under standard multiplication?,"[""The set of integers"", ""The set of all real numbers"", ""The set of non-zero real numbers"", ""The set of natural numbers""]",2
+Abstract Algebra,Groups and Subgroups,2,"In the group of symmetries of a square (D4), how many elements are there?","[""4"", ""6"", ""8"", ""16""]",2
+Abstract Algebra,Groups and Subgroups,2,"Let G be a group. If x^2 = e for all x in G, then G must be:","[""Cyclic"", ""Infinite"", ""Abelian"", ""A field""]",2
+Abstract Algebra,Groups and Subgroups,3,Let H be a subgroup of a finite group G. Lagrange's Theorem states that the order of H:,"[""Is greater than G"", ""Divides the order of G"", ""Is equal to G"", ""Is a prime number""]",1
+Abstract Algebra,Groups and Subgroups,3,"If an element 'a' in a group has order 6, what is the order of a^4?","[""2"", ""3"", ""4"", ""6""]",1

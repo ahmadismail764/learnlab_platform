@@ -1,14 +1,14 @@
 import math
-# Django imports
 from django.db.models import Avg, Count
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-# DRF imports
+from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-# Internal imports
 from accounts.models import User
 from practice.models import PracticeSession, QuestionResponse
 from topics.models import SubtopicMastery, Topic
@@ -18,6 +18,23 @@ from topics.models import SubtopicMastery, Topic
 class AggregatedMetricsView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        description="Returns aggregated platform-wide metrics including review count, active users, mastery averages, and estimated retention.",
+        responses={
+            200: inline_serializer('AggregatedMetricsResponse', fields={
+                'review_count': serializers.IntegerField(),
+                'active_users': inline_serializer('ActiveUsers', fields={
+                    '7_days': serializers.IntegerField(),
+                    '30_days': serializers.IntegerField(),
+                }),
+                'mastery_averages': inline_serializer('MasteryAverages', fields={
+                    'avg_speed': serializers.FloatField(),
+                    'avg_difficulty': serializers.FloatField(),
+                }),
+                'estimated_retention': serializers.FloatField(),
+            }),
+        },
+    )
     def get(self, request):
         # Calculate review count
         review_count = QuestionResponse.objects.count()
@@ -75,6 +92,28 @@ class AggregatedMetricsView(APIView):
 class TopicAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        description="Returns analytics for a specific topic including mastery averages, learner count, and speed distribution.",
+        responses={
+            200: inline_serializer('TopicAnalyticsResponse', fields={
+                'topic_id': serializers.UUIDField(),
+                'metrics': inline_serializer('TopicMetrics', fields={
+                    'avg_speed': serializers.FloatField(),
+                    'avg_difficulty': serializers.FloatField(),
+                    'learner_count': serializers.IntegerField(),
+                    'estimated_retention': serializers.FloatField(),
+                }),
+                'distribution': inline_serializer('SpeedDistribution', fields={
+                    'low_speed': serializers.IntegerField(),
+                    'medium_speed': serializers.IntegerField(),
+                    'high_speed': serializers.IntegerField(),
+                }),
+            }),
+        },
+        parameters=[
+            OpenApiParameter(name='topic_id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH, required=True),
+        ],
+    )
     def get(self, request, topic_id):
         # Calculate subtopic mastery metrics under this topic
         masteries = SubtopicMastery.objects.filter(subtopic__topic_id=topic_id)
@@ -130,6 +169,17 @@ class BulkTopicAnalyticsView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        description="Returns per-topic analytics for all topics. Supports optional ?topic_ids=uuid1,uuid2 filter.",
+        parameters=[
+            OpenApiParameter(name='topic_ids', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False, description='Comma-separated topic UUIDs to filter.'),
+        ],
+        responses={
+            200: inline_serializer('BulkTopicAnalyticsResponse', fields={
+                'results': serializers.ListField(child=serializers.CharField()),
+            }),
+        },
+    )
     def get(self, request):
         topics = Topic.objects.all()
         topic_ids_param = request.query_params.get('topic_ids')
@@ -180,6 +230,20 @@ class ActivityTimeSeriesView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        description="Returns daily active learners and questions answered over time. Supports ?period=7d|30d|90d or ?start=&end= date range.",
+        parameters=[
+            OpenApiParameter(name='period', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False, description='Time period: 7d, 30d, or 90d'),
+            OpenApiParameter(name='start', type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY, required=False, description='Start date (YYYY-MM-DD)'),
+            OpenApiParameter(name='end', type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY, required=False, description='End date (YYYY-MM-DD)'),
+        ],
+        responses={
+            200: inline_serializer('ActivityTimeSeriesResponse', fields={
+                'bucket': serializers.CharField(),
+                'results': serializers.ListField(child=serializers.CharField()),
+            }),
+        },
+    )
     def get(self, request):
         from datetime import date, timedelta
         from django.db.models.functions import TruncDate
@@ -244,6 +308,14 @@ class DifficultyBreakdownView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        description="Returns attempts and accuracy broken down by question difficulty tier (1=Concept, 2=Application, 3=Synthesis).",
+        responses={
+            200: inline_serializer('DifficultyBreakdownResponse', fields={
+                'tiers': serializers.DictField(child=serializers.CharField()),
+            }),
+        },
+    )
     def get(self, request):
         tiers = {}
         for tier in [1, 2, 3]:

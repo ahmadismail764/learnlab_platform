@@ -19,6 +19,7 @@ class AggregatedMetricsView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id='analytics_aggregated_metrics',
         description="Returns aggregated platform-wide metrics including review count, active users, mastery averages, and estimated retention.",
         responses={
             200: inline_serializer('AggregatedMetricsResponse', fields={
@@ -93,6 +94,7 @@ class TopicAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id='analytics_topic_detail',
         description="Returns analytics for a specific topic including mastery averages, learner count, and speed distribution.",
         responses={
             200: inline_serializer('TopicAnalyticsResponse', fields={
@@ -170,6 +172,7 @@ class BulkTopicAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id='analytics_topics_bulk',
         description="Returns per-topic analytics for all topics. Supports optional ?topic_ids=uuid1,uuid2 filter.",
         parameters=[
             OpenApiParameter(name='topic_ids', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False, description='Comma-separated topic UUIDs to filter.'),
@@ -231,6 +234,7 @@ class ActivityTimeSeriesView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id='analytics_activity_time_series',
         description="Returns daily active learners and questions answered over time. Supports ?period=7d|30d|90d or ?start=&end= date range.",
         parameters=[
             OpenApiParameter(name='period', type=OpenApiTypes.STR, location=OpenApiParameter.QUERY, required=False, description='Time period: 7d, 30d, or 90d'),
@@ -309,6 +313,7 @@ class DifficultyBreakdownView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
+        operation_id='analytics_difficulty_breakdown',
         description="Returns attempts and accuracy broken down by question difficulty tier (1=Concept, 2=Application, 3=Synthesis).",
         responses={
             200: inline_serializer('DifficultyBreakdownResponse', fields={

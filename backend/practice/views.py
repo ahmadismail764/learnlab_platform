@@ -1,6 +1,6 @@
 # Framework imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
-from rest_framework import viewsets, generics, serializers
+from rest_framework import viewsets, generics, serializers, status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -24,11 +24,6 @@ from practice.serializers import (
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
 
-# class IsAdminOrReadOnly(BasePermission):
-#     def has_permission(self, request, view):
-#         if request.method in SAFE_METHODS:
-#             return True
-#         return request.user and request.user.is_authenticated and request.user.is_staff
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.select_related('subtopic__topic')
@@ -37,8 +32,8 @@ class QuestionViewSet(viewsets.ModelViewSet):
         """
         Explicitly assign permissions based on the active ViewSet action lifecycle.
         """
-        # Anyone authenticated can view list or detail configurations
         if self.action in ['list', 'retrieve']:
+            # Anyone authenticated can view list or detail configurations
             permission_classes = [IsAuthenticated]
         else:
             # create, update, partial_update, destroy require strict staff roles
@@ -54,12 +49,18 @@ class QuestionViewSet(viewsets.ModelViewSet):
         return QuestionSerializer
 
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-    permission_classes = [IsAuthenticated]
-
+    
+    # ViewSet Management methods
+    def get_permissions(self):
+        return IsAuthenticated
+    
     def get_queryset(self):
+        """
+        Dynamic Query Isolation:
+        - Staff/Admins can see the global history of all student practice logs.
+        - Learners are strictly locked down to viewing only their own rows.
+        """
         user = self.request.user
-        if user.is_anonymous:
-            return PracticeSession.objects.none()
         if user.is_staff:
             return PracticeSession.objects.all().order_by('-start_time')
         return PracticeSession.objects.filter(learner=user).order_by('-start_time')
@@ -69,9 +70,43 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             return PracticeSessionCreateSerializer
         return PracticeSessionSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(learner=self.request.user)
+    # HTTP-method handlers
+    # This is what happens when POST is called
+    
+    def create(self, request, *args, **kwargs):
+            """
+            Create a new practice session for the authenticated learner.
 
+            Flow:
+            1. Validate request payload using `PracticeSessionCreateSerializer`.
+            2. Persist a new `PracticeSession` and force ownership to `request.user`.
+            3. Return a full session representation using `PracticeSessionSerializer`.
+
+            Notes:
+            - Client-supplied learner values are ignored.
+            - Validation errors are automatically raised as HTTP 400.
+            """
+            create_serializer = self.get_serializer(data=request.data)
+            create_serializer.is_valid(raise_exception=True)
+
+            session = create_serializer.save(learner=request.user)
+
+            response_serializer = PracticeSessionSerializer(
+                session,
+                context={'request': request}
+            )
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+    
+    # This is what happens when DELETE is called
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {"detail": "Practice history records are immutable and cannot be deleted."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+    
     @extend_schema(
         request=QuestionResponseCreateSerializer,
         responses={201: QuestionResponseSerializer},
@@ -81,8 +116,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def responses(self, request, pk=None):
         session = self.get_object()
         if session.learner != request.user:
-            raise PermissionDenied("Not your session.")
-
+            raise PermissionDenied("You do not have permission to append data to this session.")
+        
         serializer = QuestionResponseCreateSerializer(data=request.data)
 
         if serializer.is_valid():

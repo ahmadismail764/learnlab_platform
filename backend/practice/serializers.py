@@ -95,7 +95,7 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         return instance
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    responses = QuestionResponseCreateSerializer(many=True, required=False)
+    responses = QuestionCreateAndUpdateSerializer(many=True, required=False)
 
     class Meta:
         model = PracticeSession

@@ -1,7 +1,8 @@
 # Framework imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
-from rest_framework import permissions, viewsets, generics, serializers
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework import viewsets, generics, serializers
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from django.utils.decorators import method_decorator
@@ -10,6 +11,9 @@ from django.views.decorators.cache import cache_page
 from accounts.models import User
 from practice.fsrs_engine import process_review
 from practice.serializers import (
+    QuestionCreateAndUpdateSerializer,
+    QuestionSerializer,
+    QuestionCreateAndUpdateSerializer,
     QuestionResponseCreateSerializer,
     QuestionResponseSerializer, 
     PracticeSessionSerializer, 
@@ -20,19 +24,37 @@ from practice.serializers import (
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
 
-class IsAdminOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user and request.user.is_authenticated and request.user.is_staff
+# class IsAdminOrReadOnly(BasePermission):
+#     def has_permission(self, request, view):
+#         if request.method in SAFE_METHODS:
+#             return True
+#         return request.user and request.user.is_authenticated and request.user.is_staff
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.prefetch_related('subtopic__topic')
-    serializer_class = QuestionSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    queryset = Question.objects.select_related('subtopic__topic')
+    
+    def get_permissions(self):
+        """
+        Explicitly assign permissions based on the active ViewSet action lifecycle.
+        """
+        # Anyone authenticated can view list or detail configurations
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [IsAuthenticated]
+        else:
+            # create, update, partial_update, destroy require strict staff roles
+            permission_classes = [IsAdminUser] 
+        return [permission() for permission in permission_classes]
+
+    def get_serializer_class(self):
+        """
+        Dynamically route serializers to isolate sensitive data fields.
+        """
+        if self.action in ['create', 'update', 'partial_update']:
+            return QuestionCreateAndUpdateSerializer
+        return QuestionSerializer
 
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
@@ -113,7 +135,7 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
     as long as that many exist in the system (filtered by topic, if
     given), even for a brand-new learner with no mastery history.
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = QuestionSerializer
 
     @extend_schema(
@@ -241,7 +263,7 @@ class LeaderboardView(generics.ListAPIView):
     who have at least one mastery record under that topic, still
     ranked by overall XP).
     """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = LeaderboardSerializer
 
     def get_queryset(self):

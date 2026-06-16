@@ -14,12 +14,7 @@
 					"name": "Login (Obtain JWT Token)",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [{"key": "Content-Type", "value": "application/json"}],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n\t\"username\": \"your_username\",\n\t\"password\": \"your_password\"\n}"
@@ -29,7 +24,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "login", ""]
 						},
-						"description": "Obtain JWT access and refresh tokens. Returns access token, refresh token, and user details."
+						"description": "Obtain JWT access and refresh tokens."
 					},
 					"response": []
 				},
@@ -37,12 +32,7 @@
 					"name": "Refresh Token",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [{"key": "Content-Type", "value": "application/json"}],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n\t\"refresh\": \"{{refresh_token}}\"\n}"
@@ -60,12 +50,7 @@
 					"name": "Register",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [{"key": "Content-Type", "value": "application/json"}],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n\t\"username\": \"new_learner\",\n\t\"email\": \"learner@example.com\",\n\t\"password\": \"securepassword123\",\n\t\"first_name\": \"Learner\",\n\t\"last_name\": \"User\"\n}"
@@ -75,7 +60,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "register", ""]
 						},
-						"description": "Register a new learner account. No authentication required."
+						"description": "Register a new learner account."
 					},
 					"response": []
 				},
@@ -83,12 +68,7 @@
 					"name": "Current User Profile",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/auth/users/me/",
 							"host": ["{{base_url}}"],
@@ -103,14 +83,8 @@
 					"request": {
 						"method": "PATCH",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -121,7 +95,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "users", "me", ""]
 						},
-						"description": "Update the authenticated user's profile fields."
+						"description": "Partially update the authenticated user's profile."
 					},
 					"response": []
 				},
@@ -129,12 +103,7 @@
 					"name": "Password Reset Request",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [{"key": "Content-Type", "value": "application/json"}],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n\t\"email\": \"learner@example.com\"\n}"
@@ -144,7 +113,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "password-reset", ""]
 						},
-						"description": "Request a password reset email. No authentication required."
+						"description": "Request a password reset email."
 					},
 					"response": []
 				},
@@ -152,12 +121,7 @@
 					"name": "Password Reset Confirm",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
+						"header": [{"key": "Content-Type", "value": "application/json"}],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n\t\"uid\": \"{{password_reset_uid}}\",\n\t\"token\": \"{{password_reset_token}}\",\n\t\"password\": \"new_secure_password\"\n}"
@@ -176,14 +140,8 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -194,7 +152,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "auth", "logout", ""]
 						},
-						"description": "Blacklist the refresh token to log out. Requires authentication."
+						"description": "Blacklist the refresh token to log out."
 					},
 					"response": []
 				}
@@ -208,12 +166,7 @@
 					"name": "List Topics",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/topics/",
 							"host": ["{{base_url}}"],
@@ -228,14 +181,8 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -246,20 +193,15 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "topics", ""]
 						},
-						"description": "Create a new topic. Requires admin/staff privileges."
+						"description": "Create a new topic. Requires staff privileges."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Topic Detail",
+					"name": "Get Topic",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/topics/{{topic_id}}/",
 							"host": ["{{base_url}}"],
@@ -274,14 +216,8 @@
 					"request": {
 						"method": "PATCH",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -292,7 +228,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "topics", "{{topic_id}}", ""]
 						},
-						"description": "Partially update a topic. Requires admin/staff privileges."
+						"description": "Partially update a topic. Requires staff privileges."
 					},
 					"response": []
 				},
@@ -300,18 +236,13 @@
 					"name": "Delete Topic",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/topics/{{topic_id}}/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "topics", "{{topic_id}}", ""]
 						},
-						"description": "Delete a topic. Requires admin/staff privileges."
+						"description": "Delete a topic. Requires staff privileges."
 					},
 					"response": []
 				},
@@ -319,12 +250,7 @@
 					"name": "List Subtopics",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/subtopics/",
 							"host": ["{{base_url}}"],
@@ -339,14 +265,8 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -362,15 +282,10 @@
 					"response": []
 				},
 				{
-					"name": "Get Subtopic Detail",
+					"name": "Get Subtopic",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/subtopics/{{subtopic_id}}/",
 							"host": ["{{base_url}}"],
@@ -381,21 +296,51 @@
 					"response": []
 				},
 				{
+					"name": "Update Subtopic",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"description\": \"Updated subtopic description\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/{{subtopic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", "{{subtopic_id}}", ""]
+						},
+						"description": "Partially update a subtopic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Subtopic",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/{{subtopic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", "{{subtopic_id}}", ""]
+						},
+						"description": "Delete a subtopic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
 					"name": "List Subtopic Mastery",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/mastery/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "mastery", ""]
 						},
-						"description": "List the authenticated user's subtopic mastery records."
+						"description": "List the authenticated user's subtopic mastery records (staff see all)."
 					},
 					"response": []
 				},
@@ -404,14 +349,8 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -425,6 +364,41 @@
 						"description": "Create a mastery record for a subtopic."
 					},
 					"response": []
+				},
+				{
+					"name": "Get Subtopic Mastery",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/mastery/{{mastery_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mastery", "{{mastery_id}}", ""]
+						},
+						"description": "Retrieve a specific mastery record by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subtopic Mastery",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"state\": \"REVIEW\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mastery/{{mastery_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mastery", "{{mastery_id}}", ""]
+						},
+						"description": "Partially update a mastery record."
+					},
+					"response": []
 				}
 			]
 		},
@@ -436,16 +410,15 @@
 					"name": "List Questions",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/practice/questions/",
 							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "practice", "questions", ""]
+							"path": ["api", "v1", "practice", "questions", ""],
+							"query": [
+								{"key": "subtopic__topic", "value": "", "disabled": true, "description": "Filter by topic UUID."},
+								{"key": "tier", "value": "", "disabled": true, "description": "Filter by difficulty tier (1, 2, or 3)."}
+							]
 						},
 						"description": "List all questions. Supports filtering by subtopic__topic and tier."
 					},
@@ -456,14 +429,8 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
@@ -474,20 +441,15 @@
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "practice", "questions", ""]
 						},
-						"description": "Create a new question. Requires admin/staff privileges."
+						"description": "Create a new question. Requires staff privileges."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Question Detail",
+					"name": "Get Question",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/practice/questions/{{question_id}}/",
 							"host": ["{{base_url}}"],
@@ -498,67 +460,107 @@
 					"response": []
 				},
 				{
-					"name": "List Practice Sessions",
+					"name": "Update Question",
 					"request": {
-						"method": "GET",
+						"method": "PATCH",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
-						"url": {
-							"raw": "{{base_url}}/api/v1/practice/sessions/",
-							"host": ["{{base_url}}"],
-							"path": ["api", "v1", "practice", "sessions", ""]
-						},
-						"description": "List the authenticated user's practice sessions (or all sessions for staff)."
-					},
-					"response": []
-				},
-				{
-					"name": "Create Practice Session",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{}"
+							"raw": "{\n\t\"tier\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/{{question_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", "{{question_id}}", ""]
+						},
+						"description": "Partially update a question. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Question",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/{{question_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", "{{question_id}}", ""]
+						},
+						"description": "Delete a question. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "List Practice Sessions",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", ""]
+						},
+						"description": "List the authenticated user's practice sessions (staff see all), ordered most recent first."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Practice Session (with bulk responses)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"responses\": [\n\t\t{\n\t\t\t\"question\": \"{{question_id}}\",\n\t\t\t\"selected_answer_index\": 0,\n\t\t\t\"time_taken_seconds\": 12,\n\t\t\t\"confidence_rating\": 4\n\t\t}\n\t]\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/practice/sessions/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "practice", "sessions", ""]
 						},
-						"description": "Create a new practice session for the authenticated user."
+						"description": "Create a new practice session. Include nested responses for bulk submission. session.total_xp_earned is set here; learner XP/streak are only awarded once the session is completed via PATCH (end_time)."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Practice Session Detail",
+					"name": "Get Practice Session",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "practice", "sessions", "{{session_id}}", ""]
 						},
-						"description": "Retrieve a specific practice session."
+						"description": "Retrieve a specific practice session with all its responses."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Practice Session",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"end_time\": \"2026-06-16T12:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", "{{session_id}}", ""]
+						},
+						"description": "Mark a session as complete by setting end_time. This is the single canonical point where learner XP and streak are awarded."
 					},
 					"response": []
 				},
@@ -567,25 +569,19 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							},
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n\t\"question\": \"{{question_id}}\",\n\t\"selected_answer_index\": 0\n}"
+							"raw": "{\n\t\"question\": \"{{question_id}}\",\n\t\"selected_answer_index\": 0,\n\t\"time_taken_seconds\": 12,\n\t\"confidence_rating\": 4\n}"
 						},
 						"url": {
 							"raw": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/responses/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "practice", "sessions", "{{session_id}}", "responses", ""]
 						},
-						"description": "Submit an answer to a question within a practice session. Triggers FSRS review processing."
+						"description": "Submit a single answer within an existing practice session. Triggers FSRS review processing."
 					},
 					"response": []
 				},
@@ -593,31 +589,17 @@
 					"name": "Generate Adaptive Session",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/practice/sessions/generate-adaptive/?limit=10",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "practice", "sessions", "generate-adaptive", ""],
 							"query": [
-								{
-									"key": "topic",
-									"value": "",
-									"disabled": true,
-									"description": "Optional UUID of a topic to filter questions."
-								},
-								{
-									"key": "limit",
-									"value": "10",
-									"description": "Max number of questions to return (default 10)."
-								}
+								{"key": "topic", "value": "", "disabled": true, "description": "Optional topic UUID to restrict questions."},
+								{"key": "limit", "value": "10", "description": "Max questions to return (default 10)."}
 							]
 						},
-						"description": "Returns recommended questions for the learner's next practice session, prioritized by FSRS scheduling."
+						"description": "Returns recommended questions prioritized by FSRS scheduling (due > unseen > fallback)."
 					},
 					"response": []
 				},
@@ -625,25 +607,16 @@
 					"name": "Leaderboard",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
-							"raw": "{{base_url}}/api/v1/practice/leaderboard/?topic=",
+							"raw": "{{base_url}}/api/v1/practice/leaderboard/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "practice", "leaderboard", ""],
 							"query": [
-								{
-									"key": "topic",
-									"value": "",
-									"description": "Optional UUID of a topic to filter the leaderboard by."
-								}
+								{"key": "topic", "value": "", "disabled": true, "description": "Optional topic UUID to filter learners."}
 							]
 						},
-						"description": "Returns all learners ranked by XP descending. Staff accounts excluded."
+						"description": "Returns all learners ranked by XP descending. Staff accounts are excluded."
 					},
 					"response": []
 				}
@@ -651,24 +624,19 @@
 		},
 		{
 			"name": "Analytics",
-			"description": "Platform analytics endpoints including aggregated metrics, topic-specific analytics, activity time series, and difficulty breakdowns.",
+			"description": "Platform analytics endpoints: aggregated metrics, per-topic analytics, activity time series, and difficulty breakdowns.",
 			"item": [
 				{
 					"name": "Aggregated Metrics",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/analytics/aggregated/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "analytics", "aggregated", ""]
 						},
-						"description": "Returns platform-wide aggregated metrics: review count, active users (7d/30d), mastery averages, and estimated retention."
+						"description": "Returns platform-wide metrics: review count, active users (7d/30d), mastery averages, estimated retention."
 					},
 					"response": []
 				},
@@ -676,25 +644,16 @@
 					"name": "Bulk Topic Analytics",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/analytics/topics/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "analytics", "topics", ""],
 							"query": [
-								{
-									"key": "topic_ids",
-									"value": "",
-									"description": "Optional comma-separated UUIDs to filter specific topics."
-								}
+								{"key": "topic_ids", "value": "", "disabled": true, "description": "Comma-separated UUIDs to filter specific topics."}
 							]
 						},
-						"description": "Returns per-topic analytics for all topics in one request. Supports optional ?topic_ids=uuid1,uuid2 filter."
+						"description": "Returns per-topic analytics for all topics. Supports optional ?topic_ids=uuid1,uuid2 filter."
 					},
 					"response": []
 				},
@@ -702,18 +661,13 @@
 					"name": "Single Topic Analytics",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/analytics/topics/{{topic_id}}/",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "analytics", "topics", "{{topic_id}}", ""]
 						},
-						"description": "Returns analytics for a specific topic: mastery averages, learner count, speed distribution, and estimated retention."
+						"description": "Returns analytics for a specific topic: mastery averages, learner count, speed distribution, estimated retention."
 					},
 					"response": []
 				},
@@ -721,34 +675,15 @@
 					"name": "Activity Time Series",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/analytics/activity/?period=7d",
 							"host": ["{{base_url}}"],
 							"path": ["api", "v1", "analytics", "activity", ""],
 							"query": [
-								{
-									"key": "period",
-									"value": "7d",
-									"description": "Time period: 7d, 30d, or 90d (default: 7d)."
-								},
-								{
-									"key": "start",
-									"value": "",
-									"disabled": true,
-									"description": "Start date YYYY-MM-DD (overrides period)."
-								},
-								{
-									"key": "end",
-									"value": "",
-									"disabled": true,
-									"description": "End date YYYY-MM-DD (overrides period)."
-								}
+								{"key": "period", "value": "7d", "description": "Time period: 7d, 30d, or 90d (default: 7d)."},
+								{"key": "start", "value": "", "disabled": true, "description": "Start date YYYY-MM-DD (overrides period)."},
+								{"key": "end", "value": "", "disabled": true, "description": "End date YYYY-MM-DD (overrides period)."}
 							]
 						},
 						"description": "Returns daily active learners and questions answered over time."
@@ -759,12 +694,7 @@
 					"name": "Difficulty Breakdown",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{access_token}}"
-							}
-						],
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
 						"url": {
 							"raw": "{{base_url}}/api/v1/analytics/difficulty/",
 							"host": ["{{base_url}}"],
@@ -790,7 +720,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["schema", ""]
 						},
-						"description": "Download the OpenAPI 3.0 schema (JSON)."
+						"description": "Download the OpenAPI 3.0 schema (JSON/YAML)."
 					},
 					"response": []
 				},
@@ -818,7 +748,7 @@
 							"host": ["{{base_url}}"],
 							"path": ["redoc", ""]
 						},
-						"description": "Redoc API documentation (clean, reader-friendly layout)."
+						"description": "Redoc API documentation — clean, reader-friendly layout."
 					},
 					"response": []
 				}
@@ -826,40 +756,15 @@
 		}
 	],
 	"variable": [
-		{
-			"key": "base_url",
-			"value": "http://localhost:8000",
-			"type": "string"
-		},
-		{
-			"key": "access_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "refresh_token",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "topic_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "subtopic_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "question_id",
-			"value": "",
-			"type": "string"
-		},
-		{
-			"key": "session_id",
-			"value": "",
-			"type": "string"
-		}
+		{"key": "base_url", "value": "http://localhost:8000", "type": "string"},
+		{"key": "access_token", "value": "", "type": "string"},
+		{"key": "refresh_token", "value": "", "type": "string"},
+		{"key": "topic_id", "value": "", "type": "string"},
+		{"key": "subtopic_id", "value": "", "type": "string"},
+		{"key": "question_id", "value": "", "type": "string"},
+		{"key": "session_id", "value": "", "type": "string"},
+		{"key": "mastery_id", "value": "", "type": "string"},
+		{"key": "password_reset_uid", "value": "", "type": "string"},
+		{"key": "password_reset_token", "value": "", "type": "string"}
 	]
 }

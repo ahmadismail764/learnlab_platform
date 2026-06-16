@@ -4,9 +4,10 @@ from django.utils import timezone as django_timezone
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
+from practice.fsrs_engine import process_review
 from accounts.models import User
 from accounts.serializers import UserDetailSerializer
-from practice.fsrs_engine import process_review
+
 
 # ===================================================
 # Leaderboard serializers
@@ -23,15 +24,20 @@ class LeaderboardSerializer(serializers.ModelSerializer):
 # ===================================================
 class QuestionSerializer(serializers.ModelSerializer):
     subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
+    # Expose the human-readable string version of the tier (Concept, Application, Synthesis)
+    tier_display = serializers.CharField(source='get_tier_display', read_only=True)
 
     class Meta:
         model = Question
-        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier']
+        # EXCLUDE correct_answer_index completely so students can't cheat via dev tools
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier', 'tier_display']
+        read_only_fields = ['id']
 
-class QuestionCreateSerializer(serializers.ModelSerializer):
+class QuestionCreateAndUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ['id', 'subtopic', 'text', 'choices', 'correct_answer_index', 'tier']
+        read_only_fields = ['id']
 
 # ===================================================
 # QuestionResponse serializers
@@ -89,7 +95,7 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         return instance
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    responses = QuestionResponseCreateSerializer(many=True, required=False)
+    responses = QuestionCreateAndUpdateSerializer(many=True, required=False)
 
     class Meta:
         model = PracticeSession

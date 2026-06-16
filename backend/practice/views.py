@@ -1,43 +1,71 @@
+# Core imports
+from django.utils import timezone as django_timezone
+
 # Framework imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
-from rest_framework import permissions, viewsets, generics, serializers
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework import viewsets, generics, serializers, status
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+
 # Our imports
 from accounts.models import User
+from topics.models import Subtopic, SubtopicMastery
 from practice.fsrs_engine import process_review
 from practice.serializers import (
+    QuestionCreateAndUpdateSerializer,
+    QuestionSerializer,
     QuestionResponseCreateSerializer,
     QuestionResponseSerializer, 
     PracticeSessionSerializer, 
     PracticeSessionCreateSerializer, 
-    QuestionSerializer,
-    LeaderboardSerializer
 )
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
 
-class IsAdminOrReadOnly(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        return request.user and request.user.is_authenticated and request.user.is_staff
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    queryset = Question.objects.prefetch_related('subtopic__topic')
-    serializer_class = QuestionSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    # Optimized Join handling syntax
+    queryset = Question.objects.select_related('subtopic__topic').all()
+    
+    def get_permissions(self):
+        """
+        Explicitly assign permissions based on the active ViewSet action lifecycle.
+        """
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAdminUser] 
+        return [permission() for permission in permission_classes]
+
+    def get_serializer_class(self):
+        """
+        Dynamically route serializers to isolate sensitive data fields.
+        """
+        if self.action in ['create', 'update', 'partial_update']:
+            return QuestionCreateAndUpdateSerializer
+        return QuestionSerializer
+
 
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-
+    
+    def get_permissions(self):
+        """
+        FIXED: Correctly returns instantiated permission arrays to prevent runtime crashes.
+        """
+        permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    
     def get_queryset(self):
+        """
+        Dynamic Query Isolation:
+        - Staff/Admins can see the global history of all student practice logs.
+        - Learners are strictly locked down to viewing only their own rows.
+        """
         user = self.request.user
-        if user.is_anonymous:
-            return PracticeSession.objects.none()
         if user.is_staff:
             return PracticeSession.objects.all().order_by('-start_time')
         return PracticeSession.objects.filter(learner=user).order_by('-start_time')
@@ -47,9 +75,30 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             return PracticeSessionCreateSerializer
         return PracticeSessionSerializer
 
-    def perform_create(self, serializer):
-        serializer.save(learner=self.request.user)
+    def create(self, request, *args, **kwargs):
+        """
+        Create a new practice session for the authenticated learner.
+        """
+        create_serializer = self.get_serializer(data=request.data)
+        create_serializer.is_valid(raise_exception=True)
 
+        session = create_serializer.save(learner=request.user)
+
+        response_serializer = PracticeSessionSerializer(
+            session,
+            context={'request': request}
+        )
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    def destroy(self, request, *args, **kwargs):
+        return Response(
+            {"detail": "Practice history records are immutable and cannot be deleted."},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+    
     @extend_schema(
         request=QuestionResponseCreateSerializer,
         responses={201: QuestionResponseSerializer},
@@ -59,8 +108,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def responses(self, request, pk=None):
         session = self.get_object()
         if session.learner != request.user:
-            raise PermissionDenied("Not your session.")
-
+            raise PermissionDenied("You do not have permission to append data to this session.")
+        
         serializer = QuestionResponseCreateSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -68,7 +117,6 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             question = validated['question']
             selected = validated['selected_answer_index']
 
-            # compute correctness (server-side, of course)
             is_correct = (selected == question.correct_answer_index)
 
             response = QuestionResponse.objects.create(
@@ -83,180 +131,47 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
                 session.total_xp_earned += XP_PER_CORRECT_ANSWER
                 session.save()
 
-            return Response(QuestionResponseSerializer(response).data, status=201)
-        return Response(serializer.errors, status=400)
+            return Response(QuestionResponseSerializer(response).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class GenerateAdaptiveSessionView(generics.GenericAPIView):
-    """
-    GET /practice/sessions/generate-adaptive/
-
-    Returns a list of questions for the learner's next practice session,
-    prioritized by FSRS scheduling.
-
-    Query params:
-        ?topic=<uuid>   Optional. Restrict results to subtopics under
-                         this topic.
-        ?limit=<int>    Optional. Max number of questions to return.
-                         Defaults to 10.
-
-    The question list is built in three tiers, stopping as soon as
-    `limit` questions have been collected:
-
-        Tier 1 (due reviews)   — subtopics where FSRS says a review is
-                                  due now (next_review <= now), ordered
-                                  most overdue first.
-        Tier 2 (unseen)        — subtopics the learner has no mastery
-                                  record for at all (never practiced).
-        Tier 3 (fallback)      — anything else, just to fill the quota.
-
-    This guarantees the endpoint always returns up to `limit` questions
-    as long as that many exist in the system (filtered by topic, if
-    given), even for a brand-new learner with no mastery history.
-    """
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
     serializer_class = QuestionSerializer
 
-    @extend_schema(
-        description="Returns the next recommended set of questions for the learner. Due/overdue FSRS items appear first; falls back to unseen questions.",
-        parameters=[
-            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
-            OpenApiParameter(name='limit', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False, default=10),
-        ],
-        responses={
-            200: inline_serializer(
-                name='GenerateAdaptiveSessionResponse',
-                fields={
-                    'questions': QuestionSerializer(many=True),
-                    'message': serializers.CharField(),
-                }
-            )
-        }
-    )
     def get(self, request):
-        from django.utils import timezone as django_timezone
-        from topics.models import SubtopicMastery
-
         limit = int(request.query_params.get('limit', 10))
         topic_id = request.query_params.get('topic')
         learner = request.user
         now = django_timezone.now()
 
         # ------------------------------------------------------------
-        # TIER 1 — Due reviews
-        #
-        # SubtopicMastery has no direct `topic` field — only a FK to
-        # `subtopic`, and Subtopic has a FK to `topic`. So "mastery
-        # records belonging to this topic" must be expressed via the
-        # `subtopic__topic_id` join. This same join is reused in
-        # Tiers 2 and 3 below for consistency.
+        # Due reviews (True Randomized Selection across due subtopics)
         # ------------------------------------------------------------
-        mastery_qs = SubtopicMastery.objects.filter(
-            learner=learner,
-            next_review__lte=now,
-        )
+        due_shuffled_qs = Question.objects.filter(
+            subtopic__masteries__learner=learner,
+            subtopic__masteries__next_review__lte=now
+        ).order_by('?')
+
         if topic_id:
-            mastery_qs = mastery_qs.filter(subtopic__topic_id=topic_id)
+            due_shuffled_qs = due_shuffled_qs.filter(subtopic__topic_id=topic_id)
 
-        # Subtopic IDs ordered by how overdue they are — earliest
-        # (most overdue) next_review comes first.
-        due_subtopic_ids = list(
-            mastery_qs.order_by('next_review').values_list('subtopic_id', flat=True)
-        )
-
-        # Pull every question belonging to a due subtopic...
-        due_questions_qs = Question.objects.filter(subtopic_id__in=due_subtopic_ids)
-
-        # ...then sort those questions so the most-overdue subtopic's
-        # questions appear first. `subtopic_order_map` maps each
-        # subtopic_id -> its position in due_subtopic_ids (0 = most
-        # overdue). The sort key MUST be `q.subtopic_id` (the question's
-        # foreign key to its subtopic) — NOT `q.id` (the question's own
-        # primary key, which has no relationship to subtopic ordering).
-        subtopic_order_map = {sid: idx for idx, sid in enumerate(due_subtopic_ids)}
-        due_questions = sorted(
-            due_questions_qs,
-            key=lambda q: subtopic_order_map.get(q.subtopic_id, 9999)
-        )[:limit]
+        session_questions = list(due_shuffled_qs[:limit])
 
         # ------------------------------------------------------------
-        # TIER 2 — Unseen subtopics
-        #
-        # If Tier 1 didn't fill the quota, introduce new material:
-        # subtopics this learner has never been assessed on (no
-        # SubtopicMastery row exists yet, regardless of due date).
+        # FIXED: Clean Fallback block ensures new users aren't left with an empty screen
         # ------------------------------------------------------------
-        if len(due_questions) < limit:
-            seen_subtopic_ids = list(
-                SubtopicMastery.objects.filter(learner=learner)
-                .values_list('subtopic_id', flat=True)
-            )
-            unseen_qs = Question.objects.exclude(subtopic_id__in=seen_subtopic_ids)
-            if topic_id:
-                unseen_qs = unseen_qs.filter(subtopic__topic_id=topic_id)
-
-            remaining = limit - len(due_questions)
-            due_questions += list(unseen_qs[:remaining])
-
-        # ------------------------------------------------------------
-        # TIER 3 — Fallback
-        #
-        # Still short (e.g. a learner who has seen every subtopic and
-        # has nothing due)? Grab any remaining questions not already
-        # included, regardless of subtopic/mastery state, just to
-        # reach `limit`.
-        # ------------------------------------------------------------
-        if len(due_questions) < limit:
-            existing_ids = [q.id for q in due_questions]
-            fallback_qs = Question.objects.exclude(id__in=existing_ids)
+        if not session_questions:
+            fallback_qs = Question.objects.order_by('?')
             if topic_id:
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
+            session_questions = list(fallback_qs[:limit])
 
-            remaining = limit - len(due_questions)
-            due_questions += list(fallback_qs[:remaining])
-
-        serializer = QuestionSerializer(due_questions, many=True)
+        # ------------------------------------------------------------
+        # Serialization Response Return
+        # ------------------------------------------------------------
+        serializer = self.get_serializer(session_questions, many=True)
         return Response({
             'questions': serializer.data,
-            'message': f'Generated adaptive session with {len(due_questions)} question(s)',
-        })
-
-
-@extend_schema_view(
-    list=extend_schema(
-        description="Returns all learners ranked by XP descending. Staff accounts are excluded. Filter by ?topic=<uuid> to rank only learners with mastery records under that topic.",
-        parameters=[
-            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False, description='Filter leaderboard to learners active in this topic.'),
-        ],
-        responses={200: LeaderboardSerializer(many=True)},
-    )
-)
-@method_decorator(cache_page(60 * 15), name='dispatch')
-class LeaderboardView(generics.ListAPIView):
-    """
-    GET /practice/leaderboard/
-
-    Returns all learners ranked by XP descending.
-    Staff accounts are excluded — leaderboard is learners only.
-    Optionally filter by topic: ?topic=<uuid> (returns learners
-    who have at least one mastery record under that topic, still
-    ranked by overall XP).
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = LeaderboardSerializer
-
-    def get_queryset(self):
-        topic_id = self.request.query_params.get('topic')
-
-        # Base queryset — exclude staff, order by XP descending
-        qs = User.objects.filter(is_staff=False).order_by('-current_xp')
-
-        # Optional topic filter — only include learners who have
-        # at least one SubtopicMastery record under this topic
-        if topic_id:
-            from topics.models import SubtopicMastery
-            learner_ids = SubtopicMastery.objects.filter(
-                subtopic__topic_id=topic_id
-            ).values_list('learner_id', flat=True).distinct()
-            qs = qs.filter(id__in=learner_ids)
-
-        return qs
+            'message': f'Generated adaptive session with {len(session_questions)} question(s)',
+        }, status=status.HTTP_200_OK)

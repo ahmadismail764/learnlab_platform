@@ -9,8 +9,7 @@ load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-# Security fix: default DEBUG to False in production to prevent exposure of sensitive data
-DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
+DEBUG = os.getenv('DEBUG') == 'True'
 
 # ==============================================================================
 # SECURITY & HOST CONFIGURATION
@@ -45,7 +44,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     'drf_spectacular',
-    'silk',
     'rest_framework_simplejwt.token_blacklist',
 
     'accounts',
@@ -53,6 +51,8 @@ INSTALLED_APPS = [
     'topics',
     'analytics',
 ]
+if DEBUG:
+    INSTALLED_APPS.append('silk')  # Silk profiler for development only
 
 AUTHENTICATION_BACKENDS = [
     'accounts.backends.EmailOrUsernameModelBackend',
@@ -68,9 +68,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    
-    'silk.middleware.SilkyMiddleware',
 ]
+if DEBUG:
+    MIDDLEWARE.append('silk.middleware.SilkyMiddleware')  # Silk profiler for development only
 
 ROOT_URLCONF = 'learnlab_platform.urls'
 
@@ -140,7 +140,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 if not DEBUG:
-    raw_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
+    raw_origins = os.getenv('CORS_ALLOWED_ORIGINS')
     CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_origins.split(',') if origin.strip()]
 
     if not CORS_ALLOWED_ORIGINS:
@@ -195,7 +195,7 @@ CACHES = {
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'webmaster@localhost')

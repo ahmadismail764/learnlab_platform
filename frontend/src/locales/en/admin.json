@@ -11,6 +11,7 @@
   "allowSkip": "Allow Skip",
   "allowSkipDescription": "Allow learners to skip questions during practice",
   "analyticsDescription": "View aggregate metrics and performance statistics",
+  "analyticsUnavailable": "Analytics contract unavailable",
   "attempts": "attempts",
   "avgAccuracy": "Avg. Accuracy",
   "avgPerLearner": "Avg. per Learner",
@@ -84,11 +85,13 @@
       "editTitle": "Edit Question",
       "explanationVideoPlaceholder": "https://...",
       "explanationVideoUrl": "Explanation video URL",
+      "loadingTopics": "Loading topics...",
       "optionLetter": "Option {{letter}}",
       "questionText": "Question Text",
       "scaffoldingTier": "Scaffolding Tier",
-      "subtopicId": "Subtopic ID",
-      "subtopicIdPlaceholder": "UUID or numeric id",
+      "selectCorrectAnswer": "Select correct answer",
+      "selectTopic": "Select topic",
+      "topic": "Topic",
       "updateError": "Failed to update question",
       "updateSuccess": "Question updated successfully!"
     },
@@ -102,6 +105,7 @@
       "correctAnswerIndex": "Correct Answer Index",
       "explanationVideo": "Explanation Video",
       "general": "General",
+      "notExposed": "Not exposed by backend",
       "question": "Question",
       "subtopic": "Subtopic",
       "title": "Question Preview"
@@ -127,7 +131,7 @@
     "title": "Question Bank",
     "tryDifferentFilters": "Try adjusting your filters",
     "unlinked": "Unlinked",
-    "writeFallbackDescription": "Questions must be added via Django Admin or the management command until the backend supports write operations."
+    "writeFallbackDescription": "Create the first question from this page and link it to a topic."
   },
   "questionsAnswered": "questions answered",
   "questionsPerSession": "Questions per Session",

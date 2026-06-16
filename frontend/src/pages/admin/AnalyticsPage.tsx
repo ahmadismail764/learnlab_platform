@@ -39,15 +39,16 @@ export function AnalyticsPage() {
 
   const [topicSearch, setTopicSearch] = useState('')
 
-  const { data: aggregated, isLoading: metricsLoading } = useAggregatedMetrics()
-  const { data: leaderboard, isLoading: lbLoading } = useGlobalLeaderboard()
-  const { data: bulkAnalytics, isLoading: bulkLoading } = useBulkTopicAnalytics()
-  const { data: activityData, isLoading: activityLoading } = useActivityTimeSeries()
-  const { data: difficultyData, isLoading: difficultyLoading } = useDifficultyBreakdown()
+  const { data: aggregated, isLoading: metricsLoading, error: metricsError } = useAggregatedMetrics()
+  const { data: leaderboard, isLoading: lbLoading, error: leaderboardError } = useGlobalLeaderboard()
+  const { data: bulkAnalytics, isLoading: bulkLoading, error: bulkError } = useBulkTopicAnalytics()
+  const { data: activityData, isLoading: activityLoading, error: activityError } = useActivityTimeSeries()
+  const { data: difficultyData, isLoading: difficultyLoading, error: difficultyError } = useDifficultyBreakdown()
 
   const isLoadingOverview = metricsLoading || lbLoading || bulkLoading || activityLoading || difficultyLoading
+  const contractErrors = [metricsError, leaderboardError, bulkError, activityError, difficultyError]
+    .filter((error): error is Error => error instanceof Error)
 
-  // Mock analytics data mixed with real dashboard overview metrics
   const overviewStats = useMemo(() => {
     const totalQuestions = activityData?.results?.reduce((sum, item) => sum + item.questions_answered, 0) ?? 0
     const questionsWeek = activityData?.results?.slice(-7).reduce((sum, item) => sum + item.questions_answered, 0) ?? 0
@@ -186,8 +187,25 @@ export function AnalyticsPage() {
 
       
 
-      {/* UC-04 Alternate Flow 2a: Insufficient data empty state */}
-      {hasInsufficientData ? (
+      {contractErrors.length > 0 ? (
+        <Card className="dashboard-panel py-10">
+          <CardContent>
+            <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+                {t('admin:analyticsUnavailable')}
+              </h2>
+              <div className="space-y-1 text-sm text-rose-700 dark:text-rose-300">
+                {contractErrors.map((error) => (
+                  <p key={error.message}>{error.message}</p>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : hasInsufficientData ? (
         <Card className="dashboard-panel text-center py-12">
           <CardContent>
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -471,7 +489,9 @@ export function AnalyticsPage() {
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BarChart3 className="w-8 h-8 text-secondary-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalLearners)}
+                {overviewStats.totalLearners > 0
+                  ? Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalLearners)
+                  : 0}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:avgPerLearner')}</p>
             </div>

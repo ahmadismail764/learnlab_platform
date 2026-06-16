@@ -19,13 +19,15 @@ export function AdminDashboard() {
   const { t } = useTranslation(['admin', 'common', 'auth'])
   const user = useCurrentUser()
 
-  const { data: metrics, isLoading: metricsLoading } = useAggregatedMetrics()
-  const { data: leaderboardRaw, isLoading: lbLoading } = useGlobalLeaderboard()
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useAggregatedMetrics()
+  const { data: leaderboardRaw, isLoading: lbLoading, error: leaderboardError } = useGlobalLeaderboard()
   const leaderboard = useMemo(
     () => (leaderboardRaw ?? []) as LearnerProfile[],
     [leaderboardRaw]
   )
   const isLoading = metricsLoading || lbLoading
+  const analyticsErrorMessage = metricsError instanceof Error ? metricsError.message : ''
+  const leaderboardErrorMessage = leaderboardError instanceof Error ? leaderboardError.message : ''
 
   const stats = useMemo(() => ({
     totalLearners: leaderboard.length || 0,
@@ -99,11 +101,17 @@ export function AdminDashboard() {
         </Card>
       </section>
 
+      {(analyticsErrorMessage || leaderboardErrorMessage) && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+          {analyticsErrorMessage || leaderboardErrorMessage}
+        </div>
+      )}
+
       <section className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <PageStatCard
           icon={<Users className="h-5 w-5" />}
           label={t('admin:totalLearners')}
-          value={isLoading ? '--' : stats.totalLearners}
+          value={isLoading || leaderboardErrorMessage ? '--' : stats.totalLearners}
           helper={t('admin:totalLearnersHelper')}
           tone="secondary"
         />
@@ -157,6 +165,10 @@ export function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : leaderboardErrorMessage ? (
+              <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                {leaderboardErrorMessage}
               </div>
             ) : topLearners.length === 0 ? (
               <EmptyState

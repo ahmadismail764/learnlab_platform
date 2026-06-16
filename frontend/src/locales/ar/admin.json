@@ -11,6 +11,7 @@
 "allowSkip": "السماح بالتخطي",
 "allowSkipDescription": "اسمح للمتعلمين بتخطي الأسئلة أثناء التمرين",
 "analyticsDescription": "استعرض المؤشرات العامة وإحصاءات الأداء",
+"analyticsUnavailable": "عقد التحليلات غير متاح",
 "attempts": "محاولات",
 "avgAccuracy": "متوسط الدقة",
 "avgPerLearner": "المتوسط لكل متعلم",
@@ -84,11 +85,13 @@
 "editTitle": "تعديل السؤال",
 "explanationVideoPlaceholder": "https://...",
 "explanationVideoUrl": "رابط فيديو الشرح",
+"loadingTopics": "جارٍ تحميل الموضوعات...",
 "optionLetter": "الخيار {{letter}}",
 "questionText": "نص السؤال",
 "scaffoldingTier": "مستوى التدرج",
-"subtopicId": "معرف الموضوع الفرعي",
-"subtopicIdPlaceholder": "UUID أو معرف رقمي",
+"selectCorrectAnswer": "اختر الإجابة الصحيحة",
+"selectTopic": "اختر الموضوع",
+"topic": "الموضوع",
 "updateError": "تعذر تحديث السؤال",
 "updateSuccess": "حُدّث السؤال بنجاح!"
 },
@@ -102,6 +105,7 @@
 "correctAnswerIndex": "فهرس الإجابة الصحيحة",
 "explanationVideo": "فيديو الشرح",
 "general": "عام",
+"notExposed": "غير متاح من الواجهة الخلفية",
 "question": "السؤال",
 "subtopic": "الموضوع الفرعي",
 "title": "معاينة السؤال"
@@ -127,7 +131,7 @@
 "title": "بنك الأسئلة",
 "tryDifferentFilters": "جرّب تعديل عوامل التصفية",
 "unlinked": "غير مرتبط",
-"writeFallbackDescription": "يجب إضافة الأسئلة عبر لوحة إدارة Django أو أمر الإدارة حتى تدعم الخلفية عمليات الكتابة."
+"writeFallbackDescription": "أنشئ السؤال الأول من هذه الصفحة واربطه بموضوع."
 },
 "questionsAnswered": "الأسئلة المجاب عنها",
 "questionsPerSession": "عدد الأسئلة في الجلسة",

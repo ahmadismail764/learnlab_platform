@@ -4,7 +4,27 @@
 $ErrorActionPreference = "Stop"
 $ROOT = Resolve-Path "$PSScriptRoot\..\.."
 $BACKEND_DIR = Join-Path $ROOT "backend"
+$envPath = Join-Path $BACKEND_DIR ".env"
 $env:PYTHONPATH = "$BACKEND_DIR;$(Join-Path $BACKEND_DIR 'practice')"
+
+function Get-DotEnvValue {
+    param(
+        [string]$Path,
+        [string]$Name
+    )
+
+    if (-not (Test-Path $Path)) {
+        return $null
+    }
+
+    $line = Get-Content $Path | Where-Object { $_ -match "^\s*$Name\s*=" } | Select-Object -First 1
+    if (-not $line) {
+        return $null
+    }
+
+    $value = $line -replace "^\s*$Name\s*=\s*", ""
+    return $value.Split("#")[0].Trim().Trim('"').Trim("'")
+}
 
 $pythonCandidates = @(
     $env:LEARNLAB_PYTHON,
@@ -55,15 +75,10 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # --- 2. Check & start PostgreSQL (only when configured) ---
-$envPath = Join-Path $BACKEND_DIR ".env"
 $dbEngine = $env:DB_ENGINE
 
-if (-not $dbEngine -and (Test-Path $envPath)) {
-    $dbEngineLine = Get-Content $envPath | Where-Object { $_ -match '^\s*DB_ENGINE\s*=' } | Select-Object -First 1
-    if ($dbEngineLine) {
-        $dbEngine = $dbEngineLine -replace '^\s*DB_ENGINE\s*=\s*', ''
-        $dbEngine = $dbEngine.Split('#')[0].Trim().Trim('"').Trim("'")
-    }
+if (-not $dbEngine) {
+    $dbEngine = Get-DotEnvValue -Path $envPath -Name "DB_ENGINE"
 }
 
 $usePostgres = $false
@@ -108,6 +123,21 @@ Set-Location $BACKEND_DIR
 Write-Host "  [..] Checking migrations..." -ForegroundColor Yellow
 $prevErrorAction = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
+
+$pendingModelMigrationOutput = & $VENV_PYTHON manage.py makemigrations --check --dry-run 2>&1
+$pendingModelMigrationExit = $LASTEXITCODE
+if ($pendingModelMigrationExit -ne 0) {
+    Write-Host "  [ERROR] Backend model changes are missing committed migrations." -ForegroundColor Red
+    Write-Host "  migrate --check cannot fix this because there is no migration file to apply." -ForegroundColor Yellow
+    if ($pendingModelMigrationOutput) {
+        Write-Host "  [..] makemigrations --check --dry-run output:" -ForegroundColor DarkGray
+        $pendingModelMigrationOutput | ForEach-Object { Write-Host "  $_" -ForegroundColor DarkGray }
+    }
+    Write-Host "  Ask the backend owner to commit the generated migration before starting the server." -ForegroundColor Yellow
+    $ErrorActionPreference = $prevErrorAction
+    exit 1
+}
+
 $checkOutput = & $VENV_PYTHON manage.py migrate --check 2>&1
 $checkExit = $LASTEXITCODE
 if ($checkExit -ne 0) {

@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { X, Save } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Card, CardHeader, Button, Input } from '@/components/ui'
 import { questionsService, type BackendQuestion, type QuestionMutationPayload } from '@/services/questions'
+import { topicsService } from '@/services/topics'
 import { queryKeys } from '@/hooks'
 import { questionSchema } from '@/validation'
+import { getTopicCategoryDisplayName, getTopicDisplayName } from '@/utils/topicLabels'
 
 interface QuestionFormModalProps {
   isOpen: boolean
@@ -27,7 +29,7 @@ interface QuestionFormState {
 const EMPTY_FORM: QuestionFormState = {
   text: '',
   choicesText: '',
-  correctAnswerIndex: '0',
+  correctAnswerIndex: '',
   tier: '1',
   relationId: '',
   explanationVideoUrl: '',
@@ -48,6 +50,11 @@ export function QuestionFormModal({
 
   const [form, setForm] = useState<QuestionFormState>({ ...EMPTY_FORM })
   const [error, setError] = useState('')
+  const { data: subtopics = [], isLoading: isLoadingSubtopics } = useQuery({
+    queryKey: ['subtopics', 'list'],
+    queryFn: () => topicsService.getSubtopics(),
+    enabled: isOpen,
+  })
 
   // Map choicesText string to a cleaned array of choices
   const choicesArray = useMemo(() => {
@@ -65,9 +72,9 @@ export function QuestionFormModal({
         setForm({
           text: editingQuestion.text,
           choicesText: editingQuestion.choices.join('\n'),
-          correctAnswerIndex: String(editingQuestion.correct_answer_index),
+          correctAnswerIndex: editingQuestion.correct_answer_index === null ? '' : String(editingQuestion.correct_answer_index),
           tier: String(editingQuestion.tier || 1) as QuestionFormState['tier'],
-          relationId: String(editingQuestion.subtopic ?? editingQuestion.knowledge_point ?? ''),
+          relationId: String(editingQuestion.subtopic ?? ''),
           explanationVideoUrl: editingQuestion.explanation_video_url ?? '',
         })
       } else {
@@ -109,6 +116,14 @@ export function QuestionFormModal({
   })
 
   const isSaving = createQuestionMutation.isPending || updateQuestionMutation.isPending
+  const selectedSubtopic = subtopics.find((subtopic) => String(subtopic.id) === form.relationId)
+  const subtopicGroups = Array.from(
+    subtopics.reduce((groups, subtopic) => {
+      const category = subtopic.topic_name || t('admin:uncategorized')
+      groups.set(category, [...(groups.get(category) ?? []), subtopic])
+      return groups
+    }, new Map<string, typeof subtopics>()),
+  ).sort(([a], [b]) => a.localeCompare(b))
 
   const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -235,7 +250,9 @@ export function QuestionFormModal({
                       onChange={(e) => setForm((prev) => ({ ...prev, correctAnswerIndex: e.target.value }))}
                       disabled={isSaving}
                       className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 h-[38px]"
+                      required
                     >
+                      <option value="">{t('admin:questions.form.selectCorrectAnswer')}</option>
                       {Array.from({ length: Math.max(choicesArray.length, 1) }).map((_, index) => (
                         <option key={index} value={index}>
                           {index} ({t('admin:questions.form.optionLetter', { letter: String.fromCharCode(65 + index) })})
@@ -266,14 +283,39 @@ export function QuestionFormModal({
                     </select>
                   </div>
 
-                  {/* Subtopic ID */}
-                  <Input
-                    label={t('admin:questions.form.subtopicId')}
-                    value={form.relationId}
-                    onChange={(e) => setForm((prev) => ({ ...prev, relationId: e.target.value }))}
-                    placeholder={t('admin:questions.form.subtopicIdPlaceholder')}
-                    disabled={isSaving}
-                  />
+                  {/* Topic selector */}
+                  <div>
+                    <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                      {t('admin:questions.form.topic')}
+                    </label>
+                    <select
+                      value={form.relationId}
+                      onChange={(e) => setForm((prev) => ({ ...prev, relationId: e.target.value }))}
+                      disabled={isSaving || isLoadingSubtopics}
+                      className="h-[38px] w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                      required
+                    >
+                      <option value="">
+                        {isLoadingSubtopics
+                          ? t('admin:questions.form.loadingTopics')
+                          : t('admin:questions.form.selectTopic')}
+                      </option>
+                      {subtopicGroups.map(([category, rows]) => (
+                        <optgroup key={category} label={getTopicCategoryDisplayName(t, category)}>
+                          {rows.map((subtopic) => (
+                            <option key={subtopic.id} value={String(subtopic.id)}>
+                              {getTopicDisplayName(t, subtopic.name)}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    {selectedSubtopic && (
+                      <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                        {getTopicCategoryDisplayName(t, selectedSubtopic.topic_name)} / {getTopicDisplayName(t, selectedSubtopic.name)}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Explanation Video URL */}

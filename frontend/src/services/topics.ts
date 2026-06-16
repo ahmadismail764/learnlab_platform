@@ -114,12 +114,32 @@ interface BackendTopic {
   question_count?: number;
 }
 
+export interface BackendSubtopic {
+  id: EntityId;
+  topic: EntityId;
+  topic_name: string;
+  name: string;
+  description: string;
+  question_count: number;
+}
+
 function normalizeTopic(raw: Partial<BackendTopic>): BackendTopic {
   return {
     id: raw.id ?? '',
     name: raw.name ?? '',
     description: raw.description ?? '',
     category: raw.category ?? getTopicCategoryName(raw.name),
+    question_count: Number(raw.question_count ?? 0),
+  };
+}
+
+function normalizeSubtopic(raw: Partial<BackendSubtopic>): BackendSubtopic {
+  return {
+    id: raw.id ?? '',
+    topic: raw.topic ?? '',
+    topic_name: raw.topic_name ?? '',
+    name: raw.name ?? '',
+    description: raw.description ?? '',
     question_count: Number(raw.question_count ?? 0),
   };
 }
@@ -148,6 +168,14 @@ export const topicsService = {
     const response = await api.get(`/topics/${id}/`);
     if (!response.ok) throw new Error('Failed to fetch topic details');
     return normalizeTopic(await response.json() as BackendTopic);
+  },
+
+  getSubtopics: async (): Promise<BackendSubtopic[]> => {
+    const response = await api.get('/subtopics/');
+    if (!response.ok) throw new Error('Failed to fetch subtopics');
+    const data = await response.json() as BackendSubtopic[] | { results?: BackendSubtopic[] };
+    const results = Array.isArray(data) ? data : data.results ?? [];
+    return results.map(normalizeSubtopic);
   },
 
   createTopic: async (data: TopicPayload) => {

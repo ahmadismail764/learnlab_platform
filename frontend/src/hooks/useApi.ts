@@ -152,7 +152,7 @@ export function useSuspenseQuestions() {
 
 /** Fetch aggregated analytics metrics (admin) */
 export function useAggregatedMetrics() {
-  return useQuery<AggregatedMetricsResponse | null>({
+  return useQuery<AggregatedMetricsResponse>({
     queryKey: queryKeys.analytics.aggregated,
     queryFn: () => analyticsService.getAggregatedMetrics(),
   })
@@ -160,7 +160,7 @@ export function useAggregatedMetrics() {
 
 /** Fetch bulk topic performance analytics (admin) */
 export function useBulkTopicAnalytics() {
-  return useQuery<BulkTopicAnalyticsResponse | null>({
+  return useQuery<BulkTopicAnalyticsResponse>({
     queryKey: queryKeys.analytics.bulk,
     queryFn: () => analyticsService.getBulkTopicAnalytics(),
   })
@@ -168,7 +168,7 @@ export function useBulkTopicAnalytics() {
 
 /** Fetch historical learner activity time-series (admin) */
 export function useActivityTimeSeries(period?: string) {
-  return useQuery<ActivityTimeSeriesResponse | null>({
+  return useQuery<ActivityTimeSeriesResponse>({
     queryKey: queryKeys.analytics.activity(period),
     queryFn: () => analyticsService.getActivityTimeSeries(period),
   })
@@ -176,7 +176,7 @@ export function useActivityTimeSeries(period?: string) {
 
 /** Fetch curriculum difficulty tier breakdown (admin) */
 export function useDifficultyBreakdown() {
-  return useQuery<DifficultyTierBreakdownResponse | null>({
+  return useQuery<DifficultyTierBreakdownResponse>({
     queryKey: queryKeys.analytics.difficulty,
     queryFn: () => analyticsService.getDifficultyBreakdown(),
   })

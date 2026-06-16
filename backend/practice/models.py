@@ -1,7 +1,11 @@
+import uuid
+# Core django imports
 from django.db import models
+from django.conf import settings
+# Our imports
 from accounts.models import User
 from topics.models import Subtopic
-import uuid
+
 
 class Question(models.Model):
     class TierChoices(models.IntegerChoices):
@@ -42,9 +46,12 @@ class QuestionResponse(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(PracticeSession, on_delete=models.CASCADE, related_name='responses')
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    selected_answer_index = models.IntegerField(null=True)
-    # response data
+    
+    # server-side calculated
     is_correct = models.BooleanField(default=False)
+
+    # data coming from the response
+    selected_answer_index = models.IntegerField(null=True)
     time_taken_seconds = models.IntegerField(default=0)
     confidence_rating = models.IntegerField(default=3) # e.g. 1 to 5 scale
 

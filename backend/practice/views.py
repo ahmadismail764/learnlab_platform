@@ -1,5 +1,5 @@
 # Framework imports
-from drf_spectacular.utils import extend_schema, inline_serializer, OpenApiParameter, OpenApiTypes
+from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
 from rest_framework import permissions, viewsets, generics, serializers
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import PermissionDenied
@@ -50,6 +50,11 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(learner=self.request.user)
 
+    @extend_schema(
+        request=QuestionResponseCreateSerializer,
+        responses={201: QuestionResponseSerializer},
+        description="Submit a single question response within an active practice session. Triggers FSRS review processing and updates session XP.",
+    )
     @action(detail=True, methods=['post'])
     def responses(self, request, pk=None):
         session = self.get_object()
@@ -216,6 +221,15 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
         })
 
 
+@extend_schema_view(
+    list=extend_schema(
+        description="Returns all learners ranked by XP descending. Staff accounts are excluded. Filter by ?topic=<uuid> to rank only learners with mastery records under that topic.",
+        parameters=[
+            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False, description='Filter leaderboard to learners active in this topic.'),
+        ],
+        responses={200: LeaderboardSerializer(many=True)},
+    )
+)
 @method_decorator(cache_page(60 * 15), name='dispatch')
 class LeaderboardView(generics.ListAPIView):
     """

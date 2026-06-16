@@ -1,0 +1,770 @@
+{
+	"info": {
+		"_postman_id": "learnlab-platform-api",
+		"name": "LearnLab Platform API",
+		"description": "Complete Postman collection for the LearnLab Platform API. Covers authentication, topics, practice, and analytics endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"description": "JWT-based authentication endpoints for login, registration, password reset, and logout.",
+			"item": [
+				{
+					"name": "Login (Obtain JWT Token)",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"your_username\",\n\t\"password\": \"your_password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login", ""]
+						},
+						"description": "Obtain JWT access and refresh tokens."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh", ""]
+						},
+						"description": "Obtain a new access token using a valid refresh token."
+					},
+					"response": []
+				},
+				{
+					"name": "Register",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"username\": \"new_learner\",\n\t\"email\": \"learner@example.com\",\n\t\"password\": \"securepassword123\",\n\t\"first_name\": \"Learner\",\n\t\"last_name\": \"User\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register", ""]
+						},
+						"description": "Register a new learner account."
+					},
+					"response": []
+				},
+				{
+					"name": "Current User Profile",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/users/me/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "users", "me", ""]
+						},
+						"description": "Get the authenticated user's profile including XP, streak, and role."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Current User",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"first_name\": \"Updated\",\n\t\"last_name\": \"Name\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/users/me/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "users", "me", ""]
+						},
+						"description": "Partially update the authenticated user's profile."
+					},
+					"response": []
+				},
+				{
+					"name": "Password Reset Request",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\": \"learner@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/password-reset/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "password-reset", ""]
+						},
+						"description": "Request a password reset email."
+					},
+					"response": []
+				},
+				{
+					"name": "Password Reset Confirm",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"uid\": \"{{password_reset_uid}}\",\n\t\"token\": \"{{password_reset_token}}\",\n\t\"password\": \"new_secure_password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/password-reset/confirm/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "password-reset", "confirm", ""]
+						},
+						"description": "Confirm a password reset using the uid and token from the reset email."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"refresh\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout", ""]
+						},
+						"description": "Blacklist the refresh token to log out."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Topics",
+			"description": "CRUD operations for topics, subtopics, and subtopic mastery records.",
+			"item": [
+				{
+					"name": "List Topics",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/topics/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "topics", ""]
+						},
+						"description": "List all topics with question counts."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Topic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"name\": \"Discrete Mathematics\",\n\t\"description\": \"Fundamentals of discrete structures and logic.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/topics/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "topics", ""]
+						},
+						"description": "Create a new topic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Topic",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/topics/{{topic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "topics", "{{topic_id}}", ""]
+						},
+						"description": "Retrieve a specific topic by UUID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Topic",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/topics/{{topic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "topics", "{{topic_id}}", ""]
+						},
+						"description": "Partially update a topic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Topic",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/topics/{{topic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "topics", "{{topic_id}}", ""]
+						},
+						"description": "Delete a topic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "List Subtopics",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", ""]
+						},
+						"description": "List all subtopics with topic names and question counts."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subtopic",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"topic\": \"{{topic_id}}\",\n\t\"name\": \"Propositional Logic\",\n\t\"description\": \"Logical operators, truth tables, and equivalences.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", ""]
+						},
+						"description": "Create a new subtopic under a topic."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subtopic",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/{{subtopic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", "{{subtopic_id}}", ""]
+						},
+						"description": "Retrieve a specific subtopic by UUID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subtopic",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"description\": \"Updated subtopic description\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/{{subtopic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", "{{subtopic_id}}", ""]
+						},
+						"description": "Partially update a subtopic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Subtopic",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subtopics/{{subtopic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subtopics", "{{subtopic_id}}", ""]
+						},
+						"description": "Delete a subtopic. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "List Subtopic Mastery",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/mastery/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mastery", ""]
+						},
+						"description": "List the authenticated user's subtopic mastery records (staff see all)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Subtopic Mastery",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"subtopic\": \"{{subtopic_id}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mastery/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mastery", ""]
+						},
+						"description": "Create a mastery record for a subtopic."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subtopic Mastery",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/mastery/{{mastery_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mastery", "{{mastery_id}}", ""]
+						},
+						"description": "Retrieve a specific mastery record by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subtopic Mastery",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"state\": \"REVIEW\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/mastery/{{mastery_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "mastery", "{{mastery_id}}", ""]
+						},
+						"description": "Partially update a mastery record."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Practice",
+			"description": "Question browsing, practice sessions, adaptive session generation, and leaderboard.",
+			"item": [
+				{
+					"name": "List Questions",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", ""],
+							"query": [
+								{"key": "subtopic__topic", "value": "", "disabled": true, "description": "Filter by topic UUID."},
+								{"key": "tier", "value": "", "disabled": true, "description": "Filter by difficulty tier (1, 2, or 3)."}
+							]
+						},
+						"description": "List all questions. Supports filtering by subtopic__topic and tier."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Question",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"subtopic\": \"{{subtopic_id}}\",\n\t\"text\": \"What is the negation of P ∨ Q?\",\n\t\"choices\": [\"¬P ∧ ¬Q\", \"¬P ∨ ¬Q\", \"P ∧ Q\", \"¬(P ∨ Q)\"],\n\t\"correct_answer_index\": 0,\n\t\"tier\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", ""]
+						},
+						"description": "Create a new question. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Question",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/{{question_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", "{{question_id}}", ""]
+						},
+						"description": "Retrieve a specific question by UUID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Question",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"tier\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/{{question_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", "{{question_id}}", ""]
+						},
+						"description": "Partially update a question. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Question",
+					"request": {
+						"method": "DELETE",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/questions/{{question_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "questions", "{{question_id}}", ""]
+						},
+						"description": "Delete a question. Requires staff privileges."
+					},
+					"response": []
+				},
+				{
+					"name": "List Practice Sessions",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", ""]
+						},
+						"description": "List the authenticated user's practice sessions (staff see all), ordered most recent first."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Practice Session (with bulk responses)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"responses\": [\n\t\t{\n\t\t\t\"question\": \"{{question_id}}\",\n\t\t\t\"selected_answer_index\": 0,\n\t\t\t\"time_taken_seconds\": 12,\n\t\t\t\"confidence_rating\": 4\n\t\t}\n\t]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", ""]
+						},
+						"description": "Create a new practice session. Include nested responses for bulk submission. session.total_xp_earned is set here; learner XP/streak are only awarded once the session is completed via PATCH (end_time)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Practice Session",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", "{{session_id}}", ""]
+						},
+						"description": "Retrieve a specific practice session with all its responses."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Practice Session",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"end_time\": \"2026-06-16T12:00:00Z\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", "{{session_id}}", ""]
+						},
+						"description": "Mark a session as complete by setting end_time. This is the single canonical point where learner XP and streak are awarded."
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Question Response",
+					"request": {
+						"method": "POST",
+						"header": [
+							{"key": "Authorization", "value": "Bearer {{access_token}}"},
+							{"key": "Content-Type", "value": "application/json"}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"question\": \"{{question_id}}\",\n\t\"selected_answer_index\": 0,\n\t\"time_taken_seconds\": 12,\n\t\"confidence_rating\": 4\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/responses/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", "{{session_id}}", "responses", ""]
+						},
+						"description": "Submit a single answer within an existing practice session. Triggers FSRS review processing."
+					},
+					"response": []
+				},
+				{
+					"name": "Generate Adaptive Session",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/sessions/generate-adaptive/?limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "sessions", "generate-adaptive", ""],
+							"query": [
+								{"key": "topic", "value": "", "disabled": true, "description": "Optional topic UUID to restrict questions."},
+								{"key": "limit", "value": "10", "description": "Max questions to return (default 10)."}
+							]
+						},
+						"description": "Returns recommended questions prioritized by FSRS scheduling (due > unseen > fallback)."
+					},
+					"response": []
+				},
+				{
+					"name": "Leaderboard",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/practice/leaderboard/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "practice", "leaderboard", ""],
+							"query": [
+								{"key": "topic", "value": "", "disabled": true, "description": "Optional topic UUID to filter learners."}
+							]
+						},
+						"description": "Returns all learners ranked by XP descending. Staff accounts are excluded."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Analytics",
+			"description": "Platform analytics endpoints: aggregated metrics, per-topic analytics, activity time series, and difficulty breakdowns.",
+			"item": [
+				{
+					"name": "Aggregated Metrics",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/aggregated/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "aggregated", ""]
+						},
+						"description": "Returns platform-wide metrics: review count, active users (7d/30d), mastery averages, estimated retention."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Topic Analytics",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/topics/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "topics", ""],
+							"query": [
+								{"key": "topic_ids", "value": "", "disabled": true, "description": "Comma-separated UUIDs to filter specific topics."}
+							]
+						},
+						"description": "Returns per-topic analytics for all topics. Supports optional ?topic_ids=uuid1,uuid2 filter."
+					},
+					"response": []
+				},
+				{
+					"name": "Single Topic Analytics",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/topics/{{topic_id}}/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "topics", "{{topic_id}}", ""]
+						},
+						"description": "Returns analytics for a specific topic: mastery averages, learner count, speed distribution, estimated retention."
+					},
+					"response": []
+				},
+				{
+					"name": "Activity Time Series",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/activity/?period=7d",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "activity", ""],
+							"query": [
+								{"key": "period", "value": "7d", "description": "Time period: 7d, 30d, or 90d (default: 7d)."},
+								{"key": "start", "value": "", "disabled": true, "description": "Start date YYYY-MM-DD (overrides period)."},
+								{"key": "end", "value": "", "disabled": true, "description": "End date YYYY-MM-DD (overrides period)."}
+							]
+						},
+						"description": "Returns daily active learners and questions answered over time."
+					},
+					"response": []
+				},
+				{
+					"name": "Difficulty Breakdown",
+					"request": {
+						"method": "GET",
+						"header": [{"key": "Authorization", "value": "Bearer {{access_token}}"}],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/difficulty/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "difficulty", ""]
+						},
+						"description": "Returns attempts and accuracy broken down by question difficulty tier (1=Concept, 2=Application, 3=Synthesis)."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Documentation",
+			"description": "API documentation endpoints.",
+			"item": [
+				{
+					"name": "OpenAPI Schema",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/schema/",
+							"host": ["{{base_url}}"],
+							"path": ["schema", ""]
+						},
+						"description": "Download the OpenAPI 3.0 schema (JSON/YAML)."
+					},
+					"response": []
+				},
+				{
+					"name": "Swagger UI",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/docs/",
+							"host": ["{{base_url}}"],
+							"path": ["docs", ""]
+						},
+						"description": "Interactive Swagger UI documentation."
+					},
+					"response": []
+				},
+				{
+					"name": "Redoc",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/redoc/",
+							"host": ["{{base_url}}"],
+							"path": ["redoc", ""]
+						},
+						"description": "Redoc API documentation — clean, reader-friendly layout."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{"key": "base_url", "value": "http://localhost:8000", "type": "string"},
+		{"key": "access_token", "value": "", "type": "string"},
+		{"key": "refresh_token", "value": "", "type": "string"},
+		{"key": "topic_id", "value": "", "type": "string"},
+		{"key": "subtopic_id", "value": "", "type": "string"},
+		{"key": "question_id", "value": "", "type": "string"},
+		{"key": "session_id", "value": "", "type": "string"},
+		{"key": "mastery_id", "value": "", "type": "string"},
+		{"key": "password_reset_uid", "value": "", "type": "string"},
+		{"key": "password_reset_token", "value": "", "type": "string"}
+	]
+}

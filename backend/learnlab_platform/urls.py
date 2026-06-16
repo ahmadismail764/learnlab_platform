@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from topics.views import TopicViewSet, SubtopicViewSet, SubtopicMasteryViewSet
 from rest_framework.routers import DefaultRouter
 
@@ -30,6 +30,7 @@ urlpatterns = [
     # DRF Spectacular Docs
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 
     # Silk profiler (dev only)
     path('silk/', include('silk.urls', namespace='silk')),

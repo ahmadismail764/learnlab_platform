@@ -57,6 +57,15 @@ export const questionSchema = z
       .refine((value) => value >= 0, 'Correct index must be 0 or higher'),
     tier: z.coerce.number().int().min(1).max(3),
     relationId: z.string().trim().min(1, 'Select a topic'),
+    explanationVideoUrl: z
+      .string()
+      .trim()
+      .min(1, 'Select the correct answer')
+      .transform(Number)
+      .refine(Number.isInteger, 'Correct index must be a whole number')
+      .refine((value) => value >= 0, 'Correct index must be 0 or higher'),
+    tier: z.coerce.number().int().min(1).max(3),
+    relationId: z.string().trim().min(1, 'Select a topic'),
   })
   .refine(
     (data) => {

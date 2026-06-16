@@ -66,7 +66,7 @@ export const analyticsService = {
   getAggregatedMetrics: async (): Promise<AggregatedMetricsResponse> => {
     const response = await api.get('/analytics/aggregated/');
     if (!response.ok) {
-      await throwApiError(response, `Failed to fetch aggregated analytics (${response.status})`);
+      throw new Error(`Failed to fetch aggregated analytics (${response.status})`);
     }
     return await response.json() as AggregatedMetricsResponse;
   },
@@ -74,7 +74,7 @@ export const analyticsService = {
   getTopicAnalytics: async (topicId: number | string): Promise<TopicAnalyticsResponse> => {
     const response = await api.get(`/analytics/topics/${topicId}/`);
     if (!response.ok) {
-      await throwApiError(response, `Failed to fetch topic analytics (${response.status})`);
+      throw new Error(`Failed to fetch topic analytics (${response.status})`);
     }
     return await response.json() as TopicAnalyticsResponse;
   },
@@ -82,7 +82,7 @@ export const analyticsService = {
   getBulkTopicAnalytics: async (): Promise<BulkTopicAnalyticsResponse> => {
     const response = await api.get('/analytics/topics/');
     if (!response.ok) {
-      await throwApiError(response, `Failed to fetch bulk topic analytics (${response.status})`);
+      throw new Error(`Failed to fetch bulk topic analytics (${response.status})`);
     }
     return await response.json() as BulkTopicAnalyticsResponse;
   },
@@ -91,7 +91,7 @@ export const analyticsService = {
     const query = period ? `?period=${period}` : '';
     const response = await api.get(`/analytics/activity/${query}`);
     if (!response.ok) {
-      await throwApiError(response, `Failed to fetch activity time-series (${response.status})`);
+      throw new Error(`Failed to fetch activity time-series (${response.status})`);
     }
     return await response.json() as ActivityTimeSeriesResponse;
   },
@@ -99,7 +99,7 @@ export const analyticsService = {
   getDifficultyBreakdown: async (): Promise<DifficultyTierBreakdownResponse> => {
     const response = await api.get('/analytics/difficulty/');
     if (!response.ok) {
-      await throwApiError(response, `Failed to fetch difficulty breakdown (${response.status})`);
+      throw new Error(`Failed to fetch difficulty breakdown (${response.status})`);
     }
     return await response.json() as DifficultyTierBreakdownResponse;
   },

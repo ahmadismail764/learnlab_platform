@@ -466,22 +466,35 @@ export function PracticePage() {
                           {index + 1}
                         </kbd>
                       )}
-                      <span className="text-base font-medium">{choice}</span>
-                    </div>
-                    <span className="shrink-0">
-                      {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
-                        <CheckCircle className={cn(
-                          'h-5 w-5',
-                          currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
-                        )} />
-                      ) : null}
-                      {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      ) : null}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                    >
+                      <div className="flex items-center gap-3">
+                        {!isAnswered && (
+                          <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                            {index + 1}
+                          </kbd>
+                        )}
+                        <span className="text-base font-medium">{choice}</span>
+                      </div>
+                      <span className="shrink-0">
+                        {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
+                          <CheckCircle className={cn(
+                            'h-5 w-5',
+                            currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
+                          )} />
+                        ) : null}
+                        {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        ) : null}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 rounded-2xl bg-primary-50 p-4 text-sm text-primary-800 dark:bg-primary-950/20 dark:text-primary-200">
+                    <Mic2 className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" />
+                    <p>{t('practice:openAnswerPrompt')}</p>
+                  </div>
 
               {isAnswered && currentStatus.isCorrect !== null && (
                 <div

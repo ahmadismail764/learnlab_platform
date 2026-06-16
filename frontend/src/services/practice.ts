@@ -4,7 +4,6 @@ import { questionsService, type BackendQuestion } from "./questions";
 
 interface SessionCreatePayload {
   responses?: [];
-  topicId?: string;
 }
 
 interface SessionUpdatePayload {
@@ -49,13 +48,11 @@ export const practiceService = {
     return await response.json();
   },
 
-  createSession: async (data: SessionCreatePayload = {}): Promise<PracticeSessionRecord> => {
-    const query = data.topicId
-      ? `?topic=${encodeURIComponent(data.topicId)}`
-      : '';
-    const response = await api.post(`/practice/sessions/${query}`, {
-      responses: data.responses ?? [],
-    });
+  createSession: async (data: SessionCreatePayload) => {
+    // Non-empty bulk responses are blocked by the published backend serializer contract.
+    // Create an empty session, then submit answers through the nested responses route.
+    const payload = { responses: data.responses ?? [] };
+    const response = await api.post("/practice/sessions/", payload);
     if (!response.ok) throw new Error("Failed to create session");
     const session = await response.json() as PracticeSessionRecord;
     if (!session?.id) {

@@ -73,6 +73,7 @@ export function QuestionFormModal({
           correctAnswerIndex: editingQuestion.correct_answer_index === null ? '' : String(editingQuestion.correct_answer_index),
           tier: String(editingQuestion.tier || 1) as QuestionFormState['tier'],
           relationId: String(editingQuestion.subtopic ?? ''),
+          explanationVideoUrl: editingQuestion.explanation_video_url ?? '',
         })
       } else {
         setForm({ ...EMPTY_FORM })

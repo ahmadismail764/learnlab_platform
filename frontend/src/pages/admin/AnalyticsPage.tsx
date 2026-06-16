@@ -47,10 +47,6 @@ export function AnalyticsPage() {
   const isLoadingOverview = metricsLoading || lbLoading || bulkLoading || activityLoading || difficultyLoading
   const contractErrors = [metricsError, leaderboardError, bulkError, activityError, difficultyError]
     .filter((error): error is Error => error instanceof Error)
-  const bulkErrorMessage = bulkError instanceof Error ? bulkError.message : ''
-  const activityErrorMessage = activityError instanceof Error ? activityError.message : ''
-  const leaderboardErrorMessage = leaderboardError instanceof Error ? leaderboardError.message : ''
-  const difficultyErrorMessage = difficultyError instanceof Error ? difficultyError.message : ''
 
   const overviewStats = useMemo(() => {
     const totalQuestions = activityData?.results?.reduce((sum, item) => sum + item.questions_answered, 0) ?? 0
@@ -167,27 +163,25 @@ export function AnalyticsPage() {
 
       
 
-      {contractErrors.length > 0 && (
-        <Card className="dashboard-panel">
+      {contractErrors.length > 0 ? (
+        <Card className="dashboard-panel py-10">
           <CardContent>
-            <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-900/50 dark:bg-rose-900/20">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-300" />
-              <div className="space-y-1">
-                <h2 className="text-sm font-semibold text-rose-800 dark:text-rose-200">
+            <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
+                <AlertTriangle className="h-7 w-7" />
+              </div>
+              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
                 {t('admin:analyticsUnavailable')}
-                </h2>
-                <div className="space-y-1 text-sm text-rose-700 dark:text-rose-300">
+              </h2>
+              <div className="space-y-1 text-sm text-rose-700 dark:text-rose-300">
                 {contractErrors.map((error) => (
                   <p key={error.message}>{error.message}</p>
                 ))}
-                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {hasInsufficientData && (
+      ) : hasInsufficientData ? (
         <Card className="dashboard-panel text-center py-12">
           <CardContent>
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -496,7 +490,7 @@ export function AnalyticsPage() {
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BarChart3 className="w-8 h-8 text-secondary-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {activityErrorMessage || leaderboardErrorMessage ? '--' : overviewStats.totalLearners > 0
+                {overviewStats.totalLearners > 0
                   ? Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalLearners)
                   : 0}
               </p>

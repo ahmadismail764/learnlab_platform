@@ -4,12 +4,12 @@ export interface BackendQuestion {
   id: EntityId;
   subtopic?: EntityId | null;
   subtopic_name?: string | null;
-  knowledge_point?: EntityId | null;
   topic_name: string;
   text: string;
   choices: string[];
-  correct_answer_index: number;
+  correct_answer_index: number | null;
   tier: number;
+  tier_display?: string | null;
   explanation_video_url?: string | null;
 }
 
@@ -43,8 +43,9 @@ function normalizeQuestion(raw: Partial<BackendQuestion>): BackendQuestion {
     topic_name: raw.topic_name ?? raw.subtopic_name ?? '',
     text: raw.text ?? '',
     choices,
-    correct_answer_index: Number(raw.correct_answer_index ?? 0),
+    correct_answer_index: typeof raw.correct_answer_index === 'number' ? raw.correct_answer_index : null,
     tier: Number(raw.tier ?? 1),
+    tier_display: raw.tier_display ?? null,
   };
 }
 

@@ -2,38 +2,38 @@
 
 > **For the backend team.** This document tracks unresolved API suggestions, architectural improvements, and security warnings, as well as successfully completed milestones for the LearnLab Django backend, as compiled by the frontend engineering team.
 >
-> **Latest verification:** 2026-06-14 on `interface` after pulling backend merge `8329e3a`.
+> **Latest verification:** 2026-06-16 on `interface` after merging `origin/master` at `d841620`.
 
 ---
 
 ## 🔴 Critical Active Blockers (Immediate Fixes Required)
 
-### 1. Password reset request exposes reset credentials in the API response
+### 1. Leaderboard endpoint is missing from the merged backend URL contract
 
-- **Status:** Active security/backend blocker, re-verified 2026-06-14 after backend merge `8329e3a`
-- **Endpoint:** `POST /api/v1/auth/password-reset/`
-- **Symptoms:** For an existing account email, the endpoint returns `200` with `message`, `uid`, and `token`; for a missing email, it returns only `message`.
-- **Smoke result:** Existing-account request returned keys `['message', 'token', 'uid']`; missing-account request returned keys `['message']`.
-- **Impact:** A caller who knows or guesses an email can receive a valid reset token directly from the public endpoint. The response shape also reveals whether an email exists, creating an account-enumeration side channel. The current frontend expects email instructions and does not consume returned reset credentials.
-- **Recommendation:** Send the reset link/token out-of-band through configured email delivery, do not include `uid` or `token` in the JSON response, and return the same generic response shape for existing and non-existing emails.
+- **Status:** Active backend contract blocker, verified 2026-06-16 after merging `origin/master` at `d841620`
+- **Affected contract:** `GET /api/v1/practice/leaderboard/` and `GET /api/v1/practice/leaderboard/?topic=<uuid>`
+- **Symptoms:** The frontend leaderboard pages and admin dashboard consume `/practice/leaderboard/`, but `backend/practice/urls.py` no longer mounts `LeaderboardView`, and generated OpenAPI paths do not include a leaderboard endpoint.
+- **Smoke result:** Authenticated APIClient smoke returned `404` for `GET /api/v1/practice/leaderboard/`.
+- **Impact:** Learner leaderboard, topic leaderboard, and admin dashboard learner counts cannot consume a backend leaderboard contract. The frontend now surfaces this failure instead of returning a fake empty leaderboard.
+- **Recommendation:** Re-mount a learner-safe leaderboard endpoint under `/api/v1/practice/leaderboard/` or publish the replacement endpoint and response contract.
 
-### 2. `selected_answer_index` model change is missing a `practice` migration
+### 2. Admin question reads omit `correct_answer_index`, blocking accurate preview/edit
 
-- **Status:** Active backend blocker, verified 2026-06-14 after backend merge `8329e3a`
-- **Affected contract:** `POST /api/v1/practice/sessions/<uuid:id>/responses/`
-- **Symptoms:** The backend model and serializers now require `QuestionResponse.selected_answer_index`, but no `practice` migration for that field was committed.
-- **Smoke result:** `manage.py makemigrations --check --dry-run` reports a new pending migration: `practice/migrations/0003_questionresponse_selected_answer_index.py`. Local DB introspection confirms `practice_questionresponse` does not contain `selected_answer_index`.
-- **Impact:** The frontend has been updated to send `selected_answer_index` instead of client-supplied correctness, but deployed databases will not have the required column unless the missing migration is created and applied.
-- **Recommendation:** Commit the generated `practice` migration for `QuestionResponse.selected_answer_index`, then run migrations in each environment before relying on server-side answer validation.
+- **Status:** Active backend contract blocker, verified 2026-06-16 after merging `origin/master` at `d841620`
+- **Affected contract:** `GET /api/v1/practice/questions/` and `GET /api/v1/practice/questions/<uuid:id>/`
+- **Symptoms:** `QuestionViewSet` uses `QuestionSerializer` for all list/retrieve requests. That serializer intentionally excludes `correct_answer_index`, which is correct for learners but also affects admin reads.
+- **Smoke result:** Authenticated APIClient smoke for `GET /api/v1/practice/questions/` returned question keys `['choices', 'id', 'subtopic', 'subtopic_name', 'text', 'tier', 'tier_display']`; `correct_answer_index` was absent.
+- **Impact:** Admin question preview cannot identify the correct answer, and editing an existing question cannot safely preserve the current correct answer. The frontend no longer fabricates index `0`, so this backend omission is visible.
+- **Recommendation:** Use an admin-specific read serializer for staff users or expose a dedicated admin question endpoint that includes `correct_answer_index` while keeping learner-facing practice/adaptive question responses answer-safe.
 
-### 3. Adaptive session generation returns `500` because `QuestionSerializer` omits a declared field
+### 3. Bulk practice session create documents the wrong nested response shape
 
-- **Status:** Active backend blocker, verified 2026-06-14 after backend merge `8329e3a`
-- **Endpoint:** `GET /api/v1/practice/sessions/generate-adaptive/`
-- **Symptoms:** Starting a practice session fails because the adaptive endpoint returns a Django debug HTML `500`.
-- **Smoke result:** APIClient smoke produced `AssertionError: The field 'subtopic_name' was declared on serializer QuestionSerializer, but has not been included in the 'fields' option.`
-- **Impact:** Learners cannot start adaptive practice even though the frontend is calling the canonical endpoint.
-- **Recommendation:** Add `subtopic_name` to `QuestionSerializer.Meta.fields`, or remove the declared serializer field if it should no longer be exposed.
+- **Status:** Active backend contract blocker, verified by schema/serializer audit 2026-06-16 after merging `origin/master` at `d841620`
+- **Affected contract:** `POST /api/v1/practice/sessions/` with non-empty nested `responses`
+- **Symptoms:** `PracticeSessionCreateSerializer.responses` is wired to `QuestionCreateAndUpdateSerializer(many=True)` even though `create()` reads each row as a `QuestionResponse` payload using `response_data['question']` and `response_data['selected_answer_index']`.
+- **Smoke result:** Generated OpenAPI schema for `PracticeSessionCreate.responses[]` references `QuestionCreateAndUpdate` instead of `QuestionResponseCreate`.
+- **Impact:** The published bulk session-create contract asks clients for question-authoring fields, while runtime code expects answer-submission fields. The current frontend avoids this by creating sessions with `responses: []` and submitting answers through `/practice/sessions/<id>/responses/`.
+- **Recommendation:** Change `PracticeSessionCreateSerializer.responses` back to `QuestionResponseCreateSerializer(many=True, required=False)`, keep XP awarding centralized on completion, and regenerate the schema.
 
 ---
 
@@ -106,10 +106,17 @@
 
 ### 9. Short-Lived Redis Caching for Analytics Routes (`/analytics/*`)
 
-- **Status:** Implemented upstream / local verification blocked
+- **Status:** Implemented upstream / monitor
 - **Description:** The student and admin analytics dashboards aggregate telemetry datasets (topics, difficulty tier breakdowns, and activity time-series). Under high concurrency (e.g., during active exams or lectures), repeated aggregation queries will place unnecessary database load on PostgreSQL.
-- **Verification note:** Backend merge `8329e3a` added Redis-backed caching. Local endpoint smoke for `/api/v1/practice/leaderboard/` currently returns `500` in the existing venv because the Redis Python dependency/service is not available locally (`ModuleNotFoundError: No module named 'redis'`).
-- **Recommendation:** Ensure local and deployment environments install the updated backend dependencies and run Redis, or provide a development cache fallback when Redis is unavailable.
+- **Verification note:** Backend merge `8329e3a` added Redis-backed caching. The current 2026-06-16 contract audit did not observe the earlier Redis import failure; the active leaderboard problem is now tracked separately as a missing `/api/v1/practice/leaderboard/` route returning `404`.
+- **Recommendation:** Keep local and deployment environments aligned with the updated backend dependencies and Redis/cache configuration.
+
+### 10. OpenAPI documentation completeness for auth/practice/analytics
+
+- **Status:** Schema documentation issue, verified 2026-06-16 after merging `origin/master` at `d841620`
+- **Description:** `manage.py spectacular --format openapi-json` completes but reports documentation errors/warnings: `PasswordResetRequestView` has no request/response serializer annotation, `PracticeSessionViewSet` path parameter type cannot be derived cleanly, and analytics topic operationIds collide between `/analytics/topics/` and `/analytics/topics/{topic_id}/`.
+- **Impact:** Frontend contract audits can still inspect runtime behavior, but generated OpenAPI remains noisy and partially misleading.
+- **Recommendation:** Add `@extend_schema` request/response annotations for password-reset request, annotate practice session path parameters, and give analytics routes unique operation IDs/serializer shapes.
 
 ---
 
@@ -129,47 +136,72 @@
 
 The following integration milestones have been verified. They do not override any future active blockers listed above.
 
-### 1. Current User Serializer Date Field
+### 1. Missing `selected_answer_index` migration
+
+- **Status:** ✅ Resolved, verified 2026-06-16 after merging `origin/master` at `d841620`
+- **Verification:** `backend/practice/migrations/0003_questionresponse_selected_answer_index.py` is now committed. `manage.py makemigrations --check --dry-run` returns `No changes detected`. Local `manage.py migrate --check` may still fail until the newly committed migrations are applied to the local database.
+
+### 2. Bulk practice session submission double-award risk
+
+- **Status:** ✅ Resolved, verified by serializer audit 2026-06-16 after merging `origin/master` at `d841620`
+- **Verification:** `PracticeSessionCreateSerializer.create()` now stores `session.total_xp_earned` only and no longer increments `learner.current_xp`, streak, or `last_practice_date`. Learner aggregate XP/streak awarding remains centralized in `PracticeSessionSerializer.update()` when `end_time` completes the session.
+
+### 3. Backend email environment import failure
+
+- **Status:** ✅ Resolved, verified 2026-06-16 after merging `origin/master` at `d841620`
+- **Verification:** `settings.py` now uses `EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))`, `EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'`, and `backend/.env.example` documents the email variables. `manage.py check` passes without supplying `EMAIL_PORT` in the shell.
+
+### 4. Password reset request response no longer exposes reset credentials
+
+- **Status:** ✅ Resolved, verified 2026-06-15 after backend merge `a7ad281`
+- **Verification:** APIClient smoke with an existing account and a missing email returned `200` with the same response keys: `['message']`. No `uid` or `token` keys were returned in JSON. The frontend request flow at `/forgot-password` ignores response credentials, and the reset confirmation route `/reset-password?uid=...&token=...` now posts the emailed credentials to `/auth/password-reset/confirm/`.
+
+### 5. Adaptive session generation serializer field omission
+
+- **Status:** ✅ Resolved, verified 2026-06-15 after backend merge `a7ad281`
+- **Verification:** `QuestionSerializer.Meta.fields` now includes `subtopic_name`. Authenticated APIClient smoke for `GET /api/v1/practice/sessions/generate-adaptive/` returned `200` with `questions` and `message`.
+
+### 6. Current User Serializer Date Field
 
 - **Status:** ✅ Resolved, verified 2026-06-13
 - **Verification:** `UserDetailSerializer` now exposes `date_joined` instead of the removed `joined_at` field. Smoke test: authenticated `GET /api/v1/auth/users/me/` returned `200`, included `date_joined`, and did not include `joined_at`.
 
-### 2. Adaptive Session Generation UUID/Subtopic Query Bug
+### 7. Adaptive Session Generation UUID/Subtopic Query Bug
 
 - **Status:** ✅ Resolved, verified 2026-06-13
 - **Verification:** `GenerateAdaptiveSessionView` now queries due questions with `subtopic_id__in=due_subtopic_ids` and orders by `q.subtopic_id`. Smoke test: authenticated `GET /api/v1/practice/sessions/generate-adaptive/` returned `200` with `questions` and `message`.
 
-### 3. Practice Session Creation Returns `id`
+### 8. Practice Session Creation Returns `id`
 
 - **Status:** ✅ Resolved, verified 2026-06-13
 - **Verification:** `PracticeSessionCreateSerializer` now includes `id` in its response fields after remote merge commit `dcda7f0`. Smoke test: authenticated `POST /api/v1/practice/sessions/` with `{ "responses": [] }` returned `201` with `id` and `responses`, allowing the frontend to submit nested responses against the newly created session.
 
-### 4. Practice Session Completion XP Awarding Bug (Critical Bug)
+### 9. Practice Session Completion XP Awarding Bug (Critical Bug)
 
 - **Status:** ✅ Resolved
 - **Verification:** The backend `PracticeSessionSerializer` now overrides `update()` to award the learner's `current_xp` and increment their practice streak upon session completion (PATCH request with `end_time`).
 
-### 5. Interactive Practice Response Submission Endpoint
+### 10. Interactive Practice Response Submission Endpoint
 
 - **Status:** ✅ Resolved
 - **Verification:** Nested response route `POST /practice/sessions/<uuid:id>/responses/` handles live student practice answers, successfully writing `QuestionResponse` tables and instantly updating FSRS memory mastery metrics and XP scores.
 
-### 6. Bulk & Time-Series Analytics Telemetry
+### 11. Bulk & Time-Series Analytics Telemetry
 
 - **Status:** ✅ Resolved
 - **Verification:** Dedicated aggregated endpoints `/analytics/topics/`, `/analytics/activity/`, and `/analytics/difficulty/` are fully active, powering the admin metrics, difficulty progress rings, and dynamically loaded weekly trends.
 
-### 7. Curriculum Questions Counts
+### 12. Curriculum Questions Counts
 
 - **Status:** ✅ Resolved
 - **Verification:** `/topics/` responses expose computed `question_count` properties. The older backend grouping field has been removed from the contract as of the latest merge; frontend grouping is now derived client-side using category naming.
 
-### 8. Topic Typo Resolution (`/topics/`)
+### 13. Topic Typo Resolution (`/topics/`)
 
 - **Status:** ✅ Resolved
 - **Verification:** The backend has stabilized the URL scheme to `/topics/`, letting the frontend service layers transition fully away from `/topcis/` fallbacks.
 
-### 9. User Initials and Avatar Colors in Token Response
+### 14. User Initials and Avatar Colors in Token Response
 
 - **Status:** ✅ Resolved
 - **Verification:** `/auth/login/` returns stable, computed `initials` (e.g., `"JD"`) and design-tailored `avatar_color` HSL coordinates (e.g., `"hsl(210, 70%, 50%)"`). `/auth/users/me/` now also uses the fixed `date_joined` serializer field.

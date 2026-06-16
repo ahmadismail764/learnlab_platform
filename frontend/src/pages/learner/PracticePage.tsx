@@ -472,7 +472,7 @@ export function PracticePage() {
                             currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
                           )} />
                         ) : null}
-                        {currentStatus.userResponse === choice && !currentStatus.isCorrect ? (
+                        {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
                           <XCircle className="h-5 w-5 text-red-500" />
                         ) : null}
                       </span>

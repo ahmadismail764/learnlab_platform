@@ -22,6 +22,8 @@ export function QuestionPreviewModal({
   const { t } = useTranslation(['admin', 'common'])
 
   if (!question) return null
+  const correctAnswerIndex = question.correct_answer_index
+  const hasCorrectAnswer = correctAnswerIndex !== null
 
   const getTierBadge = (tier: number) => {
     const configs: Record<number, { variant: 'success' | 'secondary' | 'accent'; label: string }> = {
@@ -97,26 +99,26 @@ export function QuestionPreviewModal({
                         <div
                           key={i}
                           className={`flex items-start gap-3 p-3 rounded-xl border transition-colors ${
-                            i === question.correct_answer_index
+                            hasCorrectAnswer && i === correctAnswerIndex
                               ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800/60'
                               : 'bg-neutral-50 dark:bg-neutral-800/40 border-neutral-200 dark:border-neutral-700/60'
                           }`}
                         >
                           <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                            i === question.correct_answer_index
+                            hasCorrectAnswer && i === correctAnswerIndex
                               ? 'bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200'
                               : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400'
                           }`}>
                             {String.fromCharCode(65 + i)}
                           </span>
                           <span className={`text-sm ${
-                            i === question.correct_answer_index
+                            hasCorrectAnswer && i === correctAnswerIndex
                               ? 'text-green-800 dark:text-green-200 font-semibold'
                               : 'text-neutral-700 dark:text-neutral-300'
                           }`}>
                             {choice}
                           </span>
-                          {i === question.correct_answer_index && (
+                          {hasCorrectAnswer && i === correctAnswerIndex && (
                             <Badge variant="success" size="sm" className="ms-auto font-medium">
                               ✓ {t('admin:questions.preview.correct')}
                             </Badge>
@@ -132,7 +134,9 @@ export function QuestionPreviewModal({
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.correctAnswerIndex')}</p>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {question.correct_answer_index} ({String.fromCharCode(65 + question.correct_answer_index)})
+                      {hasCorrectAnswer
+                        ? `${correctAnswerIndex} (${String.fromCharCode(65 + correctAnswerIndex)})`
+                        : t('admin:questions.preview.notExposed')}
                     </p>
                   </div>
                   <div>

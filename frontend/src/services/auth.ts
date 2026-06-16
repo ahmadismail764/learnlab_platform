@@ -238,7 +238,7 @@ export const authService = {
   },
 
   confirmPasswordReset: async (data: {
-    uid?: string;
+    uid: string;
     token: string;
     password: string;
   }) => {

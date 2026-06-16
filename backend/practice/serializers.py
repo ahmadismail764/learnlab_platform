@@ -4,9 +4,10 @@ from django.utils import timezone as django_timezone
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
+from practice.fsrs_engine import process_review
 from accounts.models import User
 from accounts.serializers import UserDetailSerializer
-from practice.fsrs_engine import process_review
+
 
 # ===================================================
 # Leaderboard serializers
@@ -23,15 +24,20 @@ class LeaderboardSerializer(serializers.ModelSerializer):
 # ===================================================
 class QuestionSerializer(serializers.ModelSerializer):
     subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
+    # Expose the human-readable string version of the tier (Concept, Application, Synthesis)
+    tier_display = serializers.CharField(source='get_tier_display', read_only=True)
 
     class Meta:
         model = Question
-        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier']
+        # EXCLUDE correct_answer_index completely so students can't cheat via dev tools
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier', 'tier_display']
+        read_only_fields = ['id']
 
-class QuestionCreateSerializer(serializers.ModelSerializer):
+class QuestionCreateAndUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ['id', 'subtopic', 'text', 'choices', 'correct_answer_index', 'tier']
+        read_only_fields = ['id']
 
 # ===================================================
 # QuestionResponse serializers
@@ -89,7 +95,7 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         return instance
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    responses = QuestionResponseCreateSerializer(many=True, required=False)
+    responses = QuestionCreateAndUpdateSerializer(many=True, required=False)
 
     class Meta:
         model = PracticeSession
@@ -98,43 +104,24 @@ class PracticeSessionCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         responses_data = validated_data.pop('responses', [])
         session = PracticeSession.objects.create(**validated_data)
-        
+
         correct_count = 0
         for response_data in responses_data:
             question = response_data['question']
             selected = response_data['selected_answer_index']
-            # validating the user's answers
             is_correct = (selected == question.correct_answer_index)
-            
-            corrected_response = QuestionResponse.objects.create(
+
+            response = QuestionResponse.objects.create(
                 session=session,
                 is_correct=is_correct,
                 **response_data
             )
-            if corrected_response.is_correct:
+            if response.is_correct:
                 correct_count += 1
-            process_review(session.learner, corrected_response.question.subtopic, corrected_response)
-        
-        # Calculate and award XP (10 XP per correct response)
-        xp_earned = correct_count * XP_PER_CORRECT_ANSWER
-        session.total_xp_earned = xp_earned
+            process_review(session.learner, response.question.subtopic, response)
+
+        # Store session total only; learner XP/streak are awarded in update() on completion.
+        session.total_xp_earned = correct_count * XP_PER_CORRECT_ANSWER
         session.save()
-        
-        # Update learner's XP
-        learner = session.learner
-        learner.current_xp += xp_earned
-        
-        # Update streak
-        today = django_timezone.localdate()
-        if learner.last_practice_date is None:
-            learner.streak_count = 1
-        elif learner.last_practice_date == today - django_timezone.timedelta(days=1):
-            learner.streak_count += 1
-        elif learner.last_practice_date < today - django_timezone.timedelta(days=1):
-            learner.streak_count = 1
-        # if last_practice_date == today, streak doesn't change
-        
-        learner.last_practice_date = today
-        learner.save()
-        
+
         return session

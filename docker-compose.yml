@@ -1,11 +1,10 @@
-# Version B (Role Separation - Highly Secure)
 services:
   db:
     image: postgres:14
     restart: always
     environment:
-      POSTGRES_USER: postgres              # Root Superuser account locked inside container
-      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD} # Cryptographic administrative key
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
       POSTGRES_DB: postgres
     ports:
       - "5433:5432"

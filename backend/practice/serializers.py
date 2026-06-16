@@ -33,6 +33,16 @@ class QuestionSerializer(serializers.ModelSerializer):
         fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier', 'tier_display']
         read_only_fields = ['id']
 
+class QuestionAdminSerializer(serializers.ModelSerializer):
+    """Read serializer for staff — includes correct_answer_index."""
+    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
+    tier_display = serializers.CharField(source='get_tier_display', read_only=True)
+
+    class Meta:
+        model = Question
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'correct_answer_index', 'tier', 'tier_display']
+        read_only_fields = ['id']
+
 class QuestionCreateAndUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
@@ -95,7 +105,7 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         return instance
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    responses = QuestionCreateAndUpdateSerializer(many=True, required=False)
+    responses = QuestionResponseCreateSerializer(many=True, required=False)
 
     class Meta:
         model = PracticeSession

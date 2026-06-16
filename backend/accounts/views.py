@@ -43,6 +43,24 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        operation_id='auth_password_reset_request',
+        description="Send a password reset link to the provided email address. Always returns 200 to avoid email enumeration.",
+        request=inline_serializer(
+            name='PasswordResetRequest',
+            fields={'email': serializers.EmailField()},
+        ),
+        responses={
+            200: inline_serializer(
+                name='PasswordResetRequestResponse',
+                fields={'message': serializers.CharField()},
+            ),
+            400: inline_serializer(
+                name='PasswordResetRequestError',
+                fields={'email': serializers.ListField(child=serializers.CharField())},
+            ),
+        },
+    )
     def post(self, request):
         email = request.data.get('email')
         if not email:

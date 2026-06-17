@@ -63,74 +63,44 @@ export interface DifficultyTierBreakdownResponse {
 }
 
 export const analyticsService = {
-  getAggregatedMetrics: async (): Promise<AggregatedMetricsResponse | null> => {
-    try {
-      const response = await api.get('/analytics/aggregated/');
-      if (!response.ok) {
-        console.warn('Analytics aggregated returned status:', response.status);
-        return null;
-      }
-      return await response.json() as AggregatedMetricsResponse;
-    } catch (error) {
-      console.warn('Analytics aggregated fetch error:', error);
-      return null;
+  getAggregatedMetrics: async (): Promise<AggregatedMetricsResponse> => {
+    const response = await api.get('/analytics/aggregated/');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch aggregated analytics (${response.status})`);
     }
+    return await response.json() as AggregatedMetricsResponse;
   },
 
-  getTopicAnalytics: async (topicId: number | string): Promise<TopicAnalyticsResponse | null> => {
-    try {
-      const response = await api.get(`/analytics/topics/${topicId}/`);
-      if (!response.ok) {
-        console.warn('Topic analytics returned status:', response.status);
-        return null;
-      }
-      return await response.json() as TopicAnalyticsResponse;
-    } catch (error) {
-      console.warn('Topic analytics fetch error:', error);
-      return null;
+  getTopicAnalytics: async (topicId: number | string): Promise<TopicAnalyticsResponse> => {
+    const response = await api.get(`/analytics/topics/${topicId}/`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch topic analytics (${response.status})`);
     }
+    return await response.json() as TopicAnalyticsResponse;
   },
 
-  getBulkTopicAnalytics: async (): Promise<BulkTopicAnalyticsResponse | null> => {
-    try {
-      const response = await api.get('/analytics/topics/');
-      if (!response.ok) {
-        console.warn('Bulk topic analytics returned status:', response.status);
-        return null;
-      }
-      return await response.json() as BulkTopicAnalyticsResponse;
-    } catch (error) {
-      console.warn('Bulk topic analytics fetch error:', error);
-      return null;
+  getBulkTopicAnalytics: async (): Promise<BulkTopicAnalyticsResponse> => {
+    const response = await api.get('/analytics/topics/');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch bulk topic analytics (${response.status})`);
     }
+    return await response.json() as BulkTopicAnalyticsResponse;
   },
 
-  getActivityTimeSeries: async (period?: string): Promise<ActivityTimeSeriesResponse | null> => {
-    try {
-      const query = period ? `?period=${period}` : '';
-      const response = await api.get(`/analytics/activity/${query}`);
-      if (!response.ok) {
-        console.warn('Activity time-series returned status:', response.status);
-        return null;
-      }
-      return await response.json() as ActivityTimeSeriesResponse;
-    } catch (error) {
-      console.warn('Activity time-series fetch error:', error);
-      return null;
+  getActivityTimeSeries: async (period?: string): Promise<ActivityTimeSeriesResponse> => {
+    const query = period ? `?period=${period}` : '';
+    const response = await api.get(`/analytics/activity/${query}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch activity time-series (${response.status})`);
     }
+    return await response.json() as ActivityTimeSeriesResponse;
   },
 
-  getDifficultyBreakdown: async (): Promise<DifficultyTierBreakdownResponse | null> => {
-    try {
-      const response = await api.get('/analytics/difficulty/');
-      if (!response.ok) {
-        console.warn('Difficulty breakdown returned status:', response.status);
-        return null;
-      }
-      return await response.json() as DifficultyTierBreakdownResponse;
-    } catch (error) {
-      console.warn('Difficulty breakdown fetch error:', error);
-      return null;
+  getDifficultyBreakdown: async (): Promise<DifficultyTierBreakdownResponse> => {
+    const response = await api.get('/analytics/difficulty/');
+    if (!response.ok) {
+      throw new Error(`Failed to fetch difficulty breakdown (${response.status})`);
     }
+    return await response.json() as DifficultyTierBreakdownResponse;
   },
 };

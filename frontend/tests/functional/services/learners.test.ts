@@ -92,14 +92,15 @@ describe('learnersService', () => {
       expect(leaderboard[1].total_xp).toBe(400);
     });
 
-    it('should return an empty array if leaderboard fetch fails', async () => {
+    it('should surface leaderboard failures instead of returning fake empty data', async () => {
       vi.mocked(api.get).mockResolvedValueOnce({
         ok: false,
         status: 500,
       } as unknown as Response);
 
-      const leaderboard = await learnersService.getLeaderboard();
-      expect(leaderboard).toEqual([]);
+      await expect(learnersService.getLeaderboard()).rejects.toThrow(
+        'Failed to fetch leaderboard (500)',
+      );
     });
   });
 

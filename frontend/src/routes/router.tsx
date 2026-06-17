@@ -30,7 +30,7 @@ import { NotFoundPage } from "./NotFoundPage";
 
 // ── Eagerly loaded (part of initial bundle) ────────────────────────
 // Auth pages load fast and are the first thing users see
-import { ForgotPasswordPage, LoginPage, RegisterPage } from "@/pages/auth";
+import { ForgotPasswordPage, LoginPage, RegisterPage, ResetPasswordPage } from "@/pages/auth";
 
 // ── Lazily loaded (split into separate chunks) ─────────────────────
 const OnboardingPage = lazy(() =>
@@ -115,6 +115,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
         { path: "login", element: <LoginPage /> },
         { path: "register", element: <RegisterPage /> },
         { path: "forgot-password", element: <ForgotPasswordPage /> },
+        { path: "reset-password", element: <ResetPasswordPage /> },
       ],
     },
 

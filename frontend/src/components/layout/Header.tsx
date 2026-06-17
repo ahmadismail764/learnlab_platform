@@ -26,34 +26,6 @@ interface Notification {
   read: boolean
 }
 
-// Hardcoded notifications for demo
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'reminder',
-    titleKey: 'notificationReviewTitle',
-    messageKey: 'notificationReviewMessage',
-    timeKey: 'notificationFiveHoursAgo',
-    read: false
-  },
-  {
-    id: '2',
-    type: 'milestone',
-    titleKey: 'notificationMilestoneTitle',
-    messageKey: 'notificationMilestoneMessage',
-    timeKey: 'notificationOneDayAgo',
-    read: true
-  },
-  {
-    id: '3',
-    type: 'tip',
-    titleKey: 'notificationTipTitle',
-    messageKey: 'notificationTipMessage',
-    timeKey: 'notificationTwoDaysAgo',
-    read: true
-  }
-]
-
 export interface HeaderProps {
   /** Current user info */
   user?: User
@@ -76,7 +48,7 @@ export function Header({
     'rounded-full p-2.5 text-neutral-500 transition-colors hover:bg-white hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-900/80 dark:hover:text-neutral-100'
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
-  const [notifications, setNotifications] = useState(mockNotifications)
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const { logout } = useAuth()
 

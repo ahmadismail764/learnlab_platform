@@ -2,12 +2,7 @@ import { api, type EntityId } from "./api";
 import { parseApiError } from "./api";
 
 interface SessionCreatePayload {
-  responses?: ResponsePayload[];
-}
-
-interface ResponsePayload {
-  question?: EntityId;
-  selected_answer_index?: number;
+  responses?: [];
 }
 
 interface SessionUpdatePayload {
@@ -41,7 +36,8 @@ export const practiceService = {
   },
 
   createSession: async (data: SessionCreatePayload) => {
-    // Backend expects { responses: [...] } per integration guide
+    // Non-empty bulk responses are blocked by the published backend serializer contract.
+    // Create an empty session, then submit answers through the nested responses route.
     const payload = { responses: data.responses ?? [] };
     const response = await api.post("/practice/sessions/", payload);
     if (!response.ok) throw new Error("Failed to create session");

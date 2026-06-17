@@ -7,6 +7,7 @@ from accounts.views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     LogoutView,
+    UserPreferencesView,
 )
 
 urlpatterns = [
@@ -14,6 +15,7 @@ urlpatterns = [
     path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('register/', RegisterView.as_view(), name='register-learner'),
     path('users/me/', CurrentUserView.as_view(), name='current_user'),
+    path('users/me/preferences/', UserPreferencesView.as_view(), name='user_preferences'),
     path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
     path('logout/', LogoutView.as_view(), name='logout'),

@@ -23,7 +23,6 @@ from practice.serializers import (
     QuestionResponseSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
-    LeaderboardSerializer,
 )
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER

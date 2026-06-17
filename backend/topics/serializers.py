@@ -1,7 +1,19 @@
-from datetime import datetime, timezone
 import math
+from datetime import datetime, timezone
+# DRF imports
 from rest_framework import serializers
+# Our imports
 from topics.models import Topic, Subtopic, SubtopicMastery
+from accounts.models import User
+
+# ===================================================
+# Leaderboard serializers
+# ===================================================
+
+class LeaderboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'current_xp', 'streak_count']
 
 class TopicSerializer(serializers.ModelSerializer):
     question_count = serializers.SerializerMethodField()

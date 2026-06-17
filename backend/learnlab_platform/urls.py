@@ -15,6 +15,7 @@ api_v1_patterns = [
     path('practice/', include('practice.urls')),   # All practice-related traffic
     path('analytics/', include('analytics.urls')), # Analytics traffic
     path('', include('topics.urls')),
+    path('admin/', include('accounts.admin_urls')), # Admin-only operational endpoints
     path('', include(topics_router.urls)),          # Topics, subtopics, mastery
 ]
 

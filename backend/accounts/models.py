@@ -28,5 +28,42 @@ class User(AbstractUser):
     streak_count = models.IntegerField(default=0)
     last_practice_date = models.DateField(null=True, blank=True)
 
+    # UI preferences persisted server-side (language, theme, notifications, etc.)
+    preferences = models.JSONField(default=dict, blank=True)
+
     def __str__(self):
         return f"Admin: {self.username}" if self.is_superuser else f"Learner: {self.username}"
+
+
+class AuditLog(models.Model):
+    ACTION_CHOICES = [
+        ('user_register', 'User Registered'),
+        ('user_login', 'User Logged In'),
+        ('session_created', 'Practice Session Created'),
+        ('session_completed', 'Practice Session Completed'),
+        ('question_created', 'Question Created'),
+        ('question_updated', 'Question Updated'),
+        ('question_deleted', 'Question Deleted'),
+        ('topic_created', 'Topic Created'),
+        ('subtopic_created', 'Subtopic Created'),
+        ('preferences_updated', 'Preferences Updated'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    actor = models.ForeignKey(
+        'accounts.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='audit_logs',
+    )
+    action_type = models.CharField(max_length=64, choices=ACTION_CHOICES, db_index=True)
+    target_resource = models.CharField(max_length=255, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    metadata = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.actor} — {self.action_type} @ {self.timestamp}"

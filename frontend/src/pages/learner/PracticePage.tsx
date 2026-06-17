@@ -50,7 +50,6 @@ export function PracticePage() {
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  const [isCompleting, setIsCompleting] = useState(false)
 
   const currentQuestion = questions[currentIndex]
   const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
@@ -124,13 +123,6 @@ export function PracticePage() {
         selected_answer_index: selectedAnswerIndex,
       })
       const backendIsCorrect = Boolean(response?.is_correct)
-      if (typeof response?.correct_answer_index === 'number') {
-        setQuestions((prev) => prev.map((question, index) =>
-          index === currentIndex
-            ? { ...question, correct_answer_index: response.correct_answer_index }
-            : question,
-        ))
-      }
       if (backendIsCorrect) {
         setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
       }
@@ -143,7 +135,7 @@ export function PracticePage() {
         }
       }))
     } catch (err) {
-      logger.warn('Failed to submit interaction', err)
+      console.error('Failed to submit interaction', err)
       setQuestionStates((prev) => ({
         ...prev,
         [currentIndex]: {
@@ -184,7 +176,6 @@ export function PracticePage() {
   }, [isCompleting, queryClient, sessionRecord, showError, t])
 
   const handleGrade = useCallback((grade: FSRSGrade) => {
-    if (isCompleting) return
     if (!currentStatus || currentStatus.answerState !== 'answered') return
     if (currentStatus.selectedAnswerIndex === null) {
       showError(t('practice:couldNotSubmitAnswer'))
@@ -206,7 +197,7 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentStatus, isCompleting, questions.length, showError, t])
+  }, [completeSession, currentIndex, currentStatus, questions.length, showError, t])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -466,35 +457,22 @@ export function PracticePage() {
                           {index + 1}
                         </kbd>
                       )}
-                    >
-                      <div className="flex items-center gap-3">
-                        {!isAnswered && (
-                          <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-                            {index + 1}
-                          </kbd>
-                        )}
-                        <span className="text-base font-medium">{choice}</span>
-                      </div>
-                      <span className="shrink-0">
-                        {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
-                          <CheckCircle className={cn(
-                            'h-5 w-5',
-                            currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
-                          )} />
-                        ) : null}
-                        {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        ) : null}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 rounded-2xl bg-primary-50 p-4 text-sm text-primary-800 dark:bg-primary-950/20 dark:text-primary-200">
-                    <Mic2 className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" />
-                    <p>{t('practice:openAnswerPrompt')}</p>
-                  </div>
+                      <span className="text-base font-medium">{choice}</span>
+                    </div>
+                    <span className="shrink-0">
+                      {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
+                        <CheckCircle className={cn(
+                          'h-5 w-5',
+                          currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
+                        )} />
+                      ) : null}
+                      {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      ) : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
 
               {isAnswered && currentStatus.isCorrect !== null && (
                 <div

@@ -2,36 +2,18 @@
 
 > **For the backend team.** This document separates true backend-owned problems from frontend/product integration notes. If the backend already provides a working contract and the frontend was not consuming it, that is **not** listed as a backend issue.
 >
-> **Latest verification:** 2026-06-16 on `interface` after merging `origin/master` at `d841620`.
+> **Latest verification:** 2026-06-17 on `interface` at `fc506ca`.
 
 ---
 
 ## Backend-Owned Issues / Contract Risks
 
-### 1. Leaderboard endpoint is missing from the merged backend URL contract
+### 1. Bulk practice session create documents the wrong nested response shape
 
-- **Status:** Active backend contract blocker, verified 2026-06-16 after merging `origin/master` at `d841620`
-- **Affected contract:** `GET /api/v1/practice/leaderboard/` and `GET /api/v1/practice/leaderboard/?topic=<uuid>`
-- **Symptoms:** The frontend leaderboard pages and admin dashboard consume `/practice/leaderboard/`, but `backend/practice/urls.py` no longer mounts `LeaderboardView`, and generated OpenAPI paths do not include a leaderboard endpoint.
-- **Smoke result:** Authenticated APIClient smoke returned `404` for `GET /api/v1/practice/leaderboard/`.
-- **Impact:** Learner leaderboard, topic leaderboard, and admin dashboard learner counts cannot consume a backend leaderboard contract. The frontend now surfaces this failure instead of returning a fake empty leaderboard.
-- **Recommendation:** Re-mount a learner-safe leaderboard endpoint under `/api/v1/practice/leaderboard/` or publish the replacement endpoint and response contract.
-
-### 2. Admin question reads omit `correct_answer_index`, blocking accurate preview/edit
-
-- **Status:** Active backend contract blocker, verified 2026-06-16 after merging `origin/master` at `d841620`
-- **Affected contract:** `GET /api/v1/practice/questions/` and `GET /api/v1/practice/questions/<uuid:id>/`
-- **Symptoms:** `QuestionViewSet` uses `QuestionSerializer` for all list/retrieve requests. That serializer intentionally excludes `correct_answer_index`, which is correct for learners but also affects admin reads.
-- **Smoke result:** Authenticated APIClient smoke for `GET /api/v1/practice/questions/` returned question keys `['choices', 'id', 'subtopic', 'subtopic_name', 'text', 'tier', 'tier_display']`; `correct_answer_index` was absent.
-- **Impact:** Admin question preview cannot identify the correct answer, and editing an existing question cannot safely preserve the current correct answer. The frontend no longer fabricates index `0`, so this backend omission is visible.
-- **Recommendation:** Use an admin-specific read serializer for staff users or expose a dedicated admin question endpoint that includes `correct_answer_index` while keeping learner-facing practice/adaptive question responses answer-safe.
-
-### 3. Bulk practice session create documents the wrong nested response shape
-
-- **Status:** Active backend contract blocker, verified by schema/serializer audit 2026-06-16 after merging `origin/master` at `d841620`
+- **Status:** Active backend contract blocker, still verified 2026-06-17 on `interface` at `fc506ca`
 - **Affected contract:** `POST /api/v1/practice/sessions/` with non-empty nested `responses`
 - **Symptoms:** `PracticeSessionCreateSerializer.responses` is wired to `QuestionCreateAndUpdateSerializer(many=True)` even though `create()` reads each row as a `QuestionResponse` payload using `response_data['question']` and `response_data['selected_answer_index']`.
-- **Smoke result:** Generated OpenAPI schema for `PracticeSessionCreate.responses[]` references `QuestionCreateAndUpdate` instead of `QuestionResponseCreate`.
+- **Smoke result:** Generated OpenAPI schema for `PracticeSessionCreate.responses[]` still references `QuestionCreateAndUpdate` instead of `QuestionResponseCreate`. Runtime APIClient smoke with `{"responses":[{"question":"<uuid>","selected_answer_index":0}]}` returned `400` with required-field errors for `text` and `correct_answer_index`.
 - **Impact:** The published bulk session-create contract asks clients for question-authoring fields, while runtime code expects answer-submission fields. The current frontend avoids this by creating sessions with `responses: []` and submitting answers through `/practice/sessions/<id>/responses/`.
 - **Recommendation:** Change `PracticeSessionCreateSerializer.responses` back to `QuestionResponseCreateSerializer(many=True, required=False)`, keep XP awarding centralized on completion, and regenerate the schema.
 
@@ -100,10 +82,10 @@
 
 ### 10. OpenAPI documentation completeness for auth/practice/analytics
 
-- **Status:** Schema documentation issue, verified 2026-06-16 after merging `origin/master` at `d841620`
-- **Description:** `manage.py spectacular --format openapi-json` completes but reports documentation errors/warnings: `PasswordResetRequestView` has no request/response serializer annotation, `PracticeSessionViewSet` path parameter type cannot be derived cleanly, and analytics topic operationIds collide between `/analytics/topics/` and `/analytics/topics/{topic_id}/`.
+- **Status:** Mostly resolved / one remaining non-blocking schema warning, verified 2026-06-17 on `interface` at `fc506ca`
+- **Description:** `manage.py spectacular --validate` completes with zero errors and one warning: `PracticeSessionViewSet` path parameter `id` still cannot be derived cleanly and defaults to string. Earlier password-reset serializer and analytics operationId warnings are no longer present.
 - **Impact:** Frontend contract audits can still inspect runtime behavior, but generated OpenAPI remains noisy and partially misleading.
-- **Recommendation:** Add `@extend_schema` request/response annotations for password-reset request, annotate practice session path parameters, and give analytics routes unique operation IDs/serializer shapes.
+- **Recommendation:** Finish annotating the practice session path parameter so generated OpenAPI is warning-free.
 
 ---
 
@@ -142,64 +124,74 @@
 
 ### 1. Admin Audit Logs API
 
-### 1. Missing `selected_answer_index` migration
+### 1. Leaderboard endpoint restored
+
+- **Status:** ✅ Resolved, verified 2026-06-17 on `interface` at `fc506ca`
+- **Verification:** `GET /api/v1/practice/leaderboard/` is mounted again and authenticated APIClient smoke returned `200` with learner-safe fields: `username`, `current_xp`, and `streak_count`. No backend IDs are exposed in the leaderboard payload.
+
+### 2. Admin question reads include `correct_answer_index`
+
+- **Status:** ✅ Resolved, verified 2026-06-17 on `interface` at `fc506ca`
+- **Verification:** Learner `GET /api/v1/practice/questions/` still omits `correct_answer_index`, while staff/admin `GET /api/v1/practice/questions/` includes it through `QuestionAdminSerializer`. This preserves learner answer safety and unblocks admin preview/edit.
+
+### 3. Missing `selected_answer_index` migration
 
 - **Status:** ✅ Resolved, verified 2026-06-16 after merging `origin/master` at `d841620`
 - **Verification:** `backend/practice/migrations/0003_questionresponse_selected_answer_index.py` is now committed. `manage.py makemigrations --check --dry-run` returns `No changes detected`. Local `manage.py migrate --check` may still fail until the newly committed migrations are applied to the local database.
 
-### 2. Bulk practice session submission double-award risk
+### 4. Bulk practice session submission double-award risk
 
 - **Status:** ✅ Resolved, verified by serializer audit 2026-06-16 after merging `origin/master` at `d841620`
 - **Verification:** `PracticeSessionCreateSerializer.create()` now stores `session.total_xp_earned` only and no longer increments `learner.current_xp`, streak, or `last_practice_date`. Learner aggregate XP/streak awarding remains centralized in `PracticeSessionSerializer.update()` when `end_time` completes the session.
 
-### 3. Backend email environment import failure
+### 5. Backend email environment import failure
 
 - **Status:** ✅ Resolved, verified 2026-06-16 after merging `origin/master` at `d841620`
 - **Verification:** `settings.py` now uses `EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))`, `EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'`, and `backend/.env.example` documents the email variables. `manage.py check` passes without supplying `EMAIL_PORT` in the shell.
 
-### 4. Password reset request response no longer exposes reset credentials
+### 6. Password reset request response no longer exposes reset credentials
 
 - **Status:** ✅ Resolved, verified 2026-06-15 after backend merge `a7ad281`
 - **Verification:** APIClient smoke with an existing account and a missing email returned `200` with the same response keys: `['message']`. No `uid` or `token` keys were returned in JSON. The frontend request flow at `/forgot-password` ignores response credentials, and the reset confirmation route `/reset-password?uid=...&token=...` now posts the emailed credentials to `/auth/password-reset/confirm/`.
 
-### 5. Adaptive session generation serializer field omission
+### 7. Adaptive session generation serializer field omission
 
 - **Status:** ✅ Resolved, verified 2026-06-15 after backend merge `a7ad281`
 - **Verification:** `QuestionSerializer.Meta.fields` now includes `subtopic_name`. Authenticated APIClient smoke for `GET /api/v1/practice/sessions/generate-adaptive/` returned `200` with `questions` and `message`.
 
-### 6. Current User Serializer Date Field
+### 8. Current User Serializer Date Field
 
 ### 2. User Preferences Persistence API
 
-### 7. Adaptive Session Generation UUID/Subtopic Query Bug
+### 9. Adaptive Session Generation UUID/Subtopic Query Bug
 
 ### 3. Admin System Health Telemetry API
 
-### 8. Practice Session Creation Returns `id`
+### 10. Practice Session Creation Returns `id`
 
 ### 4. Server-Side Token Revocation On Logout
 
-### 9. Practice Session Completion XP Awarding Bug (Critical Bug)
+### 11. Practice Session Completion XP Awarding Bug (Critical Bug)
 
 ### 5. Leaderboard Contract Moved
 
-### 10. Interactive Practice Response Submission Endpoint
+### 12. Interactive Practice Response Submission Endpoint
 
 ### 6. Admin Question Reads Include `correct_answer_index`
 
-### 11. Bulk & Time-Series Analytics Telemetry
+### 13. Bulk & Time-Series Analytics Telemetry
 
 ### 7. OpenAPI Warning Cleanup
 
-### 12. Curriculum Questions Counts
+### 14. Curriculum Questions Counts
 
 ### 8. Analytics Caching
 
-### 13. Topic Typo Resolution (`/topics/`)
+### 15. Topic Typo Resolution (`/topics/`)
 
 ### 9. User Preferences PATCH Schema Alignment
 
-### 14. User Initials and Avatar Colors in Token Response
+### 16. User Initials and Avatar Colors in Token Response
 
 ### 10. Post-Submit Answer Reveal
 

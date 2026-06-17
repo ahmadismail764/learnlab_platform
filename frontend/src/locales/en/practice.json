@@ -6,7 +6,6 @@
   "closeKeyboard": "Close",
   "completionNextSteps": "You can jump back to the dashboard or review your updated progress before starting another session.",
   "correctAnswerFeedback": "Correct. Your XP has been added for this question.",
-  "couldNotCompleteSession": "Could not save the completed session. Please try again.",
   "couldNotStartSession": "Could not start session: {{message}}",
   "couldNotSubmitAnswer": "Could not submit your answer. Please try again.",
   "difficultyLabel": "Difficulty",
@@ -69,5 +68,6 @@
   "updatesDuringSet": "Updates during the set",
   "upToTen": "Up to 10",
   "viewProgress": "View progress",
+  "watchExplanation": "Watch Explanation",
   "xpEarned": "XP Earned"
 }

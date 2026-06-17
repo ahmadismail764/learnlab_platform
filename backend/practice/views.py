@@ -16,12 +16,14 @@ from accounts.models import User
 from topics.models import Subtopic, SubtopicMastery
 from practice.fsrs_engine import process_review
 from practice.serializers import (
+    QuestionAdminSerializer,
     QuestionCreateAndUpdateSerializer,
     QuestionSerializer,
     QuestionResponseCreateSerializer,
-    QuestionResponseSerializer, 
-    PracticeSessionSerializer, 
-    PracticeSessionCreateSerializer, 
+    QuestionResponseSerializer,
+    PracticeSessionSerializer,
+    PracticeSessionCreateSerializer,
+    LeaderboardSerializer,
 )
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
@@ -44,14 +46,37 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         """
         Dynamically route serializers to isolate sensitive data fields.
+        Staff reads get correct_answer_index; learner reads never do.
         """
         if self.action in ['create', 'update', 'partial_update']:
             return QuestionCreateAndUpdateSerializer
+        if self.request and self.request.user and self.request.user.is_staff:
+            return QuestionAdminSerializer
         return QuestionSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(operation_id='practice_sessions_list'),
+    retrieve=extend_schema(
+        operation_id='practice_sessions_retrieve',
+        parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
+    ),
+    create=extend_schema(operation_id='practice_sessions_create'),
+    update=extend_schema(
+        operation_id='practice_sessions_update',
+        parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
+    ),
+    partial_update=extend_schema(
+        operation_id='practice_sessions_partial_update',
+        parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
+    ),
+    destroy=extend_schema(
+        operation_id='practice_sessions_destroy',
+        parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
+    ),
+)
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-    
+
     def get_permissions(self):
         """
         FIXED: Correctly returns instantiated permission arrays to prevent runtime crashes.
@@ -175,3 +200,29 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(session_questions)} question(s)',
         }, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id='practice_leaderboard_list',
+        description="Returns all learners ranked by XP descending. Staff accounts are excluded. Filter by ?topic=<uuid> to rank only learners active in that topic.",
+        parameters=[
+            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
+        ],
+        responses={200: LeaderboardSerializer(many=True)},
+    )
+)
+class LeaderboardView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = LeaderboardSerializer
+
+    def get_queryset(self):
+        topic_id = self.request.query_params.get('topic')
+        qs = User.objects.filter(is_staff=False).order_by('-current_xp')
+        if topic_id:
+            from topics.models import SubtopicMastery
+            learner_ids = SubtopicMastery.objects.filter(
+                subtopic__topic_id=topic_id
+            ).values_list('learner_id', flat=True).distinct()
+            qs = qs.filter(id__in=learner_ids)
+        return qs

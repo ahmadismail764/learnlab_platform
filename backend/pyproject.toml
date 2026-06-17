@@ -6,6 +6,7 @@ dependencies = [
     "asgiref==3.11.1",
     "attrs==26.1.0",
     "django==5.2.13",
+    "django-unfold>=0.60.0",
     "django-cors-headers==4.9.0",
     "django-extensions==4.1",
     "django-filter==25.2",

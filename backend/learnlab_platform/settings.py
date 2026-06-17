@@ -30,6 +30,10 @@ else:
         raise ValueError("CRITICAL SECURITY ERROR: ALLOWED_HOSTS is empty in production mode.")
 
 INSTALLED_APPS = [
+    # Unfold must be registered BEFORE django.contrib.admin
+    'unfold',
+    'unfold.contrib.filters',
+    'unfold.contrib.inlines',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -183,6 +187,110 @@ SPECTACULAR_SETTINGS = {
     'TITLE': 'LearnLab API',
     'DESCRIPTION': 'Mastery-based learning backend',
     'VERSION': '1.0.0',
+}
+
+# ==============================================================================
+# DJANGO UNFOLD — Admin UI
+# ==============================================================================
+UNFOLD = {
+    "SITE_TITLE": "LearnLab",
+    "SITE_HEADER": "LearnLab Admin",
+    "SITE_SYMBOL": "school",
+    "SHOW_HISTORY": True,
+    "SHOW_VIEW_ON_SITE": True,
+    "COLORS": {
+        "font": {
+            "subtle-light": "107 114 128",
+            "subtle-dark": "156 163 175",
+            "default-light": "17 24 39",
+            "default-dark": "243 244 246",
+            "important-light": "17 24 39",
+            "important-dark": "243 244 246",
+        },
+        "primary": {
+            "50": "238 242 255",
+            "100": "224 231 255",
+            "200": "199 210 254",
+            "300": "165 180 252",
+            "400": "129 140 248",
+            "500": "99 102 241",
+            "600": "79 70 229",
+            "700": "67 56 202",
+            "800": "55 48 163",
+            "900": "49 46 129",
+            "950": "30 27 75",
+        },
+    },
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": False,
+        "navigation": [
+            {
+                "title": "Users",
+                "separator": True,
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": "All Users",
+                        "icon": "group",
+                        "link": "/admin/accounts/user/",
+                        "permission": lambda request: request.user.is_superuser,
+                    },
+                ],
+            },
+            {
+                "title": "Content",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Topics",
+                        "icon": "topic",
+                        "link": "/admin/topics/topic/",
+                    },
+                    {
+                        "title": "Subtopics",
+                        "icon": "list",
+                        "link": "/admin/topics/subtopic/",
+                    },
+                    {
+                        "title": "Questions",
+                        "icon": "quiz",
+                        "link": "/admin/practice/question/",
+                    },
+                ],
+            },
+            {
+                "title": "Practice",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Sessions",
+                        "icon": "play_circle",
+                        "link": "/admin/practice/practicesession/",
+                    },
+                    {
+                        "title": "Responses",
+                        "icon": "check_circle",
+                        "link": "/admin/practice/questionresponse/",
+                    },
+                ],
+            },
+            {
+                "title": "Learning Progress",
+                "separator": True,
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": "Subtopic Mastery",
+                        "icon": "military_tech",
+                        "link": "/admin/topics/subtopicmastery/",
+                    },
+                ],
+            },
+        ],
+    },
 }
 
 CACHES = {

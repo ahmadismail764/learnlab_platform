@@ -27,19 +27,12 @@ test('Learner can start and successfully complete a practice session', async ({ 
       break;
     }
 
-    // Wait for either option buttons (MCQ) or math input (Math)
+    // Wait for choice buttons
     const options = page.locator('button.border-neutral-200, button.border-neutral-800');
-    const mathInput = page.locator('math-field, input[type="text"]');
 
     if (await options.first().isVisible()) {
-      // Multiple Choice: click the first option
       await options.first().click();
-    } else if (await mathInput.isVisible()) {
-      // Math input: fill a dummy value and submit
-      await mathInput.fill('42');
-      await page.click('button:has-text("Submit answer")');
     } else {
-      // Break if neither is found to prevent infinite loop
       break;
     }
 

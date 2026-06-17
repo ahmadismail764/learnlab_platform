@@ -11,11 +11,9 @@ import {
   CheckCircle2,
   Target,
   ArrowRight,
-  Mic2,
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
-import { MathInput } from '@/components/MathInput'
 import { useToast } from '@/contexts'
 import { practiceService } from '@/services/practice'
 import { cn } from '@/utils/cn'
@@ -52,7 +50,6 @@ export function PracticePage() {
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-  const [mathValue, setMathValue] = useState('')
 
   const currentQuestion = questions[currentIndex]
   const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
@@ -71,7 +68,13 @@ export function PracticePage() {
 
       const normalizedQuestions = data.questions.map((question: RawPracticeQuestion) =>
         normalizePracticeQuestion(question, t('practice:practiceQuestionFallback')),
-      )
+      ).filter((question: PracticeQuestion) => question.choices.length > 0)
+
+      if (normalizedQuestions.length === 0) {
+        showWarning(t('practice:noQuestionsAvailable'))
+        return
+      }
+
       setQuestions(normalizedQuestions)
 
       // Create session record — backend PracticeSessionCreateSerializer
@@ -104,37 +107,53 @@ export function PracticePage() {
     }
   }
 
-  const handleAnswer = useCallback((choice: string, selectedAnswerIndex: number) => {
-    if (!currentQuestion || !currentStatus || currentStatus.answerState === 'answered') return
-    const isCorrect = currentQuestion.correct_answer_index === null
-      ? null
-      : selectedAnswerIndex === currentQuestion.correct_answer_index
+  const handleAnswer = useCallback(async (choice: string, selectedAnswerIndex: number) => {
+    if (!currentQuestion || !currentStatus || !sessionRecord || currentStatus.answerState !== 'unanswered') return
+
     setQuestionStates((prev) => ({
       ...prev,
       [currentIndex]: {
         ...prev[currentIndex],
         userResponse: choice,
         selectedAnswerIndex,
-        answerState: 'answered',
-        isCorrect: isCorrect
+        answerState: 'submitting',
+        isCorrect: null
       }
     }))
-    if (isCorrect) setEarnedXp(prev => prev + getQuestionXp(currentQuestion))
-  }, [currentQuestion, currentStatus, currentIndex])
 
-  const handleSubmitMathAnswer = useCallback(() => {
-    if (!currentQuestion || !mathValue || !currentStatus || currentStatus.answerState === 'answered') return
-    setQuestionStates(prev => ({
-      ...prev,
-      [currentIndex]: {
-        ...prev[currentIndex],
-        userResponse: mathValue,
-        selectedAnswerIndex: null,
-        answerState: 'answered',
-        isCorrect: null,
+    try {
+      const response = await practiceService.submitInteraction({
+        session: sessionRecord.id,
+        question: currentQuestion.id,
+        selected_answer_index: selectedAnswerIndex,
+      })
+      const backendIsCorrect = Boolean(response?.is_correct)
+      if (backendIsCorrect) {
+        setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
       }
-    }))
-  }, [currentQuestion, currentStatus, currentIndex, mathValue])
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: {
+          ...prev[currentIndex],
+          answerState: 'answered',
+          isCorrect: backendIsCorrect,
+        }
+      }))
+    } catch (err) {
+      console.error('Failed to submit interaction', err)
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: {
+          ...prev[currentIndex],
+          userResponse: null,
+          selectedAnswerIndex: null,
+          answerState: 'unanswered',
+          isCorrect: null,
+        }
+      }))
+      showError(t('practice:couldNotSubmitAnswer'))
+    }
+  }, [currentQuestion, currentStatus, currentIndex, sessionRecord, showError, t])
 
   const completeSession = useCallback(async () => {
     setSessionState('complete')
@@ -154,8 +173,8 @@ export function PracticePage() {
     }
   }, [queryClient, sessionRecord])
 
-  const handleGrade = useCallback(async (grade: FSRSGrade) => {
-    if (!currentStatus || !sessionRecord || !currentQuestion) return
+  const handleGrade = useCallback((grade: FSRSGrade) => {
+    if (!currentStatus || currentStatus.answerState !== 'answered') return
     if (currentStatus.selectedAnswerIndex === null) {
       showError(t('practice:couldNotSubmitAnswer'))
       return
@@ -165,26 +184,7 @@ export function PracticePage() {
       ...prev,
       [currentIndex]: { ...prev[currentIndex], grade: grade }
     }))
-    try {
-      const response = await practiceService.submitInteraction({
-        session: sessionRecord.id,
-        question: currentQuestion.id,
-        selected_answer_index: currentStatus.selectedAnswerIndex,
-      })
-      const backendIsCorrect = Boolean(response?.is_correct)
-      if (currentStatus.isCorrect === null && backendIsCorrect) {
-        setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
-      }
-      setQuestionStates((prev) => ({
-        ...prev,
-        [currentIndex]: { ...prev[currentIndex], isCorrect: backendIsCorrect }
-      }))
-    } catch (err) {
-      console.error("Failed to submit interaction", err)
-      showError(t('practice:couldNotSubmitAnswer'))
-      return
-    }
-    setMathValue('')
+
     if (currentIndex < questions.length - 1) {
       const nextIndex = currentIndex + 1
       setCurrentIndex(nextIndex)
@@ -195,44 +195,37 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentQuestion, currentStatus, questions.length, sessionRecord, showError, t])
+  }, [completeSession, currentIndex, currentStatus, questions.length, showError, t])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't intercept if user is typing in an input field
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA' || (document.activeElement as HTMLElement)?.isContentEditable) {
-        // Only intercept Enter for MathInput if we are not answered
-        if (e.key === 'Enter' && (!currentStatus || currentStatus.answerState !== 'answered')) {
-          e.preventDefault();
-          handleSubmitMathAnswer();
-        }
-        return;
+        return
       }
 
-      if (sessionState !== 'practicing' || !currentQuestion || !currentStatus) return;
+      if (sessionState !== 'practicing' || !currentQuestion || !currentStatus) return
 
-      const key = e.key;
-      const isMCQ = currentQuestion.choices && currentQuestion.choices.length > 0;
-      const isAnswered = currentStatus.answerState === 'answered';
+      const key = e.key
+      const isAnswered = currentStatus.answerState === 'answered'
 
-      if (!isAnswered && isMCQ) {
-        if (key === '1' && currentQuestion.choices[0]) handleAnswer(currentQuestion.choices[0], 0);
-        if (key === '2' && currentQuestion.choices[1]) handleAnswer(currentQuestion.choices[1], 1);
-        if (key === '3' && currentQuestion.choices[2]) handleAnswer(currentQuestion.choices[2], 2);
-        if (key === '4' && currentQuestion.choices[3]) handleAnswer(currentQuestion.choices[3], 3);
+      if (currentStatus.answerState === 'unanswered') {
+        const selectedIndex = Number(key) - 1
+        const selectedChoice = currentQuestion.choices[selectedIndex]
+        if (selectedChoice) handleAnswer(selectedChoice, selectedIndex)
       }
 
       if (isAnswered) {
-        if (key === '1') handleGrade(1);
-        if (key === '2') handleGrade(2);
-        if (key === '3') handleGrade(3);
-        if (key === '4') handleGrade(4);
+        if (key === '1') handleGrade(1)
+        if (key === '2') handleGrade(2)
+        if (key === '3') handleGrade(3)
+        if (key === '4') handleGrade(4)
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentQuestion, currentStatus, handleAnswer, handleGrade, handleSubmitMathAnswer, sessionState])
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [currentQuestion, currentStatus, handleAnswer, handleGrade, sessionState])
 
   if (sessionState === 'selecting') {
     return (
@@ -266,7 +259,7 @@ export function PracticePage() {
             icon={<Clock className="h-5 w-5" />}
             label={t('practice:estimatedTime')}
             value={t('practice:tenToFifteenMinutes')}
-            helper={t('practice:dependsOnQuestionType')}
+            helper={t('practice:choiceBasedReview')}
             tone="secondary"
           />
           <PageStatCard
@@ -386,8 +379,8 @@ export function PracticePage() {
     )
   }
 
-  const isMCQ = currentQuestion.choices && currentQuestion.choices.length > 0
   const isAnswered = currentStatus.answerState === 'answered'
+  const isInteractionLocked = currentStatus.answerState !== 'unanswered'
   const sessionProgress = ((currentIndex + 1) / questions.length) * 100
   const elapsedSeconds = Math.round((Date.now() - currentStatus.startTime) / 1000)
 
@@ -439,83 +432,65 @@ export function PracticePage() {
                 </h2>
               </div>
 
-              {isMCQ ? (
-                <div className="grid gap-3">
-                  {currentQuestion.choices.map((choice: string, index: number) => (
-                    <button
-                      key={index}
-                      onClick={() => handleAnswer(choice, index)}
-                      disabled={isAnswered}
-                      className={cn(
-                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
-                        currentStatus.userResponse === choice
-                          ? currentStatus.isCorrect
-                            ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'
-                            : currentStatus.isCorrect === false
-                              ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/20 dark:text-red-200'
-                              : 'border-primary-500 bg-primary-50 text-primary-900 dark:bg-primary-950/20 dark:text-primary-200'
-                          : 'border-neutral-200 bg-white hover:border-primary-400 hover:bg-primary-50/40 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-primary-950/20',
+              <div className="grid gap-3">
+                {currentQuestion.choices.map((choice: string, index: number) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(choice, index)}
+                    disabled={isInteractionLocked}
+                    className={cn(
+                      'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
+                      currentStatus.userResponse === choice
+                        ? currentStatus.isCorrect
+                          ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'
+                          : currentStatus.isCorrect === false
+                            ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/20 dark:text-red-200'
+                            : 'border-primary-500 bg-primary-50 text-primary-900 dark:bg-primary-950/20 dark:text-primary-200'
+                        : 'border-neutral-200 bg-white hover:border-primary-400 hover:bg-primary-50/40 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-primary-950/20',
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      {!isInteractionLocked && (
+                        <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                          {index + 1}
+                        </kbd>
                       )}
-                    >
-                      <div className="flex items-center gap-3">
-                        {!isAnswered && (
-                          <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-                            {index + 1}
-                          </kbd>
-                        )}
-                        <span className="text-base font-medium">{choice}</span>
-                      </div>
-                      <span className="shrink-0">
-                        {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
-                          <CheckCircle className={cn(
-                            'h-5 w-5',
-                            currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
-                          )} />
-                        ) : null}
-                        {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        ) : null}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 rounded-2xl bg-primary-50 p-4 text-sm text-primary-800 dark:bg-primary-950/20 dark:text-primary-200">
-                    <Mic2 className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" />
-                    <p>{t('practice:openAnswerPrompt')}</p>
-                  </div>
+                      <span className="text-base font-medium">{choice}</span>
+                    </div>
+                    <span className="shrink-0">
+                      {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
+                        <CheckCircle className={cn(
+                          'h-5 w-5',
+                          currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
+                        )} />
+                      ) : null}
+                      {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      ) : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
 
-                  <MathInput
-                    value={mathValue}
-                    onChange={setMathValue}
-                    placeholder={t('practice:writeAnswerPlaceholder')}
-                    className="min-h-[160px] rounded-2xl bg-white dark:bg-neutral-950"
-                    disabled={isAnswered}
-                  />
-
-                  {!isAnswered ? (
-                    <Button onClick={handleSubmitMathAnswer} disabled={!mathValue} className="gap-2">
-                      {t('practice:submitAnswer')}
-                      <kbd className="hidden sm:inline-flex h-5 items-center justify-center rounded border border-primary-400/30 bg-primary-600 px-1.5 font-sans text-[10px] font-medium text-white shadow-sm">
-                        {t('practice:enterKey')}
-                      </kbd>
-                    </Button>
-                  ) : (
-                    <Card className="border-green-200 bg-green-50/70 dark:border-green-900/40 dark:bg-green-950/20">
-                      <div className="flex items-start gap-3">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-300" />
-                        <div>
-                          <p className="font-medium text-green-900 dark:text-green-100">
-                            {t('practice:answerRecorded')}
-                          </p>
-                          <p className="mt-1 text-sm text-green-800/80 dark:text-green-200/80">
-                            {mathValue}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
+              {isAnswered && currentStatus.isCorrect !== null && (
+                <div
+                  className={cn(
+                    'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-medium',
+                    currentStatus.isCorrect
+                      ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900/40 dark:bg-green-950/20 dark:text-green-200'
+                      : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-200',
                   )}
+                >
+                  {currentStatus.isCorrect ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                  ) : (
+                    <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                  )}
+                  <p>
+                    {currentStatus.isCorrect
+                      ? t('practice:correctAnswerFeedback')
+                      : t('practice:incorrectAnswerFeedback')}
+                  </p>
                 </div>
               )}
             </CardContent>

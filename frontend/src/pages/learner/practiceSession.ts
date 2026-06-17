@@ -1,7 +1,7 @@
 import type { EntityId } from '@/services/api'
 
 export type SessionState = 'selecting' | 'practicing' | 'complete'
-export type AnswerState = 'unanswered' | 'answered'
+export type AnswerState = 'unanswered' | 'submitting' | 'answered'
 export type FSRSGrade = 1 | 2 | 3 | 4
 
 export interface PracticeQuestion {

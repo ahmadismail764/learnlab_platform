@@ -24,8 +24,7 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'query-vendor': ['@tanstack/react-query'],
-          'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge'],
-          'math-vendor': ['mathlive']
+          'ui-vendor': ['lucide-react', 'clsx', 'tailwind-merge']
         }
       }
     }

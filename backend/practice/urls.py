@@ -3,7 +3,8 @@ from django.urls import path, include
 from practice.views import (
     QuestionViewSet,
     PracticeSessionViewSet,
-    # QuestionResponseViewSet,
+    GenerateAdaptiveSessionView,
+    LeaderboardView,
 )
 
 QuestionsRouter = DefaultRouter()
@@ -16,6 +17,8 @@ PracticeSessionRouter.register(r'sessions', PracticeSessionViewSet, basename='se
 # ResponseRouter.register(r'responses', QuestionResponseViewSet, basename='response')
 
 urlpatterns = [
+    path('sessions/generate-adaptive/', GenerateAdaptiveSessionView.as_view(), name='generate-adaptive'),
+    path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
     path('', include(QuestionsRouter.urls)),
     path('', include(PracticeSessionRouter.urls)),
 #     path('', include(ResponseRouter.urls)),

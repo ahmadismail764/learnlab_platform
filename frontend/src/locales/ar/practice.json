@@ -6,6 +6,7 @@
   "closeKeyboard": "إغلاق",
   "completionNextSteps": "يمكنك العودة إلى لوحة التعلم أو مراجعة تقدمك المحدّث قبل بدء جلسة أخرى.",
   "correctAnswerFeedback": "صحيح. أُضيفت نقاط الخبرة لهذا السؤال.",
+  "couldNotCompleteSession": "تعذر حفظ الجلسة المكتملة. حاول مرة أخرى.",
   "couldNotStartSession": "تعذر بدء الجلسة: {{message}}",
   "couldNotSubmitAnswer": "تعذر إرسال إجابتك. حاول مرة أخرى.",
   "difficultyLabel": "الصعوبة",
@@ -13,8 +14,6 @@
   "difficultyPromptTitle": "ما صعوبة الاسترجاع؟",
   "elapsed": "الوقت",
   "estimatedTime": "الوقت المتوقع",
-  "explanationVideo": "فيديو الشرح",
-  "explanationVideoDescription": "افتح الشرح الداعم لهذا السؤال في تبويب جديد.",
   "gradeAgain": "أعد",
   "gradeAgainHint": "صعب جداً",
   "gradeEasy": "سهل",
@@ -70,6 +69,5 @@
   "updatesDuringSet": "يتحدّث أثناء المجموعة",
   "upToTen": "حتى 10",
   "viewProgress": "اعرض التقدم",
-  "watchExplanation": "شاهِد الشرح",
   "xpEarned": "نقاط الخبرة المكتسبة"
 }

@@ -57,22 +57,6 @@ export const questionSchema = z
       .refine((value) => value >= 0, 'Correct index must be 0 or higher'),
     tier: z.coerce.number().int().min(1).max(3),
     relationId: z.string().trim().min(1, 'Select a topic'),
-    explanationVideoUrl: z
-      .string()
-      .trim()
-      .refine(
-        (val) => {
-          if (!val) return true
-          try {
-            new URL(val)
-            return true
-          } catch {
-            return false
-          }
-        },
-        { message: 'Invalid video URL. Please enter a valid URL or leave it empty.' }
-      )
-      .optional(),
   })
   .refine(
     (data) => {

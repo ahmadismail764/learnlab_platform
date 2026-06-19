@@ -10,6 +10,11 @@ import {
 } from '@/services/analytics'
 import { practiceService } from '@/services/practice'
 import { authService, type UpdateCurrentUserPayload } from '@/services/auth'
+import {
+  adminsService,
+  type AuditLogEntry,
+  type SystemHealthResponse,
+} from '@/services/admins'
 
 /**
  * Centralized data-fetching hooks
@@ -46,6 +51,10 @@ export const queryKeys = {
     bulk: ['analytics', 'bulk'] as const,
     activity: (period?: string) => ['analytics', 'activity', period] as const,
     difficulty: ['analytics', 'difficulty'] as const,
+  },
+  admin: {
+    auditLogs: ['admin', 'auditLogs'] as const,
+    systemHealth: ['admin', 'systemHealth'] as const,
   },
   practice: {
     sessions: ['practice', 'sessions'] as const,
@@ -155,6 +164,7 @@ export function useAggregatedMetrics() {
   return useQuery<AggregatedMetricsResponse>({
     queryKey: queryKeys.analytics.aggregated,
     queryFn: () => analyticsService.getAggregatedMetrics(),
+    retry: false,
   })
 }
 
@@ -163,6 +173,7 @@ export function useBulkTopicAnalytics() {
   return useQuery<BulkTopicAnalyticsResponse>({
     queryKey: queryKeys.analytics.bulk,
     queryFn: () => analyticsService.getBulkTopicAnalytics(),
+    retry: false,
   })
 }
 
@@ -171,6 +182,7 @@ export function useActivityTimeSeries(period?: string) {
   return useQuery<ActivityTimeSeriesResponse>({
     queryKey: queryKeys.analytics.activity(period),
     queryFn: () => analyticsService.getActivityTimeSeries(period),
+    retry: false,
   })
 }
 
@@ -179,6 +191,25 @@ export function useDifficultyBreakdown() {
   return useQuery<DifficultyTierBreakdownResponse>({
     queryKey: queryKeys.analytics.difficulty,
     queryFn: () => analyticsService.getDifficultyBreakdown(),
+    retry: false,
+  })
+}
+
+// ── Admin Operations Hooks ───────────────────────────────────────
+
+/** Fetch recent admin audit trail entries */
+export function useAuditLogs() {
+  return useQuery<AuditLogEntry[]>({
+    queryKey: queryKeys.admin.auditLogs,
+    queryFn: () => adminsService.getAuditLogs(),
+  })
+}
+
+/** Fetch backend operational telemetry */
+export function useSystemHealth() {
+  return useQuery<SystemHealthResponse>({
+    queryKey: queryKeys.admin.systemHealth,
+    queryFn: () => adminsService.getSystemHealth(),
   })
 }
 

@@ -34,6 +34,8 @@ export {
   useBulkTopicAnalytics,
   useActivityTimeSeries,
   useDifficultyBreakdown,
+  useAuditLogs,
+  useSystemHealth,
   usePracticeSessions,
   useUpdateProfile,
   useSuspenseGlobalLeaderboard,

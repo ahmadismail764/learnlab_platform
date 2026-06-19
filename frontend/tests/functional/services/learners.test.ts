@@ -62,18 +62,14 @@ describe('learnersService', () => {
     it('should fetch and map global leaderboard profiles correctly', async () => {
       const mockLeaderboardResponse = [
         {
-          id: 'user-1',
-          total_xp: 500,
+          username: 'leader',
+          current_xp: 500,
           streak_count: 12,
-          last_practice_date: '2026-05-21',
-          user: { id: 'user-1', username: 'leader' },
         },
         {
-          id: 'user-2',
-          total_xp: 400,
+          username: 'runner_up',
+          current_xp: 400,
           streak_count: 8,
-          last_practice_date: '2026-05-20',
-          user: { id: 'user-2', username: 'runner_up' },
         },
       ];
 
@@ -84,11 +80,11 @@ describe('learnersService', () => {
 
       const leaderboard = await learnersService.getLeaderboard();
 
-      expect(api.get).toHaveBeenCalledWith('/practice/leaderboard/');
+      expect(api.get).toHaveBeenCalledWith('/leaderboard/');
       expect(leaderboard).toHaveLength(2);
-      expect(leaderboard[0].id).toBe('user-1');
+      expect(leaderboard[0].id).toBe('leader');
       expect(leaderboard[0].total_xp).toBe(500);
-      expect(leaderboard[1].id).toBe('user-2');
+      expect(leaderboard[1].id).toBe('runner_up');
       expect(leaderboard[1].total_xp).toBe(400);
     });
 
@@ -113,7 +109,7 @@ describe('learnersService', () => {
 
       await learnersService.getTopicLeaderboard('topic-uuid-abc');
 
-      expect(api.get).toHaveBeenCalledWith('/practice/leaderboard/?topic=topic-uuid-abc');
+      expect(api.get).toHaveBeenCalledWith('/leaderboard/?topic=topic-uuid-abc');
     });
   });
 });

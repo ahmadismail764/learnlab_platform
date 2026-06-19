@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import {
   CheckCircle,
   XCircle,
-  PlayCircle,
   Clock,
   TestTube2,
   Lightbulb,
@@ -50,6 +49,7 @@ export function PracticePage() {
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
 
   const currentQuestion = questions[currentIndex]
   const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
@@ -156,7 +156,8 @@ export function PracticePage() {
   }, [currentQuestion, currentStatus, currentIndex, sessionRecord, showError, t])
 
   const completeSession = useCallback(async () => {
-    setSessionState('complete')
+    if (isCompleting) return
+    setIsCompleting(true)
     if (sessionRecord) {
       try {
         await practiceService.completeSession(sessionRecord.id)
@@ -167,13 +168,20 @@ export function PracticePage() {
         queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
         queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
         queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
+        setSessionState('complete')
       } catch (e) {
         console.error('Failed to complete session', e)
+        showError(t('practice:couldNotCompleteSession'))
+      } finally {
+        setIsCompleting(false)
       }
+    } else {
+      setIsCompleting(false)
     }
-  }, [queryClient, sessionRecord])
+  }, [isCompleting, queryClient, sessionRecord, showError, t])
 
   const handleGrade = useCallback((grade: FSRSGrade) => {
+    if (isCompleting) return
     if (!currentStatus || currentStatus.answerState !== 'answered') return
     if (currentStatus.selectedAnswerIndex === null) {
       showError(t('practice:couldNotSubmitAnswer'))
@@ -195,7 +203,7 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentStatus, questions.length, showError, t])
+  }, [completeSession, currentIndex, currentStatus, isCompleting, questions.length, showError, t])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -496,7 +504,7 @@ export function PracticePage() {
             </CardContent>
           </Card>
 
-          {isAnswered && <PracticeGradePanel onGrade={handleGrade} />}
+          {isAnswered && <PracticeGradePanel onGrade={handleGrade} isDisabled={isCompleting} />}
         </div>
 
         <div className="space-y-4 lg:col-span-4">
@@ -548,28 +556,6 @@ export function PracticePage() {
               </Badge>
             </div>
           </Card>
-
-          {currentQuestion.explanation_video_url && (
-            <Card className="border-primary-200 bg-primary-50/70 dark:border-primary-900/40 dark:bg-primary-950/20">
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <PlayCircle className="h-5 w-5 text-primary-600 dark:text-primary-300" />
-                  <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">
-                    {t('practice:explanationVideo')}
-                  </h3>
-                </div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {t('practice:explanationVideoDescription')}
-                </p>
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(currentQuestion.explanation_video_url ?? undefined, '_blank')}
-                >
-                  {t('practice:watchExplanation')}
-                </Button>
-              </div>
-            </Card>
-          )}
 
           <Card className="border-dashed">
             <div className="flex items-start gap-3">

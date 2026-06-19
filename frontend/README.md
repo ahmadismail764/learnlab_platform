@@ -10,7 +10,7 @@ Educational LMS (Learning Management System) platform for Discrete Mathematics -
 - **Tailwind CSS v4** for styling
 - **Bun** as the primary package/script runner
 - **i18next** for internationalization (English/Arabic with RTL support)
-- **MathLive** for mathematical expression input with virtual keyboard
+- **MathLive** retained for a future optional personal-problem solver flow
 
 ## Getting Started
 
@@ -29,6 +29,13 @@ bun run preview
 
 # Run linter
 bun run lint
+
+# Run unit and functional tests
+bun run test:run
+
+# Check translation sync and unused keys
+bun run i18n:check
+bun run i18n:prune:check
 ```
 
 ## Project Structure
@@ -67,6 +74,7 @@ src/
 - **Multiple Choice Questions** - Traditional 4-option questions
 - **True/False Questions** - Binary choice questions
 - **Adaptive Review Sessions** - Backend-generated practice sets with FSRS-style review signals
+- **Post-Submit Feedback** - Correctness comes from the backend after the learner commits an answer; correct-option reveal is tracked in backend issue #89
 - **MathLive Component** - Retained as a reusable math input for future personal-problem solving flows
 
 ### 📊 Progress Tracking

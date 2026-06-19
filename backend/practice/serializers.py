@@ -63,6 +63,22 @@ class QuestionResponseCreateSerializer(serializers.ModelSerializer):
         model = QuestionResponse
         fields = ['question', 'selected_answer_index']
 
+class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
+    """Post-submit serializer: reveals correct_answer_index for the just-answered question only."""
+    correct_answer_index = serializers.IntegerField(source='question.correct_answer_index', read_only=True)
+
+    class Meta:
+        model = QuestionResponse
+        fields = ['id', 'question', 'selected_answer_index', 'is_correct', 'correct_answer_index', 'confidence_rating']
+        read_only_fields = ['id', 'is_correct', 'correct_answer_index']
+
+class QuestionResponseRatingSerializer(serializers.ModelSerializer):
+    confidence_rating = serializers.IntegerField(min_value=1, max_value=5)
+
+    class Meta:
+        model = QuestionResponse
+        fields = ['confidence_rating']
+
 # ===================================================
 # PracticeSession serializers
 # ===================================================
@@ -105,7 +121,7 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         return instance
 
 class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    responses = QuestionCreateAndUpdateSerializer(many=True, required=False)
+    responses = QuestionResponseCreateSerializer(many=True, required=False)
 
     class Meta:
         model = PracticeSession

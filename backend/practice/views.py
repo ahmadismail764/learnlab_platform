@@ -20,11 +20,13 @@ from practice.serializers import (
     QuestionCreateAndUpdateSerializer,
     QuestionSerializer,
     QuestionResponseCreateSerializer,
-    QuestionResponseSerializer,
+    QuestionResponseFeedbackSerializer,
+    QuestionResponseRatingSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
     LeaderboardSerializer,
 )
+from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
 
@@ -125,16 +127,22 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         )
     
     @extend_schema(
+        operation_id='practice_sessions_submit_response',
         request=QuestionResponseCreateSerializer,
-        responses={201: QuestionResponseSerializer},
-        description="Submit a single question response within an active practice session. Triggers FSRS review processing and updates session XP.",
+        responses={201: QuestionResponseFeedbackSerializer},
+        description=(
+            "Submit a single question response within an active practice session. "
+            "Triggers FSRS review processing and updates session XP. "
+            "Returns the committed response including correct_answer_index for post-submit reveal "
+            "and the current confidence_rating (default 3) which can be updated via PATCH."
+        ),
     )
     @action(detail=True, methods=['post'])
     def responses(self, request, pk=None):
         session = self.get_object()
         if session.learner != request.user:
             raise PermissionDenied("You do not have permission to append data to this session.")
-        
+
         serializer = QuestionResponseCreateSerializer(data=request.data)
 
         if serializer.is_valid():
@@ -156,8 +164,50 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
                 session.total_xp_earned += XP_PER_CORRECT_ANSWER
                 session.save()
 
-            return Response(QuestionResponseSerializer(response).data, status=status.HTTP_201_CREATED)
+            return Response(QuestionResponseFeedbackSerializer(response).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @extend_schema(
+        operation_id='practice_sessions_rate_response',
+        request=QuestionResponseRatingSerializer,
+        responses={200: QuestionResponseFeedbackSerializer},
+        parameters=[
+            OpenApiParameter('response_pk', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
+        ],
+        description=(
+            "Persist a difficulty/recall rating (1–5) for a previously submitted response. "
+            "Call this after the learner reflects on how hard or easy recall felt. "
+            "1 = very hard, 5 = very easy."
+        ),
+    )
+    @action(detail=True, methods=['patch'], url_path=r'responses/(?P<response_pk>[^/.]+)')
+    def rate_response(self, request, pk=None, response_pk=None):
+        session = self.get_object()
+        if session.learner != request.user:
+            raise PermissionDenied("You do not have permission to rate responses in this session.")
+
+        response = get_object_or_404(QuestionResponse, pk=response_pk, session=session)
+
+        serializer = QuestionResponseRatingSerializer(response, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(QuestionResponseFeedbackSerializer(response).data, status=status.HTTP_200_OK)
+
+
+class QuestionResponseViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only viewset for question responses.
+    Staff see all; learners see only their own session responses.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = QuestionResponseFeedbackSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return QuestionResponse.objects.select_related('question').all()
+        return QuestionResponse.objects.select_related('question').filter(session__learner=user)
 
 
 class GenerateAdaptiveSessionView(generics.GenericAPIView):

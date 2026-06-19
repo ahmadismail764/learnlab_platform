@@ -1,19 +1,16 @@
-# Core imports
+# Core django imports
 from django.utils import timezone as django_timezone
-
-# Framework imports
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+# DRF imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
 from rest_framework import viewsets, generics, serializers, status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-
 # Our imports
-from accounts.models import User
-from topics.models import Subtopic, SubtopicMastery
+from learnlab_platform.renderers import IndentedJSONRenderer
 from practice.fsrs_engine import process_review
 from practice.serializers import (
     QuestionAdminSerializer,
@@ -23,13 +20,12 @@ from practice.serializers import (
     QuestionResponseSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
-    LeaderboardSerializer,
 )
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
 
-
 class QuestionViewSet(viewsets.ModelViewSet):
+    renderer_classes = [IndentedJSONRenderer]
     # Optimized Join handling syntax
     queryset = Question.objects.select_related('subtopic__topic').all()
     
@@ -200,29 +196,3 @@ class GenerateAdaptiveSessionView(generics.GenericAPIView):
             'questions': serializer.data,
             'message': f'Generated adaptive session with {len(session_questions)} question(s)',
         }, status=status.HTTP_200_OK)
-
-
-@extend_schema_view(
-    list=extend_schema(
-        operation_id='practice_leaderboard_list',
-        description="Returns all learners ranked by XP descending. Staff accounts are excluded. Filter by ?topic=<uuid> to rank only learners active in that topic.",
-        parameters=[
-            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
-        ],
-        responses={200: LeaderboardSerializer(many=True)},
-    )
-)
-class LeaderboardView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = LeaderboardSerializer
-
-    def get_queryset(self):
-        topic_id = self.request.query_params.get('topic')
-        qs = User.objects.filter(is_staff=False).order_by('-current_xp')
-        if topic_id:
-            from topics.models import SubtopicMastery
-            learner_ids = SubtopicMastery.objects.filter(
-                subtopic__topic_id=topic_id
-            ).values_list('learner_id', flat=True).distinct()
-            qs = qs.filter(id__in=learner_ids)
-        return qs

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from accounts.models import User
+from accounts.models import User, AuditLog
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
@@ -57,6 +57,21 @@ class UserDetailSerializer(serializers.ModelSerializer):
         hash_val = int(hashlib.md5(str(obj.id).encode('utf-8')).hexdigest(), 16)
         hue = hash_val % 360
         return f"hsl({hue}, 70%, 50%)"
+
+class UserPreferencesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['preferences']
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    actor_username = serializers.CharField(source='actor.username', read_only=True, default=None)
+
+    class Meta:
+        model = AuditLog
+        fields = ['id', 'actor', 'actor_username', 'action_type', 'target_resource', 'timestamp', 'metadata']
+        read_only_fields = ['id', 'actor', 'actor_username', 'action_type', 'target_resource', 'timestamp', 'metadata']
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod

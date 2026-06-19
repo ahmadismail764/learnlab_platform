@@ -10,16 +10,6 @@ from accounts.serializers import UserDetailSerializer
 
 
 # ===================================================
-# Leaderboard serializers
-# ===================================================
-
-class LeaderboardSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username', 'current_xp', 'streak_count']
-
-
-# ===================================================
 # Question serializers
 # ===================================================
 class QuestionSerializer(serializers.ModelSerializer):

@@ -4,7 +4,6 @@ from practice.views import (
     QuestionViewSet,
     PracticeSessionViewSet,
     GenerateAdaptiveSessionView,
-    LeaderboardView,
 )
 
 QuestionsRouter = DefaultRouter()
@@ -15,7 +14,6 @@ PracticeSessionRouter.register(r'sessions', PracticeSessionViewSet, basename='se
 
 urlpatterns = [
     path('sessions/generate-adaptive/', GenerateAdaptiveSessionView.as_view(), name='generate-adaptive'),
-    path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'),
     path('', include(QuestionsRouter.urls)),
     path('', include(PracticeSessionRouter.urls)),
 ]

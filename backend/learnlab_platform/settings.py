@@ -159,6 +159,11 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_RENDERER_CLASSES': (
+        'learnlab_platform.renderers.IndentedJSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ),
+    'COMPACT_JSON': False,
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     # 'PAGE_SIZE': 20,
     # 'DEFAULT_FILTER_BACKENDS': [

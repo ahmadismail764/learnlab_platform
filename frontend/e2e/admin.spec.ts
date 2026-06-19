@@ -22,8 +22,8 @@ test('Admin can perform full CRUD lifecycle on practice questions', async ({ pag
   const choicesTextarea = page.locator('textarea').nth(1);
   await choicesTextarea.fill('{{}, {a}}\n{a}\n{}\n{a, b}');
 
-  // Fill relation / subtopic ID
-  await page.fill('#subtopic-id', 'b8f77e06-cac6-4f33-b721-7251bc12d9cc');
+  // Select the UI topic option; the backend still receives the linked subtopic id.
+  await page.locator('select').nth(2).selectOption({ index: 1 });
 
   // Select correct index
   await page.selectOption('select', '0'); // Correct index

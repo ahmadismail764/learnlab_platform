@@ -6,9 +6,10 @@ import { FSRS_GRADE_OPTIONS, type FSRSGrade } from './practiceSession'
 
 interface PracticeGradePanelProps {
   onGrade: (grade: FSRSGrade) => void
+  isDisabled?: boolean
 }
 
-export function PracticeGradePanel({ onGrade }: PracticeGradePanelProps) {
+export function PracticeGradePanel({ onGrade, isDisabled = false }: PracticeGradePanelProps) {
   const { t } = useTranslation('practice')
 
   return (
@@ -23,8 +24,9 @@ export function PracticeGradePanel({ onGrade }: PracticeGradePanelProps) {
             key={button.grade}
             type="button"
             onClick={() => onGrade(button.grade)}
+            disabled={isDisabled}
             className={cn(
-              'rounded-2xl px-4 py-4 text-center text-white transition-transform hover:-translate-y-0.5',
+              'rounded-2xl px-4 py-4 text-center text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0',
               button.tone,
             )}
           >

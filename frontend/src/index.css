@@ -3,6 +3,7 @@
 :root {
   --brand-hue: 173;
   --brand-saturation: 80%;
+  --lab-grid: rgba(0, 255, 255, 0.03);
 }
 
 /* Enable class-based dark mode for manual theme switching */
@@ -94,10 +95,6 @@
   --radius-xl: 1.5rem;
   --radius-2xl: 2.5rem;
 
-  /* Glassmorphism effects */
-  --blur-glass: blur(12px);
-  --bg-glass-light: rgba(255, 255, 255, 0.7);
-  --bg-glass-dark: rgba(15, 23, 42, 0.7);
 }
 
 /* Base styles */
@@ -236,7 +233,12 @@ html[dir="rtl"] body {
 body {
   margin: 0;
   min-height: 100vh;
+  position: relative;
   background-color: var(--color-neutral-50);
+  background-image:
+    radial-gradient(circle at 50% 50%, transparent 0%, var(--lab-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, transparent, transparent);
+  background-size: 30px 30px;
   color: var(--color-neutral-800);
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -245,21 +247,6 @@ body {
 html.dark body {
   background-color: var(--color-neutral-950);
   color: var(--color-neutral-100);
-}
-
-/* Glassmorphism utilities */
-.glass {
-  background-color: var(--bg-glass-light);
-  backdrop-filter: var(--blur-glass);
-  -webkit-backdrop-filter: var(--blur-glass);
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(15, 23, 42, 0.05);
-}
-
-html.dark .glass {
-  background-color: var(--bg-glass-dark);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Laboratory Backgrounds */
@@ -335,23 +322,8 @@ html.dark .lab-grid {
   to { opacity: 1; transform: scale(1); }
 }
 
-/* Laboratory Theme Extensions */
-:root {
-  --lab-grid: rgba(0, 255, 255, 0.03);
-  --lab-grid-bold: rgba(0, 255, 255, 0.07);
-}
-
 .dark {
   --lab-grid: rgba(0, 255, 255, 0.02);
-  --lab-grid-bold: rgba(0, 255, 255, 0.05);
-}
-
-body {
-  background-image: 
-    radial-gradient(circle at 50% 50%, transparent 0%, var(--lab-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, transparent, transparent);
-  background-size: 30px 30px;
-  position: relative;
 }
 
 body::after {

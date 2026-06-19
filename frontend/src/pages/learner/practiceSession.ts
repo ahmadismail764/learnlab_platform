@@ -1,7 +1,7 @@
 import type { EntityId } from '@/services/api'
 
 export type SessionState = 'selecting' | 'practicing' | 'complete'
-export type AnswerState = 'unanswered' | 'answered'
+export type AnswerState = 'unanswered' | 'submitting' | 'answered'
 export type FSRSGrade = 1 | 2 | 3 | 4
 
 export interface PracticeQuestion {
@@ -10,7 +10,6 @@ export interface PracticeQuestion {
   choices: string[]
   correct_answer_index: number | null
   tier: number
-  explanation_video_url?: string | null
   topic_name: string
   topic_id?: EntityId
 }
@@ -71,7 +70,6 @@ export function normalizePracticeQuestion(
     choices: Array.isArray(raw.choices) ? raw.choices.map(String) : [],
     correct_answer_index: typeof raw.correct_answer_index === 'number' ? raw.correct_answer_index : null,
     tier: Number(raw.tier ?? 1),
-    explanation_video_url: raw.explanation_video_url ?? null,
     topic_name: raw.topic_name ?? raw.subtopic_name ?? fallbackTopicName,
     topic_id: raw.topic_id,
   }

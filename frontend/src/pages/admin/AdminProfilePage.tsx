@@ -11,11 +11,13 @@ import {
   Users,
   FileQuestion,
   Activity,
+  ScrollText,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Avatar, Badge, Input } from '@/components/ui'
 import { PageIntro, PageStatCard } from '@/components/common'
 import { useAuth, useCurrentUser, useToast } from '@/contexts'
 import { analyticsService, authService, learnersService } from '@/services'
+import { useAuditLogs } from '@/hooks'
 
 /**
  * AdminProfilePage
@@ -27,6 +29,14 @@ import { analyticsService, authService, learnersService } from '@/services'
  * - Quick access admin tools
  * - Account settings (password, danger zone)
  */
+
+function formatActionType(actionType: string) {
+  return actionType
+    .split('_')
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(' ')
+}
 
 export function AdminProfilePage() {
   const { t } = useTranslation(['profile', 'common', 'auth', 'admin'])
@@ -50,6 +60,11 @@ export function AdminProfilePage() {
     activeToday: 0,
   })
   const [statsError, setStatsError] = useState('')
+  const {
+    data: auditLogs = [],
+    isLoading: auditLogsLoading,
+    error: auditLogsError,
+  } = useAuditLogs()
 
   useEffect(() => {
     setProfileForm({
@@ -63,28 +78,40 @@ export function AdminProfilePage() {
     let isMounted = true
 
     const loadStats = async () => {
+      const nextStats = {
+        totalLearners: 0,
+        totalQuestions: 0,
+        activeToday: 0,
+      }
+      const errors: string[] = []
+
       try {
-        const [leaderboard, aggregated] = await Promise.all([
-          learnersService.getLeaderboard(),
-          analyticsService.getAggregatedMetrics(),
-        ])
-
-        if (!isMounted) return
-
-        setSystemStats({
-          totalLearners: leaderboard.length,
-          totalQuestions: aggregated?.review_count ?? 0,
-          activeToday: aggregated?.active_users?.['7_days'] ?? 0,
-        })
+        const leaderboard = await learnersService.getLeaderboard()
+        nextStats.totalLearners = leaderboard.length
       } catch (error) {
-        if (!isMounted) return
-        // Analytics returns 400 when there's insufficient data — this is expected
-        const message = error instanceof Error ? error.message : 'Failed to load admin metrics'
-        if (message.includes('Insufficient data')) {
+        errors.push(error instanceof Error ? error.message : 'Failed to load learner standings')
+      }
+
+      try {
+        const aggregated = await analyticsService.getAggregatedMetrics()
+        nextStats.totalQuestions = aggregated?.review_count ?? 0
+        nextStats.activeToday = aggregated?.active_users?.['7_days'] ?? 0
+      } catch (error) {
+        errors.push(error instanceof Error ? error.message : 'Failed to load admin metrics')
+      }
+
+      if (!isMounted) return
+
+      setSystemStats(nextStats)
+
+      if (errors.length > 0) {
+        if (errors.some((message) => message.includes('Insufficient data'))) {
           setStatsError('Insufficient practice data for full analytics (< 10 sessions). Stats show available data.')
         } else {
-          setStatsError(message)
+          setStatsError(errors.join(' '))
         }
+      } else {
+        setStatsError('')
       }
     }
 
@@ -280,6 +307,50 @@ export function AdminProfilePage() {
             </CardContent>
           </Card>
 
+          <Card>
+            <CardHeader
+              title={t('admin:recentAdminActions')}
+              subtitle={t('admin:auditLogsDescription')}
+            />
+            <CardContent>
+              {auditLogsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="h-14 animate-pulse rounded-lg bg-neutral-100 dark:bg-neutral-800" />
+                  ))}
+                </div>
+              ) : auditLogsError instanceof Error ? (
+                <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                  {auditLogsError.message}
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {t('admin:noAuditLogs')}
+                </p>
+              ) : (
+                <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                  {auditLogs.slice(0, 5).map((entry) => (
+                    <div key={String(entry.id)} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="mt-0.5 rounded-lg bg-secondary-50 p-2 text-secondary-600 dark:bg-secondary-950/30 dark:text-secondary-300">
+                        <ScrollText className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                          {formatActionType(entry.action_type)}
+                        </p>
+                        <p className="mt-1 truncate text-sm text-neutral-500 dark:text-neutral-400">
+                          {entry.actor_username ?? t('admin:systemActor')} · {entry.target_resource || t('common:notAvailable')}
+                        </p>
+                      </div>
+                      <time className="shrink-0 text-xs text-neutral-400 dark:text-neutral-500" dateTime={entry.timestamp}>
+                        {new Date(entry.timestamp).toLocaleDateString()}
+                      </time>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
         </div>
 

@@ -10,7 +10,6 @@ export interface BackendQuestion {
   correct_answer_index: number | null;
   tier: number;
   tier_display?: string | null;
-  explanation_video_url?: string | null;
 }
 
 export interface QuestionMutationPayload {
@@ -19,10 +18,7 @@ export interface QuestionMutationPayload {
   correct_answer_index: number;
   tier: number;
   subtopic?: EntityId | null;
-  explanation_video_url?: string | null;
 }
-
-type BackendQuestionMutationPayload = Omit<QuestionMutationPayload, 'explanation_video_url'>;
 
 interface PaginatedResponse<T> {
   count: number;
@@ -54,7 +50,7 @@ function toQuestionList(data: BackendQuestion[] | PaginatedResponse<BackendQuest
   return rows.map(normalizeQuestion);
 }
 
-function toBackendMutationPayload(data: QuestionMutationPayload): BackendQuestionMutationPayload {
+function toBackendMutationPayload(data: QuestionMutationPayload): QuestionMutationPayload {
   return {
     text: data.text,
     choices: data.choices,

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { X, Save } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Card, CardHeader, Button, Input } from '@/components/ui'
+import { Card, CardHeader, Button } from '@/components/ui'
 import { questionsService, type BackendQuestion, type QuestionMutationPayload } from '@/services/questions'
 import { topicsService } from '@/services/topics'
 import { queryKeys } from '@/hooks'
@@ -23,7 +23,6 @@ interface QuestionFormState {
   correctAnswerIndex: string
   tier: '1' | '2' | '3'
   relationId: string
-  explanationVideoUrl: string
 }
 
 const EMPTY_FORM: QuestionFormState = {
@@ -32,7 +31,6 @@ const EMPTY_FORM: QuestionFormState = {
   correctAnswerIndex: '',
   tier: '1',
   relationId: '',
-  explanationVideoUrl: '',
 }
 
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -75,7 +73,6 @@ export function QuestionFormModal({
           correctAnswerIndex: editingQuestion.correct_answer_index === null ? '' : String(editingQuestion.correct_answer_index),
           tier: String(editingQuestion.tier || 1) as QuestionFormState['tier'],
           relationId: String(editingQuestion.subtopic ?? ''),
-          explanationVideoUrl: editingQuestion.explanation_video_url ?? '',
         })
       } else {
         setForm({ ...EMPTY_FORM })
@@ -135,7 +132,6 @@ export function QuestionFormModal({
       correctAnswerIndex: form.correctAnswerIndex,
       tier: form.tier,
       relationId: form.relationId,
-      explanationVideoUrl: form.explanationVideoUrl,
     })
 
     if (!validationResult.success) {
@@ -151,7 +147,6 @@ export function QuestionFormModal({
       correct_answer_index: validationResult.data.correctAnswerIndex,
       tier: validationResult.data.tier,
       subtopic: validationResult.data.relationId || null,
-      explanation_video_url: validationResult.data.explanationVideoUrl || null,
     }
 
     if (editingQuestion) {
@@ -317,15 +312,6 @@ export function QuestionFormModal({
                     )}
                   </div>
                 </div>
-
-                {/* Explanation Video URL */}
-                <Input
-                  label={t('admin:questions.form.explanationVideoUrl')}
-                  value={form.explanationVideoUrl}
-                  onChange={(e) => setForm((prev) => ({ ...prev, explanationVideoUrl: e.target.value }))}
-                  placeholder={t('admin:questions.form.explanationVideoPlaceholder')}
-                  disabled={isSaving}
-                />
 
                 {/* Error Banner */}
                 {error && (

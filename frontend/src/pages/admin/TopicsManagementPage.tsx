@@ -23,10 +23,10 @@ import { getTopicCategoryDisplayName, getTopicDisplayName } from '@/utils/topicL
  * TopicsManagementPage - Admin Curriculum Structure (UC-07)
  *
  * Backend-integrated:
- * - List all topics via GET /api/v1/practice/topics/
- * - Create topic via POST /api/v1/practice/topics/
- * - Edit topic via PUT /api/v1/practice/topics/:id/
- * - Delete topic via DELETE /api/v1/practice/topics/:id/
+ * - List all topics via GET /api/v1/topics/
+ * - Create topic via POST /api/v1/topics/
+ * - Edit topic via PUT /api/v1/topics/:id/
+ * - Delete topic via DELETE /api/v1/topics/:id/
  *
  * Topics are grouped by a frontend-derived category.
  */

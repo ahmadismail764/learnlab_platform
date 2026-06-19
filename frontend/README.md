@@ -38,6 +38,16 @@ bun run i18n:check
 bun run i18n:prune:check
 ```
 
+## Docker
+
+The root `docker-compose.yml` includes a frontend service that builds this app and serves it with Nginx:
+
+```bash
+docker compose up --build frontend
+```
+
+The backend is still expected at `VITE_API_BASE_URL`, which defaults to `http://localhost:8000`. This is a build-time value for Vite, so rebuild the frontend image after changing it.
+
 ## Project Structure
 
 ```

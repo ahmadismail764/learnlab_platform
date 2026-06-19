@@ -51,7 +51,7 @@ dependencies = [
     { name = "django-silk" },
     { name = "django-unfold", version = "0.81.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "django-unfold", version = "0.91.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
-    { name = "django-unfold", version = "0.97.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "django-unfold", version = "0.97.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "djangorestframework" },
     { name = "djangorestframework-simplejwt" },
     { name = "drf-spectacular" },
@@ -199,7 +199,7 @@ wheels = [
 
 [[package]]
 name = "django-unfold"
-version = "0.97.1"
+version = "0.97.2"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.12'",
@@ -207,9 +207,9 @@ resolution-markers = [
 dependencies = [
     { name = "django", marker = "python_full_version >= '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/90/26/b87613dc6ab70b054940e6ab5d8270c269742c33264eb282e197116690ee/django_unfold-0.97.1.tar.gz", hash = "sha256:a97182d27eeee09efa6596560c12bbc753947968cdd3c0ef2c760130ef9c5e11", size = 1125971, upload-time = "2026-06-16T12:11:15.673Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/ec/e44e90b3746b59fe1e31d64d23fd2d4913ffbfc494650679bd7908669ec9/django_unfold-0.97.2.tar.gz", hash = "sha256:99d45049d31bd4f1f7caffbc371a8e175438a305c40672e38c23143212f78689", size = 1126046, upload-time = "2026-06-18T06:51:20.475Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/f1/12330cc0e9c8cd1233ddab2decf13cb7b8d6bc170a82e1074aa26b5d137f/django_unfold-0.97.1-py3-none-any.whl", hash = "sha256:b2a0faed6e9a3f400f27864846a8be37da4bf8d194af085032fd91f5f76650a6", size = 1253654, upload-time = "2026-06-16T12:11:17.217Z" },
+    { url = "https://files.pythonhosted.org/packages/44/ac/42c5ed367632a0f3824cff902571286a633409b17e74662ae9b338059b9c/django_unfold-0.97.2-py3-none-any.whl", hash = "sha256:ab3c3161ecffb3fa9fe535c4456836b88441e7525663d81ad425259754ab92e9", size = 1253750, upload-time = "2026-06-18T06:51:18.933Z" },
 ]
 
 [[package]]

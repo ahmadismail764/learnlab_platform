@@ -50,6 +50,7 @@ export function PracticePage() {
   const [questionStates, setQuestionStates] = useState<Record<number, QuestionState>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
 
   const currentQuestion = questions[currentIndex]
   const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
@@ -165,7 +166,7 @@ export function PracticePage() {
         queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
         setSessionState('complete')
       } catch (e) {
-        logger.warn('Failed to complete session', e)
+        console.error('Failed to complete session', e)
         showError(t('practice:couldNotCompleteSession'))
       } finally {
         setIsCompleting(false)
@@ -176,6 +177,7 @@ export function PracticePage() {
   }, [isCompleting, queryClient, sessionRecord, showError, t])
 
   const handleGrade = useCallback((grade: FSRSGrade) => {
+    if (isCompleting) return
     if (!currentStatus || currentStatus.answerState !== 'answered') return
     if (currentStatus.selectedAnswerIndex === null) {
       showError(t('practice:couldNotSubmitAnswer'))
@@ -197,7 +199,7 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentStatus, questions.length, showError, t])
+  }, [completeSession, currentIndex, currentStatus, isCompleting, questions.length, showError, t])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

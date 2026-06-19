@@ -10,7 +10,6 @@ export interface BackendQuestion {
   correct_answer_index: number | null;
   tier: number;
   tier_display?: string | null;
-  explanation_video_url?: string | null;
 }
 
 export interface QuestionMutationPayload {

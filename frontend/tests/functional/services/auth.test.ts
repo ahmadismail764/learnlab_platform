@@ -10,13 +10,6 @@ vi.mock('@/services/api', () => {
       post: vi.fn(),
       postPublic: vi.fn(),
     },
-    clearStoredAuth: vi.fn(() => {
-      localStorage.removeItem('learnlab_auth_token')
-      localStorage.removeItem('learnlab_refresh_token')
-      localStorage.removeItem('learnlab_persist')
-      sessionStorage.removeItem('learnlab_auth_token')
-      sessionStorage.removeItem('learnlab_refresh_token')
-    }),
     getToken: vi.fn(),
     getTokenStorage: vi.fn(() => localStorage),
     parseApiError: vi.fn(async (_response: Response, fallback: string) => ({ message: fallback })),
@@ -45,7 +38,7 @@ describe('authService preferences and logout contracts', () => {
     expect(preferences).toEqual({ language: 'en', theme: 'dark' })
   })
 
-  it('patches preferences using the documented preferences envelope', async () => {
+  it('patches preferences as a flat JSON object for the current backend view', async () => {
     const payload = { language: 'ar', theme: 'light' }
     vi.mocked(api.patch).mockResolvedValueOnce({
       ok: true,
@@ -54,7 +47,7 @@ describe('authService preferences and logout contracts', () => {
 
     const preferences = await authService.updatePreferences(payload)
 
-    expect(api.patch).toHaveBeenCalledWith('/auth/users/me/preferences/', { preferences: payload })
+    expect(api.patch).toHaveBeenCalledWith('/auth/users/me/preferences/', payload)
     expect(preferences).toEqual(payload)
   })
 

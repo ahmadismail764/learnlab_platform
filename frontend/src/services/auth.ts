@@ -173,12 +173,16 @@ export const authService = {
     const refresh = getToken("learnlab_refresh_token");
     const blacklistRequest = refresh
       ? api.post("/auth/logout/", { refresh }).catch((error) => {
-          logger.warn("Failed to blacklist refresh token", error);
+          console.error("Failed to blacklist refresh token", error);
         })
       : Promise.resolve();
 
     // Clear tokens from both storages immediately; the blacklist request already captured them.
-    clearStoredAuth();
+    localStorage.removeItem("learnlab_auth_token");
+    localStorage.removeItem("learnlab_refresh_token");
+    localStorage.removeItem("learnlab_persist");
+    sessionStorage.removeItem("learnlab_auth_token");
+    sessionStorage.removeItem("learnlab_refresh_token");
 
     await blacklistRequest;
   },
@@ -242,7 +246,7 @@ export const authService = {
   },
 
   updatePreferences: async (preferences: UserPreferences): Promise<UserPreferences> => {
-    const response = await api.patch("/auth/users/me/preferences/", { preferences });
+    const response = await api.patch("/auth/users/me/preferences/", preferences);
     if (!response.ok) {
       await throwApiError(response, "Failed to update preferences");
     }

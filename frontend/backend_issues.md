@@ -2,7 +2,7 @@
 
 > **For the backend team.** This document separates true backend-owned problems from frontend/product integration notes. If the backend already provides a working contract and the frontend was not consuming it, that is **not** listed as a backend issue.
 >
-> **Latest verification:** 2026-06-17 on `interface` at `fc506ca`.
+> **Latest update:** 2026-06-19 after frontend/backend contract audit on `interface` with backend merge `7153e96` present.
 
 ---
 
@@ -15,7 +15,40 @@
 - **Symptoms:** `PracticeSessionCreateSerializer.responses` is wired to `QuestionCreateAndUpdateSerializer(many=True)` even though `create()` reads each row as a `QuestionResponse` payload using `response_data['question']` and `response_data['selected_answer_index']`.
 - **Smoke result:** Generated OpenAPI schema for `PracticeSessionCreate.responses[]` still references `QuestionCreateAndUpdate` instead of `QuestionResponseCreate`. Runtime APIClient smoke with `{"responses":[{"question":"<uuid>","selected_answer_index":0}]}` returned `400` with required-field errors for `text` and `correct_answer_index`.
 - **Impact:** The published bulk session-create contract asks clients for question-authoring fields, while runtime code expects answer-submission fields. The current frontend avoids this by creating sessions with `responses: []` and submitting answers through `/practice/sessions/<id>/responses/`.
-- **Recommendation:** Change `PracticeSessionCreateSerializer.responses` back to `QuestionResponseCreateSerializer(many=True, required=False)`, keep XP awarding centralized on completion, and regenerate the schema.
+- **Recommendation:** Change `PracticeSessionCreateSerializer.responses` to `QuestionResponseCreateSerializer(many=True, required=False)` or remove nested response creation from the public contract.
+
+### 3. Full FSRS-5 Scheduling Algorithm
+
+- **Status:** Active backend algorithm improvement; track in the existing FSRS issue if one is open, otherwise open a dedicated backend issue
+- **Current source check:** `backend/practice/fsrs_engine.py` still uses a simple stability multiplier stub.
+- **Recommendation:** Implement full FSRS-5 formulas using elapsed days, difficulty, stability, retrievability, and the accepted rating/confidence field.
+
+### 4. Cryptographic Signing Key Length Warning
+
+- **Status:** Environment/security warning
+- **Description:** Local backend boots can emit a SimpleJWT insecure key length warning if `SECRET_KEY` is under 32 bytes.
+- **Recommendation:** Use high-entropy production secrets for `SECRET_KEY` and any JWT signing key configuration.
+
+### 5. User Preferences PATCH Schema Mismatch
+
+- **Status:** Active backend-owned contract warning
+- **Affected contract:** `PATCH /api/v1/auth/users/me/preferences/`
+- **Current source check:** The OpenAPI annotation describes a payload shaped like `{ "preferences": { ... } }`, but `UserPreferencesView.patch()` currently merges `request.data` directly into `user.preferences`.
+- **Why this is backend-owned:** This is a mismatch between the backend's own runtime behavior and backend-published schema, not a request for the backend to follow a frontend preference. The frontend currently sends the flat JSON object the runtime actually accepts.
+- **Recommendation:** Align implementation and OpenAPI. Either accept the documented wrapper explicitly or update the schema to document flat preference patching.
+
+---
+
+## Docker / Infrastructure Readiness Notes
+
+### Analytics Requires Redis Cache Availability
+
+- **Status:** Environment note for the Docker milestone, not a critical backend API defect if the supported test path is the full Docker stack.
+- **Affected contracts when Redis is absent:** `GET /api/v1/analytics/aggregated/`, `GET /api/v1/analytics/topics/`, and `GET /api/v1/analytics/activity/`
+- **Current source check:** These views are wrapped with `cache_page`, while `settings.CACHES.default` uses `django.core.cache.backends.redis.RedisCache`.
+- **Reproduction check outside Docker:** Running Django cache access locally failed with `redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379`, which explains the admin analytics 500s when Redis is not running.
+- **Classification:** If the team expects frontend, backend, database, and Redis to run through Docker Compose, this should be tracked as Docker/infrastructure readiness: make sure Redis is included, backend depends on it, health checks are present, and local docs tell developers not to run cached analytics without Redis.
+- **Optional resilience enhancement:** Backend can still choose to add a development `LocMemCache` fallback or tolerate Redis outages for read-only analytics, but that is a robustness improvement rather than a frontend/backend contract blocker.
 
 ---
 
@@ -42,50 +75,26 @@
 - **Potential product value:** Admins may eventually need downloadable milestone reports for reviews, active learners, retention, topic health, and difficulty breakdowns.
 - **Suggested contract if needed:** Add explicit export endpoints such as `GET /api/v1/analytics/reports/summary.csv` or async report jobs with filters, date ranges, and a documented file format.
 
+### Content Support Metadata
+
+- **Status:** Optional content enhancement, not a backend defect
+- **Current frontend action:** Removed stale explanation-video fields from question forms, previews, services, and learner practice UI because the current backend question contract does not expose or persist them.
+- **Potential product value:** If lessons need richer remediation, backend could support optional explanation video URL, solution steps, hints, references, or worked examples.
+- **Suggested contract if needed:** Add metadata to admin question CRUD, define which fields are safe before answer submission, and define which fields are revealed only after a submitted response.
+
 ### Practice Session Completion Summary
 
-- **Status:** Useful learner-experience enhancement for a later milestone, not a backend defect or current milestone blocker
+- **Status:** Optional learner-experience enhancement, not a backend defect
 - **Current backend contract:** The frontend completes a session with `PATCH /api/v1/practice/sessions/<id>/` and separately invalidates profile/mastery/leaderboard caches.
 - **Potential product value:** A server-calculated completion summary would let the frontend show authoritative XP, correct count, mastery deltas, next due reviews, and streak changes without stitching data from multiple refetches.
 - **Suggested contract if needed:** Return or expose a `session_summary` payload after completion with documented fields and idempotent repeat behavior.
 
 ### Broader Audit-Log Coverage
 
-- **Status:** Suggestion
-- **Description:** System options like interface language preference, dark mode state, and notification settings (email digests, leaderboard alerts) are currently processed and saved locally in `localStorage`. If a user logs in from a different device, their settings are reset.
-- **Recommendation:** Provide a preferences persistence endpoint under the User profile, e.g., `PATCH /auth/users/me/preferences/` or `/settings/`, allowing a simple JSON metadata payload to be stored in the database.
-
-### 6. Server-Side Token Revocation on Logout (`POST /auth/logout/`)
-
-- **Status:** Security Suggestion
-- **Description:** The client currently executes logout operations by wiping token strings from local memory. However, active JWT tokens remain cryptographically valid until their expiry time.
-- **Recommendation:** Implement a server-side logout route using SimpleJWT's token blacklist feature (`POST /auth/logout/` or similar) that accepts the active refresh token and blacklists it, preventing subsequent access requests.
-
-### 7. SimpleJWT SSO / Social OAuth Endpoints
-
-- **Status:** Architecture Suggestion
-- **Description:** The platform currently relies solely on local email/username credential pairs. Adding support for SSO (e.g. Google Workspace, Microsoft Azure AD, or Github OAuth) would simplify academic onboarding.
-- **Recommendation:** Mount Django-allauth or djangorestframework-simplejwt token authentication endpoints supporting social sign-ins (e.g. `/auth/google/login/`).
-
-### 8. System Health Telemetry API (`GET /admin/system-health/`)
-
-- **Status:** Suggestion (Nice to Have)
-- **Description:** During our integration pass, we removed simulated/mock dials (CPU/Memory percentages) from the Admin Dashboard and Admin Profile page. To allow administrators to monitor live operational feedback without configuring complex external APM software, a simple telemetry endpoint is needed.
-- **Recommendation:** Expose a read-only `GET /admin/system-health/` API endpoint returning CPU usage, memory consumption, storage space, PostgreSQL connection health, and average API response latency.
-
-### 9. Short-Lived Redis Caching for Analytics Routes (`/analytics/*`)
-
-- **Status:** Implemented upstream / monitor
-- **Description:** The student and admin analytics dashboards aggregate telemetry datasets (topics, difficulty tier breakdowns, and activity time-series). Under high concurrency (e.g., during active exams or lectures), repeated aggregation queries will place unnecessary database load on PostgreSQL.
-- **Verification note:** Backend merge `8329e3a` added Redis-backed caching. The current 2026-06-16 contract audit did not observe the earlier Redis import failure; the active leaderboard problem is now tracked separately as a missing `/api/v1/practice/leaderboard/` route returning `404`.
-- **Recommendation:** Keep local and deployment environments aligned with the updated backend dependencies and Redis/cache configuration.
-
-### 10. OpenAPI documentation completeness for auth/practice/analytics
-
-- **Status:** Mostly resolved / one remaining non-blocking schema warning, verified 2026-06-17 on `interface` at `fc506ca`
-- **Description:** `manage.py spectacular --validate` completes with zero errors and one warning: `PracticeSessionViewSet` path parameter `id` still cannot be derived cleanly and defaults to string. Earlier password-reset serializer and analytics operationId warnings are no longer present.
-- **Impact:** Frontend contract audits can still inspect runtime behavior, but generated OpenAPI remains noisy and partially misleading.
-- **Recommendation:** Finish annotating the practice session path parameter so generated OpenAPI is warning-free.
+- **Status:** Optional admin observability enhancement, not a backend defect
+- **Current backend contract:** `GET /api/v1/admin/audit-logs/` is available and consumed by the admin profile activity section.
+- **Potential product value:** Audit logs become more useful if they consistently record content CRUD, auth/security events, role changes, imports, settings changes, and failed admin operations.
+- **Suggested contract if needed:** Standardize `action_type`, `target_resource`, actor metadata, and event-specific metadata keys.
 
 ---
 
@@ -124,58 +133,38 @@
 
 ### 1. Admin Audit Logs API
 
-### 1. Leaderboard endpoint restored
-
-- **Status:** ✅ Resolved, verified 2026-06-17 on `interface` at `fc506ca`
-- **Verification:** `GET /api/v1/practice/leaderboard/` is mounted again and authenticated APIClient smoke returned `200` with learner-safe fields: `username`, `current_xp`, and `streak_count`. No backend IDs are exposed in the leaderboard payload.
-
-### 2. Admin question reads include `correct_answer_index`
-
-- **Status:** ✅ Resolved, verified 2026-06-17 on `interface` at `fc506ca`
-- **Verification:** Learner `GET /api/v1/practice/questions/` still omits `correct_answer_index`, while staff/admin `GET /api/v1/practice/questions/` includes it through `QuestionAdminSerializer`. This preserves learner answer safety and unblocks admin preview/edit.
-
-### 3. Missing `selected_answer_index` migration
-
-- **Status:** ✅ Resolved, verified 2026-06-16 after merging `origin/master` at `d841620`
-- **Verification:** `backend/practice/migrations/0003_questionresponse_selected_answer_index.py` is now committed. `manage.py makemigrations --check --dry-run` returns `No changes detected`. Local `manage.py migrate --check` may still fail until the newly committed migrations are applied to the local database.
-
-### 4. Bulk practice session submission double-award risk
-
-- **Status:** ✅ Resolved, verified by serializer audit 2026-06-16 after merging `origin/master` at `d841620`
-- **Verification:** `PracticeSessionCreateSerializer.create()` now stores `session.total_xp_earned` only and no longer increments `learner.current_xp`, streak, or `last_practice_date`. Learner aggregate XP/streak awarding remains centralized in `PracticeSessionSerializer.update()` when `end_time` completes the session.
-
-### 5. Backend email environment import failure
-
-- **Status:** ✅ Resolved, verified 2026-06-16 after merging `origin/master` at `d841620`
-- **Verification:** `settings.py` now uses `EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))`, `EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'`, and `backend/.env.example` documents the email variables. `manage.py check` passes without supplying `EMAIL_PORT` in the shell.
-
-### 6. Password reset request response no longer exposes reset credentials
-
-- **Status:** ✅ Resolved, verified 2026-06-15 after backend merge `a7ad281`
-- **Verification:** APIClient smoke with an existing account and a missing email returned `200` with the same response keys: `['message']`. No `uid` or `token` keys were returned in JSON. The frontend request flow at `/forgot-password` ignores response credentials, and the reset confirmation route `/reset-password?uid=...&token=...` now posts the emailed credentials to `/auth/password-reset/confirm/`.
-
-### 7. Adaptive session generation serializer field omission
-
-- **Status:** ✅ Resolved, verified 2026-06-15 after backend merge `a7ad281`
-- **Verification:** `QuestionSerializer.Meta.fields` now includes `subtopic_name`. Authenticated APIClient smoke for `GET /api/v1/practice/sessions/generate-adaptive/` returned `200` with `questions` and `message`.
-
-### 8. Current User Serializer Date Field
+- **Status:** Merged in `origin/master` at `aaa46b7`
+- **Contract:** `GET /api/v1/admin/audit-logs/`
+- **Source check:** `accounts.admin_urls` mounts `audit-logs/`, `AuditLog` exists in `accounts.models`, and `AuditLogSerializer` exposes actor/action/resource/timestamp metadata.
+- **Frontend consumption:** Consumed by the admin profile activity section.
 
 ### 2. User Preferences Persistence API
 
-### 9. Adaptive Session Generation UUID/Subtopic Query Bug
+- **Status:** Merged in `origin/master` at `aaa46b7`
+- **Contract:** `GET/PATCH /api/v1/auth/users/me/preferences/`
+- **Source check:** `UserPreferencesView` and `UserPreferencesSerializer` persist JSON preferences on the user model.
+- **Frontend consumption:** Consumed by admin settings persistence.
 
 ### 3. Admin System Health Telemetry API
 
-### 10. Practice Session Creation Returns `id`
+- **Status:** Merged in `origin/master` at `aaa46b7`
+- **Contract:** `GET /api/v1/admin/system-health/`
+- **Source check:** `SystemHealthView` returns CPU, memory, disk, database, uptime, and average API latency fields.
+- **Frontend consumption:** Consumed by the admin dashboard system snapshot.
 
 ### 4. Server-Side Token Revocation On Logout
 
-### 11. Practice Session Completion XP Awarding Bug (Critical Bug)
+- **Status:** Resolved / monitor
+- **Contract:** `POST /api/v1/auth/logout/`
+- **Source check:** `LogoutView` blacklists the submitted refresh token with SimpleJWT.
+- **Frontend consumption:** Logout calls the backend route before clearing local tokens.
 
 ### 5. Leaderboard Contract Moved
 
-### 12. Interactive Practice Response Submission Endpoint
+- **Status:** Merged upstream
+- **Contract:** `GET /api/v1/leaderboard/`
+- **Source check:** Leaderboard now lives in `topics.views` and is mounted through `topics.urls`, not `practice.urls`.
+- **Frontend consumption:** Learner/admin leaderboard consumers use `/leaderboard/`.
 
 ### 6. Admin Question Reads Include `correct_answer_index`
 
@@ -187,22 +176,5 @@
 
 ### 8. Analytics Caching
 
-### 15. Topic Typo Resolution (`/topics/`)
-
-### 9. User Preferences PATCH Schema Alignment
-
-### 16. User Initials and Avatar Colors in Token Response
-
-### 10. Post-Submit Answer Reveal
-
-- **Status:** Resolved for answer reveal / monitor rating persistence separately under issue 1
-- **Contract:** `PATCH /api/v1/practice/sessions/<session_id>/responses/<question_id>/`
-- **Source check:** `QuestionResponseFeedbackSerializer` returns `correct_answer_index` only after answer submission.
-- **Frontend consumption:** The learner practice UI uses this field to mark the correct option after submit without exposing answers in pre-submit question reads.
-
-### 11. Topics Operation IDs And Permission Coverage
-
-- **Status:** Merged upstream in `origin/interface` at `04d3fe2`
-- **Contracts:** `GET/POST/PATCH/DELETE /api/v1/topics/`, `/api/v1/subtopics/`, and read-only `/api/v1/mastery/`
-- **Source check:** Topic and subtopic viewsets now have explicit OpenAPI operation IDs, mastery remains read-only, and `backend/topics/tests.py` covers learner/staff permission boundaries.
-- **Frontend consumption:** Current topic browsing, admin topic CRUD, and mastery reads remain on the same paths; no frontend route changes required.
+- **Status:** Implemented upstream / monitor
+- **Description:** Redis-backed caching was added for analytics routes. Keep local and deployment environments aligned with backend dependency/configuration requirements.

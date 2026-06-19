@@ -36,13 +36,14 @@ export function AdminDashboard() {
 
   const { data: metrics, isLoading: metricsLoading, error: metricsError } = useAggregatedMetrics()
   const { data: leaderboardRaw, isLoading: lbLoading, error: leaderboardError } = useGlobalLeaderboard()
+  const { data: systemHealth, isLoading: healthLoading, error: healthError } = useSystemHealth()
   const leaderboard = useMemo(
     () => (leaderboardRaw ?? []) as LearnerProfile[],
     [leaderboardRaw]
   )
-  const isLoading = metricsLoading || lbLoading
   const analyticsErrorMessage = metricsError instanceof Error ? metricsError.message : ''
   const leaderboardErrorMessage = leaderboardError instanceof Error ? leaderboardError.message : ''
+  const healthErrorMessage = healthError instanceof Error ? healthError.message : ''
 
   const stats = useMemo(() => ({
     totalLearners: leaderboard.length || 0,
@@ -127,9 +128,9 @@ export function AdminDashboard() {
         </Card>
       </section>
 
-      {(analyticsErrorMessage || leaderboardErrorMessage) && (
+      {(analyticsErrorMessage || leaderboardErrorMessage || healthErrorMessage) && (
         <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
-          {analyticsErrorMessage || leaderboardErrorMessage}
+          {analyticsErrorMessage || leaderboardErrorMessage || healthErrorMessage}
         </div>
       )}
 
@@ -137,7 +138,7 @@ export function AdminDashboard() {
         <PageStatCard
           icon={<Users className="h-5 w-5" />}
           label={t('admin:totalLearners')}
-          value={isLoading || leaderboardErrorMessage ? '--' : stats.totalLearners}
+          value={lbLoading || leaderboardErrorMessage ? '--' : stats.totalLearners}
           helper={t('admin:totalLearnersHelper')}
           tone="secondary"
         />

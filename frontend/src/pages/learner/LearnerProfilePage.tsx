@@ -28,8 +28,8 @@ import { getTopicDisplayName } from '@/utils/topicLabels'
  *
  * Backend-integrated:
  * - Identity fields (username, email, first/last name) via PATCH /api/v1/auth/users/me/
- * - Learner stats (XP, streak) via GET /api/v1/auth/learner/me/
- * - Topic mastery via GET /api/v1/practice/mastery/
+ * - Learner stats (XP, streak) via GET /api/v1/auth/users/me/
+ * - Topic mastery via GET /api/v1/mastery/
  */
 
 export function LearnerProfilePage() {

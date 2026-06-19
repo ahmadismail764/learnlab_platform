@@ -13,4 +13,4 @@
 // export { UserMenu } from './UserMenu'
 
 export { PageIntro, PageStatCard, SectionHeading } from './PageShell'
-export { ErrorBoundary } from './ErrorBoundary'
+export { ErrorBoundary } from '../ErrorBoundary'

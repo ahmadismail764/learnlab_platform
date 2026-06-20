@@ -14,3 +14,6 @@ mastery_router.register(r'mastery', SubtopicMasteryViewSet, basename='subtopic-m
 urlpatterns = topics_router.urls + subtopics_router.urls + mastery_router.urls
 
 urlpatterns.append(path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'))
+
+from topics.views import ExtractQuestionsAPIView
+urlpatterns.append(path('extract-questions/', ExtractQuestionsAPIView.as_view(), name='extract-questions'))

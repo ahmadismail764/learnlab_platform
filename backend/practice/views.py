@@ -18,7 +18,8 @@ from practice.serializers import (
     QuestionCreateAndUpdateSerializer,
     QuestionSerializer,
     QuestionResponseCreateSerializer,
-    QuestionResponseSerializer,
+    QuestionResponseFeedbackSerializer,
+    QuestionResponseRatingSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
     LeaderboardSerializer,
@@ -74,7 +75,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
     ),
 )
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-
+    #######################################
+    # Management functions
+    #######################################
     def get_permissions(self):
         """
         FIXED: Correctly returns instantiated permission arrays to prevent runtime crashes.
@@ -125,37 +128,85 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
             session_questions = list(fallback_qs[:limit])
 
-        # ------------------------------------------------------------
-        # Serialization Response Return
-        # ------------------------------------------------------------
-        serializer = self.get_serializer(session_questions, many=True)
-        return Response({
-            'questions': serializer.data,
-            'message': f'Generated adaptive session with {len(session_questions)} question(s)',
-        }, status=status.HTTP_200_OK)
+        # Use a transaction to ensure both session and placeholders are created safely together
+        with transaction.atomic():
+            session = create_serializer.save(learner=learner)
+            
+            # Seed the database with empty placeholder responses linked to each question
+            placeholders = [
+                QuestionResponse(
+                    session=session,
+                    question=question,
+                    selected_answer_index=None,  # Unanswered
+                    is_correct=False             # Default fallback
+                )
+                for question in session_questions
+            ]
+            QuestionResponse.objects.bulk_create(placeholders)
 
+        # Serialize everything together
+        session_serializer = PracticeSessionSerializer(session, context={'request': request})
+        
+        # Note: You should ensure your PracticeSessionSerializer includes or nests 
+        # its related responses so the frontend guy instantly gets the placeholder IDs!
+        response_data = session_serializer.data
+        response_data['message'] = f'Generated adaptive session with {len(session_questions)} placeholders.'
 
-@extend_schema_view(
-    list=extend_schema(
-        operation_id='practice_leaderboard_list',
-        description="Returns all learners ranked by XP descending. Staff accounts are excluded. Filter by ?topic=<uuid> to rank only learners active in that topic.",
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        operation_id='practice_sessions_patch_response',
+        request=QuestionResponseCreateSerializer, # Reusing your answer payload serializer
+        responses={200: QuestionResponseFeedbackSerializer},
         parameters=[
-            OpenApiParameter(name='topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False),
+            OpenApiParameter('question_id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
         ],
-        responses={200: LeaderboardSerializer(many=True)},
+        description="Frontend updates an empty placeholder response incrementally by providing the question ID.",
     )
-)
-class LeaderboardView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = LeaderboardSerializer
+    @action(detail=True, methods=['patch'], url_path=r'responses/(?P<question_id>[^/.]+)')
+    def submit_placeholder_response(self, request, pk=None, question_id=None):
+        session = self.get_object()
+        if session.learner != request.user:
+            raise PermissionDenied("You do not have permission to modify this session.")
 
-    def get_queryset(self):
-        topic_id = self.request.query_params.get('topic')
-        qs = User.objects.filter(is_staff=False).order_by('-current_xp')
-        if topic_id:
-            from topics.models import SubtopicMastery
-            learner_ids = SubtopicMastery.objects.filter(
-                subtopic__topic_id=topic_id
-            ).values_list('learner_id', flat=True).distinct()
-            qs = qs.filter(id__in=learner_ids)
-        return qs
+        # Find the existing empty placeholder for this specific question
+        response = get_object_or_404(QuestionResponse, session=session, question_id=question_id)
+        
+        # Guard rail: prevent resubmissions if your business logic dictates responses are final
+        if response.selected_answer_index is not None:
+            return Response({"detail": "This question has already been answered."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = QuestionResponseCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        selected = serializer.validated_data['selected_answer_index']
+        question = response.question
+        is_correct = (selected == question.correct_answer_index)
+
+        # Update the placeholder record
+        response.selected_answer_index = selected
+        response.is_correct = is_correct
+        response.save()
+
+        # Process standard internal logic (FSRS scheduling and XP)
+        process_review(session.learner, question.subtopic, response)
+
+        if is_correct:
+            session.total_xp_earned += XP_PER_CORRECT_ANSWER
+            session.save()
+
+        return Response(QuestionResponseFeedbackSerializer(response).data, status=status.HTTP_200_OK)
+
+# class QuestionResponseViewSet(viewsets.ReadOnlyModelViewSet):
+#     """
+#     Read-only viewset for question responses.
+#     Staff see all; learners see only their own session responses.
+#     """
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = QuestionResponseFeedbackSerializer
+
+#     def get_queryset(self):
+#         user = self.request.user
+#         if user.is_staff:
+#             return QuestionResponse.objects.select_related('question').all()
+#         return QuestionResponse.objects.select_related('question').filter(session__learner=user)

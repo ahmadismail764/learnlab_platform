@@ -9,18 +9,6 @@ import { NotFoundPage } from "./NotFoundPage";
  * Application Router
  *
  * Route-level code splitting via React.lazy() keeps the initial bundle
- * small. Heavy pages (especially PracticePage with mathlive) are loaded
- * on demand. Each lazy chunk is wrapped in Suspense with a spinner.
- *
- * Roles:
- * - learner: Primary learner - solves problems, views progress
- * - admin: Content manager - manages questions, monitors analytics
-
-/**
- * Application Router
- *
- * Route-level code splitting via React.lazy() keeps the initial bundle
- * small. Heavy pages (especially PracticePage with mathlive) are loaded
  * on demand. Each lazy chunk is wrapped in Suspense with a spinner.
  *
  * Roles:

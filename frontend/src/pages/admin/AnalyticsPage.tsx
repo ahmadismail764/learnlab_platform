@@ -4,15 +4,14 @@ import {
   Users,
   TrendingUp,
   Target,
-  Clock,
   BookOpen,
   BarChart3,
   Activity,
   Search,
-  Download,
   AlertTriangle,
+  Flame,
 } from 'lucide-react'
-import { Card, CardHeader, CardContent, Badge, Input, Button } from '@/components/ui'
+import { Card, CardHeader, CardContent, Badge, Input } from '@/components/ui'
 import { ProgressBar, ProgressRing } from '@/components/ui/Progress'
 import { PageIntro, PageStatCard } from '@/components/common'
 import {
@@ -48,6 +47,10 @@ export function AnalyticsPage() {
   const isLoadingOverview = metricsLoading || lbLoading || bulkLoading || activityLoading || difficultyLoading
   const contractErrors = [metricsError, leaderboardError, bulkError, activityError, difficultyError]
     .filter((error): error is Error => error instanceof Error)
+  const bulkErrorMessage = bulkError instanceof Error ? bulkError.message : ''
+  const activityErrorMessage = activityError instanceof Error ? activityError.message : ''
+  const leaderboardErrorMessage = leaderboardError instanceof Error ? leaderboardError.message : ''
+  const difficultyErrorMessage = difficultyError instanceof Error ? difficultyError.message : ''
 
   const overviewStats = useMemo(() => {
     const totalQuestions = activityData?.results?.reduce((sum, item) => sum + item.questions_answered, 0) ?? 0
@@ -56,7 +59,6 @@ export function AnalyticsPage() {
       totalLearners: leaderboard?.length ?? 0,
       activeThisWeek: aggregated?.active_users?.['7_days'] ?? 0,
       avgAccuracy: aggregated?.estimated_retention ? Math.round(aggregated.estimated_retention * 100) : 0,
-      avgSessionTime: aggregated?.mastery_averages?.avg_speed ? Math.round(aggregated.mastery_averages.avg_speed * 10) : 0, // minutes
       totalQuestionsAnswered: totalQuestions,
       questionsThisWeek: questionsWeek,
       totalReviews: aggregated?.review_count ?? 0,
@@ -67,13 +69,11 @@ export function AnalyticsPage() {
     if (!leaderboard) return []
     return leaderboard.slice(0, 5).map((entry) => ({
       name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown',
-      accuracy: 0,
-      questionsAnswered: 0,
       xp: entry.total_xp,
+      streak: entry.streak_count,
     }))
   }, [leaderboard])
 
-  // UC-04 Step 3: FSRS-specific metrics per topic (mock data replaced)
   const fsrsMetrics = useMemo(() => {
     if (!bulkAnalytics?.results) return []
     return bulkAnalytics.results.map((item) => ({
@@ -89,9 +89,10 @@ export function AnalyticsPage() {
     return bulkAnalytics.results.map((item) => ({
       topic: item.topic_id,
       topic_name: item.topic_name,
-      accuracy: Math.round((item.metrics.estimated_retention ?? 0.75) * 100),
-      attempts: item.metrics.learner_count * 15,
-      avgTime: Math.round((item.metrics.avg_speed ?? 1) * 45),
+      retention: typeof item.metrics.estimated_retention === 'number'
+        ? Math.round(item.metrics.estimated_retention * 100)
+        : null,
+      learnerCount: item.metrics.learner_count,
     }))
   }, [bulkAnalytics])
 
@@ -135,7 +136,6 @@ export function AnalyticsPage() {
     })
   }, [activityData])
 
-  const maxAttempts = Math.max(...topicPerformance.map((t) => t.attempts), 1)
   const maxDailyLearners = Math.max(...weeklyActivity.map((d) => d.learners), 1)
 
   // UC-04 Step 4a: Filter topics by search
@@ -149,7 +149,7 @@ export function AnalyticsPage() {
   )
 
   // UC-04 Alternate Flow 2a: Insufficient data check
-  const hasInsufficientData = overviewStats.totalReviews < 10
+  const hasInsufficientData = !metricsError && overviewStats.totalReviews < 10
 
   return (
     <div className="space-y-6">
@@ -159,26 +159,6 @@ export function AnalyticsPage() {
         description={t('admin:analyticsDescription')}
         icon={<BarChart3 className="h-6 w-6" />}
         tone="secondary"
-        actions={(
-          <>
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Download className="w-4 h-4" />}
-              onClick={() => { /* Export CSV — backend integration */ }}
-            >
-              {t('admin:exportCSV')}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<Download className="w-4 h-4" />}
-              onClick={() => { /* Export PDF — backend integration */ }}
-            >
-              {t('admin:exportPDF')}
-            </Button>
-          </>
-        )}
       />
 
       {isLoadingOverview && (
@@ -187,25 +167,27 @@ export function AnalyticsPage() {
 
       
 
-      {contractErrors.length > 0 ? (
-        <Card className="dashboard-panel py-10">
+      {contractErrors.length > 0 && (
+        <Card className="dashboard-panel">
           <CardContent>
-            <div className="mx-auto flex max-w-2xl flex-col items-center gap-3 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300">
-                <AlertTriangle className="h-7 w-7" />
-              </div>
-              <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
+            <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 dark:border-rose-900/50 dark:bg-rose-900/20">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-300" />
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold text-rose-800 dark:text-rose-200">
                 {t('admin:analyticsUnavailable')}
-              </h2>
-              <div className="space-y-1 text-sm text-rose-700 dark:text-rose-300">
+                </h2>
+                <div className="space-y-1 text-sm text-rose-700 dark:text-rose-300">
                 {contractErrors.map((error) => (
                   <p key={error.message}>{error.message}</p>
                 ))}
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      ) : hasInsufficientData ? (
+      )}
+
+      {hasInsufficientData && (
         <Card className="dashboard-panel text-center py-12">
           <CardContent>
             <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/40 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -222,31 +204,31 @@ export function AnalyticsPage() {
             </p>
           </CardContent>
         </Card>
-      ) : (
-      <>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <PageStatCard
           icon={<Users className="h-5 w-5" />}
           label={t('admin:totalLearners')}
-          value={overviewStats.totalLearners}
+          value={lbLoading || leaderboardErrorMessage ? '--' : overviewStats.totalLearners}
           tone="secondary"
         />
         <PageStatCard
           icon={<Activity className="h-5 w-5" />}
           label={t('admin:activeThisWeek')}
-          value={overviewStats.activeThisWeek}
+          value={metricsLoading || metricsError ? '--' : overviewStats.activeThisWeek}
           tone="success"
         />
         <PageStatCard
           icon={<Target className="h-5 w-5" />}
-          label={t('admin:avgAccuracy')}
-          value={`${overviewStats.avgAccuracy}%`}
+          label={t('admin:retention')}
+          value={metricsLoading || metricsError ? '--' : `${overviewStats.avgAccuracy}%`}
           tone="primary"
         />
         <PageStatCard
-          icon={<Clock className="h-5 w-5" />}
-          label={t('admin:avgSessionTime')}
-          value={`${overviewStats.avgSessionTime}m`}
+          icon={<BookOpen className="h-5 w-5" />}
+          label={t('admin:totalReviews')}
+          value={metricsLoading || metricsError ? '--' : overviewStats.totalReviews.toLocaleString()}
           tone="accent"
         />
       </div>
@@ -258,6 +240,11 @@ export function AnalyticsPage() {
           subtitle={t('admin:fsrsMetricsDescription')}
         />
         <CardContent>
+          {bulkErrorMessage ? (
+            <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+              {bulkErrorMessage}
+            </p>
+          ) : (
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {fsrsMetrics.map((item) => (
               <div key={item.topic} className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
@@ -285,6 +272,7 @@ export function AnalyticsPage() {
               </div>
             ))}
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -295,9 +283,15 @@ export function AnalyticsPage() {
           <Card className="dashboard-panel">
             <CardHeader 
               title={t('admin:topicPerformance')}
-              subtitle={t('admin:accuracyByTopic')}
+              subtitle={t('admin:retentionHealthHelper')}
             />
             <CardContent>
+              {bulkErrorMessage ? (
+                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                  {bulkErrorMessage}
+                </p>
+              ) : (
+              <>
               {/* UC-04 Step 4/4a: Topic search/filter */}
               <div className="mb-4">
                 <Input
@@ -322,34 +316,28 @@ export function AnalyticsPage() {
                       </span>
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                          {item.attempts.toLocaleString()} {t('admin:attempts')}
+                          {item.learnerCount.toLocaleString()} {t('admin:learners')}
                         </span>
                         <Badge 
-                          variant={item.accuracy >= 75 ? 'success' : item.accuracy >= 60 ? 'secondary' : 'accent'}
+                          variant={item.retention == null ? 'outline' : item.retention >= 75 ? 'success' : item.retention >= 60 ? 'secondary' : 'accent'}
                           size="sm"
                         >
-                          {item.accuracy}%
+                          {item.retention == null ? '--' : `${item.retention}%`}
                         </Badge>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <ProgressBar 
-                        value={item.accuracy} 
-                        max={100} 
-                        variant={item.accuracy >= 75 ? 'success' : item.accuracy >= 60 ? 'secondary' : 'accent'}
-                        size="sm"
-                        className="flex-1"
-                      />
-                      <div 
-                        className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full"
-                        style={{ width: `${(item.attempts / maxAttempts) * 100}%`, maxWidth: '100px' }}
-                        title={`${item.attempts} attempts`}
-                      />
-                    </div>
+                    <ProgressBar 
+                      value={item.retention ?? 0} 
+                      max={100} 
+                      variant={item.retention == null ? 'secondary' : item.retention >= 75 ? 'success' : item.retention >= 60 ? 'secondary' : 'accent'}
+                      size="sm"
+                    />
                   </div>
                 ))
                 )}
               </div>
+              </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -359,6 +347,11 @@ export function AnalyticsPage() {
           <Card className="dashboard-panel">
             <CardHeader title={t('admin:difficultyBreakdown')} />
             <CardContent>
+              {difficultyErrorMessage ? (
+                <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                  {difficultyErrorMessage}
+                </p>
+              ) : (
               <div className="flex justify-around">
                 <div className="text-center">
                   <ProgressRing 
@@ -391,6 +384,7 @@ export function AnalyticsPage() {
                   <p className="text-xs text-neutral-400 dark:text-neutral-500">{difficultyBreakdown.tier3.attempts.toLocaleString()}</p>
                 </div>
               </div>
+              )}
             </CardContent>
           </Card>
 
@@ -406,6 +400,12 @@ export function AnalyticsPage() {
             subtitle={t('admin:last7Days')}
           />
           <CardContent>
+            {activityErrorMessage ? (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                {activityErrorMessage}
+              </p>
+            ) : (
+            <>
             <div className="flex items-end justify-between h-40 gap-2">
               {weeklyActivity.map((day) => (
                 <div key={day.day} className="flex-1 flex flex-col items-center gap-2">
@@ -424,6 +424,8 @@ export function AnalyticsPage() {
                 {t('admin:activeLearners')}
               </div>
             </div>
+            </>
+            )}
           </CardContent>
         </Card>
 
@@ -431,9 +433,14 @@ export function AnalyticsPage() {
         <Card className="dashboard-panel">
           <CardHeader 
             title={t('admin:topLearners')}
-            subtitle={t('admin:byAccuracy')}
+            subtitle={t('admin:topLearnersDescription')}
           />
           <CardContent>
+            {leaderboardErrorMessage ? (
+              <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+                {leaderboardErrorMessage}
+              </p>
+            ) : (
             <div className="space-y-3">
               {topLearners.map((learner, index) => (
                 <div key={learner.name} className="flex items-center gap-3">
@@ -449,20 +456,17 @@ export function AnalyticsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-neutral-800 dark:text-neutral-100 truncate">{learner.name}</p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                      {learner.questionsAnswered > 0
-                        ? `${learner.questionsAnswered} ${t('admin:questionsAnswered')}`
-                        : `${t('admin:questionsAnswered')}: --`} • {t('admin:experiencePointsValue', { value: learner.xp })}
+                      {t('admin:experiencePointsValue', { value: learner.xp })}
                     </p>
                   </div>
-                  <Badge 
-                    variant={learner.accuracy >= 90 ? 'success' : 'primary'}
-                    size="sm"
-                  >
-                    {learner.accuracy > 0 ? `${learner.accuracy}%` : '--'}
+                  <Badge variant="outline" size="sm">
+                    <Flame className="me-1 h-3 w-3 text-orange-500" />
+                    {learner.streak}
                   </Badge>
                 </div>
               ))}
             </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -475,21 +479,21 @@ export function AnalyticsPage() {
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BookOpen className="w-8 h-8 text-primary-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {overviewStats.totalQuestionsAnswered.toLocaleString()}
+                {activityErrorMessage ? '--' : overviewStats.totalQuestionsAnswered.toLocaleString()}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:totalAnswered')}</p>
             </div>
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <TrendingUp className="w-8 h-8 text-green-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {overviewStats.questionsThisWeek.toLocaleString()}
+                {activityErrorMessage ? '--' : overviewStats.questionsThisWeek.toLocaleString()}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:thisWeek')}</p>
             </div>
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BarChart3 className="w-8 h-8 text-secondary-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {overviewStats.totalLearners > 0
+                {activityErrorMessage || leaderboardErrorMessage ? '--' : overviewStats.totalLearners > 0
                   ? Math.round(overviewStats.totalQuestionsAnswered / overviewStats.totalLearners)
                   : 0}
               </p>
@@ -498,15 +502,13 @@ export function AnalyticsPage() {
             <div className="text-center p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
               <BarChart3 className="w-8 h-8 text-accent-500 mx-auto mb-2" />
               <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {overviewStats.totalReviews.toLocaleString()}
+                {metricsError ? '--' : overviewStats.totalReviews.toLocaleString()}
               </p>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('admin:retention')}</p>
             </div>
           </div>
         </CardContent>
       </Card>
-      </>
-      )}
     </div>
   )
 }

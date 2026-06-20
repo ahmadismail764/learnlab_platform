@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Settings,
@@ -12,6 +12,9 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input } from '@/components/ui'
 import { PageIntro } from '@/components/common'
+import { useTheme, useToast } from '@/contexts'
+import { authService, type UserPreferences } from '@/services/auth'
+import { changeLanguage, type SupportedLanguage } from '@/i18n'
 
 /**
  * SettingsPage - Admin System Settings
@@ -34,6 +37,80 @@ interface ToggleSwitchProps {
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
+}
+
+const defaultSettings = {
+  siteName: 'Learn Lab',
+  defaultLanguage: 'ar',
+  timezone: 'Africa/Cairo',
+  emailNotifications: true,
+  practiceReminders: true,
+  weeklyDigest: false,
+  sessionTimeout: 30,
+  maxLoginAttempts: 5,
+  requireStrongPassword: true,
+  twoFactorEnabled: false,
+  questionsPerSession: 10,
+  showHints: true,
+  allowSkip: true,
+  timerEnabled: false,
+  primaryColor: '#58cc02',
+  accentColor: '#ff9600',
+  darkModeEnabled: false,
+}
+
+type SettingsState = typeof defaultSettings
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function coerceString(value: unknown, fallback: string) {
+  return typeof value === 'string' ? value : fallback
+}
+
+function coerceNumber(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
+
+function coerceBoolean(value: unknown, fallback: boolean) {
+  return typeof value === 'boolean' ? value : fallback
+}
+
+function coerceLanguage(value: unknown, fallback: string) {
+  return value === 'ar' || value === 'en' ? value : fallback
+}
+
+function normalizeSettings(preferences: UserPreferences): SettingsState {
+  const storedSettings = isRecord(preferences.adminSettings)
+    ? preferences.adminSettings
+    : preferences
+
+  return {
+    siteName: coerceString(storedSettings.siteName, defaultSettings.siteName),
+    defaultLanguage: coerceLanguage(
+      storedSettings.defaultLanguage ?? preferences.language,
+      defaultSettings.defaultLanguage,
+    ),
+    timezone: coerceString(storedSettings.timezone, defaultSettings.timezone),
+    emailNotifications: coerceBoolean(storedSettings.emailNotifications, defaultSettings.emailNotifications),
+    practiceReminders: coerceBoolean(storedSettings.practiceReminders, defaultSettings.practiceReminders),
+    weeklyDigest: coerceBoolean(storedSettings.weeklyDigest, defaultSettings.weeklyDigest),
+    sessionTimeout: coerceNumber(storedSettings.sessionTimeout, defaultSettings.sessionTimeout),
+    maxLoginAttempts: coerceNumber(storedSettings.maxLoginAttempts, defaultSettings.maxLoginAttempts),
+    requireStrongPassword: coerceBoolean(storedSettings.requireStrongPassword, defaultSettings.requireStrongPassword),
+    twoFactorEnabled: coerceBoolean(storedSettings.twoFactorEnabled, defaultSettings.twoFactorEnabled),
+    questionsPerSession: coerceNumber(storedSettings.questionsPerSession, defaultSettings.questionsPerSession),
+    showHints: coerceBoolean(storedSettings.showHints, defaultSettings.showHints),
+    allowSkip: coerceBoolean(storedSettings.allowSkip, defaultSettings.allowSkip),
+    timerEnabled: coerceBoolean(storedSettings.timerEnabled, defaultSettings.timerEnabled),
+    primaryColor: coerceString(storedSettings.primaryColor, defaultSettings.primaryColor),
+    accentColor: coerceString(storedSettings.accentColor, defaultSettings.accentColor),
+    darkModeEnabled: coerceBoolean(
+      storedSettings.darkModeEnabled ?? (preferences.theme === 'dark'),
+      defaultSettings.darkModeEnabled,
+    ),
+  }
 }
 
 function ToggleSwitch({ checked, onChange, disabled = false }: ToggleSwitchProps) {
@@ -65,40 +142,17 @@ function ToggleSwitch({ checked, onChange, disabled = false }: ToggleSwitchProps
 
 export function SettingsPage() {
   const { t } = useTranslation(['admin', 'common'])
+  const { setTheme } = useTheme()
+  const { showSuccess, showError } = useToast()
   
   const [activeSection, setActiveSection] = useState('general')
   const [hasChanges, setHasChanges] = useState(false)
   const [saved, setSaved] = useState(false)
-
-  // Mock settings state
-  const [settings, setSettings] = useState({
-    // General
-    siteName: 'Learn Lab',
-    defaultLanguage: 'ar',
-    timezone: 'Asia/Riyadh',
-    
-    // Notifications
-    emailNotifications: true,
-    practiceReminders: true,
-    weeklyDigest: false,
-    
-    // Security
-    sessionTimeout: 30, // minutes
-    maxLoginAttempts: 5,
-    requireStrongPassword: true,
-    twoFactorEnabled: false,
-    
-    // Practice
-    questionsPerSession: 10,
-    showHints: true,
-    allowSkip: true,
-    timerEnabled: false,
-    
-    // Theme
-    primaryColor: '#58cc02',
-    accentColor: '#ff9600',
-    darkModeEnabled: false,
-  })
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true)
+  const [isSavingSettings, setIsSavingSettings] = useState(false)
+  const [settingsError, setSettingsError] = useState('')
+  const [settings, setSettings] = useState<SettingsState>(defaultSettings)
+  const [lastSavedSettings, setLastSavedSettings] = useState<SettingsState>(defaultSettings)
 
   const sections: SettingSection[] = [
     { id: 'general', icon: Settings, titleKey: 'admin:generalSettings' },
@@ -108,22 +162,87 @@ export function SettingsPage() {
     { id: 'theme', icon: Palette, titleKey: 'admin:themeSettings' },
   ]
 
-  const updateSetting = <K extends keyof typeof settings>(key: K, value: typeof settings[K]) => {
+  useEffect(() => {
+    let isMounted = true
+
+    const loadSettings = async () => {
+      setIsLoadingSettings(true)
+      setSettingsError('')
+
+      try {
+        const preferences = await authService.getPreferences()
+        const nextSettings = normalizeSettings(preferences)
+
+        if (!isMounted) return
+
+        setSettings(nextSettings)
+        setLastSavedSettings(nextSettings)
+        setHasChanges(false)
+        setTheme(nextSettings.darkModeEnabled ? 'dark' : 'light')
+        await changeLanguage(nextSettings.defaultLanguage as SupportedLanguage)
+      } catch (error) {
+        if (!isMounted) return
+        const message = error instanceof Error ? error.message : 'Failed to load settings'
+        setSettingsError(message)
+      } finally {
+        if (isMounted) {
+          setIsLoadingSettings(false)
+        }
+      }
+    }
+
+    void loadSettings()
+
+    return () => {
+      isMounted = false
+    }
+  }, [setTheme])
+
+  const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+    if (isLoadingSettings || isSavingSettings) return
     setSettings(prev => ({ ...prev, [key]: value }))
     setHasChanges(true)
     setSaved(false)
   }
 
-  const handleSave = () => {
-    // Mock save - in real app, would call API
-    setSaved(true)
-    setHasChanges(false)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    setIsSavingSettings(true)
+    setSettingsError('')
+
+    try {
+      const preferences = await authService.updatePreferences({
+        adminSettings: settings,
+        language: settings.defaultLanguage,
+        theme: settings.darkModeEnabled ? 'dark' : 'light',
+        notifications: {
+          email: settings.emailNotifications,
+          practiceReminders: settings.practiceReminders,
+          weeklyDigest: settings.weeklyDigest,
+        },
+      })
+      const nextSettings = normalizeSettings(preferences)
+
+      setSettings(nextSettings)
+      setLastSavedSettings(nextSettings)
+      setHasChanges(false)
+      setSaved(true)
+      setTheme(nextSettings.darkModeEnabled ? 'dark' : 'light')
+      await changeLanguage(nextSettings.defaultLanguage as SupportedLanguage)
+      showSuccess(t('admin:settingsSaved'))
+      setTimeout(() => setSaved(false), 3000)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t('admin:settingsSaveFailed')
+      setSettingsError(message)
+      showError(message)
+    } finally {
+      setIsSavingSettings(false)
+    }
   }
 
   const handleReset = () => {
-    // Mock reset - in real app, would fetch from API
+    setSettings(lastSavedSettings)
     setHasChanges(false)
+    setSaved(false)
   }
 
   return (
@@ -137,13 +256,19 @@ export function SettingsPage() {
         actions={
           <>
             {hasChanges && (
-              <Button variant="outline" leftIcon={<RotateCcw className="w-4 h-4" />} onClick={handleReset}>
+              <Button
+                variant="outline"
+                leftIcon={<RotateCcw className="w-4 h-4" />}
+                disabled={isLoadingSettings || isSavingSettings}
+                onClick={handleReset}
+              >
                 {t('common:reset')}
               </Button>
             )}
             <Button
               leftIcon={saved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              disabled={!hasChanges}
+              disabled={!hasChanges || isLoadingSettings}
+              isLoading={isSavingSettings}
               onClick={handleSave}
             >
               {saved ? t('common:saved') : t('common:saveChanges')}
@@ -151,6 +276,20 @@ export function SettingsPage() {
           </>
         }
       />
+
+      {settingsError && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-900/50 dark:bg-rose-900/20 dark:text-rose-300">
+          {settingsError}
+        </div>
+      )}
+
+      {isLoadingSettings && (
+        <Card className="dashboard-panel-soft border-0" padding="sm">
+          <div className="text-sm text-neutral-600 dark:text-neutral-300">
+            {t('admin:loadingSettings')}
+          </div>
+        </Card>
+      )}
 
       {/* Status Badge */}
       {hasChanges && (

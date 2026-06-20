@@ -44,6 +44,12 @@ export interface UpdateCurrentUserPayload {
   last_name?: string;
 }
 
+export type UserPreferences = Record<string, unknown>;
+
+interface PreferencesResponse {
+  preferences?: UserPreferences;
+}
+
 function normalizeAuthError(
   message: string,
   mode: "login" | "register",
@@ -161,13 +167,22 @@ export const authService = {
     }
   },
 
-  logout: () => {
-    // Clear tokens from both storages
+  logout: async () => {
+    const refresh = getToken("learnlab_refresh_token");
+    const blacklistRequest = refresh
+      ? api.post("/auth/logout/", { refresh }).catch((error) => {
+          console.error("Failed to blacklist refresh token", error);
+        })
+      : Promise.resolve();
+
+    // Clear tokens from both storages immediately; the blacklist request already captured them.
     localStorage.removeItem("learnlab_auth_token");
     localStorage.removeItem("learnlab_refresh_token");
     localStorage.removeItem("learnlab_persist");
     sessionStorage.removeItem("learnlab_auth_token");
     sessionStorage.removeItem("learnlab_refresh_token");
+
+    await blacklistRequest;
   },
 
   refreshToken: async () => {
@@ -217,6 +232,24 @@ export const authService = {
     }
     const data = await response.json();
     return coerceBackendUser(data as Partial<BackendAuthUser>);
+  },
+
+  getPreferences: async (): Promise<UserPreferences> => {
+    const response = await api.get("/auth/users/me/preferences/");
+    if (!response.ok) {
+      await throwApiError(response, "Failed to fetch preferences");
+    }
+    const data = await response.json() as PreferencesResponse;
+    return data.preferences ?? {};
+  },
+
+  updatePreferences: async (preferences: UserPreferences): Promise<UserPreferences> => {
+    const response = await api.patch("/auth/users/me/preferences/", preferences);
+    if (!response.ok) {
+      await throwApiError(response, "Failed to update preferences");
+    }
+    const data = await response.json() as PreferencesResponse;
+    return data.preferences ?? {};
   },
 
   requestPasswordReset: async (email: string) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ThemeContext, type Theme, type ThemeContextValue } from './themeContextValue'
 
 /**
@@ -67,23 +67,23 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme)
     localStorage.setItem(STORAGE_KEY, newTheme)
-  }
+  }, [])
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     const newTheme = resolvedTheme === 'dark' ? 'light' : 'dark'
     setTheme(newTheme)
-  }
+  }, [resolvedTheme, setTheme])
 
-  const value: ThemeContextValue = {
+  const value = useMemo<ThemeContextValue>(() => ({
     theme,
     resolvedTheme,
     isDark: resolvedTheme === 'dark',
     setTheme,
     toggleTheme,
-  }
+  }), [theme, resolvedTheme, setTheme, toggleTheme])
 
   return (
     <ThemeContext.Provider value={value}>

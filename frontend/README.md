@@ -8,9 +8,9 @@ Educational LMS (Learning Management System) platform for Discrete Mathematics -
 - **TypeScript** (strict mode)
 - **Vite 7** for blazing fast development
 - **Tailwind CSS v4** for styling
-- **Bun** as package manager
+- **Bun** as the primary package/script runner
 - **i18next** for internationalization (English/Arabic with RTL support)
-- **MathLive** for mathematical expression input with virtual keyboard
+- **MathLive** retained for a future optional personal-problem solver flow
 
 ## Getting Started
 
@@ -29,34 +29,53 @@ bun run preview
 
 # Run linter
 bun run lint
+
+# Run unit and functional tests
+bun run test:run
+
+# Check translation sync and unused keys
+bun run i18n:check
+bun run i18n:prune:check
 ```
+
+## Docker
+
+The root `docker-compose.yml` includes a frontend service that builds this app and serves it with Nginx:
+
+```bash
+docker compose up --build frontend
+```
+
+The backend is still expected at `VITE_API_BASE_URL`, which defaults to `http://localhost:8000`. This is a build-time value for Vite, so rebuild the frontend image after changing it.
 
 ## Project Structure
 
 ```
 src/
-├── assets/          # Static assets (images, fonts, icons)
 ├── components/      # Shared UI components
 │   ├── ui/          # Base components (Button, Input, Card, Badge, Avatar, Progress, EmptyState, Loading)
-│   ├── layout/      # Layout components (Header, Sidebar, StudentLayout)
-│   ├── common/      # Shared composite components (NotificationDropdown)
+│   ├── layout/      # Layout components (Header, Sidebar, DashboardLayout, AuthLayout)
+│   ├── common/      # Shared composite components (PageIntro, PageStatCard, SectionHeading)
 │   ├── MathInput    # MathLive virtual keyboard component for math expressions
 │   └── LanguageSwitcher # EN/AR language toggle
 ├── contexts/        # React contexts
 │   ├── AuthContext  # Authentication state & user management
-│   └── NotificationContext # Toast notifications system
-├── hooks/           # Custom hooks
-│   └── useLocalStorage # Persistent state management
+│   ├── ThemeContext # Theme persistence and dark mode
+│   └── ToastContext # Toast notifications system
+├── hooks/           # React Query hooks and reusable browser hooks
 ├── locales/         # i18n translation files
 │   ├── en/          # English translations (9 namespaces)
 │   └── ar/          # Arabic translations (RTL)
+├── routes/          # React Router route definitions and lazy wrappers
+├── services/        # Backend API service adapters and mappers
+├── test-utils/      # Shared Vitest/Testing Library helpers
 ├── types/           # Shared TypeScript types
 ├── validation/      # Centralized input validation schemas (Zod)
 ├── pages/           # Page components
-│   ├── auth/        # Login page
-│   ├── learner/     # Learner pages (Dashboard, Topics, Practice, Progress, Achievements, Leaderboard, Profile)
+│   ├── auth/        # Login, registration, and password reset pages
+│   ├── learner/     # Learner pages (Dashboard, Topics, Practice, Progress, Leaderboard, Profile)
 │   └── admin/       # Admin pages (Dashboard, Curriculum, Questions, Analytics, Settings, Profile)
-└── styles/          # Global styles & Tailwind config
+└── index.css        # Tailwind v4 theme, globals, and reusable surfaces
 ```
 
 ## Features
@@ -64,22 +83,21 @@ src/
 ### 🎯 Practice System
 - **Multiple Choice Questions** - Traditional 4-option questions
 - **True/False Questions** - Binary choice questions
-- **Essay Questions with MathLive** - Mathematical expression input with virtual keyboard
-  - LaTeX-based input/output
-  - Discrete math keyboard layouts (numeric, symbols, Greek letters)
-  - Flexible answer matching with alternative answers
+- **Adaptive Review Sessions** - Backend-generated practice sets with FSRS-style review signals
+- **Post-Submit Feedback** - Correctness comes from the backend after the learner commits an answer; correct-option reveal is tracked in backend issue #89
+- **MathLive Component** - Retained as a reusable math input for future personal-problem solving flows
 
 ### 📊 Progress Tracking
 - Topic-based progress with mastery levels
 - Session statistics (accuracy, time spent)
 - Visual progress indicators
 
-### 🏆 Achievements System
-- Unlock achievements based on performance
-- Multiple achievement tiers (bronze, silver, gold, platinum)
-- Detailed achievement reasons/criteria
+### 🏆 Motivation Signals
+- XP totals and streak tracking
+- Topic mastery status
+- Leaderboard rank visibility
 
-### � Leaderboard
+### Leaderboard
 - Weekly, monthly, and all-time rankings
 - Own rank highlight with streaks display
 - Offline banner and empty state handling
@@ -105,15 +123,8 @@ src/
 |------|-------------|---------------|
 | **Multiple Choice** | 4 options, single correct answer | Select one option |
 | **True/False** | Binary choice | Select True or False |
-| **Essay (Math)** | Open-ended math expression | LaTeX via MathLive keyboard |
 
-### Essay Question Topics (1 per category)
-- **Logic**: Contrapositive notation
-- **Sets**: Symmetric difference
-- **Relations**: Equivalence class notation
-- **Combinatorics**: Combination formula
-- **Graph Theory**: Complete graph edges
-- **Number Theory**: Euclidean algorithm GCD
+Open-ended written math is intentionally not part of the current review-session experience. A future optional solver can reuse `MathInput` for user-owned problems, where a learner either uploads a picture or enters a problem manually to receive a guided solution.
 
 ## Design System
 
@@ -181,6 +192,8 @@ This project follows **SOLID principles**:
 
 ## Development Notes
 
+Important frontend product and architecture decisions are tracked in [DECISIONS.md](./DECISIONS.md).
+
 ### API Contract Reviews
 
 - Use the live Django OpenAPI outputs as the source of truth for endpoint shape:
@@ -202,22 +215,5 @@ Translations use namespaced keys. Add new translations to both `en/` and `ar/` f
 ```typescript
 // Usage in components
 const { t } = useTranslation()
-t('practice:submitAnswer') // => "Submit Answer" or "إرسال الإجابة"
+t('practice:startSession') // => "Start session" or "ابدأ الجلسة"
 ```
-
----
-
-## Original Vite Template Info
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-### React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.

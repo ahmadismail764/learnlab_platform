@@ -213,7 +213,11 @@ class UserPreferencesView(APIView):
 
     @extend_schema(
         operation_id='auth_preferences_update',
-        description="Merge the supplied key/value pairs into the user's preferences. Existing keys not present in the payload are preserved.",
+        description=(
+            "Merge new preference keys into the user's stored preferences. "
+            "Send {\"preferences\": {\"language\": \"ar\", \"theme\": \"dark\"}} — only the supplied keys are updated; "
+            "all other existing keys are preserved. The full updated preferences object is returned."
+        ),
         request=inline_serializer(
             name='PreferencesPatchRequest',
             fields={'preferences': serializers.DictField(child=serializers.JSONField())},
@@ -222,7 +226,12 @@ class UserPreferencesView(APIView):
     )
     def patch(self, request):
         user = request.user
-        incoming = request.data if isinstance(request.data, dict) else {}
+        # Extract from the documented envelope key so clients sending
+        # {"preferences": {...}} don't accidentally store a nested "preferences" key.
+        payload = request.data if isinstance(request.data, dict) else {}
+        incoming = payload.get('preferences', payload)
+        if not isinstance(incoming, dict):
+            incoming = {}
         user.preferences = {**user.preferences, **incoming}
         user.save(update_fields=['preferences'])
 

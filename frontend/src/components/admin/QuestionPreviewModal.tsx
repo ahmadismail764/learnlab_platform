@@ -147,20 +147,6 @@ export function QuestionPreviewModal({
                   </div>
                 </div>
 
-                {question.explanation_video_url && (
-                  <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4">
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">{t('admin:questions.preview.explanationVideo')}</p>
-                    <a
-                      href={question.explanation_video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-primary-600 dark:text-primary-400 hover:underline break-all font-medium"
-                    >
-                      {question.explanation_video_url}
-                    </a>
-                  </div>
-                )}
-
                 {/* Actions */}
                 <div className="flex justify-end gap-3 border-t border-neutral-200 dark:border-neutral-700 pt-4 bg-transparent">
                   <Button

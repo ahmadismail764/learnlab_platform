@@ -4,14 +4,12 @@ import {
   Medal,
   Flame,
   Crown,
-  ChevronUp,
-  ChevronDown,
   WifiOff,
   Search,
   Users,
   TrendingUp,
 } from 'lucide-react'
-import { Card, Badge, Avatar, ProgressBar, Button, Input, Skeleton } from '@/components/ui'
+import { Card, Badge, Avatar, Button, Input, Skeleton } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
 import { useSuspenseTopics, useSuspenseGlobalLeaderboard, useSuspenseTopicLeaderboard } from '@/hooks'
@@ -26,9 +24,7 @@ interface LeaderboardEntry {
   avatar?: string
   xp: number
   streak: number
-  accuracy: number
   rank: number
-  rank_change: number
   is_current_user?: boolean
 }
 
@@ -37,17 +33,11 @@ interface TopicOption {
   name: string
 }
 
-interface LeaderboardApiEntry extends LeaderboardLearner {
-  accuracy?: number
-  rank_change?: number
-}
-
 interface LeaderboardDisplayProps {
   leaderboardType: 'global' | 'topic'
   selectedTopicName?: string
   currentUserEntry: LeaderboardEntry | null
   displayEntries: LeaderboardEntry[]
-  averageAccuracy: number
   longestStreak: number
   searchQuery: string
   setSearchQuery: (query: string) => void
@@ -260,14 +250,12 @@ function GlobalLeaderboardSection({
   const { data: globalData } = useSuspenseGlobalLeaderboard()
 
   const leaderboard = useMemo<LeaderboardEntry[]>(() => {
-    return ((globalData ?? []) as LeaderboardApiEntry[]).map((entry, index) => ({
+    return ((globalData ?? []) as LeaderboardLearner[]).map((entry, index) => ({
       id: entry.id,
       name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : t('unknownLearner'),
       xp: entry.total_xp || 0,
       streak: entry.streak_count || 0,
-      accuracy: entry.accuracy || 100,
       rank: index + 1,
-      rank_change: entry.rank_change || 0,
       is_current_user:
         String(entry.user?.id) === String(currentUser.id) ||
         entry.user?.username === currentUser.username,
@@ -293,14 +281,6 @@ function GlobalLeaderboardSection({
     return filteredEntries.slice(0, 10).sort((a, b) => a.rank - b.rank)
   }, [leaderboard, searchQuery])
 
-  const averageAccuracy = useMemo(() => {
-    if (displayEntries.length === 0) return 0
-
-    return Math.round(
-      displayEntries.reduce((sum, entry) => sum + entry.accuracy, 0) / displayEntries.length,
-    )
-  }, [displayEntries])
-
   const longestStreak = useMemo(() => {
     return leaderboard.reduce((highest, entry) => Math.max(highest, entry.streak), 0)
   }, [leaderboard])
@@ -310,7 +290,6 @@ function GlobalLeaderboardSection({
       leaderboardType="global"
       currentUserEntry={currentUserEntry}
       displayEntries={displayEntries}
-      averageAccuracy={averageAccuracy}
       longestStreak={longestStreak}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -336,14 +315,12 @@ function TopicLeaderboardSection({
   const { data: topicData } = useSuspenseTopicLeaderboard(topicId)
 
   const leaderboard = useMemo<LeaderboardEntry[]>(() => {
-    return ((topicData ?? []) as LeaderboardApiEntry[]).map((entry, index) => ({
+    return ((topicData ?? []) as LeaderboardLearner[]).map((entry, index) => ({
       id: entry.id,
       name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : t('unknownLearner'),
       xp: entry.total_xp || 0,
       streak: entry.streak_count || 0,
-      accuracy: entry.accuracy || 100,
       rank: index + 1,
-      rank_change: entry.rank_change || 0,
       is_current_user:
         String(entry.user?.id) === String(currentUser.id) ||
         entry.user?.username === currentUser.username,
@@ -369,14 +346,6 @@ function TopicLeaderboardSection({
     return filteredEntries.slice(0, 10).sort((a, b) => a.rank - b.rank)
   }, [leaderboard, searchQuery])
 
-  const averageAccuracy = useMemo(() => {
-    if (displayEntries.length === 0) return 0
-
-    return Math.round(
-      displayEntries.reduce((sum, entry) => sum + entry.accuracy, 0) / displayEntries.length,
-    )
-  }, [displayEntries])
-
   const longestStreak = useMemo(() => {
     return leaderboard.reduce((highest, entry) => Math.max(highest, entry.streak), 0)
   }, [leaderboard])
@@ -387,7 +356,6 @@ function TopicLeaderboardSection({
       selectedTopicName={selectedTopicName}
       currentUserEntry={currentUserEntry}
       displayEntries={displayEntries}
-      averageAccuracy={averageAccuracy}
       longestStreak={longestStreak}
       searchQuery={searchQuery}
       setSearchQuery={setSearchQuery}
@@ -401,7 +369,6 @@ function LeaderboardDisplay({
   selectedTopicName,
   currentUserEntry,
   displayEntries,
-  averageAccuracy,
   longestStreak,
   searchQuery,
   setSearchQuery,
@@ -437,9 +404,9 @@ function LeaderboardDisplay({
         />
         <PageStatCard
           icon={<Search className="h-5 w-5" />}
-          label={t('learner:averageAccuracy')}
-          value={`${averageAccuracy}%`}
-          helper={t('learner:acrossCurrentResultSet')}
+          label={t('learner:topLearners')}
+          value={displayEntries.length}
+          helper={t('learner:searchRankDescription')}
           tone="success"
         />
         <PageStatCard
@@ -478,39 +445,14 @@ function LeaderboardDisplay({
                   </div>
                 </div>
 
-                <div className="surface-inset grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                      {t('learner:practiceStreak')}
-                    </p>
-                    <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
-                      <Flame className="h-4 w-4 text-orange-500" />
-                      {currentUserEntry.streak}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                      {t('learner:rankChange')}
-                    </p>
-                    <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
-                      {currentUserEntry.rank_change >= 0 ? (
-                        <ChevronUp className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-rose-500" />
-                      )}
-                      {Math.abs(currentUserEntry.rank_change)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-neutral-500 dark:text-neutral-400">{t('learner:accuracyRate')}</span>
-                    <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                      {currentUserEntry.accuracy}%
-                    </span>
-                  </div>
-                  <ProgressBar value={currentUserEntry.accuracy} variant="success" />
+                <div className="surface-inset">
+                  <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                    {t('learner:practiceStreak')}
+                  </p>
+                  <p className="mt-1 flex items-center gap-2 font-semibold text-neutral-900 dark:text-neutral-100">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    {currentUserEntry.streak}
+                  </p>
                 </div>
               </div>
             ) : (
@@ -592,7 +534,7 @@ function LeaderboardDisplay({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4 md:min-w-[320px]">
+                    <div className="grid grid-cols-2 gap-4 md:min-w-[220px]">
                       <div>
                         <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
                           {t('learner:experiencePointsLabel')}
@@ -610,21 +552,13 @@ function LeaderboardDisplay({
                           {entry.streak}
                         </p>
                       </div>
-                      <div className="text-start md:text-end">
-                        <p className="text-xs uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
-                          {t('learner:accuracyRate')}
-                        </p>
-                        <div className="mt-1 flex items-center gap-2 md:justify-end">
-                          <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                            {entry.accuracy}%
-                          </span>
-                          {entry.is_current_user && (
-                            <Badge variant="primary" size="sm">
-                              {t('learner:you')}
-                            </Badge>
-                          )}
+                      {entry.is_current_user && (
+                        <div className="text-start md:text-end">
+                          <Badge variant="primary" size="sm">
+                            {t('learner:you')}
+                          </Badge>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 ))}

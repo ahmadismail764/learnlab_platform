@@ -2,6 +2,7 @@
 from django.utils import timezone as django_timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from django.db import transaction
 # DRF imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
 from rest_framework import viewsets, generics, serializers, status
@@ -74,7 +75,9 @@ class QuestionViewSet(viewsets.ModelViewSet):
     ),
 )
 class PracticeSessionViewSet(viewsets.ModelViewSet):
-
+    #######################################
+    # Management functions
+    #######################################
     def get_permissions(self):
         """
         FIXED: Correctly returns instantiated permission arrays to prevent runtime crashes.
@@ -100,110 +103,113 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """
-        Create a new practice session for the authenticated learner.
+        Create a session and immediately seed it with empty response placeholders.
         """
         create_serializer = self.get_serializer(data=request.data)
         create_serializer.is_valid(raise_exception=True)
 
-        session = create_serializer.save(learner=request.user)
+        limit = int(request.query_params.get('limit', 10))
+        topic_id = request.query_params.get('topic')
+        learner = request.user
+        now = django_timezone.now()
 
-        response_serializer = PracticeSessionSerializer(
-            session,
-            context={'request': request}
-        )
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_201_CREATED
-        )
-    
-    def destroy(self, request, *args, **kwargs):
-        return Response(
-            {"detail": "Practice history records are immutable and cannot be deleted."},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED
-        )
-    
-    @extend_schema(
-        operation_id='practice_sessions_submit_response',
-        request=QuestionResponseCreateSerializer,
-        responses={201: QuestionResponseFeedbackSerializer},
-        description=(
-            "Submit a single question response within an active practice session. "
-            "Triggers FSRS review processing and updates session XP. "
-            "Returns the committed response including correct_answer_index for post-submit reveal "
-            "and the current confidence_rating (default 3) which can be updated via PATCH."
-        ),
-    )
-    @action(detail=True, methods=['post'])
-    def responses(self, request, pk=None):
-        session = self.get_object()
-        if session.learner != request.user:
-            raise PermissionDenied("You do not have permission to append data to this session.")
+        # Gather adaptive or fallback questions
+        due_shuffled_qs = Question.objects.filter(
+            subtopic__masteries__learner=learner,
+            subtopic__masteries__next_review__lte=now
+        ).order_by('?')
+        if topic_id:
+            due_shuffled_qs = due_shuffled_qs.filter(subtopic__topic_id=topic_id)
+        session_questions = list(due_shuffled_qs[:limit])
 
-        serializer = QuestionResponseCreateSerializer(data=request.data)
+        if not session_questions:
+            fallback_qs = Question.objects.order_by('?')
+            if topic_id:
+                fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
+            session_questions = list(fallback_qs[:limit])
 
-        if serializer.is_valid():
-            validated = serializer.validated_data
-            question = validated['question']
-            selected = validated['selected_answer_index']
+        # Use a transaction to ensure both session and placeholders are created safely together
+        with transaction.atomic():
+            session = create_serializer.save(learner=learner)
+            
+            # Seed the database with empty placeholder responses linked to each question
+            placeholders = [
+                QuestionResponse(
+                    session=session,
+                    question=question,
+                    selected_answer_index=None,  # Unanswered
+                    is_correct=False             # Default fallback
+                )
+                for question in session_questions
+            ]
+            QuestionResponse.objects.bulk_create(placeholders)
 
-            is_correct = (selected == question.correct_answer_index)
+        # Serialize everything together
+        session_serializer = PracticeSessionSerializer(session, context={'request': request})
+        
+        # Note: You should ensure your PracticeSessionSerializer includes or nests 
+        # its related responses so the frontend guy instantly gets the placeholder IDs!
+        response_data = session_serializer.data
+        response_data['message'] = f'Generated adaptive session with {len(session_questions)} placeholders.'
 
-            response = QuestionResponse.objects.create(
-                session=session,
-                is_correct=is_correct,
-                **validated
-            )
-
-            process_review(session.learner, response.question.subtopic, response)
-
-            if response.is_correct:
-                session.total_xp_earned += XP_PER_CORRECT_ANSWER
-                session.save()
-
-            return Response(QuestionResponseFeedbackSerializer(response).data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     @extend_schema(
-        operation_id='practice_sessions_rate_response',
-        request=QuestionResponseRatingSerializer,
+        operation_id='practice_sessions_patch_response',
+        request=QuestionResponseCreateSerializer, # Reusing your answer payload serializer
         responses={200: QuestionResponseFeedbackSerializer},
         parameters=[
-            OpenApiParameter('response_pk', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
+            OpenApiParameter('question_id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
         ],
-        description=(
-            "Persist a difficulty/recall rating (1–5) for a previously submitted response. "
-            "Call this after the learner reflects on how hard or easy recall felt. "
-            "1 = very hard, 5 = very easy."
-        ),
+        description="Frontend updates an empty placeholder response incrementally by providing the question ID.",
     )
-    @action(detail=True, methods=['patch'], url_path=r'responses/(?P<response_pk>[^/.]+)')
-    def rate_response(self, request, pk=None, response_pk=None):
+    @action(detail=True, methods=['patch'], url_path=r'responses/(?P<question_id>[^/.]+)')
+    def submit_placeholder_response(self, request, pk=None, question_id=None):
         session = self.get_object()
         if session.learner != request.user:
-            raise PermissionDenied("You do not have permission to rate responses in this session.")
+            raise PermissionDenied("You do not have permission to modify this session.")
 
-        response = get_object_or_404(QuestionResponse, pk=response_pk, session=session)
+        # Find the existing empty placeholder for this specific question
+        response = get_object_or_404(QuestionResponse, session=session, question_id=question_id)
+        
+        # Guard rail: prevent resubmissions if your business logic dictates responses are final
+        if response.selected_answer_index is not None:
+            return Response({"detail": "This question has already been answered."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = QuestionResponseRatingSerializer(response, data=request.data, partial=True)
+        serializer = QuestionResponseCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        
+        selected = serializer.validated_data['selected_answer_index']
+        question = response.question
+        is_correct = (selected == question.correct_answer_index)
+
+        # Update the placeholder record
+        response.selected_answer_index = selected
+        response.is_correct = is_correct
+        response.save()
+
+        # Process standard internal logic (FSRS scheduling and XP)
+        process_review(session.learner, question.subtopic, response)
+
+        if is_correct:
+            session.total_xp_earned += XP_PER_CORRECT_ANSWER
+            session.save()
 
         return Response(QuestionResponseFeedbackSerializer(response).data, status=status.HTTP_200_OK)
 
+# class QuestionResponseViewSet(viewsets.ReadOnlyModelViewSet):
+#     """
+#     Read-only viewset for question responses.
+#     Staff see all; learners see only their own session responses.
+#     """
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = QuestionResponseFeedbackSerializer
 
-class QuestionResponseViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    Read-only viewset for question responses.
-    Staff see all; learners see only their own session responses.
-    """
-    permission_classes = [IsAuthenticated]
-    serializer_class = QuestionResponseFeedbackSerializer
-
-    def get_queryset(self):
-        user = self.request.user
-        if user.is_staff:
-            return QuestionResponse.objects.select_related('question').all()
-        return QuestionResponse.objects.select_related('question').filter(session__learner=user)
+#     def get_queryset(self):
+#         user = self.request.user
+#         if user.is_staff:
+#             return QuestionResponse.objects.select_related('question').all()
+#         return QuestionResponse.objects.select_related('question').filter(session__learner=user)
 
 
 class GenerateAdaptiveSessionView(generics.GenericAPIView):

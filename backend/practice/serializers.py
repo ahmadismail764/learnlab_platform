@@ -1,6 +1,7 @@
-# Framework imports
-from rest_framework import serializers
+# Core django imports
 from django.utils import timezone as django_timezone
+# DRF imports
+from rest_framework import serializers
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER

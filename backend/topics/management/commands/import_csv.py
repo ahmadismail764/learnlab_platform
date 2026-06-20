@@ -9,7 +9,7 @@ class Command(BaseCommand):
     help = 'Imports questions from a CSV file'
 
     def handle(self, *args, **kwargs):
-        csv_path = os.path.join(os.path.dirname(__file__), 'questions.csv')
+        csv_path = "data/questions.csv"
         
         if not os.path.exists(csv_path):
             self.stdout.write(self.style.ERROR(f"CSV file not found at {csv_path}"))

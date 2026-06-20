@@ -28,7 +28,6 @@ from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
 
 class QuestionViewSet(viewsets.ModelViewSet):
-    renderer_classes = [IndentedJSONRenderer]
     # Optimized Join handling syntax
     queryset = Question.objects.select_related('subtopic__topic').all()
     
@@ -210,45 +209,3 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 #         if user.is_staff:
 #             return QuestionResponse.objects.select_related('question').all()
 #         return QuestionResponse.objects.select_related('question').filter(session__learner=user)
-
-
-class GenerateAdaptiveSessionView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = QuestionSerializer
-
-    def get(self, request):
-        limit = int(request.query_params.get('limit', 10))
-        topic_id = request.query_params.get('topic')
-        learner = request.user
-        now = django_timezone.now()
-
-        # ------------------------------------------------------------
-        # Due reviews (True Randomized Selection across due subtopics)
-        # ------------------------------------------------------------
-        due_shuffled_qs = Question.objects.filter(
-            subtopic__masteries__learner=learner,
-            subtopic__masteries__next_review__lte=now
-        ).order_by('?')
-
-        if topic_id:
-            due_shuffled_qs = due_shuffled_qs.filter(subtopic__topic_id=topic_id)
-
-        session_questions = list(due_shuffled_qs[:limit])
-
-        # ------------------------------------------------------------
-        # FIXED: Clean Fallback block ensures new users aren't left with an empty screen
-        # ------------------------------------------------------------
-        if not session_questions:
-            fallback_qs = Question.objects.order_by('?')
-            if topic_id:
-                fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
-            session_questions = list(fallback_qs[:limit])
-
-        # ------------------------------------------------------------
-        # Serialization Response Return
-        # ------------------------------------------------------------
-        serializer = self.get_serializer(session_questions, many=True)
-        return Response({
-            'questions': serializer.data,
-            'message': f'Generated adaptive session with {len(session_questions)} question(s)',
-        }, status=status.HTTP_200_OK)

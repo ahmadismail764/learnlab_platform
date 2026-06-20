@@ -144,7 +144,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 
 if not DEBUG:
-    raw_origins = os.getenv('CORS_ALLOWED_ORIGINS')
+    raw_origins = os.getenv('CORS_ALLOWED_ORIGINS', '')
     CORS_ALLOWED_ORIGINS = [origin.strip() for origin in raw_origins.split(',') if origin.strip()]
 
     if not CORS_ALLOWED_ORIGINS:

@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from rest_framework import generics, permissions, viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, viewsets
+from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
 from topics.models import Topic, Subtopic, SubtopicMastery
 from topics.serializers import (
@@ -19,22 +19,50 @@ User = get_user_model()
 """
 
 class TopicViewSet(viewsets.ModelViewSet):
+    def get_permissions(self):
+        """
+        Explicitly assign permissions based on the active ViewSet action lifecycle.
+        """
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAdminUser] 
+        return [permission() for permission in permission_classes]
+
     queryset = Topic.objects.prefetch_related('subtopics')
     serializer_class = TopicSerializer
 
 class SubtopicViewSet(viewsets.ModelViewSet):
-    queryset = Subtopic.objects.all()
+    def get_permissions(self):
+        """
+        Explicitly assign permissions based on the active ViewSet action lifecycle.
+        """
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [IsAuthenticated]
+        else:
+            permission_classes = [IsAdminUser] 
+        return [permission() for permission in permission_classes]
+
+    queryset = Subtopic.objects.select_related('topic').all()
     serializer_class = SubtopicSerializer
 
-class SubtopicMasteryViewSet(viewsets.ModelViewSet):
+class SubtopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Read-only. Mastery records are written exclusively by the FSRS engine
+    via process_review() — never created or mutated directly through the API.
+    Staff see all records; learners see only their own.
+    """
     serializer_class = SubtopicMasterySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
         if user.is_anonymous:
             return SubtopicMastery.objects.none()
-        return SubtopicMastery.objects.filter(learner=user)
+        if user.is_staff:
+            return SubtopicMastery.objects.select_related('learner', 'subtopic__topic').all()
+        return SubtopicMastery.objects.select_related('subtopic__topic').filter(learner=user)
+    
 @extend_schema_view(
     list=extend_schema(
         operation_id='practice_leaderboard_list',

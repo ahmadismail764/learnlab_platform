@@ -52,7 +52,7 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
 class QuestionResponseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
-        fields = ['question', 'selected_answer_index']
+        fields = ['selected_answer_index']
 
 class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
     """Post-submit serializer: reveals correct_answer_index for the just-answered question only."""

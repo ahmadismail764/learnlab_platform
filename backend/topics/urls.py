@@ -1,6 +1,16 @@
-from rest_framework.routers import DefaultRouter
-from topics.views import TopicViewSet, SubtopicViewSet, SubtopicMasteryViewSet, LeaderboardView
+# Core django imports
 from django.urls import path
+# DRF imports
+from rest_framework.routers import DefaultRouter
+# Our imports
+from topics.views import (
+    TopicViewSet,
+    SubtopicViewSet,
+    SubtopicMasteryViewSet,
+    LeaderboardView,
+    ExtractQuestionsAPIView
+)
+
 
 topics_router = DefaultRouter()
 topics_router.register(r'topics', TopicViewSet, basename='topic')
@@ -14,6 +24,4 @@ mastery_router.register(r'mastery', SubtopicMasteryViewSet, basename='subtopic-m
 urlpatterns = topics_router.urls + subtopics_router.urls + mastery_router.urls
 
 urlpatterns.append(path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'))
-
-from topics.views import ExtractQuestionsAPIView
 urlpatterns.append(path('extract-questions/', ExtractQuestionsAPIView.as_view(), name='extract-questions'))

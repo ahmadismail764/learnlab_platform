@@ -5,7 +5,7 @@ import time
 import random
 import fitz  # PyMuPDF
 from google import genai
-
+# Our imports
 from topics.models import Topic, Subtopic
 from practice.models import Question
 

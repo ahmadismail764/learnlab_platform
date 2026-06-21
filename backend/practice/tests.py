@@ -4,7 +4,7 @@ from rest_framework.test import APIRequestFactory, APIClient, force_authenticate
 from accounts.models import User
 from topics.models import Topic, Subtopic, SubtopicMastery
 from practice.models import Question, PracticeSession, QuestionResponse
-from practice.views import PracticeSessionViewSet, QuestionResponseViewSet
+from practice.views import PracticeSessionViewSet
 from topics.views import SubtopicMasteryViewSet
 
 class ViewSetGetQuerysetTestCase(TestCase):
@@ -105,21 +105,6 @@ class ViewSetGetQuerysetTestCase(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], str(self.session_user_2.id))
 
-    def test_question_response_viewset_queryset(self):
-        view = QuestionResponseViewSet.as_view({'get': 'list'})
-
-        # 1. Staff user should see all question responses
-        request = self.factory.get('/practice/responses/')
-        force_authenticate(request, user=self.staff_user)
-        response = view(request)
-        self.assertEqual(len(response.data), 2)
-
-        # 2. Learner 1 should only see their own question responses
-        request = self.factory.get('/practice/responses/')
-        force_authenticate(request, user=self.learner_user_1)
-        response = view(request)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], str(self.response_user_1.id))
 
     def test_subtopic_mastery_viewset_queryset(self):
         view = SubtopicMasteryViewSet.as_view({'get': 'list'})

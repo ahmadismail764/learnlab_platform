@@ -1,16 +1,20 @@
-from django.contrib.auth import get_user_model
+# DRF imports
 from rest_framework import generics, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
+# Our imports
+from accounts.models import User
 from topics.models import Topic, Subtopic, SubtopicMastery
+from topics.services import extract_questions_from_pdf_stream
 from topics.serializers import (
     LeaderboardSerializer,
     TopicSerializer,
     SubtopicSerializer,
     SubtopicMasterySerializer,
 )
-
-User = get_user_model()
 
 """
     The following three are viewsets that handle all CRUD operations for topics, subtopics, and subtopic mastery records.
@@ -107,11 +111,7 @@ class LeaderboardView(generics.ListAPIView):
             qs = qs.filter(id__in=learner_ids)
         return qs
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAdminUser
-from topics.services import extract_questions_from_pdf_stream
+
 
 class ExtractQuestionsAPIView(APIView):
     permission_classes = [IsAdminUser]

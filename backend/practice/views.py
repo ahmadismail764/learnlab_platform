@@ -17,7 +17,6 @@ from practice.serializers import (
     QuestionAdminSerializer,
     QuestionCreateAndUpdateSerializer,
     QuestionSerializer,
-    QuestionResponseCreateSerializer,
     QuestionResponseFeedbackSerializer,
     QuestionResponseRatingSerializer,
     PracticeSessionSerializer,
@@ -26,6 +25,10 @@ from practice.serializers import (
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
+
+
+class QuestionResponseSubmitSerializer(serializers.Serializer):
+    selected_answer_index = serializers.IntegerField(min_value=0)
 
 class QuestionViewSet(viewsets.ModelViewSet):
     # Optimized Join handling syntax
@@ -155,12 +158,13 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         operation_id='practice_sessions_patch_response',
-        request=QuestionResponseCreateSerializer, # Reusing your answer payload serializer
+        request=QuestionResponseSubmitSerializer,
         responses={200: QuestionResponseFeedbackSerializer},
         parameters=[
+            OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
             OpenApiParameter('question_id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
         ],
-        description="Frontend updates an empty placeholder response incrementally by providing the question ID.",
+        description="Frontend updates an empty placeholder response by passing the session ID and question ID in the URL, and the selected answer index in the body.",
     )
     @action(detail=True, methods=['patch'], url_path=r'responses/(?P<question_id>[^/.]+)')
     def submit_placeholder_response(self, request, pk=None, question_id=None):
@@ -175,7 +179,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         if response.selected_answer_index is not None:
             return Response({"detail": "This question has already been answered."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = QuestionResponseCreateSerializer(data=request.data)
+        serializer = QuestionResponseSubmitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
         selected = serializer.validated_data['selected_answer_index']

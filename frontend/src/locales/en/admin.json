@@ -9,9 +9,10 @@
   "allowSkip": "Allow Skip",
   "allowSkipDescription": "Allow learners to skip questions during practice",
   "analyticsDescription": "View aggregate metrics and performance statistics",
+  "analyticsEyebrow": "Admin analytics",
   "analyticsUnavailable": "Analytics contract unavailable",
   "apiLatency": "API latency",
-  "auditLogsDescription": "Recent account, content, and preference changes recorded by the backend.",
+  "auditLogsDescription": "Recent account, content, and preference changes recorded by the system.",
   "avgPerLearner": "Avg. per Learner",
   "darkMode": "Dark Mode",
   "darkModeDescription": "Enable dark mode for the application",
@@ -57,8 +58,8 @@
     "addQuestion": "Add Question",
     "allDifficulties": "All Difficulties",
     "allTopics": "All Topics",
-    "connectedBackendApi": "Connected to backend API",
-    "connectedBackendDescription": "All CRUD operations call {{endpoint}}. Changes are persisted to the database in real time.",
+    "connectedBackendApi": "Connected to questions API",
+    "connectedBackendDescription": "Question management requests go to {{endpoint}} and save immediately.",
     "deleteDialog": {
       "confirm": "Delete",
       "deleteError": "Failed to delete question",
@@ -103,7 +104,7 @@
       "correct": "Correct",
       "correctAnswerIndex": "Correct Answer Index",
       "general": "General",
-      "notExposed": "Not exposed by backend",
+      "notExposed": "Not shown to learners",
       "question": "Question",
       "subtopic": "Subtopic",
       "title": "Question Preview"
@@ -217,10 +218,21 @@
   "twoFactorAuth": "Two-Factor Authentication",
   "twoFactorAuthDescription": "Require 2FA for admin accounts",
   "uncategorized": "Uncategorized",
+  "unknownLearner": "Unknown",
   "unsavedChanges": "You have unsaved changes",
   "weeklyActivity": "Weekly Activity",
+  "weeklyActivityTooltip": "{{learners}} learners, {{questions}} questions",
   "weeklyDigest": "Weekly Digest",
   "weeklyDigestDescription": "Send weekly progress summary to learners",
+  "weekdays": {
+    "fri": "Fri",
+    "mon": "Mon",
+    "sat": "Sat",
+    "sun": "Sun",
+    "thu": "Thu",
+    "tue": "Tue",
+    "wed": "Wed"
+  },
   "welcomeBackAdmin": "Welcome back, {{name}}. Here's your system overview.",
   "welcomeBackAdminDescription": "Keep an eye on learner activity, review volume, and system health without digging through noisy dashboards."
 }

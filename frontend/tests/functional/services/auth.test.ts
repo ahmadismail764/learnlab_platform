@@ -10,6 +10,13 @@ vi.mock('@/services/api', () => {
       post: vi.fn(),
       postPublic: vi.fn(),
     },
+    clearStoredAuth: vi.fn(() => {
+      localStorage.removeItem('learnlab_auth_token')
+      localStorage.removeItem('learnlab_refresh_token')
+      localStorage.removeItem('learnlab_persist')
+      sessionStorage.removeItem('learnlab_auth_token')
+      sessionStorage.removeItem('learnlab_refresh_token')
+    }),
     getToken: vi.fn(),
     getTokenStorage: vi.fn(() => localStorage),
     parseApiError: vi.fn(async (_response: Response, fallback: string) => ({ message: fallback })),

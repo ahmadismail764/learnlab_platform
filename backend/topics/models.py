@@ -17,7 +17,7 @@ class Subtopic(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.topic.name} → {self.name}"
+        return self.name
 class SubtopicMastery(models.Model):
     class StateChoices(models.TextChoices):
         NEW = 'NEW', 'New'

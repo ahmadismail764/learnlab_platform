@@ -17,7 +17,14 @@ User = get_user_model()
     The mastery viewset is permission-protected to only allow access to the learner's own mastery records, 
     while the topic and subtopic viewsets are open to all authenticated users for browsing.
 """
-
+@extend_schema_view(
+    list=extend_schema(operation_id='topics_list'),
+    retrieve=extend_schema(operation_id='topics_retrieve'),
+    create=extend_schema(operation_id='topics_create'),
+    update=extend_schema(operation_id='topics_update'),
+    partial_update=extend_schema(operation_id='topics_partial_update'),
+    destroy=extend_schema(operation_id='topics_destroy'),
+)
 class TopicViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """
@@ -32,6 +39,14 @@ class TopicViewSet(viewsets.ModelViewSet):
     queryset = Topic.objects.prefetch_related('subtopics')
     serializer_class = TopicSerializer
 
+@extend_schema_view(
+    list=extend_schema(operation_id='subtopics_list'),
+    retrieve=extend_schema(operation_id='subtopics_retrieve'),
+    create=extend_schema(operation_id='subtopics_create'),
+    update=extend_schema(operation_id='subtopics_update'),
+    partial_update=extend_schema(operation_id='subtopics_partial_update'),
+    destroy=extend_schema(operation_id='subtopics_destroy'),
+)
 class SubtopicViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         """
@@ -46,6 +61,10 @@ class SubtopicViewSet(viewsets.ModelViewSet):
     queryset = Subtopic.objects.select_related('topic').all()
     serializer_class = SubtopicSerializer
 
+@extend_schema_view(
+    list=extend_schema(operation_id='subtopic_mastery_list'),
+    retrieve=extend_schema(operation_id='subtopic_mastery_retrieve'),
+)
 class SubtopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Read-only. Mastery records are written exclusively by the FSRS engine

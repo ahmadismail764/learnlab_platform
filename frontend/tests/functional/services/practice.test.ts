@@ -27,18 +27,46 @@ describe('practiceService', () => {
     await expect(practiceService.getSessions()).rejects.toThrow('Failed to fetch sessions');
   });
 
-  it('does not fall back to the generic question bank when adaptive generation fails', async () => {
-    vi.mocked(api.get).mockResolvedValueOnce({
+  it('surfaces adaptive session creation failures without falling back to another endpoint', async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({
       ok: false,
       status: 500,
     } as unknown as Response);
 
     await expect(practiceService.generateAdaptiveSession()).rejects.toThrow(
-      'Failed to generate adaptive session',
+      'Failed to create session',
     );
 
-    expect(api.get).toHaveBeenCalledTimes(1);
-    expect(api.get).toHaveBeenCalledWith('/practice/sessions/generate-adaptive/');
+    expect(api.post).toHaveBeenCalledTimes(1);
+    expect(api.post).toHaveBeenCalledWith('/practice/sessions/', { responses: [] });
+  });
+
+  it('creates an adaptive session and loads placeholder question details', async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 'session-1',
+        responses: [{ id: 'response-1', question: 'question-1', is_correct: false }],
+      }),
+    } as unknown as Response);
+    vi.mocked(api.get).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 'question-1',
+        text: 'What is 2 + 2?',
+        choices: ['3', '4'],
+        tier: 1,
+        subtopic_name: 'Arithmetic',
+      }),
+    } as unknown as Response);
+
+    const session = await practiceService.generateAdaptiveSession('topic-1');
+
+    expect(api.post).toHaveBeenCalledWith('/practice/sessions/?topic=topic-1', { responses: [] });
+    expect(api.get).toHaveBeenCalledWith('/practice/questions/question-1/');
+    expect(session.id).toBe('session-1');
+    expect(session.questions).toHaveLength(1);
+    expect(session.questions[0].id).toBe('question-1');
   });
 
   it('requires created practice sessions to include an id', async () => {
@@ -52,11 +80,11 @@ describe('practiceService', () => {
     );
   });
 
-  it('submits the selected answer index to the nested session response endpoint', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({
+  it('submits the selected answer index to the question placeholder response endpoint', async () => {
+    vi.mocked(api.patch).mockResolvedValueOnce({
       ok: true,
-      status: 201,
-      json: async () => ({ id: 'response-1' }),
+      status: 200,
+      json: async () => ({ id: 'response-1', correct_answer_index: 1 }),
     } as unknown as Response);
 
     await practiceService.submitInteraction({
@@ -65,7 +93,7 @@ describe('practiceService', () => {
       selected_answer_index: 2,
     });
 
-    expect(api.post).toHaveBeenCalledWith('/practice/sessions/session-1/responses/', {
+    expect(api.patch).toHaveBeenCalledWith('/practice/sessions/session-1/responses/question-1/', {
       question: 'question-1',
       selected_answer_index: 2,
     });

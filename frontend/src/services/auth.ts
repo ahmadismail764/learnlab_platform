@@ -244,7 +244,7 @@ export const authService = {
   },
 
   updatePreferences: async (preferences: UserPreferences): Promise<UserPreferences> => {
-    const response = await api.patch("/auth/users/me/preferences/", preferences);
+    const response = await api.patch("/auth/users/me/preferences/", { preferences });
     if (!response.ok) {
       await throwApiError(response, "Failed to update preferences");
     }

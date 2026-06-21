@@ -2,27 +2,29 @@
 
 > **For the backend team.** This document separates true backend-owned problems from frontend/product integration notes. If the backend already provides a working contract and the frontend was not consuming it, that is **not** listed as a backend issue.
 >
-> **Latest update:** 2026-06-19 after frontend/backend contract audit on `interface` with backend merge `7153e96` present.
+> **Latest update:** 2026-06-21 after pulling `origin/interface` at `04d3fe2`, checking migrations, and re-running backend schema/test smoke checks.
 
 ---
 
 ## Backend-Owned Issues / Contract Risks
 
-### 1. Post-Submit Practice Feedback and Difficulty Rating Contract
+### 1. Post-Submit Practice Feedback And Difficulty Rating Contract
 
-- **Status:** Active backend contract request, tracked in GitHub #89
+- **Status:** Partially resolved upstream / still has one contract gap, tracked in GitHub #89
 - **Affected flow:** Learner practice sessions
-- **Current behavior:** Learner question payloads correctly omit `correct_answer_index` before answering. `POST /practice/sessions/<id>/responses/` returns `id`, `question`, and `is_correct`, so the frontend can show whether the selected answer was correct but cannot reveal the correct option after an incorrect answer.
-- **Missing contract:** A safe post-submit reveal field, such as `correct_answer_index` or `correct_choice`, returned only after the learner commits an answer. The backend also needs a supported way to persist the later difficulty rating, such as `confidence_rating` or an FSRS grade.
-- **Recommendation:** Keep pre-submit learner reads answer-safe, return safe answer reveal data from the response-create endpoint, and document the runtime shape in OpenAPI.
+- **Current behavior:** Learner question reads still omit `correct_answer_index` before answering. `PATCH /api/v1/practice/sessions/<session_id>/responses/<question_id>/` now returns post-submit feedback including `selected_answer_index`, `is_correct`, `correct_answer_index`, and `confidence_rating`.
+- **Frontend consumption:** The frontend now submits to the per-question placeholder route and uses the post-submit `correct_answer_index` to reveal the correct choice only after the learner commits an answer.
+- **Remaining gap:** `QuestionResponseRatingSerializer` exists, but there is no documented route for the later learner difficulty rating / FSRS grade. The current UI collects the rating locally to advance the session, but cannot persist that rating separately.
+- **Recommendation:** Keep pre-submit learner reads answer-safe, preserve the post-submit reveal payload, and add/document the rating persistence contract when FSRS grading becomes part of this milestone.
 
-### 2. Bulk Practice Session Create Still Publishes The Wrong Nested Response Shape
+### 2. Unified Practice Session Create Needs A Tighter Runtime Contract
 
-- **Status:** Active backend contract warning
+- **Status:** Partially resolved upstream / monitor before closing the corresponding backend issue
 - **Affected contract:** `POST /api/v1/practice/sessions/` with non-empty nested `responses`
-- **Current source check:** `PracticeSessionCreateSerializer.responses` still uses `QuestionCreateAndUpdateSerializer(many=True, required=False)`, while `create()` reads each row as a `QuestionResponse` payload using `question` and `selected_answer_index`.
-- **Impact:** The published bulk session-create contract asks clients for question-authoring fields, while runtime code expects answer-submission fields. The current frontend avoids this by creating sessions with `responses: []` and submitting answers through `/practice/sessions/<id>/responses/`.
-- **Recommendation:** Change `PracticeSessionCreateSerializer.responses` to `QuestionResponseCreateSerializer(many=True, required=False)` or remove nested response creation from the public contract.
+- **Current source check:** `PracticeSessionCreateSerializer.responses` now uses `QuestionResponseCreateSerializer`, so the old OpenAPI shape mismatch is fixed. `PracticeSessionViewSet.create()` also generates adaptive/fallback placeholder responses for the session.
+- **Remaining risk:** Non-empty `responses` on session creation are still ambiguous because serializer-created responses can be combined with generated placeholders. The frontend therefore creates sessions with `responses: []` and answers through `/practice/sessions/<session_id>/responses/<question_id>/`.
+- **Frontend consumption:** `generateAdaptiveSession()` now uses the unified `POST /practice/sessions/?topic=<id>` contract, then fetches each returned question id because the session response includes placeholder ids but not learner-safe question text/choices.
+- **Recommendation:** Document that session creation should receive an empty `responses` array, or remove nested response creation from this endpoint. Consider returning nested learner-safe question summaries in the create response to avoid per-question follow-up fetches.
 
 ### 3. Full FSRS-5 Scheduling Algorithm
 
@@ -36,15 +38,13 @@
 - **Description:** Local backend boots can emit a SimpleJWT insecure key length warning if `SECRET_KEY` is under 32 bytes.
 - **Recommendation:** Use high-entropy production secrets for `SECRET_KEY` and any JWT signing key configuration.
 
-### 5. User Preferences PATCH Schema Mismatch
+### 5. Practice Test And Schema Verification Drift
 
-- **Status:** Active backend-owned contract warning
-- **Affected contract:** `PATCH /api/v1/auth/users/me/preferences/`
-- **Current source check:** The OpenAPI annotation describes a payload shaped like `{ "preferences": { ... } }`, but `UserPreferencesView.patch()` currently merges `request.data` directly into `user.preferences`.
-- **Why this is backend-owned:** This is a mismatch between the backend's own runtime behavior and backend-published schema, not a request for the backend to follow a frontend preference. The frontend currently sends the flat JSON object the runtime actually accepts.
-- **Recommendation:** Align implementation and OpenAPI. Either accept the documented wrapper explicitly or update the schema to document flat preference patching.
-
----
+- **Status:** Active backend maintenance blocker
+- **Current verification:** `python manage.py test practice` fails during import because `backend/practice/tests.py` still imports the removed/commented `QuestionResponseViewSet`.
+- **Current schema check:** `python manage.py spectacular --file NUL --validate --fail-on-warn` still fails with one warning for `PracticeSessionViewSet`: drf-spectacular cannot derive the `id` path parameter type.
+- **Frontend impact:** The frontend can consume the live routes directly, but backend CI/schema confidence is still weaker than it should be while tests and generated schema warnings lag behind the new unified practice route.
+- **Recommendation:** Update the practice tests around `POST /api/v1/practice/sessions/` and `PATCH /api/v1/practice/sessions/<session_id>/responses/<question_id>/`, remove stale `QuestionResponseViewSet` imports, and fix the remaining session `id` path-parameter schema annotation.
 
 ## Docker / Infrastructure Readiness Notes
 
@@ -82,16 +82,9 @@
 - **Potential product value:** Admins may eventually need downloadable milestone reports for reviews, active learners, retention, topic health, and difficulty breakdowns.
 - **Suggested contract if needed:** Add explicit export endpoints such as `GET /api/v1/analytics/reports/summary.csv` or async report jobs with filters, date ranges, and a documented file format.
 
-### Content Support Metadata
-
-- **Status:** Optional content enhancement, not a backend defect
-- **Current frontend action:** Removed stale explanation-video fields from question forms, previews, services, and learner practice UI because the current backend question contract does not expose or persist them.
-- **Potential product value:** If lessons need richer remediation, backend could support optional explanation video URL, solution steps, hints, references, or worked examples.
-- **Suggested contract if needed:** Add metadata to admin question CRUD, define which fields are safe before answer submission, and define which fields are revealed only after a submitted response.
-
 ### Practice Session Completion Summary
 
-- **Status:** Optional learner-experience enhancement, not a backend defect
+- **Status:** Useful learner-experience enhancement for a later milestone, not a backend defect or current milestone blocker
 - **Current backend contract:** The frontend completes a session with `PATCH /api/v1/practice/sessions/<id>/` and separately invalidates profile/mastery/leaderboard caches.
 - **Potential product value:** A server-calculated completion summary would let the frontend show authoritative XP, correct count, mastery deltas, next due reviews, and streak changes without stitching data from multiple refetches.
 - **Suggested contract if needed:** Return or expose a `session_summary` payload after completion with documented fields and idempotent repeat behavior.
@@ -181,10 +174,32 @@
 
 ### 7. OpenAPI Warning Cleanup
 
-- **Status:** Reported fixed upstream in the backend merge that included #81
-- **Source check:** `PracticeSessionViewSet` now annotates UUID path parameters. Password-reset and analytics schemas should still be verified by running schema generation after the merge.
+- **Status:** Partially fixed upstream / still needs follow-up
+- **Source check:** `PracticeSessionViewSet` annotates several UUID path parameters, but current schema validation still emits one `PracticeSessionViewSet` `id` path-parameter warning.
+- **Follow-up:** Keep this open until `manage.py spectacular --file NUL --validate --fail-on-warn` exits cleanly.
 
 ### 8. Analytics Caching
 
 - **Status:** Implemented upstream / monitor
 - **Description:** Redis-backed caching was added for analytics routes. Keep local and deployment environments aligned with backend dependency/configuration requirements.
+
+### 9. User Preferences PATCH Schema Alignment
+
+- **Status:** Resolved upstream in `origin/interface` at `59db2e7`
+- **Contract:** `GET/PATCH /api/v1/auth/users/me/preferences/`
+- **Source check:** `UserPreferencesView.patch()` now accepts the documented `{ "preferences": { ... } }` envelope while preserving compatibility with the previous flat payload shape.
+- **Frontend consumption:** The frontend now sends the documented preferences envelope.
+
+### 10. Post-Submit Answer Reveal
+
+- **Status:** Resolved for answer reveal / monitor rating persistence separately under issue 1
+- **Contract:** `PATCH /api/v1/practice/sessions/<session_id>/responses/<question_id>/`
+- **Source check:** `QuestionResponseFeedbackSerializer` returns `correct_answer_index` only after answer submission.
+- **Frontend consumption:** The learner practice UI uses this field to mark the correct option after submit without exposing answers in pre-submit question reads.
+
+### 11. Topics Operation IDs And Permission Coverage
+
+- **Status:** Merged upstream in `origin/interface` at `04d3fe2`
+- **Contracts:** `GET/POST/PATCH/DELETE /api/v1/topics/`, `/api/v1/subtopics/`, and read-only `/api/v1/mastery/`
+- **Source check:** Topic and subtopic viewsets now have explicit OpenAPI operation IDs, mastery remains read-only, and `backend/topics/tests.py` covers learner/staff permission boundaries.
+- **Frontend consumption:** Current topic browsing, admin topic CRUD, and mastery reads remain on the same paths; no frontend route changes required.

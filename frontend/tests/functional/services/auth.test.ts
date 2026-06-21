@@ -38,7 +38,7 @@ describe('authService preferences and logout contracts', () => {
     expect(preferences).toEqual({ language: 'en', theme: 'dark' })
   })
 
-  it('patches preferences as a flat JSON object for the current backend view', async () => {
+  it('patches preferences using the documented preferences envelope', async () => {
     const payload = { language: 'ar', theme: 'light' }
     vi.mocked(api.patch).mockResolvedValueOnce({
       ok: true,
@@ -47,7 +47,7 @@ describe('authService preferences and logout contracts', () => {
 
     const preferences = await authService.updatePreferences(payload)
 
-    expect(api.patch).toHaveBeenCalledWith('/auth/users/me/preferences/', payload)
+    expect(api.patch).toHaveBeenCalledWith('/auth/users/me/preferences/', { preferences: payload })
     expect(preferences).toEqual(payload)
   })
 

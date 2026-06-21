@@ -77,12 +77,7 @@ export function PracticePage() {
 
       setQuestions(normalizedQuestions)
 
-      // Create session record — backend PracticeSessionCreateSerializer
-      // requires responses (can be empty array)
-      const session = await practiceService.createSession({
-        responses: []
-      })
-      setSessionRecord(session)
+      setSessionRecord({ id: data.id })
 
       const initialStates: Record<number, QuestionState> = {}
       normalizedQuestions.forEach((q: PracticeQuestion, idx: number) => {
@@ -128,6 +123,13 @@ export function PracticePage() {
         selected_answer_index: selectedAnswerIndex,
       })
       const backendIsCorrect = Boolean(response?.is_correct)
+      if (typeof response?.correct_answer_index === 'number') {
+        setQuestions((prev) => prev.map((question, index) =>
+          index === currentIndex
+            ? { ...question, correct_answer_index: response.correct_answer_index }
+            : question,
+        ))
+      }
       if (backendIsCorrect) {
         setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
       }

@@ -1,8 +1,11 @@
+import uuid
+
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIRequestFactory, APIClient, force_authenticate
 from accounts.models import User
 from topics.models import Topic, Subtopic, SubtopicMastery
+from practice.constants import XP_PER_CORRECT_ANSWER
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.views import PracticeSessionViewSet
 from topics.views import SubtopicMasteryViewSet
@@ -124,7 +127,7 @@ class ViewSetGetQuerysetTestCase(TestCase):
 
 
 class ResponseSubmissionFeedbackTestCase(TestCase):
-    """Tests for POST /sessions/{id}/responses/ and PATCH /sessions/{id}/responses/{pk}/"""
+    """Tests for PATCH /api/v1/practice/sessions/{id}/responses/{question_id}/"""
 
     def setUp(self):
         self.client = APIClient()
@@ -148,20 +151,23 @@ class ResponseSubmissionFeedbackTestCase(TestCase):
             correct_answer_index=0,
         )
         self.session = PracticeSession.objects.create(learner=self.learner)
+        self.placeholder = QuestionResponse.objects.create(
+            session=self.session,
+            question=self.question,
+            selected_answer_index=None,
+            is_correct=False,
+        )
         self.client.force_authenticate(user=self.learner)
 
-    def _submit_url(self):
-        return f'/api/v1/practice/sessions/{self.session.id}/responses/'
-
-    def _rate_url(self, response_pk):
-        return f'/api/v1/practice/sessions/{self.session.id}/responses/{response_pk}/'
+    def _submit_url(self, question_id=None):
+        qid = question_id or self.question.id
+        return f'/api/v1/practice/sessions/{self.session.id}/responses/{qid}/'
 
     def test_correct_submission_returns_feedback_with_reveal(self):
-        resp = self.client.post(self._submit_url(), {
-            'question': str(self.question.id),
+        resp = self.client.patch(self._submit_url(), {
             'selected_answer_index': 0,  # correct
         }, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.data
         self.assertIn('id', data)
         self.assertIn('is_correct', data)
@@ -171,58 +177,148 @@ class ResponseSubmissionFeedbackTestCase(TestCase):
         self.assertTrue(data['is_correct'])
         self.assertEqual(data['correct_answer_index'], 0)
         self.assertEqual(data['selected_answer_index'], 0)
+        self.assertEqual(data['confidence_rating'], 3)
+
+        self.placeholder.refresh_from_db()
+        self.assertEqual(self.placeholder.selected_answer_index, 0)
+        self.assertTrue(self.placeholder.is_correct)
+
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.total_xp_earned, XP_PER_CORRECT_ANSWER)
 
     def test_incorrect_submission_reveals_correct_answer(self):
-        resp = self.client.post(self._submit_url(), {
-            'question': str(self.question.id),
+        resp = self.client.patch(self._submit_url(), {
             'selected_answer_index': 2,  # wrong
         }, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.data
         self.assertFalse(data['is_correct'])
         self.assertEqual(data['selected_answer_index'], 2)
-        # correct answer is revealed after submission
         self.assertEqual(data['correct_answer_index'], 0)
 
-    def test_rating_persistence(self):
-        submit = self.client.post(self._submit_url(), {
-            'question': str(self.question.id),
+        self.placeholder.refresh_from_db()
+        self.assertEqual(self.placeholder.selected_answer_index, 2)
+        self.assertFalse(self.placeholder.is_correct)
+
+        self.session.refresh_from_db()
+        self.assertEqual(self.session.total_xp_earned, 0)
+
+    def test_resubmit_returns_400(self):
+        first = self.client.patch(self._submit_url(), {
+            'selected_answer_index': 0,
+        }, format='json')
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+
+        second = self.client.patch(self._submit_url(), {
             'selected_answer_index': 1,
         }, format='json')
-        response_id = submit.data['id']
+        self.assertEqual(second.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('already been answered', second.data['detail'])
 
-        rate = self.client.patch(self._rate_url(response_id), {
-            'confidence_rating': 5,
-        }, format='json')
-        self.assertEqual(rate.status_code, status.HTTP_200_OK)
-        self.assertEqual(rate.data['confidence_rating'], 5)
-
-        # Verify persisted in DB
-        db_response = QuestionResponse.objects.get(id=response_id)
-        self.assertEqual(db_response.confidence_rating, 5)
-
-    def test_rating_out_of_range_rejected(self):
-        submit = self.client.post(self._submit_url(), {
-            'question': str(self.question.id),
-            'selected_answer_index': 0,
-        }, format='json')
-        response_id = submit.data['id']
-
-        bad_rate = self.client.patch(self._rate_url(response_id), {
-            'confidence_rating': 9,
-        }, format='json')
-        self.assertEqual(bad_rate.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_other_learner_cannot_rate(self):
-        submit = self.client.post(self._submit_url(), {
-            'question': str(self.question.id),
-            'selected_answer_index': 0,
-        }, format='json')
-        response_id = submit.data['id']
-
+    def test_other_learner_cannot_submit(self):
         self.client.force_authenticate(user=self.other_learner)
-        resp = self.client.patch(self._rate_url(response_id), {
-            'confidence_rating': 3,
+        resp = self.client.patch(self._submit_url(), {
+            'selected_answer_index': 0,
         }, format='json')
-        # Other learner gets 403 because session belongs to self.learner
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        # Session is hidden from other learners via queryset isolation (404 before ownership check).
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_submit_unknown_question_returns_404(self):
+        resp = self.client.patch(self._submit_url(question_id=uuid.uuid4()), {
+            'selected_answer_index': 0,
+        }, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_submit_invalid_body_rejected(self):
+        missing = self.client.patch(self._submit_url(), {}, format='json')
+        self.assertEqual(missing.status_code, status.HTTP_400_BAD_REQUEST)
+
+        negative = self.client.patch(self._submit_url(), {
+            'selected_answer_index': -1,
+        }, format='json')
+        self.assertEqual(negative.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class SessionCreatePlaceholderTestCase(TestCase):
+    """Tests for POST /api/v1/practice/sessions/ placeholder seeding."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.learner = User.objects.create_user(
+            username='learner_create',
+            email='create@example.com',
+            password='pass123',
+        )
+        self.client.force_authenticate(user=self.learner)
+
+        self.topic_a = Topic.objects.create(name='Topic A', description='A')
+        self.topic_b = Topic.objects.create(name='Topic B', description='B')
+        self.subtopic_a = Subtopic.objects.create(
+            topic=self.topic_a, name='Sub A', description='Sub A',
+        )
+        self.subtopic_b = Subtopic.objects.create(
+            topic=self.topic_b, name='Sub B', description='Sub B',
+        )
+        self.questions_a = [
+            Question.objects.create(
+                subtopic=self.subtopic_a,
+                tier=1,
+                text=f'Question A{i}',
+                choices=['A', 'B', 'C', 'D'],
+                correct_answer_index=0,
+            )
+            for i in range(3)
+        ]
+        self.questions_b = [
+            Question.objects.create(
+                subtopic=self.subtopic_b,
+                tier=1,
+                text=f'Question B{i}',
+                choices=['A', 'B', 'C', 'D'],
+                correct_answer_index=1,
+            )
+            for i in range(2)
+        ]
+
+    def _create_url(self, **query_params):
+        url = '/api/v1/practice/sessions/'
+        if query_params:
+            params = '&'.join(f'{k}={v}' for k, v in query_params.items())
+            url = f'{url}?{params}'
+        return url
+
+    def test_create_session_returns_placeholders(self):
+        resp = self.client.post(self._create_url(), {'responses': []}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertIn('responses', resp.data)
+        self.assertGreater(len(resp.data['responses']), 0)
+        self.assertLessEqual(len(resp.data['responses']), 10)
+        for item in resp.data['responses']:
+            self.assertIn('id', item)
+            self.assertIn('question', item)
+
+    def test_created_placeholders_are_unanswered_in_db(self):
+        resp = self.client.post(self._create_url(), {'responses': []}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+
+        for item in resp.data['responses']:
+            db_row = QuestionResponse.objects.get(id=item['id'])
+            self.assertIsNone(db_row.selected_answer_index)
+
+    def test_create_respects_limit_query_param(self):
+        resp = self.client.post(self._create_url(limit=2), {'responses': []}, format='json')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertLessEqual(len(resp.data['responses']), 2)
+
+    def test_create_with_topic_filter(self):
+        resp = self.client.post(
+            self._create_url(topic=self.topic_a.id),
+            {'responses': []},
+            format='json',
+        )
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertGreater(len(resp.data['responses']), 0)
+
+        topic_a_question_ids = {str(q.id) for q in self.questions_a}
+        for item in resp.data['responses']:
+            self.assertIn(str(item['question']), topic_a_question_ids)

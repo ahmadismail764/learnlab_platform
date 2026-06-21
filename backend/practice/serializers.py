@@ -70,6 +70,10 @@ class QuestionResponseRatingSerializer(serializers.ModelSerializer):
         model = QuestionResponse
         fields = ['confidence_rating']
 
+class AnswerSubmitSerializer(serializers.Serializer):
+    """Body serializer for PATCH .../responses/{question_id}/ — only the chosen index."""
+    selected_answer_index = serializers.IntegerField(min_value=0)
+
 # ===================================================
 # PracticeSession serializers
 # ===================================================

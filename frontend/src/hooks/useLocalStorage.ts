@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { STORAGE_KEYS } from '@/constants'
+import { logger } from '@/utils/logger'
 
 /**
  * useLocalStorage Hook
@@ -27,7 +28,7 @@ export function useLocalStorage<T>(
       const item = window.localStorage.getItem(key)
       return item ? (JSON.parse(item) as T) : initialValue
     } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error)
+      logger.warn(`Error reading localStorage key "${key}"`, error)
       return initialValue
     }
   })
@@ -39,7 +40,7 @@ export function useLocalStorage<T>(
     try {
       window.localStorage.setItem(key, JSON.stringify(storedValue))
     } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error)
+      logger.warn(`Error setting localStorage key "${key}"`, error)
     }
   }, [key, storedValue])
 

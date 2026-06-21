@@ -3,10 +3,10 @@
     "combinations": "التوافيق",
     "counting": "مبادئ العد",
     "permutations": "التباديل",
-    "pigeonhole": "مبدأ صندوق الحمام",
+    "pigeonhole": "مبدأ الأدراج",
     "title": "التوافقيات"
   },
-  "discreteMath": "الرياضيات المتقطعة",
+  "discreteMath": "الرياضيات المنفصلة",
   "title": "الموضوعات",
   "uncategorized": "غير مصنف",
   "graphTheory": {
@@ -22,12 +22,12 @@
     "proofTechniques": "طرق البرهان",
     "propositionsConnectives": "القضايا والروابط المنطقية",
     "propositional": "المنطق الاقتراحي",
-    "quantifiers": "المحددات الكمية",
+    "quantifiers": "المكمّمات",
     "title": "المنطق"
   },
   "numberTheory": {
-    "divisibility": "القسمة",
-    "divisibilityGcd": "القابلية للقسمة والقاسم المشترك الأكبر",
+    "divisibility": "قابلية القسمة",
+    "divisibilityGcd": "قابلية القسمة والقاسم المشترك الأكبر",
     "gcd": "القاسم المشترك الأكبر والمضاعف المشترك الأصغر",
     "modularArithmetic": "الحساب المعياري",
     "primes": "الأعداد الأولية",
@@ -44,7 +44,7 @@
     "cartesianProduct": "الضرب الديكارتي",
     "identities": "هويات المجموعات",
     "operations": "عمليات المجموعات",
-    "powerSets": "مجموعة القوة",
+    "powerSets": "مجموعة القوى",
     "title": "نظرية المجموعات",
     "vennDiagrams": "مخططات فن"
   }

@@ -12,7 +12,8 @@ import {
   type BackendAuthUser,
   type LoginCredentials,
 } from "@/services/auth";
-import { getToken } from "@/services/api";
+import { AUTH_CLEARED_EVENT, getToken } from "@/services/api";
+import { logger } from "@/utils/logger";
 import { AuthContext, type AuthContextValue } from "./authContextValue";
 
 /**
@@ -108,7 +109,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
         });
       } catch (error) {
         if (!isExpectedAuthExpiry(error)) {
-          console.error("Failed to hydrate user", error);
+          logger.warn("Failed to hydrate user", error);
         }
         // Clear tokens if invalid
         authService.logout();
@@ -122,6 +123,19 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
 
     hydrate();
   }, [initialUser]);
+
+  useEffect(() => {
+    const handleAuthCleared = () => {
+      setState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+    };
+
+    window.addEventListener(AUTH_CLEARED_EVENT, handleAuthCleared);
+    return () => window.removeEventListener(AUTH_CLEARED_EVENT, handleAuthCleared);
+  }, []);
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     // NOTE: We do NOT set isLoading here.

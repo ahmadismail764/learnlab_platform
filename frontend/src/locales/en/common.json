@@ -31,6 +31,16 @@
       "title": "No results found"
     }
   },
+  "errorBoundary": {
+    "description": "We're sorry, but something unexpected happened. Please try again or go back to the home page.",
+    "details": "Error Details",
+    "title": "Something went wrong"
+  },
+  "errors": {
+    "forbidden": "Access denied — you don't have permission for this action.",
+    "network": "Network error — please check your connection and try again.",
+    "server": "Server error — the server returned an unexpected response."
+  },
   "goHome": "Go Home",
   "learner": "Learner",
   "loading": "Loading...",

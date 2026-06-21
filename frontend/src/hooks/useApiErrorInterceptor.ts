@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useToast } from '@/contexts'
 import { useQueryClient, type Query } from '@tanstack/react-query'
 
@@ -17,6 +18,7 @@ import { useQueryClient, type Query } from '@tanstack/react-query'
  * Mount once near the app root (inside both QueryProvider and ToastProvider).
  */
 export function useApiErrorInterceptor() {
+  const { t } = useTranslation('common')
   const { showError, showWarning } = useToast()
   const queryClient = useQueryClient()
 
@@ -36,19 +38,19 @@ export function useApiErrorInterceptor() {
 
       // Network failure
       if (lowerMsg.includes('failed to fetch') || lowerMsg.includes('networkerror') || lowerMsg.includes('network request failed')) {
-        showWarning('Network error — please check your connection and try again.')
+        showWarning(t('errors.network'))
         return
       }
 
       // Server errors
       if (lowerMsg.includes('500') || lowerMsg.includes('server error')) {
-        showError('Server error — the backend returned an unexpected response.')
+        showError(t('errors.server'))
         return
       }
 
       // Forbidden
       if (lowerMsg.includes('403') || lowerMsg.includes('forbidden') || lowerMsg.includes('access denied')) {
-        showWarning('Access denied — you don\'t have permission for this action.')
+        showWarning(t('errors.forbidden'))
         return
       }
 
@@ -65,5 +67,5 @@ export function useApiErrorInterceptor() {
     })
 
     return unsubscribe
-  }, [queryClient, showError, showWarning])
+  }, [queryClient, showError, showWarning, t])
 }

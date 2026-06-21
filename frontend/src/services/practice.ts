@@ -1,12 +1,26 @@
 import { api, type EntityId } from "./api";
 import { parseApiError } from "./api";
+import { questionsService, type BackendQuestion } from "./questions";
 
 interface SessionCreatePayload {
   responses?: [];
+  topicId?: string;
 }
 
 interface SessionUpdatePayload {
   end_time?: string;
+}
+
+interface PracticeSessionResponse {
+  id: EntityId;
+  question: EntityId;
+  is_correct: boolean;
+}
+
+interface PracticeSessionRecord {
+  id: EntityId;
+  responses?: PracticeSessionResponse[];
+  message?: string;
 }
 
 async function parseOptionalJson(response: Response) {
@@ -35,13 +49,15 @@ export const practiceService = {
     return await response.json();
   },
 
-  createSession: async (data: SessionCreatePayload) => {
-    // Non-empty bulk responses are blocked by the published backend serializer contract.
-    // Create an empty session, then submit answers through the nested responses route.
-    const payload = { responses: data.responses ?? [] };
-    const response = await api.post("/practice/sessions/", payload);
+  createSession: async (data: SessionCreatePayload = {}): Promise<PracticeSessionRecord> => {
+    const query = data.topicId
+      ? `?topic=${encodeURIComponent(data.topicId)}`
+      : '';
+    const response = await api.post(`/practice/sessions/${query}`, {
+      responses: data.responses ?? [],
+    });
     if (!response.ok) throw new Error("Failed to create session");
-    const session = await response.json();
+    const session = await response.json() as PracticeSessionRecord;
     if (!session?.id) {
       throw new Error("Practice session response is missing an id");
     }
@@ -54,17 +70,23 @@ export const practiceService = {
     return await response.json();
   },
 
-  generateAdaptiveSession: async (topicId?: string) => {
-    const url = topicId
-      ? `/practice/sessions/generate-adaptive/?topic=${encodeURIComponent(topicId)}`
-      : '/practice/sessions/generate-adaptive/';
-    const response = await api.get(url);
-    if (response.ok) {
-      return await response.json();
+  generateAdaptiveSession: async (topicId?: string): Promise<PracticeSessionRecord & { questions: BackendQuestion[] }> => {
+    const session = await practiceService.createSession({ topicId });
+    const responseRows = session.responses ?? [];
+
+    if (responseRows.length === 0) {
+      return { ...session, questions: [] };
     }
 
-    const { message } = await parseApiError(response, 'Failed to generate adaptive session');
-    throw new Error(message);
+    try {
+      const questions = await Promise.all(
+        responseRows.map((row) => questionsService.getQuestion(row.question)),
+      );
+      return { ...session, questions };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load session questions';
+      throw new Error(message);
+    }
   },
 
   // Backward-compatibility aliases
@@ -85,11 +107,14 @@ export const practiceService = {
     question: EntityId;
     selected_answer_index: number;
   }) => {
-    const response = await api.post(`/practice/sessions/${data.session}/responses/`, {
+    const response = await api.patch(`/practice/sessions/${data.session}/responses/${data.question}/`, {
       question: data.question,
       selected_answer_index: data.selected_answer_index,
     });
-    if (!response.ok) throw new Error('Failed to submit interaction');
+    if (!response.ok) {
+      const { message } = await parseApiError(response, 'Failed to submit interaction');
+      throw new Error(message);
+    }
     return await parseOptionalJson(response);
   },
 

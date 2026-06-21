@@ -60,6 +60,7 @@ class SubtopicViewSet(viewsets.ModelViewSet):
 
     queryset = Subtopic.objects.select_related('topic').all()
     serializer_class = SubtopicSerializer
+
 @extend_schema_view(
     list=extend_schema(operation_id='subtopic_mastery_list'),
     retrieve=extend_schema(operation_id='subtopic_mastery_retrieve'),

@@ -46,7 +46,13 @@ The root `docker-compose.yml` includes a frontend service that builds this app a
 docker compose up --build frontend
 ```
 
-The backend is still expected at `VITE_API_BASE_URL`, which defaults to `http://localhost:8000`. This is a build-time value for Vite, so rebuild the frontend image after changing it.
+In the Compose stack, Nginx is the entry gateway. The frontend build defaults `VITE_API_BASE_URL` to `/api/v1`, so browser requests stay same-origin and Nginx proxies `/api/`, `/admin/`, `/schema/`, `/docs/`, `/redoc/`, and `/silk/` to the backend service.
+
+`VITE_API_BASE_URL` is still a Vite build-time value. For a split-domain deployment, rebuild with an explicit value:
+
+```bash
+docker compose build --build-arg VITE_API_BASE_URL=https://api.example.com
+```
 
 ## Project Structure
 

@@ -21,15 +21,61 @@ services:
     restart: always
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    restart: always
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: postgres
+      DB_USER: postgres
+      DB_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/1
+      FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}
+    command: >
+      sh -c "uv run python manage.py collectstatic --noinput &&
+             uv run python manage.py migrate &&
+             uv run python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - django_static:/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "uv run python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/schema/', timeout=2).read()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
     restart: always
     ports:
       - "${FRONTEND_PORT:-5173}:80"
+    volumes:
+      - django_static:/usr/share/nginx/html/django_static:ro
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:
+  django_static:

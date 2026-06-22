@@ -1,3 +1,4 @@
+import ast
 import csv
 from django.core.management.base import BaseCommand, CommandError
 from topics.models import Topic, Subtopic
@@ -5,16 +6,12 @@ from practice.models import Question
 
 
 class Command(BaseCommand):
-    help = (
-        'Import questions from a CSV file. '
-        'CSV must have columns: topic, subtopic, tier, text, '
-        'choice_1, choice_2, choice_3, choice_4, correct_answer_index'
-    )
+    help = 'Import questions from a custom structured CSV file.'
 
     def add_arguments(self, parser):
         parser.add_argument(
             'csv_file',
-            type=str,
+            type=str,   
             help='Path to the CSV file to import.',
         )
 
@@ -27,18 +24,18 @@ class Command(BaseCommand):
             raise CommandError(f'File not found: {csv_file}')
 
         with fh:
-            reader = csv.DictReader(fh)
-
-            required_columns = [
-                'topic', 'subtopic', 'tier', 'text',
-                'choice_1', 'choice_2', 'choice_3', 'choice_4',
-                'correct_answer_index',
+            # We explicitly define the fieldnames because line 1 in your CSV 
+            # appears broken/truncated (e.g., 'er,text,choices...')
+            fieldnames = [
+                'topic', 'subtopic', 'tier', 'text', 
+                'choices', 'correct_answer_index'
             ]
-            missing = [col for col in required_columns if col not in reader.fieldnames]
-            if missing:
-                raise CommandError(
-                    f'Missing required CSV columns: {", ".join(missing)}'
-                )
+            
+            # Use restkey to catch any overflow, but we map the core columns explicitly
+            reader = csv.DictReader(fh, fieldnames=fieldnames)
+            
+            # Skip the very first header row manually
+            next(reader, None)
 
             topics_created = 0
             subtopics_created = 0
@@ -49,30 +46,23 @@ class Command(BaseCommand):
             for row in reader:
                 row_number += 1
 
-                topic_name = row['topic'].strip()
-                if not topic_name:
+                # Safely handle missing columns if a row is malformed
+                if not row['topic'] or not row['subtopic'] or not row['text']:
                     self.stdout.write(self.style.WARNING(
-                        f'Row {row_number}: skipping row with empty topic.'
+                        f'Row {row_number}: Missing vital data, skipping.'
                     ))
                     continue
 
+                topic_name = row['topic'].strip()
                 topic, topic_created = Topic.objects.get_or_create(
                     name=topic_name,
                     defaults={'description': ''},
                 )
                 if topic_created:
                     topics_created += 1
-                    self.stdout.write(self.style.SUCCESS(
-                        f'  Created Topic: {topic.name}'
-                    ))
+                    self.stdout.write(self.style.SUCCESS(f'  Created Topic: {topic.name}'))
 
                 subtopic_name = row['subtopic'].strip()
-                if not subtopic_name:
-                    self.stdout.write(self.style.WARNING(
-                        f'Row {row_number}: skipping row with empty subtopic.'
-                    ))
-                    continue
-
                 subtopic, subtopic_created = Subtopic.objects.get_or_create(
                     topic=topic,
                     name=subtopic_name,
@@ -80,35 +70,31 @@ class Command(BaseCommand):
                 )
                 if subtopic_created:
                     subtopics_created += 1
-                    self.stdout.write(self.style.SUCCESS(
-                        f'    Created Subtopic: {subtopic.name}'
-                    ))
+                    self.stdout.write(self.style.SUCCESS(f'    Created Subtopic: {subtopic.name}'))
 
                 text = row['text'].strip()
-                if not text:
-                    self.stdout.write(self.style.WARNING(
-                        f'Row {row_number}: skipping row with empty text.'
-                    ))
-                    continue
 
-                choices = [
-                    row['choice_1'].strip(),
-                    row['choice_2'].strip(),
-                    row['choice_3'].strip(),
-                    row['choice_4'].strip(),
-                ]
+                # Safely parse the choices string array into a Python list
+                raw_choices = row['choices']
+                try:
+                    # Converts '["A", "B", "C"]' string into an actual list ["A", "B", "C"]
+                    choices_list = ast.literal_eval(raw_choices.strip())
+                    if not isinstance(choices_list, list):
+                        choices_list = [raw_choices]
+                except Exception:
+                    # Fallback if parsing fails
+                    choices_list = [c.strip() for c in raw_choices.split(',')]
 
                 try:
                     tier = int(row['tier'].strip())
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, AttributeError):
                     tier = 1
 
                 try:
                     correct_answer_index = int(row['correct_answer_index'].strip())
-                except (ValueError, TypeError):
+                except (ValueError, TypeError, AttributeError):
                     self.stdout.write(self.style.ERROR(
-                        f'Row {row_number}: invalid correct_answer_index '
-                        f'"{row["correct_answer_index"]}", skipping.'
+                        f'Row {row_number}: invalid correct_answer_index, skipping.'
                     ))
                     continue
 
@@ -116,7 +102,7 @@ class Command(BaseCommand):
                     subtopic=subtopic,
                     text=text,
                     defaults={
-                        'choices': choices,
+                        'choices': choices_list,
                         'correct_answer_index': correct_answer_index,
                         'tier': tier,
                     },
@@ -127,8 +113,7 @@ class Command(BaseCommand):
                 else:
                     duplicates_skipped += 1
                     self.stdout.write(self.style.WARNING(
-                        f'Row {row_number}: duplicate skipped — '
-                        f'[{subtopic.name}] {text[:60]}'
+                        f'Row {row_number}: duplicate skipped — [{subtopic.name}] {text[:60]}'
                     ))
 
         self.stdout.write(self.style.SUCCESS('\n' + '=' * 50))

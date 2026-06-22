@@ -52,7 +52,7 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
 class QuestionResponseCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
-        fields = ['question', 'selected_answer_index']
+        fields = ['selected_answer_index']
 
 class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
     """Post-submit serializer: reveals correct_answer_index for the just-answered question only."""
@@ -69,6 +69,10 @@ class QuestionResponseRatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
         fields = ['confidence_rating']
+
+class AnswerSubmitSerializer(serializers.Serializer):
+    """Body serializer for PATCH .../responses/{question_id}/ — only the chosen index."""
+    selected_answer_index = serializers.IntegerField(min_value=0)
 
 # ===================================================
 # PracticeSession serializers

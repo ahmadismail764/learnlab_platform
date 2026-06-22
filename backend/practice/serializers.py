@@ -5,7 +5,7 @@ from rest_framework import serializers
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
-from practice.fsrs_engine import process_review
+from practice.fsrs_engine import process_session
 from accounts.models import User
 from accounts.serializers import UserDetailSerializer
 
@@ -127,6 +127,7 @@ class PracticeSessionCreateSerializer(serializers.ModelSerializer):
         session = PracticeSession.objects.create(**validated_data)
 
         correct_count = 0
+        created_responses = []
         for response_data in responses_data:
             question = response_data['question']
             selected = response_data['selected_answer_index']
@@ -137,9 +138,13 @@ class PracticeSessionCreateSerializer(serializers.ModelSerializer):
                 is_correct=is_correct,
                 **response_data
             )
+            created_responses.append(response)
             if response.is_correct:
                 correct_count += 1
-            process_review(session.learner, response.question.subtopic, response)
+
+        # Update FSRS once per subtopic for the whole session (not per answer),
+        # so repeated questions on the same subtopic don't inflate its schedule.
+        process_session(session.learner, responses=created_responses)
 
         # Store session total only; learner XP/streak are awarded in update() on completion.
         session.total_xp_earned = correct_count * XP_PER_CORRECT_ANSWER

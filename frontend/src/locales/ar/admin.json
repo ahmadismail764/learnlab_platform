@@ -29,8 +29,8 @@
 "failedToLoadQuestions": "تعذر تحميل الأسئلة",
 "failedToLoadTopics": "تعذر تحميل الموضوعات",
 "filterByTopic": "تصفية حسب الموضوع",
-"fsrsMetrics": "مقاييس FSRS",
-"fsrsMetricsDescription": "أداء التكرار المتباعد حسب الموضوع",
+"fsrsMetrics": "مقاييس المراجعة الذكية (FSRS)",
+"fsrsMetricsDescription": "أداء المراجعة الذكية حسب الموضوع",
 "generalSettings": "الإعدادات العامة",
 "generalSettingsDescription": "الإعدادات الأساسية للتطبيق",
 "insufficientData": "لا توجد بيانات كافية للتحليل",
@@ -43,7 +43,7 @@
 "memoryUsage": "استخدام الذاكرة",
 "noAuditLogs": "لم تُسجَّل أحداث تدقيق بعد.",
 "noLearnerData": "لا توجد بيانات للمتعلمين بعد",
-"noLearnerDataDescription": "سيظهر المتعلمون في لوحة المتصدرين بعد بدء التدريب واكتساب نقاط الخبرة.",
+"noLearnerDataDescription": "سيظهر المتعلمون في لوحة الصدارة بعد بدء التدريب واكتساب النقاط.",
 "notificationSettings": "إعدادات الإشعارات",
 "notificationSettingsDescription": "اضبط تفضيلات الإشعارات",
 "practiceReminders": "تذكيرات التمرين",
@@ -57,8 +57,8 @@
 "addQuestion": "إضافة سؤال",
 "allDifficulties": "جميع مستويات الصعوبة",
 "allTopics": "جميع الموضوعات",
-"connectedBackendApi": "متصل بواجهة API للخلفية",
-"connectedBackendDescription": "تُرسل جميع عمليات CRUD إلى {{endpoint}}. تُحفظ التغييرات في قاعدة البيانات فورًا.",
+"connectedBackendApi": "متصل بواجهة الأسئلة",
+"connectedBackendDescription": "تُرسل عمليات إدارة الأسئلة إلى {{endpoint}} وتُحفظ فورًا.",
 "deleteDialog": {
 "confirm": "حذف",
 "deleteError": "تعذر حذف السؤال",
@@ -167,7 +167,7 @@
 "topicsManagement": {
 "addTopic": "إضافة موضوع",
 "delete": {
-"cascadeWarning": "سيؤدي حذف هذا الموضوع إلى إزالة جميع الأسئلة المرتبطة به وسجلات إتقان المتعلمين. لا يمكن التراجع عن هذا الإجراء.",
+"cascadeWarning": "سيؤدي حذف هذا الموضوع إلى حذف أسئلته وسجلات إتقانه. لا يمكن التراجع.",
 "description": "هل تريد حذف هذا الموضوع؟ لا يمكن التراجع عن هذا الإجراء.",
 "questionsAffected": "سيُحذف {{count}} سؤال نهائيًا.",
 "title": "حذف الموضوع؟",
@@ -193,7 +193,7 @@
 "updateTopic": "تحديث الموضوع"
 },
 "noTopicsYet": "لا توجد موضوعات بعد",
-"noTopicsYetDescription": "أنشئ موضوعك الأول للبدء. الموضوعات هي لبنات بناء المنهج.",
+"noTopicsYetDescription": "أنشئ أول موضوع لبدء بناء المنهج.",
 "questionCount": "{{count}} أسئلة",
 "questionsLabel": "أسئلة",
 "searchPlaceholder": "البحث في الموضوعات...",
@@ -202,12 +202,12 @@
 "questions": "إجمالي الأسئلة",
 "topics": "الموضوعات"
 },
-"subtitle": "إدارة هيكل المنهج والتسلسل الهرمي للموضوعات",
-"title": "إدارة المنهج الدراسي",
+"subtitle": "إدارة بنية المنهج وموضوعاته",
+"title": "إدارة المنهج",
 "topicCount": "{{count}} موضوعات"
 },
-"topLearners": "أفضل المتعلمين",
-"topLearnersDescription": "نظرة سريعة على من يحوّلون التدريب إلى تقدم باستمرار.",
+"topLearners": "لوحة الصدارة",
+"topLearnersDescription": "نظرة سريعة على أكثر المتعلمين تقدمًا واستمرارًا.",
 "totalAnswered": "إجمالي الإجابات",
 "totalLearners": "إجمالي المتعلمين",
 "totalLearnersHelper": "الحسابات المتابَعة",
@@ -222,5 +222,16 @@
 "weeklyDigest": "الملخص الأسبوعي",
 "weeklyDigestDescription": "أرسل ملخصًا أسبوعيًا لتقدم المتعلمين",
 "welcomeBackAdmin": "مرحبًا بعودتك، {{name}}. إليك نظرة عامة على النظام.",
+"unknownLearner": "متعلم غير معروف",
+"weeklyActivityTooltip": "{{learners}} متعلم، {{questions}} إجابة",
+"weekdays": {
+"fri": "الجمعة",
+"mon": "الاثنين",
+"sat": "السبت",
+"sun": "الأحد",
+"thu": "الخميس",
+"tue": "الثلاثاء",
+"wed": "الأربعاء"
+},
 "welcomeBackAdminDescription": "تابع نشاط المتعلمين وحجم المراجعات وصحة النظام دون الغوص في لوحات مزدحمة."
 }

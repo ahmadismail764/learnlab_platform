@@ -72,7 +72,7 @@ export function AnalyticsPage() {
       xp: entry.total_xp,
       streak: entry.streak_count,
     }))
-  }, [leaderboard])
+  }, [leaderboard, t])
 
   const fsrsMetrics = useMemo(() => {
     if (!bulkAnalytics?.results) return []
@@ -112,14 +112,14 @@ export function AnalyticsPage() {
   }), [difficultyData])
 
   const weeklyActivity = useMemo(() => {
-    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+    const weekdayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
     if (!activityData?.results || activityData.results.length === 0) {
       const list = []
       const today = new Date()
       for (let i = 6; i >= 0; i--) {
         const d = new Date()
         d.setDate(today.getDate() - i)
-        const dayName = weekdayNames[d.getDay()]
+        const dayName = t(`admin:weekdays.${weekdayKeys[d.getDay()]}`)
         list.push({ day: dayName, learners: 0, questions: 0 })
       }
       return list
@@ -127,14 +127,14 @@ export function AnalyticsPage() {
     const last7 = activityData.results.slice(-7)
     return last7.map((item) => {
       const dateObj = new Date(item.date)
-      const dayName = weekdayNames[isNaN(dateObj.getTime()) ? 0 : dateObj.getDay()]
+      const dayName = t(`admin:weekdays.${weekdayKeys[isNaN(dateObj.getTime()) ? 0 : dateObj.getDay()]}`)
       return {
         day: dayName,
         learners: item.active_learners,
         questions: item.questions_answered,
       }
     })
-  }, [activityData])
+  }, [activityData, t])
 
   const maxDailyLearners = Math.max(...weeklyActivity.map((d) => d.learners), 1)
 
@@ -154,7 +154,7 @@ export function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <PageIntro
-        eyebrow="Admin analytics"
+        eyebrow={t('admin:analyticsEyebrow')}
         title={t('admin:learnerAnalytics')}
         description={t('admin:analyticsDescription')}
         icon={<BarChart3 className="h-6 w-6" />}
@@ -412,7 +412,10 @@ export function AnalyticsPage() {
                   <div 
                     className="w-full bg-primary-500 rounded-t transition-all"
                     style={{ height: `${(day.learners / maxDailyLearners) * 100}%` }}
-                    title={`${day.learners} learners, ${day.questions} questions`}
+                    title={t('admin:weeklyActivityTooltip', {
+                      learners: day.learners,
+                      questions: day.questions,
+                    })}
                   />
                   <span className="text-xs text-neutral-500 dark:text-neutral-400">{day.day}</span>
                 </div>

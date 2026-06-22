@@ -1,10 +1,12 @@
 import {
   api,
+  clearStoredAuth,
   getTokenStorage,
   getToken,
   parseApiError,
   throwApiError,
 } from "./api";
+import { logger } from "@/utils/logger";
 
 import {
   coerceBackendUser,

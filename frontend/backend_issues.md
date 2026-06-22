@@ -8,19 +8,12 @@
 
 ## Backend-Owned Issues / Contract Risks
 
-### 1. Post-Submit Practice Feedback and Difficulty Rating Contract
+### 1. Bulk practice session create documents the wrong nested response shape
 
-- **Status:** Active backend contract request, tracked in GitHub #89
-- **Affected flow:** Learner practice sessions
-- **Current behavior:** Learner question payloads correctly omit `correct_answer_index` before answering. `POST /practice/sessions/<id>/responses/` returns `id`, `question`, and `is_correct`, so the frontend can show whether the selected answer was correct but cannot reveal the correct option after an incorrect answer.
-- **Missing contract:** A safe post-submit reveal field, such as `correct_answer_index` or `correct_choice`, returned only after the learner commits an answer. The backend also needs a supported way to persist the later difficulty rating, such as `confidence_rating` or an FSRS grade.
-- **Recommendation:** Keep pre-submit learner reads answer-safe, return safe answer reveal data from the response-create endpoint, and document the runtime shape in OpenAPI.
-
-### 2. Bulk Practice Session Create Still Publishes The Wrong Nested Response Shape
-
-- **Status:** Active backend contract warning
+- **Status:** Active backend contract blocker, still verified 2026-06-17 on `interface` at `fc506ca`
 - **Affected contract:** `POST /api/v1/practice/sessions/` with non-empty nested `responses`
-- **Current source check:** `PracticeSessionCreateSerializer.responses` still uses `QuestionCreateAndUpdateSerializer(many=True, required=False)`, while `create()` reads each row as a `QuestionResponse` payload using `question` and `selected_answer_index`.
+- **Symptoms:** `PracticeSessionCreateSerializer.responses` is wired to `QuestionCreateAndUpdateSerializer(many=True)` even though `create()` reads each row as a `QuestionResponse` payload using `response_data['question']` and `response_data['selected_answer_index']`.
+- **Smoke result:** Generated OpenAPI schema for `PracticeSessionCreate.responses[]` still references `QuestionCreateAndUpdate` instead of `QuestionResponseCreate`. Runtime APIClient smoke with `{"responses":[{"question":"<uuid>","selected_answer_index":0}]}` returned `400` with required-field errors for `text` and `correct_answer_index`.
 - **Impact:** The published bulk session-create contract asks clients for question-authoring fields, while runtime code expects answer-submission fields. The current frontend avoids this by creating sessions with `responses: []` and submitting answers through `/practice/sessions/<id>/responses/`.
 - **Recommendation:** Change `PracticeSessionCreateSerializer.responses` to `QuestionResponseCreateSerializer(many=True, required=False)` or remove nested response creation from the public contract.
 
@@ -175,14 +168,11 @@
 
 ### 6. Admin Question Reads Include `correct_answer_index`
 
-- **Status:** Resolved
-- **Source check:** `QuestionViewSet.get_serializer_class()` returns `QuestionAdminSerializer` for staff reads and `QuestionSerializer` for learner reads.
-- **Frontend note:** This preserves learner answer safety and supports admin preview/edit.
+### 13. Bulk & Time-Series Analytics Telemetry
 
 ### 7. OpenAPI Warning Cleanup
 
-- **Status:** Reported fixed upstream in the backend merge that included #81
-- **Source check:** `PracticeSessionViewSet` now annotates UUID path parameters. Password-reset and analytics schemas should still be verified by running schema generation after the merge.
+### 14. Curriculum Questions Counts
 
 ### 8. Analytics Caching
 

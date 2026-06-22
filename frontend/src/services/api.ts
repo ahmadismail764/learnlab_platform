@@ -1,6 +1,10 @@
+import { logger } from "@/utils/logger";
+
 const API_BASE = normalizeBaseUrl(
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
 );
+
+export const AUTH_CLEARED_EVENT = "learnlab:auth-cleared";
 
 export type EntityId = string | number;
 
@@ -77,6 +81,18 @@ export function getToken(key: string): string | null {
   return localStorage.getItem(key) ?? sessionStorage.getItem(key);
 }
 
+export function clearStoredAuth() {
+  localStorage.removeItem("learnlab_auth_token");
+  localStorage.removeItem("learnlab_refresh_token");
+  localStorage.removeItem("learnlab_persist");
+  sessionStorage.removeItem("learnlab_auth_token");
+  sessionStorage.removeItem("learnlab_refresh_token");
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CLEARED_EVENT));
+  }
+}
+
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {},
@@ -114,15 +130,11 @@ async function fetchWithAuth(
           return response;
         }
       } catch (error) {
-        console.error("Token refresh failed", error);
+        logger.warn("Token refresh failed", error);
       }
     }
-    // Refresh failed — clear auth from both storages.
-    // The AuthContext will detect missing token and redirect to login.
-    localStorage.removeItem("learnlab_auth_token");
-    localStorage.removeItem("learnlab_refresh_token");
-    sessionStorage.removeItem("learnlab_auth_token");
-    sessionStorage.removeItem("learnlab_refresh_token");
+    // Refresh failed — clear auth from both storages and notify AuthContext.
+    clearStoredAuth();
   }
 
   return response;

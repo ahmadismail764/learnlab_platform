@@ -16,6 +16,7 @@ import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useToast } from '@/contexts'
 import { practiceService } from '@/services/practice'
 import { cn } from '@/utils/cn'
+import { logger } from '@/utils/logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/hooks'
 import { getTopicDisplayName } from '@/utils/topicLabels'
@@ -77,12 +78,7 @@ export function PracticePage() {
 
       setQuestions(normalizedQuestions)
 
-      // Create session record — backend PracticeSessionCreateSerializer
-      // requires responses (can be empty array)
-      const session = await practiceService.createSession({
-        responses: []
-      })
-      setSessionRecord(session)
+      setSessionRecord({ id: data.id })
 
       const initialStates: Record<number, QuestionState> = {}
       normalizedQuestions.forEach((q: PracticeQuestion, idx: number) => {
@@ -100,7 +96,7 @@ export function PracticePage() {
       setSessionState('practicing')
     } catch (err) {
       const message = err instanceof Error ? err.message : t('practice:startSessionFailed')
-      console.error('Session start error:', message, err)
+      logger.warn('Session start error', err)
       showError(t('practice:couldNotStartSession', { message }))
     } finally {
       setIsLoading(false)

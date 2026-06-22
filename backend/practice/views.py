@@ -22,6 +22,7 @@ from practice.serializers import (
     QuestionResponseRatingSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
+    LeaderboardSerializer,
 )
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
@@ -187,8 +188,14 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         response.is_correct = is_correct
         response.save()
 
-        # Process standard internal logic (FSRS scheduling and XP)
-        process_review(session.learner, question.subtopic, response)
+        # Process standard internal logic (FSRS scheduling and XP).
+        # Incremental, per-answer path: one answer -> one subtopic review.
+        process_review(
+            session.learner,
+            question.subtopic,
+            is_correct=response.is_correct,
+            confidence=response.confidence_rating,
+        )
 
         if is_correct:
             session.total_xp_earned += XP_PER_CORRECT_ANSWER

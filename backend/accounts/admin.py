@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
-from accounts.models import User, AuditLog
+from accounts.models import User
 
 
 @admin.register(User)
@@ -46,21 +46,3 @@ class UserAdmin(ModelAdmin, BaseUserAdmin):
             "fields": ("is_staff", "is_superuser"),
         }),
     )
-
-
-@admin.register(AuditLog)
-class AuditLogAdmin(ModelAdmin):
-    list_display = ("action_type", "actor", "target_resource", "timestamp")
-    list_filter = ("action_type",)
-    search_fields = ("actor__username", "target_resource")
-    ordering = ("-timestamp",)
-    readonly_fields = ("id", "actor", "action_type", "target_resource", "timestamp", "metadata")
-
-    def has_add_permission(self, request):
-        return False
-
-    def has_change_permission(self, request, obj=None):
-        return False
-
-    def has_delete_permission(self, request, obj=None):
-        return False

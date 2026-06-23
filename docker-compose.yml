@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
       POSTGRES_DB: postgres
+      LEARNLAB_APP_DB_PASSWORD: ${LEARNLAB_APP_DB_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
@@ -32,8 +33,6 @@ services:
     build:
       context: ./backend
     restart: always
-    ports:
-      - "8000:8000"
     env_file:
       - ./backend/.env
     environment:
@@ -44,20 +43,37 @@ services:
       DB_USER: learnlab_app
       DB_PASSWORD: ${LEARNLAB_APP_DB_PASSWORD}
       REDIS_URL: redis://redis:6379/1
+      FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      - django_static:/app/staticfiles
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "uv run python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/schema/', timeout=2).read()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
     restart: always
     ports:
       - "${FRONTEND_PORT:-5173}:80"
+    volumes:
+      - django_static:/usr/share/nginx/html/django_static:ro
+    depends_on:
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:
+  django_static:

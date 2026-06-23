@@ -10,7 +10,7 @@ import {
   Target,
   TriangleAlert,
 } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Badge,
@@ -139,10 +139,6 @@ export function LearnerDashboard() {
     return icons[status];
   };
 
-  const shouldRedirectToOnboarding = Boolean(
-    user && !localStorage.getItem(`onboarding_done_${user.id}`),
-  );
-
   const dashboardStats = [
     {
       icon: <Target className="h-5 w-5" />,
@@ -180,10 +176,6 @@ export function LearnerDashboard() {
       tone: "accent" as const,
     },
   ];
-
-  if (shouldRedirectToOnboarding) {
-    return <Navigate to="/learner/onboarding" replace />;
-  }
 
   return (
     <div className="space-y-6">

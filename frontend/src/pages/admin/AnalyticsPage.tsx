@@ -68,7 +68,7 @@ export function AnalyticsPage() {
   const topLearners = useMemo(() => {
     if (!leaderboard) return []
     return leaderboard.slice(0, 5).map((entry) => ({
-      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : 'Unknown',
+      name: entry.user ? `${entry.user.first_name} ${entry.user.last_name}`.trim() || entry.user.username : t('admin:unknownLearner'),
       xp: entry.total_xp,
       streak: entry.streak_count,
     }))

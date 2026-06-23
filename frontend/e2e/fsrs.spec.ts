@@ -13,10 +13,20 @@ test('FSRS due queue updates correctly after 3 days of virtual time', async ({ p
   // Verify dashboard and check initial queue status
   await expect(page).toHaveURL(/\/learner/);
   
-  // Clear any existing due state by doing a practice session first if needed,
-  // or assert that we can start a session and make it due.
-  // Let's navigate to the practice page for a specific topic (e.g. Sets)
-  await page.goto('/learner/practice?topic=8e6cadd5-e036-40f3-825e-d283d9f956b5');
+  // Get the first topic ID from the authenticated API
+  const topicId = await page.evaluate(async () => {
+    const token = localStorage.getItem('learnlab_auth_token') || sessionStorage.getItem('learnlab_auth_token');
+    const res = await fetch('/api/v1/topics/', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    const topics = await res.json();
+    return topics[0].id;
+  });
+
+  // Go to the dynamic practice page
+  await page.goto(`/learner/practice?topic=${topicId}`);
   await page.click('button:has-text("Start session")');
 
   // Solve the first question and rate it "Good" (this updates next_review to ~2 days in the future)
@@ -28,16 +38,22 @@ test('FSRS due queue updates correctly after 3 days of virtual time', async ({ p
   await expect(goodRating).toBeVisible();
   await goodRating.click();
 
-  // Go back to the dashboard
-  await page.goto('/learner');
+  // Wait for and click the continue session button to commit interaction state properly
+  const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Finish session")');
+  await expect(nextBtn).toBeVisible();
+  await nextBtn.click();
+
+  // Go to about:blank to prevent page timers from clearing tokens during time jump
+  await page.goto('about:blank');
 
   // Advance the system clock by exactly 3 days and 1 minute
   const threeDaysInMs = 3 * 24 * 60 * 60 * 1000 + 60000;
   await page.clock.fastForward(threeDaysInMs);
 
-  // Reload page state to trigger next_due check on the frontend with the advanced clock
-  await page.reload();
+  // Go back to the dashboard with the advanced clock
+  await page.goto('/learner');
 
   // Verify that the queue now shows the topic as due
   await expect(page.locator('text=/topic.*due/i').first()).toBeVisible();
 });
+

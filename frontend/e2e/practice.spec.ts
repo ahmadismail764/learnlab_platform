@@ -27,21 +27,28 @@ test('Learner can start and successfully complete a practice session', async ({ 
       break;
     }
 
-    // Wait for choice buttons
+    // Wait for choice buttons to be visible
     const options = page.locator('button.border-neutral-200, button.border-neutral-800');
-
-    if (await options.first().isVisible()) {
-      await options.first().click();
-    } else {
-      break;
-    }
+    await expect(options.first()).toBeVisible();
+    await options.first().click();
 
     // Click rating grade button (e.g., "Good")
     const goodRating = page.locator('button:has-text("Good")');
+    await expect(goodRating).toBeVisible();
     await goodRating.click();
+
+    // Click the continue/finish button to move past the feedback stage
+    const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Finish session")');
+    await expect(nextBtn).toBeVisible();
+    const btnText = await nextBtn.textContent();
+    await nextBtn.click();
+
+    if (btnText?.includes("Finish session")) {
+      break;
+    }
   }
 
   // 5. Verify the session completion card is displayed
   await expect(page.locator('text="Session complete"')).toBeVisible();
-  await expect(page.locator('text="XP earned"')).toBeVisible();
+  await expect(page.locator('text="XP Earned"')).toBeVisible();
 });

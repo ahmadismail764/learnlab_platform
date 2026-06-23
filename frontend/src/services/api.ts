@@ -1,7 +1,7 @@
 import { logger } from "@/utils/logger";
 
 const API_BASE = normalizeBaseUrl(
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
+  import.meta.env.VITE_API_BASE_URL || "/api/v1",
 );
 
 export const AUTH_CLEARED_EVENT = "learnlab:auth-cleared";

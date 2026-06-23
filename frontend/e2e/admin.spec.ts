@@ -10,8 +10,8 @@ test('Admin can perform full CRUD lifecycle on practice questions', async ({ pag
   // Verify redirection to admin dashboard
   await expect(page).toHaveURL(/\/admin/);
 
-  // 2. Navigate to questions page
-  await page.goto('/admin/questions');
+  // 2. Navigate to questions page via sidebar
+  await page.click('a[href="/admin/questions"]');
 
   // 3. CREATE Question
   await page.click('button:has-text("Add Question")');
@@ -36,7 +36,7 @@ test('Admin can perform full CRUD lifecycle on practice questions', async ({ pag
 
   // 4. UPDATE Question
   const row = page.locator('tr', { hasText: 'What is the power set of {a}?' }).first();
-  await row.locator('button[aria-label="Edit question"]').click();
+  await row.locator('button[aria-label="Edit Question"]').click();
 
   // Change the text
   await page.fill('textarea[required]', 'What is the power set of {a} (updated)?');
@@ -47,7 +47,7 @@ test('Admin can perform full CRUD lifecycle on practice questions', async ({ pag
 
   // 5. DELETE Question
   const updatedRow = page.locator('tr', { hasText: 'What is the power set of {a} (updated)?' }).first();
-  await updatedRow.locator('button[aria-label="Delete question"]').click();
+  await updatedRow.locator('button[aria-label="Delete Question"]').click();
 
   // Confirm delete in modal dialog
   await page.click('.fixed button:has-text("Delete")');

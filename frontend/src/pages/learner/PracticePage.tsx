@@ -103,7 +103,7 @@ export function PracticePage() {
     }
   }
 
-  const handleAnswer = useCallback(async (choice: string, selectedAnswerIndex: number) => {
+  const handleAnswer = useCallback((choice: string, selectedAnswerIndex: number) => {
     if (!currentQuestion || !currentStatus || !sessionRecord || currentStatus.answerState !== 'unanswered') return
 
     setQuestionStates((prev) => ({
@@ -112,51 +112,11 @@ export function PracticePage() {
         ...prev[currentIndex],
         userResponse: choice,
         selectedAnswerIndex,
-        answerState: 'submitting',
-        isCorrect: null
+        answerState: 'selected',
+        isCorrect: null,
       }
     }))
-
-    try {
-      const response = await practiceService.submitInteraction({
-        session: sessionRecord.id,
-        question: currentQuestion.id,
-        selected_answer_index: selectedAnswerIndex,
-      })
-      const backendIsCorrect = Boolean(response?.is_correct)
-      if (typeof response?.correct_answer_index === 'number') {
-        setQuestions((prev) => prev.map((question, index) =>
-          index === currentIndex
-            ? { ...question, correct_answer_index: response.correct_answer_index }
-            : question,
-        ))
-      }
-      if (backendIsCorrect) {
-        setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
-      }
-      setQuestionStates((prev) => ({
-        ...prev,
-        [currentIndex]: {
-          ...prev[currentIndex],
-          answerState: 'answered',
-          isCorrect: backendIsCorrect,
-        }
-      }))
-    } catch (err) {
-      logger.warn('Failed to submit interaction', err)
-      setQuestionStates((prev) => ({
-        ...prev,
-        [currentIndex]: {
-          ...prev[currentIndex],
-          userResponse: null,
-          selectedAnswerIndex: null,
-          answerState: 'unanswered',
-          isCorrect: null,
-        }
-      }))
-      showError(t('practice:couldNotSubmitAnswer'))
-    }
-  }, [currentQuestion, currentStatus, currentIndex, sessionRecord, showError, t])
+  }, [currentQuestion, currentStatus, currentIndex, sessionRecord])
 
   const completeSession = useCallback(async () => {
     if (isCompleting) return
@@ -183,9 +143,9 @@ export function PracticePage() {
     }
   }, [isCompleting, queryClient, sessionRecord, showError, t])
 
-  const handleGrade = useCallback((grade: FSRSGrade) => {
+  const handleGrade = useCallback(async (grade: FSRSGrade) => {
     if (isCompleting) return
-    if (!currentStatus || currentStatus.answerState !== 'answered') return
+    if (!currentQuestion || !currentStatus || !sessionRecord || currentStatus.answerState !== 'selected') return
     if (currentStatus.selectedAnswerIndex === null) {
       showError(t('practice:couldNotSubmitAnswer'))
       return
@@ -193,8 +153,53 @@ export function PracticePage() {
 
     setQuestionStates((prev) => ({
       ...prev,
-      [currentIndex]: { ...prev[currentIndex], grade: grade }
+      [currentIndex]: { ...prev[currentIndex], answerState: 'submitting', grade }
     }))
+
+    try {
+      const response = await practiceService.submitInteraction({
+        session: sessionRecord.id,
+        question: currentQuestion.id,
+        selected_answer_index: currentStatus.selectedAnswerIndex,
+        confidence_rating: grade,
+      })
+      const backendIsCorrect = Boolean(response?.is_correct)
+      if (typeof response?.correct_answer_index === 'number') {
+        setQuestions((prev) => prev.map((question, index) =>
+          index === currentIndex
+            ? { ...question, correct_answer_index: response.correct_answer_index }
+            : question,
+        ))
+      }
+      if (backendIsCorrect) {
+        setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
+      }
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: {
+          ...prev[currentIndex],
+          answerState: 'answered',
+          isCorrect: backendIsCorrect,
+          grade,
+        }
+      }))
+    } catch (err) {
+      logger.warn('Failed to submit interaction', err)
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: {
+          ...prev[currentIndex],
+          answerState: 'selected',
+          grade: null,
+        }
+      }))
+      showError(t('practice:couldNotSubmitAnswer'))
+    }
+  }, [currentQuestion, currentStatus, currentIndex, isCompleting, sessionRecord, showError, t])
+
+  const continueAfterFeedback = useCallback(() => {
+    if (isCompleting) return
+    if (!currentStatus || currentStatus.answerState !== 'answered') return
 
     if (currentIndex < questions.length - 1) {
       const nextIndex = currentIndex + 1
@@ -206,7 +211,7 @@ export function PracticePage() {
     } else {
       completeSession()
     }
-  }, [completeSession, currentIndex, currentStatus, isCompleting, questions.length, showError, t])
+  }, [completeSession, currentIndex, currentStatus, isCompleting, questions.length])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -219,6 +224,7 @@ export function PracticePage() {
 
       const key = e.key
       const isAnswered = currentStatus.answerState === 'answered'
+      const isSelected = currentStatus.answerState === 'selected'
 
       if (currentStatus.answerState === 'unanswered') {
         const selectedIndex = Number(key) - 1
@@ -226,17 +232,21 @@ export function PracticePage() {
         if (selectedChoice) handleAnswer(selectedChoice, selectedIndex)
       }
 
-      if (isAnswered) {
+      if (isSelected) {
         if (key === '1') handleGrade(1)
         if (key === '2') handleGrade(2)
         if (key === '3') handleGrade(3)
         if (key === '4') handleGrade(4)
       }
+
+      if (isAnswered && key === 'Enter') {
+        continueAfterFeedback()
+      }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentQuestion, currentStatus, handleAnswer, handleGrade, sessionState])
+  }, [continueAfterFeedback, currentQuestion, currentStatus, handleAnswer, handleGrade, sessionState])
 
   if (sessionState === 'selecting') {
     return (
@@ -391,6 +401,7 @@ export function PracticePage() {
   }
 
   const isAnswered = currentStatus.answerState === 'answered'
+  const isAwaitingRating = currentStatus.answerState === 'selected' || currentStatus.answerState === 'submitting'
   const isInteractionLocked = currentStatus.answerState !== 'unanswered'
   const sessionProgress = ((currentIndex + 1) / questions.length) * 100
   const elapsedSeconds = Math.round((Date.now() - currentStatus.startTime) / 1000)
@@ -507,7 +518,36 @@ export function PracticePage() {
             </CardContent>
           </Card>
 
-          {isAnswered && <PracticeGradePanel onGrade={handleGrade} isDisabled={isCompleting} />}
+          {isAwaitingRating && (
+            <PracticeGradePanel
+              onGrade={handleGrade}
+              isDisabled={isCompleting || currentStatus.answerState === 'submitting'}
+            />
+          )}
+
+          {isAnswered && (
+            <Card>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+                    {t('practice:answerRecorded')}
+                  </p>
+                  <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                    {t('practice:answerRecordedDescription')}
+                  </p>
+                </div>
+                <Button
+                  onClick={continueAfterFeedback}
+                  isLoading={isCompleting}
+                  rightIcon={!isCompleting ? <ArrowRight className="h-4 w-4 rtl:rotate-180" /> : undefined}
+                >
+                  {currentIndex < questions.length - 1
+                    ? t('practice:continueSession')
+                    : t('practice:finishSession')}
+                </Button>
+              </div>
+            </Card>
+          )}
         </div>
 
         <div className="space-y-4 lg:col-span-4">

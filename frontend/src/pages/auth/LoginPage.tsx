@@ -6,6 +6,8 @@ import { Button, Card, Input } from "@/components/ui";
 import { useAuth } from "@/contexts";
 import { useToast } from "@/contexts";
 import { AuthRequestError } from "@/services/auth";
+import { LOGIN_DEMO_ACCOUNTS } from "@/constants";
+import { hasCompletedOnboarding } from "@/utils/onboarding";
 
 /**
  * LoginPage — UC-02
@@ -15,7 +17,7 @@ import { AuthRequestError } from "@/services/auth";
  * 2. User enters username/password
  * 3. System validates credentials
  * 4. System authenticates user
- *    - If learner → redirect to learner dashboard
+ *    - If learner → first-time intro or learner dashboard
  *    - If admin   → redirect to admin dashboard
  *
  * Alternate Flows:
@@ -24,24 +26,23 @@ import { AuthRequestError } from "@/services/auth";
  */
 
 /** Quick-fill accounts for the login form */
-const TEST_ACCOUNTS = [
-  {
-    labelKey: "auth:learner",
+const TEST_ACCOUNT_STYLES = {
+  learner: {
     icon: GraduationCap,
-    username: "learner",
-    password: "learner123",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
   },
-  {
-    labelKey: "auth:admin",
+  admin: {
     icon: ShieldCheck,
-    username: "admin",
-    password: "admin123",
     color: "text-primary-600 dark:text-primary-400",
     bg: "hover:bg-primary-50 dark:hover:bg-primary-950/30",
   },
-];
+} as const;
+
+const TEST_ACCOUNTS = LOGIN_DEMO_ACCOUNTS.map((account) => ({
+  ...account,
+  ...TEST_ACCOUNT_STYLES[account.role],
+}));
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -74,7 +75,11 @@ export function LoginPage() {
     try {
       const user = await login({ email: identifier.trim(), password, rememberMe });
       showSuccess(t("auth:loginSuccess", { name: user.firstName || user.username }));
-      const nextRoute = user.role === "admin" ? "/admin" : "/learner";
+      const nextRoute = user.role === "admin"
+        ? "/admin"
+        : hasCompletedOnboarding(user.id)
+          ? "/learner"
+          : "/learner/onboarding";
       navigate(nextRoute, { replace: true });
     } catch (err: unknown) {
       if (err instanceof AuthRequestError) {

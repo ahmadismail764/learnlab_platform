@@ -36,3 +36,13 @@ export const BREAKPOINTS = {
 export { MASTERY_STATUS_BADGE_VARIANT, MASTERY_STATUS_ICONS } from './mastery'
 export type { TopicMastery } from './mastery'
 
+// ============================================
+// Demo / Local QA Accounts
+// ============================================
+
+export {
+  DEMO_SEED_TOPIC,
+  LEADERBOARD_DEMO_ACCOUNTS,
+  LOGIN_DEMO_ACCOUNTS,
+} from './demoAccounts'
+

@@ -3,7 +3,6 @@ import { parseApiError } from "./api";
 import { questionsService, type BackendQuestion } from "./questions";
 
 interface SessionCreatePayload {
-  responses?: [];
   topicId?: string;
 }
 
@@ -53,9 +52,7 @@ export const practiceService = {
     const query = data.topicId
       ? `?topic=${encodeURIComponent(data.topicId)}`
       : '';
-    const response = await api.post(`/practice/sessions/${query}`, {
-      responses: data.responses ?? [],
-    });
+    const response = await api.post(`/practice/sessions/${query}`, {});
     if (!response.ok) throw new Error("Failed to create session");
     const session = await response.json() as PracticeSessionRecord;
     if (!session?.id) {
@@ -106,10 +103,11 @@ export const practiceService = {
     session: EntityId;
     question: EntityId;
     selected_answer_index: number;
+    confidence_rating?: number;
   }) => {
     const response = await api.patch(`/practice/sessions/${data.session}/responses/${data.question}/`, {
-      question: data.question,
       selected_answer_index: data.selected_answer_index,
+      ...(data.confidence_rating ? { confidence_rating: data.confidence_rating } : {}),
     });
     if (!response.ok) {
       const { message } = await parseApiError(response, 'Failed to submit interaction');

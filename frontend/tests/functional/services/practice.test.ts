@@ -38,7 +38,7 @@ describe('practiceService', () => {
     );
 
     expect(api.post).toHaveBeenCalledTimes(1);
-    expect(api.post).toHaveBeenCalledWith('/practice/sessions/', { responses: [] });
+    expect(api.post).toHaveBeenCalledWith('/practice/sessions/', {});
   });
 
   it('creates an adaptive session and loads placeholder question details', async () => {
@@ -62,7 +62,7 @@ describe('practiceService', () => {
 
     const session = await practiceService.generateAdaptiveSession('topic-1');
 
-    expect(api.post).toHaveBeenCalledWith('/practice/sessions/?topic=topic-1', { responses: [] });
+    expect(api.post).toHaveBeenCalledWith('/practice/sessions/?topic=topic-1', {});
     expect(api.get).toHaveBeenCalledWith('/practice/questions/question-1/');
     expect(session.id).toBe('session-1');
     expect(session.questions).toHaveLength(1);
@@ -75,12 +75,12 @@ describe('practiceService', () => {
       json: async () => ({ responses: [] }),
     } as unknown as Response);
 
-    await expect(practiceService.createSession({ responses: [] })).rejects.toThrow(
+    await expect(practiceService.createSession()).rejects.toThrow(
       'Practice session response is missing an id',
     );
   });
 
-  it('submits the selected answer index to the question placeholder response endpoint', async () => {
+  it('submits the selected answer index and confidence rating to the placeholder response endpoint', async () => {
     vi.mocked(api.patch).mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -91,11 +91,12 @@ describe('practiceService', () => {
       session: 'session-1',
       question: 'question-1',
       selected_answer_index: 2,
+      confidence_rating: 4,
     });
 
     expect(api.patch).toHaveBeenCalledWith('/practice/sessions/session-1/responses/question-1/', {
-      question: 'question-1',
       selected_answer_index: 2,
+      confidence_rating: 4,
     });
   });
 });

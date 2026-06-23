@@ -192,6 +192,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
         response.selected_answer_index = selected
         response.is_correct = is_correct
+        if 'confidence_rating' in serializer.validated_data:
+            response.confidence_rating = serializer.validated_data['confidence_rating']
         response.save()
 
         process_review(

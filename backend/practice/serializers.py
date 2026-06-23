@@ -50,9 +50,11 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'is_correct']
 
 class QuestionResponseCreateSerializer(serializers.ModelSerializer):
+    confidence_rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
+
     class Meta:
         model = QuestionResponse
-        fields = ['question', 'selected_answer_index']
+        fields = ['question', 'selected_answer_index', 'confidence_rating']
 
 class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
     """Post-submit serializer: reveals correct_answer_index for the just-answered question only."""

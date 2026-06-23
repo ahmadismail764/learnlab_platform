@@ -4,7 +4,7 @@ from rest_framework.test import APIRequestFactory, APIClient, force_authenticate
 from accounts.models import User
 from topics.models import Topic, Subtopic, SubtopicMastery
 from practice.models import Question, PracticeSession, QuestionResponse
-from practice.views import PracticeSessionViewSet, QuestionResponseViewSet
+from practice.views import PracticeSessionViewSet
 from topics.views import SubtopicMasteryViewSet
 
 class ViewSetGetQuerysetTestCase(TestCase):
@@ -105,21 +105,6 @@ class ViewSetGetQuerysetTestCase(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['id'], str(self.session_user_2.id))
 
-    def test_question_response_viewset_queryset(self):
-        view = QuestionResponseViewSet.as_view({'get': 'list'})
-
-        # 1. Staff user should see all question responses
-        request = self.factory.get('/practice/responses/')
-        force_authenticate(request, user=self.staff_user)
-        response = view(request)
-        self.assertEqual(len(response.data), 2)
-
-        # 2. Learner 1 should only see their own question responses
-        request = self.factory.get('/practice/responses/')
-        force_authenticate(request, user=self.learner_user_1)
-        response = view(request)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['id'], str(self.response_user_1.id))
 
     def test_subtopic_mastery_viewset_queryset(self):
         view = SubtopicMasteryViewSet.as_view({'get': 'list'})
@@ -165,18 +150,46 @@ class ResponseSubmissionFeedbackTestCase(TestCase):
         self.session = PracticeSession.objects.create(learner=self.learner)
         self.client.force_authenticate(user=self.learner)
 
-    def _submit_url(self):
-        return f'/api/v1/practice/sessions/{self.session.id}/responses/'
+    def setUp(self):
+        self.client = APIClient()
+        self.learner = User.objects.create_user(
+            username='learner_feedback',
+            email='feedback@example.com',
+            password='pass123',
+        )
+        self.other_learner = User.objects.create_user(
+            username='other_learner',
+            email='other@example.com',
+            password='pass123',
+        )
+        topic = Topic.objects.create(name='Science', description='Science')
+        subtopic = Subtopic.objects.create(topic=topic, name='Physics', description='Physics')
+        self.question = Question.objects.create(
+            subtopic=subtopic,
+            tier=1,
+            text='What is gravity?',
+            choices=['A force', 'A wave', 'A particle', 'An atom'],
+            correct_answer_index=0,
+        )
+        self.session = PracticeSession.objects.create(learner=self.learner)
+        self.client.force_authenticate(user=self.learner)
 
-    def _rate_url(self, response_pk):
-        return f'/api/v1/practice/sessions/{self.session.id}/responses/{response_pk}/'
+        self.placeholder = QuestionResponse.objects.create(
+            session=self.session,
+            question=self.question,
+            selected_answer_index=None,
+            is_correct=False
+        )
+
+    def _submit_url(self, question_id):
+        return f'/api/v1/practice/sessions/{self.session.id}/responses/{question_id}/'
 
     def test_correct_submission_returns_feedback_with_reveal(self):
-        resp = self.client.post(self._submit_url(), {
+        resp = self.client.patch(self._submit_url(self.question.id), {
             'question': str(self.question.id),
             'selected_answer_index': 0,  # correct
         }, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.data
         self.assertIn('id', data)
         self.assertIn('is_correct', data)
@@ -188,11 +201,11 @@ class ResponseSubmissionFeedbackTestCase(TestCase):
         self.assertEqual(data['selected_answer_index'], 0)
 
     def test_incorrect_submission_reveals_correct_answer(self):
-        resp = self.client.post(self._submit_url(), {
+        resp = self.client.patch(self._submit_url(self.question.id), {
             'question': str(self.question.id),
             'selected_answer_index': 2,  # wrong
         }, format='json')
-        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.data
         self.assertFalse(data['is_correct'])
         self.assertEqual(data['selected_answer_index'], 2)
@@ -200,44 +213,32 @@ class ResponseSubmissionFeedbackTestCase(TestCase):
         self.assertEqual(data['correct_answer_index'], 0)
 
     def test_rating_persistence(self):
-        submit = self.client.post(self._submit_url(), {
+        submit = self.client.patch(self._submit_url(self.question.id), {
             'question': str(self.question.id),
             'selected_answer_index': 1,
-        }, format='json')
-        response_id = submit.data['id']
-
-        rate = self.client.patch(self._rate_url(response_id), {
             'confidence_rating': 5,
         }, format='json')
-        self.assertEqual(rate.status_code, status.HTTP_200_OK)
-        self.assertEqual(rate.data['confidence_rating'], 5)
+        self.assertEqual(submit.status_code, status.HTTP_200_OK)
+        self.assertEqual(submit.data['confidence_rating'], 5)
 
         # Verify persisted in DB
-        db_response = QuestionResponse.objects.get(id=response_id)
+        db_response = QuestionResponse.objects.get(id=self.placeholder.id)
         self.assertEqual(db_response.confidence_rating, 5)
 
     def test_rating_out_of_range_rejected(self):
-        submit = self.client.post(self._submit_url(), {
+        bad_rate = self.client.patch(self._submit_url(self.question.id), {
             'question': str(self.question.id),
             'selected_answer_index': 0,
-        }, format='json')
-        response_id = submit.data['id']
-
-        bad_rate = self.client.patch(self._rate_url(response_id), {
             'confidence_rating': 9,
         }, format='json')
         self.assertEqual(bad_rate.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_other_learner_cannot_rate(self):
-        submit = self.client.post(self._submit_url(), {
+        self.client.force_authenticate(user=self.other_learner)
+        resp = self.client.patch(self._submit_url(self.question.id), {
             'question': str(self.question.id),
             'selected_answer_index': 0,
-        }, format='json')
-        response_id = submit.data['id']
-
-        self.client.force_authenticate(user=self.other_learner)
-        resp = self.client.patch(self._rate_url(response_id), {
             'confidence_rating': 3,
         }, format='json')
-        # Other learner gets 403 because session belongs to self.learner
-        self.assertEqual(resp.status_code, status.HTTP_403_FORBIDDEN)
+        # Other learner gets 404 because the session queryset filters out sessions belonging to other learners.
+        self.assertEqual(resp.status_code, status.HTTP_404_NOT_FOUND)

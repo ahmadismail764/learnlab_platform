@@ -22,7 +22,6 @@ from practice.serializers import (
     QuestionResponseRatingSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
-    LeaderboardSerializer,
 )
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
@@ -186,6 +185,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         # Update the placeholder record
         response.selected_answer_index = selected
         response.is_correct = is_correct
+        if 'confidence_rating' in serializer.validated_data:
+            response.confidence_rating = serializer.validated_data['confidence_rating']
         response.save()
 
         # Process standard internal logic (FSRS scheduling and XP).

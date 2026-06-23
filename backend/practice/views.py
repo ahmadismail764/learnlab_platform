@@ -1,32 +1,26 @@
 # Core django imports
 from django.utils import timezone as django_timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 from django.db import transaction
 # DRF imports
 from drf_spectacular.utils import extend_schema, extend_schema_view, inline_serializer, OpenApiParameter, OpenApiTypes
-from rest_framework import viewsets, generics, serializers, status
+from rest_framework import viewsets, serializers, status
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 # Our imports
-from learnlab_platform.renderers import IndentedJSONRenderer
 from practice.fsrs_engine import process_review
 from practice.serializers import (
     QuestionAdminSerializer,
     QuestionCreateAndUpdateSerializer,
     QuestionSerializer,
     QuestionResponseFeedbackSerializer,
-    QuestionResponseRatingSerializer,
     AnswerSubmitSerializer,
     PracticeSessionSerializer,
-    PracticeSessionCreateSerializer,
 )
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
-
 
 class QuestionViewSet(viewsets.ModelViewSet):
     # Optimized Join handling syntax
@@ -76,38 +70,28 @@ class QuestionViewSet(viewsets.ModelViewSet):
 )
 class PracticeSessionViewSet(viewsets.ModelViewSet):
     #######################################
-    # Management functions
+    # Management 
     #######################################
+    serializer_class = PracticeSessionSerializer
+
     def get_permissions(self):
-        """
-        FIXED: Correctly returns instantiated permission arrays to prevent runtime crashes.
-        """
         permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        """
-        Dynamic Query Isolation:
-        - Staff/Admins can see the global history of all student practice logs.
-        - Learners are strictly locked down to viewing only their own rows.
-        """
         user = self.request.user
         if user.is_staff:
             return PracticeSession.objects.all().order_by('-start_time')
         return PracticeSession.objects.filter(learner=user).order_by('-start_time')
 
-    def get_serializer_class(self):
-        if self.action == 'create':
-            return PracticeSessionCreateSerializer
-        return PracticeSessionSerializer
-
+    ##################################################################
+    
+    # This is for the POST method.
+    # This is where we need to creaate  a bit of custom logic
     def create(self, request, *args, **kwargs):
         """
         Create a session and immediately seed it with empty response placeholders.
         """
-        create_serializer = self.get_serializer(data=request.data)
-        create_serializer.is_valid(raise_exception=True)
-
         limit = int(request.query_params.get('limit', 10))
         topic_id = request.query_params.get('topic')
         learner = request.user
@@ -128,27 +112,20 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
             session_questions = list(fallback_qs[:limit])
 
-        # Use a transaction to ensure both session and placeholders are created safely together
         with transaction.atomic():
-            session = create_serializer.save(learner=learner)
-            
-            # Seed the database with empty placeholder responses linked to each question
+            session = PracticeSession.objects.create(learner=learner)
             placeholders = [
                 QuestionResponse(
                     session=session,
                     question=question,
-                    selected_answer_index=None,  # Unanswered
-                    is_correct=False             # Default fallback
+                    selected_answer_index=None,
+                    is_correct=False
                 )
                 for question in session_questions
             ]
             QuestionResponse.objects.bulk_create(placeholders)
 
-        # Serialize everything together
         session_serializer = PracticeSessionSerializer(session, context={'request': request})
-        
-        # Note: You should ensure your PracticeSessionSerializer includes or nests 
-        # its related responses so the frontend guy instantly gets the placeholder IDs!
         response_data = session_serializer.data
         response_data['message'] = f'Generated adaptive session with {len(session_questions)} placeholders.'
 
@@ -173,7 +150,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         ),
     )
     @action(detail=True, methods=['patch'], url_path=r'responses/(?P<question_id>[^/.]+)')
-    def submit_placeholder_response(self, request, pk=None, question_id=None):
+    def submit_response(self, request, pk=None, question_id=None):
         session = self.get_object()
         if session.learner != request.user:
             raise PermissionDenied("You do not have permission to modify this session.")
@@ -195,13 +172,6 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         if 'confidence_rating' in serializer.validated_data:
             response.confidence_rating = serializer.validated_data['confidence_rating']
         response.save()
-
-        process_review(
-            session.learner,
-            question.subtopic,
-            is_correct=response.is_correct,
-            confidence=response.confidence_rating,
-        )
 
         if is_correct:
             session.total_xp_earned += XP_PER_CORRECT_ANSWER

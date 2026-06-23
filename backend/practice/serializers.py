@@ -48,15 +48,7 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuestionResponse
         fields = ['id', 'question', 'is_correct']
-
-class QuestionResponseCreateSerializer(serializers.ModelSerializer):
-    confidence_rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
-
-    class Meta:
-        model = QuestionResponse
-        fields = ['selected_answer_index', 'confidence_rating']
-
-  class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
+class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
     """Post-submit serializer: reveals correct_answer_index for the just-answered question only."""
     correct_answer_index = serializers.IntegerField(source='question.correct_answer_index', read_only=True)
 
@@ -65,16 +57,9 @@ class QuestionResponseCreateSerializer(serializers.ModelSerializer):
         fields = ['id', 'question', 'selected_answer_index', 'is_correct', 'correct_answer_index', 'confidence_rating']
         read_only_fields = ['id', 'is_correct', 'correct_answer_index']
 
-class QuestionResponseRatingSerializer(serializers.ModelSerializer):
-    confidence_rating = serializers.IntegerField(min_value=1, max_value=5)
-
-    class Meta:
-        model = QuestionResponse
-        fields = ['confidence_rating']
-
 class AnswerSubmitSerializer(serializers.Serializer):
-    """Body serializer for PATCH .../responses/{question_id}/ — only the chosen index."""
     selected_answer_index = serializers.IntegerField(min_value=0)
+    confidence_rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
 
 # ===================================================
 # PracticeSession serializers
@@ -87,23 +72,18 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         model = PracticeSession
         fields = ['id', 'learner', 'start_time', 'end_time', 'total_xp_earned', 'responses']
 
+    # FSRS runs only when the end-time is used
     def update(self, instance, validated_data):
-    # Track if the session is being marked completed in this update
         already_completed = instance.end_time is not None
-        # Perform the standard model update
         instance = super().update(instance, validated_data)
 
-        # If the session is now completed, award XP to the learner once
         if instance.end_time is not None and not already_completed:
+            if 'end_time' in validated_data:
+                validated_data['end_time'] = django_timezone.now()
+            process_session(instance.learner, session=instance)
             learner = instance.learner
+            learner.current_xp += instance.total_xp_earned
 
-            # Calculate XP server-side from verified correct responses
-            correct_responses = instance.responses.filter(is_correct=True).count()
-            earned_xp = correct_responses * XP_PER_CORRECT_ANSWER
-            learner.current_xp += earned_xp
-
-            # Standard streak updates
-            from django.utils import timezone as django_timezone
             today = django_timezone.localdate()
             if learner.last_practice_date is None:
                 learner.streak_count = 1
@@ -117,39 +97,3 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
 
         return instance
 
-class PracticeSessionCreateSerializer(serializers.ModelSerializer):
-    responses = QuestionResponseCreateSerializer(many=True, required=False)
-
-    class Meta:
-        model = PracticeSession
-        fields = ['id', 'responses']
-
-    def create(self, validated_data):
-        responses_data = validated_data.pop('responses', [])
-        session = PracticeSession.objects.create(**validated_data)
-
-        correct_count = 0
-        created_responses = []
-        for response_data in responses_data:
-            question = response_data['question']
-            selected = response_data['selected_answer_index']
-            is_correct = (selected == question.correct_answer_index)
-
-            response = QuestionResponse.objects.create(
-                session=session,
-                is_correct=is_correct,
-                **response_data
-            )
-            created_responses.append(response)
-            if response.is_correct:
-                correct_count += 1
-
-        # Update FSRS once per subtopic for the whole session (not per answer),
-        # so repeated questions on the same subtopic don't inflate its schedule.
-        process_session(session.learner, responses=created_responses)
-
-        # Store session total only; learner XP/streak are awarded in update() on completion.
-        session.total_xp_earned = correct_count * XP_PER_CORRECT_ANSWER
-        session.save()
-
-        return session

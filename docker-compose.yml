@@ -6,10 +6,12 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
       POSTGRES_DB: postgres
+      LEARNLAB_APP_DB_PASSWORD: ${LEARNLAB_APP_DB_PASSWORD}
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -35,17 +37,13 @@ services:
       - ./backend/.env
     environment:
       DB_ENGINE: django.db.backends.postgresql
-      DB_NAME: postgres
-      DB_USER: postgres
-      DB_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
       DB_HOST: db
       DB_PORT: 5432
+      DB_NAME: learnlab
+      DB_USER: learnlab_app
+      DB_PASSWORD: ${LEARNLAB_APP_DB_PASSWORD}
       REDIS_URL: redis://redis:6379/1
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}
-    command: >
-      sh -c "uv run python manage.py collectstatic --noinput &&
-             uv run python manage.py migrate &&
-             uv run python manage.py runserver 0.0.0.0:8000"
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:

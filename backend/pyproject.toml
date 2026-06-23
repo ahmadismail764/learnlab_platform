@@ -15,6 +15,7 @@ dependencies = [
     "djangorestframework-simplejwt==5.5.1",
     "drf-spectacular==0.29.0",
     "fsrs==6.3.1",
+    "google-genai>=2.9.0",
     "gprof2dot==2025.4.14",
     "inflection==0.5.1",
     "jsonschema==4.26.0",
@@ -22,6 +23,7 @@ dependencies = [
     "psycopg2-binary==2.9.11",
     "pyjwt==2.12.1",
     "psutil>=6.0.0",
+    "pymupdf>=1.27.2.3",
     "python-dotenv==1.2.2",
     "pyyaml==6.0.3",
     "redis>=8.0.0",
@@ -30,4 +32,6 @@ dependencies = [
     "sqlparse==0.5.5",
     "typing-extensions==4.15.0",
     "uritemplate==4.2.0",
+    "gunicorn>=22.0.0",
+    "whitenoise>=6.0.0",
 ]

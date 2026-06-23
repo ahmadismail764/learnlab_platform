@@ -8,15 +8,16 @@ from drf_spectacular.types import OpenApiTypes
 from rest_framework import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from accounts.models import User
 from practice.models import PracticeSession, QuestionResponse
+from practice.fsrs_engine import calculate_retention
 from topics.models import SubtopicMastery, Topic
 
 
 @method_decorator(cache_page(60 * 15), name='dispatch')
 class AggregatedMetricsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id='analytics_aggregated_metrics',
@@ -37,10 +38,8 @@ class AggregatedMetricsView(APIView):
         },
     )
     def get(self, request):
-        # Calculate review count
         review_count = QuestionResponse.objects.count()
 
-        # Active users count (e.g. 7 days and 30 days based on last_practice_date or joined_at)
         now = timezone.now()
         seven_days_ago = now - timezone.timedelta(days=7)
         thirty_days_ago = now - timezone.timedelta(days=30)
@@ -48,33 +47,23 @@ class AggregatedMetricsView(APIView):
         active_7 = User.objects.filter(practice_sessions__start_time__gte=seven_days_ago).distinct().count()
         active_30 = User.objects.filter(practice_sessions__start_time__gte=thirty_days_ago).distinct().count()
 
-        # Fallback to total users if no sessions yet
         total_users = User.objects.count()
         if active_7 == 0:
             active_7 = min(total_users, 1)
         if active_30 == 0:
             active_30 = total_users
 
-        # Mastery averages
         avg_speed = SubtopicMastery.objects.aggregate(Avg('stability'))['stability__avg']
         avg_difficulty = SubtopicMastery.objects.aggregate(Avg('difficulty'))['difficulty__avg']
 
-        # Default values if no mastery exists yet
         avg_speed_val = round(avg_speed, 2) if avg_speed is not None else 1.0
         avg_difficulty_val = round(avg_difficulty, 2) if avg_difficulty is not None else 5.0
 
-        # Estimated retention (average retrievability across all masteries)
-        masteries = SubtopicMastery.objects.all()
-        retention_sum = 0
-        count = 0
-        for m in masteries:
-            if m.stability > 0 and m.last_review:
-                elapsed_days = (now - m.last_review).total_seconds() / 86400
-                ret = math.exp(math.log(0.9) * elapsed_days / m.stability)
-                retention_sum += ret
-                count += 1
-        
-        estimated_retention = round(retention_sum / count, 4) if count > 0 else 0.85
+        retention_values = [
+            calculate_retention(m.stability, m.last_review, now)
+            for m in SubtopicMastery.objects.filter(stability__gt=0, last_review__isnull=False)
+        ]
+        estimated_retention = round(sum(retention_values) / len(retention_values), 4) if retention_values else 0.85
 
         return Response({
             'review_count': review_count,
@@ -90,8 +79,9 @@ class AggregatedMetricsView(APIView):
         })
 
 
+@method_decorator(cache_page(60 * 15), name='dispatch')
 class TopicAnalyticsView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id='analytics_topic_detail',
@@ -117,33 +107,25 @@ class TopicAnalyticsView(APIView):
         ],
     )
     def get(self, request, topic_id):
-        # Calculate subtopic mastery metrics under this topic
         masteries = SubtopicMastery.objects.filter(subtopic__topic_id=topic_id)
-        
+
         avg_speed = masteries.aggregate(Avg('stability'))['stability__avg']
         avg_difficulty = masteries.aggregate(Avg('difficulty'))['difficulty__avg']
         learner_count = masteries.values('learner').distinct().count()
 
-        # Default values if no mastery exists yet
         avg_speed_val = round(avg_speed, 2) if avg_speed is not None else 1.0
         avg_difficulty_val = round(avg_difficulty, 2) if avg_difficulty is not None else 5.0
 
-        # Distribute speed (stability) categories
         low_speed = masteries.filter(stability__lt=3.0).count()
         medium_speed = masteries.filter(stability__gte=3.0, stability__lte=7.0).count()
         high_speed = masteries.filter(stability__gt=7.0).count()
 
-        # Estimated retention for topic
         now = timezone.now()
-        retention_sum = 0
-        count = 0
-        for m in masteries:
-            if m.stability > 0 and m.last_review:
-                elapsed_days = (now - m.last_review).total_seconds() / 86400
-                ret = math.exp(math.log(0.9) * elapsed_days / m.stability)
-                retention_sum += ret
-                count += 1
-        estimated_retention = round(retention_sum / count, 4) if count > 0 else 0.85
+        retention_values = [
+            calculate_retention(m.stability, m.last_review, now)
+            for m in masteries.filter(stability__gt=0, last_review__isnull=False)
+        ]
+        estimated_retention = round(sum(retention_values) / len(retention_values), 4) if retention_values else 0.85
 
         return Response({
             'topic_id': topic_id,
@@ -161,7 +143,6 @@ class TopicAnalyticsView(APIView):
         })
 
 
-
 @method_decorator(cache_page(60 * 15), name='dispatch')
 class BulkTopicAnalyticsView(APIView):
     """
@@ -169,7 +150,7 @@ class BulkTopicAnalyticsView(APIView):
     Returns per-topic analytics for all topics in one request.
     Supports optional filter: ?topic_ids=uuid1,uuid2
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id='analytics_topics_bulk',
@@ -198,12 +179,11 @@ class BulkTopicAnalyticsView(APIView):
             avg_difficulty = masteries.aggregate(Avg('difficulty'))['difficulty__avg']
             learner_count = masteries.values('learner').distinct().count()
 
-            retention_sum, count = 0, 0
-            for m in masteries:
-                if m.stability > 0 and m.last_review:
-                    elapsed = (now - m.last_review).total_seconds() / 86400
-                    retention_sum += math.exp(math.log(0.9) * elapsed / m.stability)
-                    count += 1
+            retention_values = [
+                calculate_retention(m.stability, m.last_review, now)
+                for m in masteries.filter(stability__gt=0, last_review__isnull=False)
+            ]
+            estimated_retention = round(sum(retention_values) / len(retention_values), 4) if retention_values else 0.85
 
             results.append({
                 'topic_id': str(topic.id),
@@ -211,7 +191,7 @@ class BulkTopicAnalyticsView(APIView):
                 'metrics': {
                     'avg_speed': round(avg_speed, 2) if avg_speed else 1.0,
                     'avg_difficulty': round(avg_difficulty, 2) if avg_difficulty else 5.0,
-                    'estimated_retention': round(retention_sum / count, 4) if count > 0 else 0.85,
+                    'estimated_retention': estimated_retention,
                     'learner_count': learner_count,
                 },
                 'distribution': {
@@ -231,7 +211,7 @@ class ActivityTimeSeriesView(APIView):
     Returns daily active learners and questions answered.
     Supports ?period=7d|30d|90d (default: 7d) or ?start=YYYY-MM-DD&end=YYYY-MM-DD
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id='analytics_activity_time_series',
@@ -249,7 +229,7 @@ class ActivityTimeSeriesView(APIView):
         },
     )
     def get(self, request):
-        from datetime import date, timedelta
+        from datetime import date, timedelta, datetime
         from django.db.models.functions import TruncDate
 
         period = request.query_params.get('period', '7d')
@@ -258,7 +238,6 @@ class ActivityTimeSeriesView(APIView):
 
         today = date.today()
         if start_str and end_str:
-            from datetime import datetime
             start = datetime.strptime(start_str, '%Y-%m-%d').date()
             end = datetime.strptime(end_str, '%Y-%m-%d').date()
         else:
@@ -266,14 +245,12 @@ class ActivityTimeSeriesView(APIView):
             start = today - timedelta(days=days - 1)
             end = today
 
-        # Build a date range
         date_range = []
         cur = start
         while cur <= end:
             date_range.append(cur)
             cur += timedelta(days=1)
 
-        # Sessions per day
         sessions_qs = (
             PracticeSession.objects
             .filter(start_time__date__range=(start, end))
@@ -283,7 +260,6 @@ class ActivityTimeSeriesView(APIView):
         )
         sessions_map = {row['day']: row['active_learners'] for row in sessions_qs}
 
-        # Responses per day
         responses_qs = (
             QuestionResponse.objects
             .filter(session__start_time__date__range=(start, end))
@@ -310,7 +286,7 @@ class DifficultyBreakdownView(APIView):
     GET /analytics/difficulty/
     Returns attempts and accuracy broken down by question difficulty tier (1, 2, 3).
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
 
     @extend_schema(
         operation_id='analytics_difficulty_breakdown',
@@ -332,4 +308,3 @@ class DifficultyBreakdownView(APIView):
                 'accuracy': round(correct / total, 4) if total > 0 else 0.0,
             }
         return Response({'tiers': tiers})
-

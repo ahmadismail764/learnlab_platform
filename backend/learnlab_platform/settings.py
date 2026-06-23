@@ -65,6 +65,7 @@ AUTHENTICATION_BACKENDS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -160,8 +161,11 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_RENDERER_CLASSES': (
-        'learnlab_platform.renderers.IndentedJSONRenderer',
-        'rest_framework.renderers.BrowsableAPIRenderer',
+    'learnlab_platform.renderers.IndentedJSONRenderer',
+    *(
+        ('rest_framework.renderers.BrowsableAPIRenderer',)
+        if DEBUG else ()
+    ),
     ),
     'COMPACT_JSON': False,
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

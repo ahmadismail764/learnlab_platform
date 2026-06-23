@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.12-slim-bookworm
 
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
@@ -12,6 +12,8 @@ RUN uv sync --frozen
 # Copy the rest of the code
 COPY . .
 
+RUN chmod +x entrypoint.sh
+
 EXPOSE 8000
 
-CMD ["uv", "run", "python", "manage.py", "runserver", "0.0.0.0:8000"]
+ENTRYPOINT ["./entrypoint.sh"]

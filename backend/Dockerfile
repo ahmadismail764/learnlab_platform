@@ -12,7 +12,7 @@ RUN uv sync --frozen
 # Copy the rest of the code
 COPY . .
 
-RUN chmod +x entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 

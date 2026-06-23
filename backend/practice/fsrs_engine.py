@@ -34,6 +34,7 @@ from practice.models import QuestionResponse, Subtopic
 from practice.constants import LEARNING_SPEED, MAX_INTERVAL_DAYS
 from topics.models import SubtopicMastery
 import fsrs
+import math
 
 
 # Sub-day "learning steps" are disabled on purpose. SubtopicMastery doesn't

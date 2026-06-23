@@ -12,7 +12,7 @@ api_v1_patterns = [
     path('admin/', include('accounts.admin_urls')), # Admin-only operational endpoints
 ]
 
-url_patterns = [
+urlpatterns = [
     path('api/v1/', include(api_v1_patterns)),
     path('admin/', admin.site.urls),
 ]
@@ -25,5 +25,5 @@ development_url_patterns = [
 ]
 
 if settings.DEBUG:
-    url_patterns.extend(development_url_patterns)
+    urlpatterns.extend(development_url_patterns)
 

@@ -17,15 +17,16 @@ from practice.serializers import (
     QuestionAdminSerializer,
     QuestionCreateAndUpdateSerializer,
     QuestionSerializer,
-    QuestionResponseCreateSerializer,
     QuestionResponseFeedbackSerializer,
     QuestionResponseRatingSerializer,
+    AnswerSubmitSerializer,
     PracticeSessionSerializer,
     PracticeSessionCreateSerializer,
 )
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     # Optimized Join handling syntax
@@ -155,12 +156,21 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         operation_id='practice_sessions_patch_response',
-        request=QuestionResponseCreateSerializer, # Reusing your answer payload serializer
-        responses={200: QuestionResponseFeedbackSerializer},
+        request=AnswerSubmitSerializer,
+        responses={
+            200: QuestionResponseFeedbackSerializer,
+            400: inline_serializer('AlreadyAnsweredError', fields={'detail': serializers.CharField()}),
+        },
         parameters=[
-            OpenApiParameter('question_id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH),
+            OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH, description='Practice session UUID'),
+            OpenApiParameter('question_id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH, description='Question UUID to answer'),
         ],
-        description="Frontend updates an empty placeholder response incrementally by providing the question ID.",
+        description=(
+            "Submit an answer for one question in an active practice session. "
+            "The session must have been created via POST /sessions/ which seeds placeholder responses. "
+            "Returns the full feedback including correct_answer_index for post-submit reveal. "
+            "Re-submitting an already-answered question returns 400."
+        ),
     )
     @action(detail=True, methods=['patch'], url_path=r'responses/(?P<question_id>[^/.]+)')
     def submit_placeholder_response(self, request, pk=None, question_id=None):
@@ -168,29 +178,24 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         if session.learner != request.user:
             raise PermissionDenied("You do not have permission to modify this session.")
 
-        # Find the existing empty placeholder for this specific question
         response = get_object_or_404(QuestionResponse, session=session, question_id=question_id)
-        
-        # Guard rail: prevent resubmissions if your business logic dictates responses are final
+
         if response.selected_answer_index is not None:
             return Response({"detail": "This question has already been answered."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = QuestionResponseCreateSerializer(data=request.data)
+        serializer = AnswerSubmitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         selected = serializer.validated_data['selected_answer_index']
         question = response.question
         is_correct = (selected == question.correct_answer_index)
 
-        # Update the placeholder record
         response.selected_answer_index = selected
         response.is_correct = is_correct
         if 'confidence_rating' in serializer.validated_data:
             response.confidence_rating = serializer.validated_data['confidence_rating']
         response.save()
 
-        # Process standard internal logic (FSRS scheduling and XP).
-        # Incremental, per-answer path: one answer -> one subtopic review.
         process_review(
             session.learner,
             question.subtopic,

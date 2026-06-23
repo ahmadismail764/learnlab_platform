@@ -1,4 +1,3 @@
-import random
 from django.core.management.base import BaseCommand
 from topics.models import Topic, Subtopic
 from practice.models import Question

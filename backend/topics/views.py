@@ -1,16 +1,20 @@
-from django.contrib.auth import get_user_model
+# DRF imports
 from rest_framework import generics, viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiTypes
+# Our imports
+from accounts.models import User
 from topics.models import Topic, Subtopic, SubtopicMastery
+from topics.services import extract_questions_from_pdf_stream
 from topics.serializers import (
     LeaderboardSerializer,
     TopicSerializer,
     SubtopicSerializer,
     SubtopicMasterySerializer,
 )
-
-User = get_user_model()
 
 """
     The following three are viewsets that handle all CRUD operations for topics, subtopics, and subtopic mastery records.
@@ -61,6 +65,10 @@ class SubtopicViewSet(viewsets.ModelViewSet):
     queryset = Subtopic.objects.select_related('topic').all()
     serializer_class = SubtopicSerializer
 
+@extend_schema_view(
+    list=extend_schema(operation_id='subtopic_mastery_list'),
+    retrieve=extend_schema(operation_id='subtopic_mastery_retrieve'),
+)
 class SubtopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Read-only. Mastery records are written exclusively by the FSRS engine
@@ -102,3 +110,47 @@ class LeaderboardView(generics.ListAPIView):
             ).values_list('learner_id', flat=True).distinct()
             qs = qs.filter(id__in=learner_ids)
         return qs
+
+
+
+class ExtractQuestionsAPIView(APIView):
+    permission_classes = [IsAdminUser]
+    parser_classes = [MultiPartParser]
+
+    @extend_schema(
+        operation_id='extract_questions_from_pdf',
+        description='Upload a PDF textbook to automatically extract and categorize questions using Gemini AI. Restricted to staff users.',
+        request={
+            'multipart/form-data': {
+                'type': 'object',
+                'properties': {
+                    'pdf_file': {'type': 'string', 'format': 'binary'},
+                    'num_questions': {'type': 'integer', 'description': 'Optional maximum number of questions to extract'}
+                },
+                'required': ['pdf_file']
+            }
+        },
+        responses={200: {"type": "object", "properties": {"message": {"type": "string"}, "extracted_count": {"type": "integer"}}}}
+    )
+    def post(self, request, *args, **kwargs):
+        pdf_file = request.FILES.get('pdf_file')
+        num_questions = request.data.get('num_questions')
+        
+        if not pdf_file:
+            return Response({"error": "No pdf_file provided"}, status=400)
+            
+        if num_questions is not None:
+            try:
+                num_questions = int(num_questions)
+            except ValueError:
+                return Response({"error": "num_questions must be an integer"}, status=400)
+            
+        try:
+            pdf_bytes = pdf_file.read()
+            results = extract_questions_from_pdf_stream(pdf_bytes, num_questions=num_questions)
+            return Response({
+                "message": "Extraction successful",
+                "extracted_count": len(results)
+            }, status=200)
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)

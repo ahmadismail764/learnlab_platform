@@ -33,7 +33,7 @@ class QuestionAdmin(ModelAdmin):
 
     @admin.display(description="Topic")
     def topic_name(self, obj):
-        return obj.subtopic.topic.name
+        return obj.subtopic.topic.name if obj.subtopic else "-"
 
 
 @admin.register(PracticeSession)

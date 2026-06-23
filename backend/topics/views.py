@@ -1,3 +1,5 @@
+# Core django imports
+from django.db.models import Count
 # DRF imports
 from rest_framework import generics, viewsets
 from rest_framework.response import Response
@@ -39,8 +41,10 @@ class TopicViewSet(viewsets.ModelViewSet):
         else:
             permission_classes = [IsAdminUser] 
         return [permission() for permission in permission_classes]
-
-    queryset = Topic.objects.prefetch_related('subtopics')
+    
+    queryset = Topic.objects.prefetch_related('subtopics').annotate(
+        question_count=Count('subtopics__questions')
+    )
     serializer_class = TopicSerializer
 
 @extend_schema_view(

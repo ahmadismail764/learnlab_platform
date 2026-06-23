@@ -1,0 +1,462 @@
+{
+  "info": {
+    "name": "LearnLab API",
+    "description": "End-to-end test flow for LearnLab. Run requests in order. Tokens and IDs are auto-captured via test scripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "learner_token", "value": "", "type": "string" },
+    { "key": "admin_token", "value": "", "type": "string" },
+    { "key": "topic_id", "value": "", "type": "string" },
+    { "key": "session_id", "value": "", "type": "string" },
+    { "key": "question_id", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "Learner Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has access token', () => pm.expect(data.access).to.be.a('string'));",
+                  "pm.collectionVariables.set('learner_token', data.access);",
+                  "console.log('Learner token captured');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"learner\", \"password\": \"learner123\"}"
+            },
+            "url": "{{base_url}}/api/v1/accounts/login/"
+          }
+        },
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has access token', () => pm.expect(data.access).to.be.a('string'));",
+                  "pm.collectionVariables.set('admin_token', data.access);",
+                  "console.log('Admin token captured');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"admin\", \"password\": \"admin123\"}"
+            },
+            "url": "{{base_url}}/api/v1/accounts/login/"
+          }
+        },
+        {
+          "name": "Bad Credentials (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"username\": \"learner\", \"password\": \"wrongpassword\"}"
+            },
+            "url": "{{base_url}}/api/v1/accounts/login/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Topics",
+      "item": [
+        {
+          "name": "List Topics",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Topics not empty', () => pm.expect(data.length).to.be.above(0));",
+                  "pm.test('Topic has question_count', () => pm.expect(data[0]).to.have.property('question_count'));",
+                  "pm.collectionVariables.set('topic_id', data[0].id);",
+                  "console.log('Using topic:', data[0].name, '| ID:', data[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{learner_token}}" }],
+            "url": "{{base_url}}/api/v1/topics/"
+          }
+        },
+        {
+          "name": "Unauthenticated Topics (expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/topics/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Practice Session",
+      "item": [
+        {
+          "name": "Create Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has session id', () => pm.expect(data.id).to.be.a('string'));",
+                  "pm.test('Has responses', () => pm.expect(data.responses).to.be.an('array'));",
+                  "pm.test('Responses are placeholders', () => {",
+                  "  data.responses.forEach(r => pm.expect(r.selected_answer_index).to.be.null);",
+                  "});",
+                  "pm.collectionVariables.set('session_id', data.id);",
+                  "if (data.responses.length > 0) {",
+                  "  pm.collectionVariables.set('question_id', data.responses[0].question);",
+                  "  console.log('Question ID captured:', data.responses[0].question);",
+                  "}",
+                  "console.log('Session ID:', data.id, '| Placeholders:', data.responses.length);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{learner_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/practice/sessions/?topic={{topic_id}}&limit=3",
+              "query": [
+                { "key": "topic", "value": "{{topic_id}}" },
+                { "key": "limit", "value": "3" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Answer Question",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has correct_answer_index', () => pm.expect(data).to.have.property('correct_answer_index'));",
+                  "pm.test('Has is_correct', () => pm.expect(data).to.have.property('is_correct'));",
+                  "console.log('Correct answer index:', data.correct_answer_index, '| Is correct:', data.is_correct);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{learner_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"selected_answer_index\": 0, \"confidence_rating\": 3}"
+            },
+            "url": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/responses/{{question_id}}/"
+          }
+        },
+        {
+          "name": "Re-submit Answer (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Has detail message', () => pm.expect(pm.response.json()).to.have.property('detail'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{learner_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"selected_answer_index\": 0, \"confidence_rating\": 3}"
+            },
+            "url": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/responses/{{question_id}}/"
+          }
+        },
+        {
+          "name": "Complete Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('end_time is set', () => pm.expect(data.end_time).to.not.be.null);",
+                  "console.log('Session completed. XP earned:', data.total_xp_earned);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{learner_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"end_time\": \"{{$isoTimestamp}}\"}"
+            },
+            "url": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/"
+          }
+        },
+        {
+          "name": "Bad end_time (expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{learner_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"end_time\": \"2000-01-01T00:00:00Z\"}"
+            },
+            "url": "{{base_url}}/api/v1/practice/sessions/{{session_id}}/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Mastery",
+      "item": [
+        {
+          "name": "Get Mastery Records",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "const list = Array.isArray(data) ? data : data.results;",
+                  "pm.test('Mastery records exist', () => pm.expect(list.length).to.be.above(0));",
+                  "if (list.length > 0) {",
+                  "  pm.test('Has stability', () => pm.expect(list[0]).to.have.property('stability'));",
+                  "  pm.test('Has memory', () => pm.expect(list[0]).to.have.property('memory'));",
+                  "  pm.test('Has status', () => pm.expect(list[0]).to.have.property('status'));",
+                  "  pm.test('Has next_review', () => pm.expect(list[0]).to.have.property('next_review'));",
+                  "  console.log('Sample mastery — status:', list[0].status, '| stability:', list[0].stability);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{learner_token}}" }],
+            "url": "{{base_url}}/api/v1/topics/mastery/"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Analytics",
+      "item": [
+        {
+          "name": "Aggregated Metrics (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has review_count', () => pm.expect(data).to.have.property('review_count'));",
+                  "pm.test('Has active_users', () => pm.expect(data).to.have.property('active_users'));",
+                  "pm.test('Has estimated_retention', () => pm.expect(data).to.have.property('estimated_retention'));",
+                  "console.log('Review count:', data.review_count, '| Retention:', data.estimated_retention);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{base_url}}/api/v1/analytics/metrics/"
+          }
+        },
+        {
+          "name": "Learner Cannot Access Analytics (expect 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{learner_token}}" }],
+            "url": "{{base_url}}/api/v1/analytics/metrics/"
+          }
+        },
+        {
+          "name": "Topic Analytics (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has metrics', () => pm.expect(data).to.have.property('metrics'));",
+                  "pm.test('Has distribution', () => pm.expect(data).to.have.property('distribution'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{base_url}}/api/v1/analytics/topics/{{topic_id}}/"
+          }
+        },
+        {
+          "name": "Bulk Topic Analytics (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has results', () => pm.expect(data).to.have.property('results'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": "{{base_url}}/api/v1/analytics/topics/"
+          }
+        },
+        {
+          "name": "Activity Time Series (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Has results', () => pm.expect(data).to.have.property('results'));",
+                  "pm.test('Has bucket', () => pm.expect(data).to.have.property('bucket'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{admin_token}}" }],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/activity/?period=7d",
+              "query": [{ "key": "period", "value": "7d" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Leaderboard",
+      "item": [
+        {
+          "name": "Get Leaderboard",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "const list = Array.isArray(data) ? data : data.results;",
+                  "pm.test('Leaderboard not empty', () => pm.expect(list.length).to.be.above(0));",
+                  "pm.test('Has username', () => pm.expect(list[0]).to.have.property('username'));",
+                  "pm.test('Has current_xp', () => pm.expect(list[0]).to.have.property('current_xp'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{learner_token}}" }],
+            "url": "{{base_url}}/api/v1/accounts/leaderboard/"
+          }
+        }
+      ]
+    }
+  ]
+}

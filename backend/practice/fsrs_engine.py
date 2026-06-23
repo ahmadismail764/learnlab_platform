@@ -379,3 +379,11 @@ def get_due_topics(learner, limit: int = 5) -> list[Subtopic]:
     # Preserve the ordering produced by the mastery query.
     subtopics_by_id = Subtopic.objects.in_bulk(list(due_subtopic_ids))
     return [subtopics_by_id[sid] for sid in due_subtopic_ids if sid in subtopics_by_id]
+
+def calculate_retention(stability: float, last_review, now=None) -> float:
+    """Calculate estimated retention using the FSRS forgetting curve."""
+    if not stability or stability <= 0 or last_review is None:
+        return 0.0
+    now = now or timezone.now()
+    elapsed_days = (now - last_review).total_seconds() / 86400
+    return round(math.exp(math.log(0.9) * elapsed_days / stability), 4)

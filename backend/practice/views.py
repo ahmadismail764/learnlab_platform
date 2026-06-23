@@ -165,6 +165,8 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
         selected = serializer.validated_data['selected_answer_index']
         question = response.question
+        if question is None:
+            return Response({"detail": "Question no longer exists."}, status=status.HTTP_410_GONE)
         is_correct = (selected == question.correct_answer_index)
 
         response.selected_answer_index = selected

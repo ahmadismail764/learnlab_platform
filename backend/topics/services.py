@@ -38,19 +38,14 @@ def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
     except Exception as e:
         raise ValueError(f"Failed to open PDF stream: {e}")
 
-    # Extract book title from PDF metadata, fall back to a generic label
     metadata = doc.metadata or {}
     book_title = metadata.get('title') or metadata.get('subject') or 'this textbook'
     book_title = book_title.strip() or 'this textbook'
 
-    # Patterns for detecting chapter headings and exercise section headers
     chapter_pattern = re.compile(r'(?m)^CHAPTER\s+\w+\s*\n(.+)', re.IGNORECASE)
-    # Exercise set header: "A. Title of Set" or "B. Another Title"
     exercise_set_pattern = re.compile(r'(?m)^([A-Z])\.\s+(.{5,60})\n')
-    # The page-level "EXERCISES" header that signals exercise pages (case-insensitive for Rosen)
     exercise_page_pattern = re.compile(r'(?m)^(?:\d+\.\d+\s+)?EXERCISES\s*$', re.IGNORECASE)
 
-    # Collect exercise blocks: each block = (chapter_title, set_title, raw_text)
     exercise_blocks = []
     current_chapter = "Unknown Chapter"
 
@@ -58,17 +53,14 @@ def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
         page = doc.load_page(page_num)
         text = page.get_text()
 
-        # Update chapter title whenever we see a chapter heading
         m = chapter_pattern.search(text)
         if m:
             current_chapter = m.group(1).strip()
 
-        # Only process pages that have an "EXERCISES" header
         ex_match = exercise_page_pattern.search(text)
         if not ex_match:
             continue
 
-        # Split the page into exercise sets by the letter headings (A., B., C. ...)
         set_matches = list(exercise_set_pattern.finditer(text))
         if set_matches:
             for i, sm in enumerate(set_matches):
@@ -79,33 +71,28 @@ def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
                 block_text = text[start:end].strip()
 
                 if len(block_text) > 30:
-                    # Break long blocks into 3000-character chunks to avoid hitting AI output limits
-                    # while ensuring we don't truncate and lose questions at the bottom of the page.
                     chunk_size = 3000
-                    for i in range(0, len(block_text), chunk_size):
-                        chunk = block_text[i:i+chunk_size]
+                    for chunk_idx in range(0, len(block_text), chunk_size):
+                        chunk = block_text[chunk_idx:chunk_idx + chunk_size]
                         if len(chunk) > 30:
-                            exercise_blocks.append((current_chapter, f"{set_letter}. {set_title} (Pt {i//chunk_size + 1})", chunk))
+                            exercise_blocks.append((current_chapter, f"{set_letter}. {set_title} (Pt {chunk_idx//chunk_size + 1})", chunk))
         else:
-            # Fallback for books like Rosen Discrete Math which just list numbered questions
-            # Grab all text after the "Exercises" heading
             block_text = text[ex_match.end():].strip()
             if len(block_text) > 100:
                 chunk_size = 3000
-                for i in range(0, len(block_text), chunk_size):
-                    chunk = block_text[i:i+chunk_size]
+                for chunk_idx in range(0, len(block_text), chunk_size):
+                    chunk = block_text[chunk_idx:chunk_idx + chunk_size]
                     if len(chunk) > 30:
-                        exercise_blocks.append((current_chapter, f"Chapter Exercises (Pt {i//chunk_size + 1})", chunk))
+                        exercise_blocks.append((current_chapter, f"Chapter Exercises (Pt {chunk_idx//chunk_size + 1})", chunk))
 
     if not exercise_blocks:
         return []
 
-    # Shuffle the blocks so that multiple runs extract from different parts of the book
-    # instead of wasting tokens re-processing the first few chapters over and over.
     random.shuffle(exercise_blocks)
 
-    # Load existing question texts to skip duplicates without calling AI
     existing_texts = _get_all_existing_prefixes()
+    existing_hierarchy = _get_existing_hierarchy()
+    hierarchy_str = json.dumps(existing_hierarchy, indent=2)
 
     results = []
     questions_created = 0
@@ -114,10 +101,6 @@ def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
         if num_questions is not None and questions_created >= num_questions:
             break
 
-        existing_hierarchy = _get_existing_hierarchy()
-        hierarchy_str = json.dumps(existing_hierarchy, indent=2)
-
-        # Concise prompt: pass the whole exercise set, let AI extract all questions in one call
         remaining = (num_questions - questions_created) if num_questions is not None else 10
         prompt = (
             f'You are a subject-matter expert. This is exercise set "{set_title}" from the chapter "{chapter}" '
@@ -180,12 +163,11 @@ def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
                     break
 
         except Exception as e:
-            print(f"Error processing block '{set_title}': {e}")
-            # If we hit an API error (like rate limits), wait a bit longer before trying again
+            import logging
+            logging.getLogger(__name__).error(f"Error processing block '{set_title}': {e}", exc_info=True)
             time.sleep(10)
             continue
-            
-        # Standard delay between successful chunks
-        time.sleep(3)
+
+        time.sleep(1.5)
 
     return results

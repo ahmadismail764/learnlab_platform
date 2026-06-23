@@ -1,0 +1,3 @@
+CREATE USER IF NOT EXISTS learnlab_app WITH PASSWORD 'XzWehCF66WTk3int9tTi/vuIeVE+oq9B';
+CREATE DATABASE IF NOT EXISTS learnlab OWNER learnlab_app;
+GRANT ALL PRIVILEGES ON DATABASE learnlab TO learnlab_app;

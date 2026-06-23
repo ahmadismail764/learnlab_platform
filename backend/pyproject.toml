@@ -32,4 +32,6 @@ dependencies = [
     "sqlparse==0.5.5",
     "typing-extensions==4.15.0",
     "uritemplate==4.2.0",
+    "gunicorn>=22.0.0",
+    "whitenoise>=6.0.0",
 ]

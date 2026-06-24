@@ -95,6 +95,21 @@
 "updateError": "تعذر تحديث السؤال",
 "updateSuccess": "حُدّث السؤال بنجاح!"
 },
+"ingestion": {
+"error": "تعذر استخراج الأسئلة من الكتاب.",
+"fileHint": "ملف PDF فقط",
+"fileLabel": "ملف الكتاب",
+"fileRequired": "اختر ملف PDF أولًا.",
+"limitHint": "اتركه فارغًا ليحدده الخادم.",
+"limitInvalid": "أدخل عددًا صحيحًا موجبًا.",
+"limitLabel": "الحد الأقصى للأسئلة",
+"noFileSelected": "اختر ملف PDF",
+"open": "استيراد كتاب",
+"submit": "استخراج الأسئلة",
+"subtitle": "ارفع كتابًا بصيغة PDF ليضيف الخادم الأسئلة المستخرجة إلى بنك الأسئلة.",
+"success": "استُخرج {{count}} سؤالًا.",
+"title": "استخراج أسئلة من كتاب"
+},
 "noMatchingQuestions": "لا توجد أسئلة مطابقة",
 "noQuestions": "لا توجد أسئلة بعد",
 "noQuestionsInDatabase": "لا توجد أسئلة في قاعدة البيانات",

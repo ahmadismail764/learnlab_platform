@@ -95,6 +95,21 @@
       "updateError": "Failed to update question",
       "updateSuccess": "Question updated successfully!"
     },
+    "ingestion": {
+      "error": "Failed to extract questions from the book.",
+      "fileHint": "PDF only",
+      "fileLabel": "Book PDF",
+      "fileRequired": "Choose a PDF file first.",
+      "limitHint": "Leave empty to let the backend decide.",
+      "limitInvalid": "Enter a positive whole number.",
+      "limitLabel": "Maximum questions",
+      "noFileSelected": "Choose a PDF",
+      "open": "Import Book",
+      "submit": "Extract Questions",
+      "subtitle": "Upload a textbook PDF and let the backend add extracted questions to the bank.",
+      "success": "{{count}} questions extracted.",
+      "title": "Import questions from a book"
+    },
     "noMatchingQuestions": "No Matching Questions",
     "noQuestions": "No Questions Yet",
     "noQuestionsInDatabase": "No questions in the database",

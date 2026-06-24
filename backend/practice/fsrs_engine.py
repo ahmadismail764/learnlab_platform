@@ -34,6 +34,7 @@ from practice.models import QuestionResponse, Subtopic
 from practice.constants import LEARNING_SPEED, MAX_INTERVAL_DAYS
 from topics.models import SubtopicMastery
 import fsrs
+import math
 
 
 # Sub-day "learning steps" are disabled on purpose. SubtopicMastery doesn't
@@ -319,27 +320,24 @@ def process_review(
 
 
 @transaction.atomic
-def process_session(learner, *, responses=None, session=None, now=None) -> dict:
-    """CONTRACT: update FSRS once per subtopic for a whole practice sitting.
+def process_session(learner, session, *, now=None) -> dict:
+    """CONTRACT: update FSRS once per subtopic for a whole finished session.
 
-    Why not just call process_review per answer? A session can include several
-    questions from the *same* subtopic, and FSRS expects one review of an item
-    per sitting. Reviewing a subtopic 5 times within seconds would inflate its
-    stability as if it were studied on 5 separate days. So we group this
-    session's answers by subtopic and apply a single aggregated review to each:
-    any wrong answer in a subtopic -> Again, all correct -> Good.
+    Call this once, after a session is complete. Pass the PracticeSession; its
+    responses are loaded and grouped by subtopic, and each subtopic gets a
+    single aggregated review (any wrong answer in a subtopic -> Again, all
+    correct -> Good).
 
-    Pass either ``responses=`` (an iterable of QuestionResponse) or ``session=``
-    (a PracticeSession, whose responses are loaded for you).
+    Why aggregate? A session can include several questions from the *same*
+    subtopic, and FSRS expects one review of an item per sitting — reviewing a
+    subtopic 5 times within seconds would inflate its stability as if it were
+    studied on 5 separate days.
 
     Returns ``{subtopic_id: schedule_dict}`` for every subtopic touched.
     """
-    if responses is None:
-        if session is None:
-            raise ValueError("process_session needs either responses= or session=")
-        responses = list(
-            session.responses.select_related('question__subtopic').all()
-        )
+    responses = list(
+        session.responses.select_related('question__subtopic').all()
+    )
 
     by_subtopic = defaultdict(list)
     for response in responses:

@@ -16,6 +16,7 @@ import {
   SignalLow,
   SignalMedium,
   SignalHigh,
+  Upload,
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState, Skeleton } from '@/components/ui'
 import type { BackendQuestion } from '@/services/questions'
@@ -23,6 +24,7 @@ import { useSuspenseQuestions } from '@/hooks'
 import { QuestionPreviewModal } from '@/components/admin/QuestionPreviewModal'
 import { QuestionFormModal } from '@/components/admin/QuestionFormModal'
 import { DeleteQuestionDialog } from '@/components/admin/DeleteQuestionDialog'
+import { BookIngestionModal } from '@/components/admin/BookIngestionModal'
 import { getTopicDisplayName } from '@/utils/topicLabels'
 
 type FilterTier = 'all' | 1 | 2 | 3
@@ -135,6 +137,7 @@ function QuestionsContent() {
   // Selected question / form states
   const [selectedQuestion, setSelectedQuestion] = useState<BackendQuestion | null>(null)
   const [isQuestionFormOpen, setIsQuestionFormOpen] = useState(false)
+  const [isBookIngestionOpen, setIsBookIngestionOpen] = useState(false)
   const [editingQuestion, setEditingQuestion] = useState<BackendQuestion | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<BackendQuestion | null>(null)
   
@@ -150,6 +153,12 @@ function QuestionsContent() {
   const openCreateForm = () => {
     setEditingQuestion(null)
     setIsQuestionFormOpen(true)
+    setActionError('')
+    setActionMessage('')
+  }
+
+  const openBookIngestion = () => {
+    setIsBookIngestionOpen(true)
     setActionError('')
     setActionMessage('')
   }
@@ -245,6 +254,10 @@ function QuestionsContent() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => fetchQuestions()} leftIcon={<RefreshCw className="w-4 h-4" />}>
             {t('common:refresh')}
+          </Button>
+          <Button variant="outline" className="gap-2" onClick={openBookIngestion}>
+            <Upload className="h-4 w-4" />
+            {t('admin:questions.ingestion.open')}
           </Button>
           <Button className="gap-2" onClick={openCreateForm}>
             <Plus className="h-4 w-4" />
@@ -552,6 +565,12 @@ function QuestionsContent() {
         }}
         onSuccess={handleActionSuccess}
         editingQuestion={editingQuestion}
+      />
+
+      <BookIngestionModal
+        isOpen={isBookIngestionOpen}
+        onClose={() => setIsBookIngestionOpen(false)}
+        onSuccess={handleActionSuccess}
       />
 
       {/* Standalone Question Delete Dialog */}

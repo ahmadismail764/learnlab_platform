@@ -99,8 +99,10 @@ async function fetchWithAuth(
   baseUrl: string = API_BASE,
 ) {
   const token = getToken("learnlab_auth_token");
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -145,8 +147,10 @@ async function fetchPublic(
   options: RequestInit = {},
   baseUrl: string = API_BASE,
 ) {
+  const isFormData =
+    typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: HeadersInit = {
-    "Content-Type": "application/json",
+    ...(isFormData ? {} : { "Content-Type": "application/json" }),
     ...options.headers,
   };
 
@@ -234,6 +238,8 @@ export const api = {
   get: (url: string) => fetchWithAuth(url),
   post: (url: string, data: unknown) =>
     fetchWithAuth(url, { method: "POST", body: JSON.stringify(data) }),
+  postForm: (url: string, data: FormData) =>
+    fetchWithAuth(url, { method: "POST", body: data }),
   put: (url: string, data: unknown) =>
     fetchWithAuth(url, { method: "PUT", body: JSON.stringify(data) }),
   patch: (url: string, data: unknown) =>

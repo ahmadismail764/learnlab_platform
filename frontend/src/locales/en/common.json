@@ -30,6 +30,8 @@
     }
   },
   "errorBoundary": {
+    "chunkDescription": "The app was updated while this page was open. Refresh to load the latest version.",
+    "chunkTitle": "Refresh needed",
     "description": "We're sorry, but something unexpected happened. Please try again or go back to the home page.",
     "details": "Error Details",
     "title": "Something went wrong"

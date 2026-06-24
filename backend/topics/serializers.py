@@ -40,14 +40,16 @@ class SubtopicSerializer(serializers.ModelSerializer):
 class SubtopicMasterySerializer(serializers.ModelSerializer):
     topic = serializers.UUIDField(source='subtopic.topic.id', read_only=True)
     topic_name = serializers.CharField(source='subtopic.topic.name', read_only=True)
+    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
     memory = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
 
     class Meta:
         model = SubtopicMastery
         fields = [
-            'id', 'topic', 'topic_name', 'reps', 'memory',
-            'stability', 'difficulty', 'status', 'last_review', 'next_review'
+            'id', 'topic', 'topic_name', 'subtopic', 'subtopic_name',
+            'reps', 'memory', 'stability', 'difficulty', 'status',
+            'last_review', 'next_review'
         ]
         read_only_fields = fields
 

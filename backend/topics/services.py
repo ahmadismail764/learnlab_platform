@@ -10,6 +10,10 @@ from topics.models import Topic, Subtopic
 from practice.models import Question
 
 
+class GeminiNotConfiguredError(Exception):
+    """Raised when GEMINI_API_KEY is absent from the environment."""
+
+
 def _get_all_existing_prefixes():
     """Load short prefixes of all existing questions to avoid token waste on duplicates."""
     return set(Question.objects.values_list('text', flat=True))
@@ -29,7 +33,10 @@ def _get_existing_hierarchy():
 def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY not found in environment variables.")
+        raise GeminiNotConfiguredError(
+            "GEMINI_API_KEY is not set. Add it to the backend .env file or pass it as an "
+            "environment variable before starting the server."
+        )
 
     client = genai.Client(api_key=api_key)
 

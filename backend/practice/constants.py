@@ -49,3 +49,12 @@ LEARNING_SPEED = 0.15
 # for a real production rollout.
 # NOTE: master previously set this to 365; lowered to 30 for the testing build.
 MAX_INTERVAL_DAYS = 30
+
+# --- Review forecast --------------------------------------------------------
+# The "upcoming reviews" agenda groups a learner's scheduled reviews by day.
+# DEFAULT_FORECAST_DAYS is the window used when the caller doesn't specify one;
+# a caller may request a different window via ?days=, clamped to
+# [1, MAX_FORECAST_DAYS]. Reviews are never scheduled past MAX_INTERVAL_DAYS, so
+# a 30-day window already captures everything that's on the books.
+DEFAULT_FORECAST_DAYS = 7
+MAX_FORECAST_DAYS = 30

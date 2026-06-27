@@ -31,7 +31,12 @@ from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from practice.models import QuestionResponse, Subtopic
-from practice.constants import LEARNING_SPEED, MAX_INTERVAL_DAYS
+from practice.constants import (
+    LEARNING_SPEED,
+    MAX_INTERVAL_DAYS,
+    DEFAULT_FORECAST_DAYS,
+    MAX_FORECAST_DAYS,
+)
 from topics.models import SubtopicMastery
 import fsrs
 import math
@@ -377,6 +382,89 @@ def get_due_topics(learner, limit: int = 5) -> list[Subtopic]:
     # Preserve the ordering produced by the mastery query.
     subtopics_by_id = Subtopic.objects.in_bulk(list(due_subtopic_ids))
     return [subtopics_by_id[sid] for sid in due_subtopic_ids if sid in subtopics_by_id]
+
+
+def get_review_forecast(learner, *, days: int = DEFAULT_FORECAST_DAYS, now=None) -> dict:
+    """CONTRACT: a learner's upcoming reviews, grouped by day, for an agenda view.
+
+    Reviews are scheduled per *subtopic* (one ``SubtopicMastery`` row each), not
+    per session — a "session" is just however many due subtopics the learner
+    pulls when they start one. So the useful thing to show is *which subtopics
+    come due on each day*. This powers both the post-session "come back on X"
+    headline and a dashboard agenda ("Thu: Sets, Relations; Fri: Logic ...").
+
+    Args:
+        days: forecast window in days, clamped to ``[1, MAX_FORECAST_DAYS]``.
+        now:  override "now" (defaults to ``timezone.now()``); handy for tests.
+
+    Returns a dict:
+        window_days:    the window actually used (after clamping).
+        next_review_at: ``date`` of the soonest FUTURE review (NOT limited to the
+                        window), or ``None`` if nothing is scheduled ahead.
+        due_now_count:  how many subtopics are already due (``next_review <= now``),
+                        i.e. ready to practise right now.
+        forecast:       ``[{'date', 'due_count', 'subtopics': [...]}, ...]`` for
+                        each future day *within the window* that has reviews,
+                        ascending by date. Each subtopic entry carries
+                        ``{id, name, topic_id, topic_name, state, next_review}``.
+
+    Only the learner's own masteries are considered. Masteries without a
+    ``next_review`` (brand-new, never reviewed) are ignored. Days are bucketed in
+    the active timezone (UTC).
+    """
+    now = now or timezone.now()
+    days = max(1, min(int(days), MAX_FORECAST_DAYS))
+    window_end = now + timedelta(days=days)
+
+    scheduled = SubtopicMastery.objects.filter(
+        learner=learner,
+        next_review__isnull=False,
+    )
+
+    due_now_count = scheduled.filter(next_review__lte=now).count()
+
+    # Soonest upcoming review overall (not capped by the window) for the headline.
+    soonest = (
+        scheduled.filter(next_review__gt=now)
+        .order_by('next_review')
+        .values_list('next_review', flat=True)
+        .first()
+    )
+    next_review_at = timezone.localtime(soonest).date() if soonest else None
+
+    # Per-day agenda within the window, carrying subtopic + topic names.
+    upcoming = (
+        scheduled.filter(next_review__gt=now, next_review__lte=window_end)
+        .select_related('subtopic__topic')
+        .order_by('next_review')
+    )
+
+    by_day: dict = {}
+    for mastery in upcoming:
+        subtopic = mastery.subtopic
+        topic = subtopic.topic
+        day = timezone.localtime(mastery.next_review).date()
+        by_day.setdefault(day, []).append({
+            'id': subtopic.id,
+            'name': subtopic.name,
+            'topic_id': subtopic.topic_id,
+            'topic_name': topic.name if topic else None,
+            'state': mastery.state,
+            'next_review': mastery.next_review,
+        })
+
+    forecast = [
+        {'date': day, 'due_count': len(subtopics), 'subtopics': subtopics}
+        for day, subtopics in by_day.items()
+    ]
+
+    return {
+        'window_days': days,
+        'next_review_at': next_review_at,
+        'due_now_count': due_now_count,
+        'forecast': forecast,
+    }
+
 
 def calculate_retention(stability: float, last_review, now=None) -> float:
     """Calculate estimated retention using the FSRS forgetting curve."""

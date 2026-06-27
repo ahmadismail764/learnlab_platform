@@ -54,7 +54,17 @@ class QuestionViewSet(viewsets.ModelViewSet):
         operation_id='practice_sessions_retrieve',
         parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
     ),
-    create=extend_schema(operation_id='practice_sessions_create'),
+    create=extend_schema(
+        operation_id='practice_sessions_create',
+        parameters=[
+            OpenApiParameter('topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False,
+                             description='Filter questions by parent topic UUID.'),
+            OpenApiParameter('subtopic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False,
+                             description='Filter questions by subtopic UUID (takes precedence over topic when both are provided).'),
+            OpenApiParameter('limit', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False,
+                             description='Maximum number of questions to include (default 10).'),
+        ],
+    ),
     update=extend_schema(
         operation_id='practice_sessions_update',
         parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
@@ -94,6 +104,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         """
         limit = int(request.query_params.get('limit', 10))
         topic_id = request.query_params.get('topic')
+        subtopic_id = request.query_params.get('subtopic')
         learner = request.user
         now = django_timezone.now()
 
@@ -102,13 +113,17 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             subtopic__masteries__learner=learner,
             subtopic__masteries__next_review__lte=now
         ).order_by('?')
-        if topic_id:
+        if subtopic_id:
+            due_shuffled_qs = due_shuffled_qs.filter(subtopic_id=subtopic_id)
+        elif topic_id:
             due_shuffled_qs = due_shuffled_qs.filter(subtopic__topic_id=topic_id)
         session_questions = list(due_shuffled_qs[:limit])
 
         if not session_questions:
             fallback_qs = Question.objects.order_by('?')
-            if topic_id:
+            if subtopic_id:
+                fallback_qs = fallback_qs.filter(subtopic_id=subtopic_id)
+            elif topic_id:
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
             session_questions = list(fallback_qs[:limit])
 

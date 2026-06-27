@@ -36,6 +36,9 @@ const PracticePage = lazy(() =>
 const ProgressPage = lazy(() =>
   import("@/pages/learner/ProgressPage.tsx").then((m) => ({ default: m.ProgressPage }))
 );
+const ReviewSchedulePage = lazy(() =>
+  import("@/pages/learner/ReviewSchedulePage.tsx").then((m) => ({ default: m.ReviewSchedulePage }))
+);
 const LeaderboardPage = lazy(() =>
   import("@/pages/learner/LeaderboardPage.tsx").then((m) => ({ default: m.LeaderboardPage }))
 );
@@ -117,6 +120,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
         { path: "topics", element: <LazyRoute><TopicsPage /></LazyRoute> },
         { path: "practice", element: <LazyRoute><PracticePage /></LazyRoute> },
         { path: "progress", element: <LazyRoute><ProgressPage /></LazyRoute> },
+        { path: "schedule", element: <LazyRoute><ReviewSchedulePage /></LazyRoute> },
         { path: "leaderboard", element: <LazyRoute><LeaderboardPage /></LazyRoute> },
         { path: "profile", element: <LazyRoute><LearnerProfilePage /></LazyRoute> },
       ],

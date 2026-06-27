@@ -99,4 +99,59 @@ describe('practiceService', () => {
       confidence_rating: 4,
     });
   });
+
+  it('returns the next-review headline when completing a session', async () => {
+    vi.mocked(api.patch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 'session-1',
+        next_review: {
+          window_days: 7,
+          next_review_at: '2026-06-28',
+          due_now_count: 1,
+          forecast: [{ date: '2026-06-28', due_count: 1, subtopics: [] }],
+        },
+      }),
+    } as unknown as Response);
+
+    const result = await practiceService.completeSession('session-1');
+
+    expect(api.patch).toHaveBeenCalledTimes(1);
+    expect(result.next_review?.forecast).toHaveLength(1);
+    expect(result.next_review?.next_review_at).toBe('2026-06-28');
+  });
+
+  it('fetches the review forecast with a default window', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ window_days: 7, next_review_at: null, due_now_count: 0, forecast: [] }),
+    } as unknown as Response);
+
+    const forecast = await practiceService.getReviewForecast();
+
+    expect(api.get).toHaveBeenCalledWith('/practice/review-forecast/');
+    expect(forecast.window_days).toBe(7);
+  });
+
+  it('passes the selected window to the review forecast endpoint', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ window_days: 30, next_review_at: null, due_now_count: 0, forecast: [] }),
+    } as unknown as Response);
+
+    await practiceService.getReviewForecast(30);
+
+    expect(api.get).toHaveBeenCalledWith('/practice/review-forecast/?days=30');
+  });
+
+  it('surfaces review forecast failures instead of returning empty data', async () => {
+    vi.mocked(api.get).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    } as unknown as Response);
+
+    await expect(practiceService.getReviewForecast()).rejects.toThrow(
+      'Failed to fetch review forecast',
+    );
+  });
 });

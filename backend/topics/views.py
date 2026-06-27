@@ -10,7 +10,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiPara
 # Our imports
 from accounts.models import User
 from topics.models import Topic, Subtopic, SubtopicMastery
-from topics.services import extract_questions_from_pdf_stream
+from topics.services import extract_questions_from_pdf_stream, GeminiNotConfiguredError
 from topics.serializers import (
     LeaderboardSerializer,
     TopicSerializer,
@@ -134,21 +134,24 @@ class ExtractQuestionsAPIView(APIView):
                 'required': ['pdf_file']
             }
         },
-        responses={200: {"type": "object", "properties": {"message": {"type": "string"}, "extracted_count": {"type": "integer"}}}}
+        responses={
+            200: {"type": "object", "properties": {"message": {"type": "string"}, "extracted_count": {"type": "integer"}}},
+            503: {"type": "object", "properties": {"error": {"type": "string"}, "hint": {"type": "string"}}},
+        }
     )
     def post(self, request, *args, **kwargs):
         pdf_file = request.FILES.get('pdf_file')
         num_questions = request.data.get('num_questions')
-        
+
         if not pdf_file:
             return Response({"error": "No pdf_file provided"}, status=400)
-            
+
         if num_questions is not None:
             try:
                 num_questions = int(num_questions)
             except ValueError:
                 return Response({"error": "num_questions must be an integer"}, status=400)
-            
+
         try:
             pdf_bytes = pdf_file.read()
             results = extract_questions_from_pdf_stream(pdf_bytes, num_questions=num_questions)
@@ -156,5 +159,10 @@ class ExtractQuestionsAPIView(APIView):
                 "message": "Extraction successful",
                 "extracted_count": len(results)
             }, status=200)
+        except GeminiNotConfiguredError as e:
+            return Response(
+                {"error": str(e), "hint": "Set GEMINI_API_KEY in backend/.env and restart the server."},
+                status=503,
+            )
         except Exception as e:
             return Response({"error": str(e)}, status=500)

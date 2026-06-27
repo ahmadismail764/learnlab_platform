@@ -3,6 +3,7 @@ from django.urls import path, include
 from practice.views import (
     QuestionViewSet,
     PracticeSessionViewSet,
+    ReviewForecastView,
     # QuestionResponseViewSet,
 )
 
@@ -16,6 +17,7 @@ PracticeSessionRouter.register(r'sessions', PracticeSessionViewSet, basename='se
 # ResponseRouter.register(r'responses', QuestionResponseViewSet, basename='response')
 
 urlpatterns = [
+    path('review-forecast/', ReviewForecastView.as_view(), name='review-forecast'),
     path('', include(QuestionsRouter.urls)),
     path('', include(PracticeSessionRouter.urls)),
 #     path('', include(ResponseRouter.urls)),

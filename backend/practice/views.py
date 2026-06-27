@@ -8,8 +8,9 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
+from rest_framework.views import APIView
 # Our imports
-from practice.fsrs_engine import process_review
+from practice.fsrs_engine import get_review_forecast
 from practice.serializers import (
     QuestionAdminSerializer,
     QuestionCreateAndUpdateSerializer,
@@ -17,10 +18,12 @@ from practice.serializers import (
     QuestionResponseFeedbackSerializer,
     AnswerSubmitSerializer,
     PracticeSessionSerializer,
+    PracticeSessionCompletionSerializer,
+    ReviewForecastSerializer,
 )
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
-from practice.constants import XP_PER_CORRECT_ANSWER
+from practice.constants import XP_PER_CORRECT_ANSWER, DEFAULT_FORECAST_DAYS, MAX_FORECAST_DAYS
 
 class QuestionViewSet(viewsets.ModelViewSet):
     # Optimized Join handling syntax
@@ -54,14 +57,36 @@ class QuestionViewSet(viewsets.ModelViewSet):
         operation_id='practice_sessions_retrieve',
         parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
     ),
-    create=extend_schema(operation_id='practice_sessions_create'),
+    create=extend_schema(
+        operation_id='practice_sessions_create',
+        parameters=[
+            OpenApiParameter('topic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False,
+                             description='Filter questions by parent topic UUID.'),
+            OpenApiParameter('subtopic', type=OpenApiTypes.UUID, location=OpenApiParameter.QUERY, required=False,
+                             description='Filter questions by subtopic UUID (takes precedence over topic when both are provided).'),
+            OpenApiParameter('limit', type=OpenApiTypes.INT, location=OpenApiParameter.QUERY, required=False,
+                             description='Maximum number of questions to include (default 10).'),
+        ],
+    ),
     update=extend_schema(
         operation_id='practice_sessions_update',
         parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
+        responses={200: PracticeSessionCompletionSerializer},
+        description=(
+            "Update a practice session. Setting end_time marks the session complete: "
+            "this triggers FSRS scheduling and the response includes a next_review "
+            "headline (soonest upcoming review + per-day forecast)."
+        ),
     ),
     partial_update=extend_schema(
         operation_id='practice_sessions_partial_update',
         parameters=[OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH)],
+        responses={200: PracticeSessionCompletionSerializer},
+        description=(
+            "Partially update a practice session. Setting end_time marks the session "
+            "complete: this triggers FSRS scheduling and the response includes a "
+            "next_review headline (soonest upcoming review + per-day forecast)."
+        ),
     ),
     destroy=extend_schema(
         operation_id='practice_sessions_destroy',
@@ -84,6 +109,24 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             return PracticeSession.objects.all().order_by('-start_time')
         return PracticeSession.objects.filter(learner=user).order_by('-start_time')
 
+    def update(self, request, *args, **kwargs):
+        """Update a session; when it becomes complete, append the next-review headline.
+
+        FSRS scheduling runs in PracticeSessionSerializer.update() the moment a
+        session's end_time is set. Once it's complete we re-serialize with
+        PracticeSessionCompletionSerializer so the learner immediately sees when
+        their next reviews are due (the "come back on X" headline). Covers PATCH
+        too — DRF routes partial_update through update().
+        """
+        response = super().update(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            instance = self.get_object()
+            if instance.end_time is not None:
+                response.data = PracticeSessionCompletionSerializer(
+                    instance, context=self.get_serializer_context()
+                ).data
+        return response
+
     ##################################################################
     
     # This is for the POST method.
@@ -94,6 +137,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         """
         limit = int(request.query_params.get('limit', 10))
         topic_id = request.query_params.get('topic')
+        subtopic_id = request.query_params.get('subtopic')
         learner = request.user
         now = django_timezone.now()
 
@@ -102,13 +146,17 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             subtopic__masteries__learner=learner,
             subtopic__masteries__next_review__lte=now
         ).order_by('?')
-        if topic_id:
+        if subtopic_id:
+            due_shuffled_qs = due_shuffled_qs.filter(subtopic_id=subtopic_id)
+        elif topic_id:
             due_shuffled_qs = due_shuffled_qs.filter(subtopic__topic_id=topic_id)
         session_questions = list(due_shuffled_qs[:limit])
 
         if not session_questions:
             fallback_qs = Question.objects.order_by('?')
-            if topic_id:
+            if subtopic_id:
+                fallback_qs = fallback_qs.filter(subtopic_id=subtopic_id)
+            elif topic_id:
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
             session_questions = list(fallback_qs[:limit])
 
@@ -194,3 +242,47 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 #         if user.is_staff:
 #             return QuestionResponse.objects.select_related('question').all()
 #         return QuestionResponse.objects.select_related('question').filter(session__learner=user)
+
+
+class ReviewForecastView(APIView):
+    """GET /api/v1/practice/review-forecast/ — the learner's upcoming reviews.
+
+    Returns the learner's scheduled FSRS reviews grouped by day (an agenda),
+    each day listing the subtopics due, plus the soonest upcoming date and how
+    many subtopics are due right now. The window is selectable via ?days=.
+    Powers the post-session "come back on X" headline and a dashboard review
+    agenda. Reads only the requesting learner's own scheduling data.
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        operation_id='practice_review_forecast',
+        parameters=[
+            OpenApiParameter(
+                'days',
+                type=OpenApiTypes.INT,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description=(
+                    f"Forecast window in days (default {DEFAULT_FORECAST_DAYS}, "
+                    f"clamped to [1, {MAX_FORECAST_DAYS}]). E.g. days=30 for a month."
+                ),
+            ),
+        ],
+        responses={200: ReviewForecastSerializer},
+        description=(
+            "Return the authenticated learner's upcoming FSRS reviews grouped by "
+            "calendar day (UTC) for the next `days` days: each day lists the "
+            "subtopics due (with their topic), plus the soonest upcoming review "
+            "date and how many subtopics are already due now. Only the learner's "
+            "own reviews are included."
+        ),
+    )
+    def get(self, request):
+        raw_days = request.query_params.get('days', DEFAULT_FORECAST_DAYS)
+        try:
+            days = int(raw_days)
+        except (TypeError, ValueError):
+            days = DEFAULT_FORECAST_DAYS
+        forecast = get_review_forecast(request.user, days=days)
+        return Response(ReviewForecastSerializer(forecast).data)

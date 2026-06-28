@@ -12,6 +12,7 @@ import {
   Moon,
   Sun,
   BrainCircuit,
+  CalendarClock,
   Compass,
   FolderTree,
   TrendingUp,
@@ -75,6 +76,12 @@ const navItems: NavItem[] = [
     labelKey: "nav:progress",
     href: "/learner/progress",
     icon: TrendingUp,
+    roles: ["learner"],
+  },
+  {
+    labelKey: "nav:reviewSchedule",
+    href: "/learner/schedule",
+    icon: CalendarClock,
     roles: ["learner"],
   },
 

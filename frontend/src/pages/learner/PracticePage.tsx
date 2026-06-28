@@ -10,17 +10,20 @@ import {
   CheckCircle2,
   Target,
   ArrowRight,
+  CalendarClock,
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useToast } from '@/contexts'
-import { practiceService } from '@/services/practice'
+import { practiceService, type ReviewForecast } from '@/services/practice'
 import { cn } from '@/utils/cn'
 import { logger } from '@/utils/logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/hooks'
 import { getTopicDisplayName } from '@/utils/topicLabels'
 import { PracticeGradePanel } from './PracticeGradePanel'
+import { ReviewAgenda } from './ReviewAgenda'
+import { useForecastDateFormatter } from './reviewForecast'
 import {
   getQuestionXp,
   normalizePracticeQuestion,
@@ -51,6 +54,8 @@ export function PracticePage() {
   const [earnedXp, setEarnedXp] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
+  const [nextReview, setNextReview] = useState<ReviewForecast | null>(null)
+  const formatForecastDate = useForecastDateFormatter()
 
   const currentQuestion = questions[currentIndex]
   const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
@@ -123,13 +128,16 @@ export function PracticePage() {
     setIsCompleting(true)
     if (sessionRecord) {
       try {
-        await practiceService.completeSession(sessionRecord.id)
+        const result = await practiceService.completeSession(sessionRecord.id)
+        // Surface the "what's next" agenda the backend returns on completion.
+        setNextReview(result?.next_review ?? null)
         // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
         queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
         queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
         queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.global })
         queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
         queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
+        queryClient.invalidateQueries({ queryKey: ['practice', 'reviewForecast'] })
         queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
         setSessionState('complete')
       } catch (e) {
@@ -367,6 +375,49 @@ export function PracticePage() {
             tone="success"
           />
         </div>
+
+        {nextReview && nextReview.forecast.length > 0 ? (
+          <Card>
+            <SectionHeading
+              title={t('practice:upcomingReviewsTitle')}
+              description={
+                nextReview.next_review_at
+                  ? t('practice:comeBackHint', {
+                      when: formatForecastDate(nextReview.next_review_at).relative.toLowerCase(),
+                    })
+                  : t('practice:upcomingReviewsDescription')
+              }
+              action={(
+                <Link to="/learner/schedule">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+                  >
+                    {t('practice:viewFullSchedule')}
+                  </Button>
+                </Link>
+              )}
+            />
+            <div className="mt-4">
+              <ReviewAgenda days={nextReview.forecast.slice(0, 5)} />
+            </div>
+          </Card>
+        ) : nextReview ? (
+          <Card>
+            <div className="flex items-start gap-3">
+              <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" />
+              <div>
+                <p className="font-semibold text-neutral-900 dark:text-neutral-100">
+                  {t('practice:noUpcomingReviewsTitle')}
+                </p>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                  {t('practice:noUpcomingReviewsDescription')}
+                </p>
+              </div>
+            </div>
+          </Card>
+        ) : null}
 
         <Card>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

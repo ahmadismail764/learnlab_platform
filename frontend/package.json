@@ -18,7 +18,11 @@
     "i18n:check": "bun run scripts/sync-translations.ts --check",
     "i18n:prune": "bun run scripts/prune-translations.ts",
     "i18n:prune:check": "bun run scripts/prune-translations.ts --check",
-    "backend": "powershell -ExecutionPolicy Bypass -File scripts/start-backend.ps1"
+    "backend": "powershell -ExecutionPolicy Bypass -File scripts/start-backend.ps1",
+    "docker": "node scripts/docker.mjs",
+    "docker:all": "node scripts/docker.mjs --all",
+    "docker:dry": "node scripts/docker.mjs --dry-run",
+    "docker:no-build": "node scripts/docker.mjs --no-build"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.9",

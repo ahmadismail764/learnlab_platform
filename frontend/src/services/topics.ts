@@ -20,6 +20,23 @@ export interface TopicMastery {
   next_due: string | null;
 }
 
+interface BackendTopicMastery {
+  id?: EntityId;
+  topic?: EntityId;
+  topic_name?: string;
+  reps?: number | string | null;
+  rep_num?: number | string | null;
+  memory?: number | string | null;
+  stability?: number | string | null;
+  speed?: number | string | null;
+  difficulty?: number | string | null;
+  status?: TopicMastery['status'] | null;
+  last_review?: string | null;
+  last_reviewed?: string | null;
+  next_review?: string | null;
+  next_due?: string | null;
+}
+
 type MasteryStatus = TopicMastery['status'];
 
 interface TopicMasteryAccumulator extends TopicMastery {
@@ -65,22 +82,22 @@ function mergeTopicMastery(current: TopicMasteryAccumulator, next: TopicMastery)
   };
 }
 
-function normalizeTopicMasteries(rows: TopicMastery[]): TopicMastery[] {
+function normalizeTopicMasteries(rows: BackendTopicMastery[]): TopicMastery[] {
   const grouped = new Map<string, TopicMasteryAccumulator>();
 
   for (const row of rows) {
     const topicKey = String(row.topic || row.id);
     const normalized: TopicMastery = {
-      ...row,
       id: topicKey,
       topic: topicKey,
-      rep_num: Number(row.rep_num ?? 0),
+      topic_name: row.topic_name ?? '',
+      rep_num: Number(row.reps ?? row.rep_num ?? 0),
       memory: Number(row.memory ?? 0),
-      speed: Number(row.speed ?? 0),
+      speed: Number(row.stability ?? row.speed ?? 0),
       difficulty: Number(row.difficulty ?? 0),
       status: row.status ?? 'new',
-      last_reviewed: row.last_reviewed ?? null,
-      next_due: row.next_due ?? null,
+      last_reviewed: row.last_review ?? row.last_reviewed ?? null,
+      next_due: row.next_review ?? row.next_due ?? null,
     };
 
     const current = grouped.get(topicKey);
@@ -159,7 +176,7 @@ export const topicsService = {
     if (!response.ok) {
       throw new Error(`Failed to fetch topic mastery (${response.status})`);
     }
-    const data = await response.json() as TopicMastery[] | { results?: TopicMastery[] };
+    const data = await response.json() as BackendTopicMastery[] | { results?: BackendTopicMastery[] };
     const results = Array.isArray(data) ? data : data.results ?? [];
     return normalizeTopicMasteries(results);
   },

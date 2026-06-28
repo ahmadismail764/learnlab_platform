@@ -37,6 +37,7 @@ export {
   useAuditLogs,
   useSystemHealth,
   usePracticeSessions,
+  useReviewForecast,
   useUpdateProfile,
   useSuspenseGlobalLeaderboard,
   useSuspenseTopicLeaderboard,

@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.docker-state.json
 playwright-report
 test-results
 *.local

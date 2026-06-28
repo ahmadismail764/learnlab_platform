@@ -2,10 +2,11 @@
 from django.utils import timezone as django_timezone
 # DRF imports
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER
-from practice.fsrs_engine import process_session
+from practice.fsrs_engine import process_session, get_review_forecast
 from accounts.models import User
 from accounts.serializers import UserDetailSerializer
 
@@ -96,4 +97,52 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
             learner.save()
 
         return instance
+
+
+# ===================================================
+# Review forecast serializers
+# ===================================================
+class ForecastSubtopicSerializer(serializers.Serializer):
+    """A single subtopic due on a given forecast day."""
+    id = serializers.UUIDField()
+    name = serializers.CharField()
+    topic_id = serializers.UUIDField(allow_null=True)
+    topic_name = serializers.CharField(allow_null=True)
+    state = serializers.CharField()
+    next_review = serializers.DateTimeField()
+
+
+class ReviewForecastDaySerializer(serializers.Serializer):
+    """One calendar day in a learner's upcoming-review agenda."""
+    date = serializers.DateField()
+    due_count = serializers.IntegerField()
+    subtopics = ForecastSubtopicSerializer(many=True)
+
+
+class ReviewForecastSerializer(serializers.Serializer):
+    """A learner's upcoming FSRS reviews, grouped by day for an agenda view.
+
+    Matches the dict returned by ``practice.fsrs_engine.get_review_forecast``.
+    """
+    window_days = serializers.IntegerField()
+    next_review_at = serializers.DateField(allow_null=True)
+    due_now_count = serializers.IntegerField()
+    forecast = ReviewForecastDaySerializer(many=True)
+
+
+class PracticeSessionCompletionSerializer(PracticeSessionSerializer):
+    """Session payload plus the learner's next-review headline.
+
+    Returned when a session is marked complete so the UI can immediately tell the
+    learner when to come back. ``next_review`` is the same shape as
+    ``GET /practice/review-forecast/``.
+    """
+    next_review = serializers.SerializerMethodField()
+
+    class Meta(PracticeSessionSerializer.Meta):
+        fields = PracticeSessionSerializer.Meta.fields + ['next_review']
+
+    @extend_schema_field(ReviewForecastSerializer)
+    def get_next_review(self, obj):
+        return ReviewForecastSerializer(get_review_forecast(obj.learner)).data
 

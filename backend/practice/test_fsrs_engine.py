@@ -170,17 +170,16 @@ class FsrsEngineTests(TestCase):
 
     def test_process_session_aggregates_one_review_per_subtopic(self):
         session = PracticeSession.objects.create(learner=self.learner)
-        responses = []
         for correct in (True, False, True):  # 3 answers, same subtopic, one wrong
             q = Question.objects.create(
                 subtopic=self.subtopic, tier=1, text='q',
                 choices=['1', '2'], correct_answer_index=0,
             )
-            responses.append(QuestionResponse.objects.create(
+            QuestionResponse.objects.create(
                 session=session, question=q, is_correct=correct,
-            ))
+            )
 
-        results = process_session(self.learner, responses=responses)
+        results = process_session(self.learner, session)
 
         m = SubtopicMastery.objects.get(learner=self.learner, subtopic=self.subtopic)
         # Exactly ONE aggregated review for the subtopic, not three.

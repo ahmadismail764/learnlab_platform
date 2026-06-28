@@ -37,6 +37,31 @@ interface ErrorBoundaryState {
   error: Error | null
 }
 
+const CHUNK_RELOAD_STORAGE_KEY = 'learnlab.chunk-reload-attempted'
+
+function isDynamicImportError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+
+  return /Failed to fetch dynamically imported module|Importing a module script failed|ChunkLoadError|Loading chunk/i.test(message)
+}
+
+function shouldReloadAfterChunkError(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    if (window.sessionStorage.getItem(CHUNK_RELOAD_STORAGE_KEY)) {
+      return false
+    }
+
+    window.sessionStorage.setItem(CHUNK_RELOAD_STORAGE_KEY, 'true')
+    return true
+  } catch {
+    return true
+  }
+}
+
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)
@@ -48,6 +73,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    if (isDynamicImportError(error) && shouldReloadAfterChunkError()) {
+      window.location.reload()
+      return
+    }
+
     // Log error using centralized logger (handles dev/prod appropriately)
     logger.error('ErrorBoundary caught an error:', error, errorInfo)
     
@@ -59,8 +89,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({ hasError: false, error: null })
   }
 
+  handleReload = (): void => {
+    window.location.reload()
+  }
+
   render(): ReactNode {
     if (this.state.hasError) {
+      const isChunkLoadFailure = isDynamicImportError(this.state.error)
+
       // Custom fallback provided
       if (this.props.fallback) {
         return this.props.fallback
@@ -75,11 +111,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             </div>
             
             <h2 className="text-xl font-semibold text-neutral-800 mb-2">
-              {i18n.t('common:errorBoundary.title')}
+              {isChunkLoadFailure
+                ? i18n.t('common:errorBoundary.chunkTitle')
+                : i18n.t('common:errorBoundary.title')}
             </h2>
             
             <p className="text-neutral-600 mb-6">
-              {i18n.t('common:errorBoundary.description')}
+              {isChunkLoadFailure
+                ? i18n.t('common:errorBoundary.chunkDescription')
+                : i18n.t('common:errorBoundary.description')}
             </p>
             
             {/* Error details in development */}
@@ -100,10 +140,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               {this.props.showReset !== false && (
                 <Button
                   variant="primary"
-                  onClick={this.handleReset}
+                  onClick={isChunkLoadFailure ? this.handleReload : this.handleReset}
                   leftIcon={<RefreshCw className="w-4 h-4" />}
                 >
-                  {i18n.t('common:tryAgain')}
+                  {isChunkLoadFailure ? i18n.t('common:refresh') : i18n.t('common:tryAgain')}
                 </Button>
               )}
               <Link

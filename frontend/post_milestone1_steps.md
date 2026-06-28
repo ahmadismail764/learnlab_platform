@@ -9,7 +9,9 @@ Run the actual learner and admin flows against the live backend, not mocks:
 - Login, registration, logout, and token refresh
 - Topic browsing
 - Adaptive practice start, answer submission, post-submit feedback, and completion
+- Backend taxonomy mapping: frontend category/topic/question should map to backend `Topic`/`Subtopic`/`Question`
 - Admin topic and question CRUD
+- Admin PDF question extraction/upload flow, once backend Gemini configuration is available
 - Analytics, settings, and profile pages
 
 ## 2. Query And State Correctness Audit
@@ -76,4 +78,3 @@ Before merging:
 - Remove stale docs and comments
 - Confirm root README and global compose changes are intentional
 - Keep frontend-only scope clean unless another owner explicitly accepts cross-scope changes
-

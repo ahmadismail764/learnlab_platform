@@ -26,6 +26,15 @@ TIER_CHOICES = [
 ]
 MAX_CHOICES_PER_QUESTION = 4
 
+# --- Written-answer grading (CAS / SymPy) -----------------------------------
+# Hard cap on the length of a submitted/stored math expression before we even
+# attempt to parse it — keeps pathological inputs out of the CAS.
+WRITTEN_ANSWER_MAX_LENGTH = 256
+# Wall-clock budget for a single equivalence check. SymPy on plain algebra is
+# fast; this only guards against pathological inputs. On timeout the answer is
+# returned to the learner (treated as unparseable), never marked wrong.
+GRADING_TIMEOUT_SECONDS = 5
+
 # --- FSRS scheduling (v1) ---------------------------------------------------
 # instead of jumping the full interval FSRS proposes after a good
 # answer, we only advance a fraction of it as to adapt to a quant heavy field ->

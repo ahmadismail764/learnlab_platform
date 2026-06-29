@@ -22,6 +22,40 @@ interface PracticeSessionRecord {
   message?: string;
 }
 
+/** One subtopic due on a given forecast day. Matches the backend ForecastSubtopicSerializer. */
+export interface ForecastSubtopic {
+  id: EntityId;
+  name: string;
+  topic_id: EntityId | null;
+  topic_name: string | null;
+  state: string;
+  next_review: string;
+}
+
+/** One calendar day in the upcoming-review agenda. */
+export interface ReviewForecastDay {
+  date: string;
+  due_count: number;
+  subtopics: ForecastSubtopic[];
+}
+
+/**
+ * A learner's upcoming FSRS reviews grouped by day.
+ * Matches GET /practice/review-forecast/ and the `next_review` block returned
+ * when a session is completed.
+ */
+export interface ReviewForecast {
+  window_days: number;
+  next_review_at: string | null;
+  due_now_count: number;
+  forecast: ReviewForecastDay[];
+}
+
+/** Session payload returned on completion — includes the next-review headline. */
+export interface SessionCompletionResult extends PracticeSessionRecord {
+  next_review?: ReviewForecast;
+}
+
 async function parseOptionalJson(response: Response) {
   if (response.status === 204) {
     return null;
@@ -116,11 +150,18 @@ export const practiceService = {
     return await parseOptionalJson(response);
   },
 
-  completeSession: async (sessionId: EntityId) => {
+  completeSession: async (sessionId: EntityId): Promise<SessionCompletionResult> => {
     const response = await api.patch(`/practice/sessions/${sessionId}/`, {
       end_time: new Date().toISOString(),
     });
     if (!response.ok) throw new Error('Failed to complete session');
+    return await response.json();
+  },
+
+  getReviewForecast: async (days?: number): Promise<ReviewForecast> => {
+    const query = typeof days === 'number' ? `?days=${days}` : '';
+    const response = await api.get(`/practice/review-forecast/${query}`);
+    if (!response.ok) throw new Error('Failed to fetch review forecast');
     return await response.json();
   },
 };

@@ -5,7 +5,7 @@ from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field
 # Our imports
 from practice.models import Question, PracticeSession, QuestionResponse
-from practice.constants import XP_PER_CORRECT_ANSWER
+from practice.constants import XP_PER_CORRECT_ANSWER, WRITTEN_ANSWER_MAX_LENGTH
 from practice.fsrs_engine import process_session, get_review_forecast
 from accounts.models import User
 from accounts.serializers import UserDetailSerializer
@@ -21,25 +21,63 @@ class QuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Question
-        # EXCLUDE correct_answer_index completely so students can't cheat via dev tools
-        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'tier', 'tier_display']
+        # EXCLUDE the answer keys (correct_answer_index AND correct_answer) so
+        # students can't cheat via dev tools — grading is authoritative on the
+        # server. question_type tells the client whether to render the math
+        # keyboard (WRITTEN) or choice buttons (MCQ).
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices',
+                  'question_type', 'grading_method', 'tier', 'tier_display']
         read_only_fields = ['id']
 
 class QuestionAdminSerializer(serializers.ModelSerializer):
-    """Read serializer for staff — includes correct_answer_index."""
+    """Read serializer for staff — includes the answer keys."""
     subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
     tier_display = serializers.CharField(source='get_tier_display', read_only=True)
 
     class Meta:
         model = Question
-        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices', 'correct_answer_index', 'tier', 'tier_display']
+        fields = ['id', 'subtopic', 'subtopic_name', 'text', 'choices',
+                  'correct_answer_index', 'correct_answer',
+                  'question_type', 'grading_method', 'tier', 'tier_display']
         read_only_fields = ['id']
 
 class QuestionCreateAndUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
-        fields = ['id', 'subtopic', 'text', 'choices', 'correct_answer_index', 'tier']
+        fields = ['id', 'subtopic', 'text', 'choices',
+                  'correct_answer_index', 'correct_answer',
+                  'question_type', 'grading_method', 'tier']
         read_only_fields = ['id']
+
+    def validate(self, attrs):
+        """Keep the answer key consistent with the question type.
+
+        MCQ needs a correct_answer_index; written needs a correct_answer. Also
+        default a written question to CAS grading so authors only have to pick
+        the type, not the grading method.
+        """
+        def resolved(field, default=None):
+            if field in attrs:
+                return attrs[field]
+            return getattr(self.instance, field, default)
+
+        q_type = resolved('question_type', Question.QuestionType.MCQ)
+
+        if q_type == Question.QuestionType.WRITTEN:
+            if not (resolved('correct_answer') or '').strip():
+                raise serializers.ValidationError(
+                    {'correct_answer': 'Written questions require a correct_answer.'}
+                )
+            # Convenience: default written → CAS unless explicitly set otherwise.
+            if resolved('grading_method') in (None, Question.GradingMethod.EXACT_INDEX):
+                attrs['grading_method'] = Question.GradingMethod.CAS
+        else:
+            if resolved('correct_answer_index') is None:
+                raise serializers.ValidationError(
+                    {'correct_answer_index': 'MCQ questions require a correct_answer_index.'}
+                )
+
+        return attrs
 
 # ===================================================
 # QuestionResponse serializers
@@ -50,16 +88,29 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
         model = QuestionResponse
         fields = ['id', 'question', 'is_correct']
 class QuestionResponseFeedbackSerializer(serializers.ModelSerializer):
-    """Post-submit serializer: reveals correct_answer_index for the just-answered question only."""
-    correct_answer_index = serializers.IntegerField(source='question.correct_answer_index', read_only=True)
+    """Post-submit serializer: reveals the answer key for the just-answered question.
+
+    Safe to reveal here because the learner has already committed an answer.
+    MCQ responses carry correct_answer_index; written responses carry
+    correct_answer (the canonical expression) plus the grader's feedback.
+    """
+    correct_answer_index = serializers.IntegerField(source='question.correct_answer_index', read_only=True, allow_null=True)
+    correct_answer = serializers.CharField(source='question.correct_answer', read_only=True)
 
     class Meta:
         model = QuestionResponse
-        fields = ['id', 'question', 'selected_answer_index', 'is_correct', 'correct_answer_index', 'confidence_rating']
-        read_only_fields = ['id', 'is_correct', 'correct_answer_index']
+        fields = ['id', 'question', 'selected_answer_index', 'written_answer',
+                  'is_correct', 'correct_answer_index', 'correct_answer',
+                  'feedback', 'confidence_rating']
+        read_only_fields = ['id', 'is_correct', 'correct_answer_index', 'correct_answer', 'feedback']
 
 class AnswerSubmitSerializer(serializers.Serializer):
-    selected_answer_index = serializers.IntegerField(min_value=0)
+    """One answer submission. MCQ sends selected_answer_index; written sends
+    written_answer (plain ASCII math). The view enforces which one is required
+    based on the question's type."""
+    selected_answer_index = serializers.IntegerField(min_value=0, required=False, allow_null=True)
+    written_answer = serializers.CharField(required=False, allow_blank=True,
+                                           trim_whitespace=True, max_length=WRITTEN_ANSWER_MAX_LENGTH)
     confidence_rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
 
 # ===================================================

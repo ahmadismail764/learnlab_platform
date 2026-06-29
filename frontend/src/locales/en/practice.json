@@ -6,6 +6,7 @@
   "backToDashboard": "Back to dashboard",
   "choiceBasedReview": "Choice-based review",
   "closeKeyboard": "Close",
+  "comeBackHint": "Come back {{when}} for your next reviews.",
   "completionNextSteps": "You can jump back to the dashboard or review your updated progress before starting another session.",
   "correctAnswerFeedback": "Correct. Your XP has been added for this question.",
   "continueSession": "Continue",
@@ -38,6 +39,8 @@
   "loadingCurrentQuestion": "Loading your current practice question...",
   "niceWork": "Nice work",
   "noQuestionsAvailable": "No questions available right now. Try again later.",
+  "noUpcomingReviewsDescription": "Nothing is scheduled right now. Keep practicing to schedule more reviews.",
+  "noUpcomingReviewsTitle": "No reviews scheduled yet",
   "practiceInProgress": "Practice in progress",
   "practiceIntroDescription": "Start an adaptive FSRS session and we will pull the next questions from your learner queue without changing the rest of the site structure.",
   "practiceQuestionFallback": "Practice question",
@@ -70,8 +73,11 @@
   "tierLabel": "Tier {{tier}}",
   "tierXp": "Tier XP",
   "tip": "Tip",
+  "upcomingReviewsDescription": "Here are the topics you'll be reviewing soon.",
+  "upcomingReviewsTitle": "Upcoming reviews",
   "updatesDuringSet": "Updates during the set",
   "upToTen": "Up to 10",
+  "viewFullSchedule": "View full schedule",
   "viewProgress": "View progress",
   "xpEarned": "XP Earned"
 }

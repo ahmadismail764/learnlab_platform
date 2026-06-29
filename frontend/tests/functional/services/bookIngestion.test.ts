@@ -23,7 +23,7 @@ describe('bookIngestionService', () => {
 
     vi.mocked(api.postForm).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message: 'Extraction successful', extracted_count: 3 }),
+      json: async () => ({ message: 'Extraction started' }),
     } as Response)
 
     const result = await bookIngestionService.extractQuestionsFromPdf({
@@ -35,7 +35,7 @@ describe('bookIngestionService', () => {
     const formData = vi.mocked(api.postForm).mock.calls[0][1]
     expect(formData.get('pdf_file')).toBe(file)
     expect(formData.get('num_questions')).toBe('3')
-    expect(result.extracted_count).toBe(3)
+    expect(result.message).toBe('Extraction started')
   })
 
   it('surfaces backend extraction failures', async () => {

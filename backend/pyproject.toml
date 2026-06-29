@@ -34,4 +34,5 @@ dependencies = [
     "uritemplate==4.2.0",
     "gunicorn>=22.0.0",
     "whitenoise>=6.0.0",
+    "sympy>=1.14.0",
 ]

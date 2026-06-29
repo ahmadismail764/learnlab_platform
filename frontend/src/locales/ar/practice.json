@@ -6,6 +6,7 @@
   "backToDashboard": "العودة للوحة التعلم",
   "choiceBasedReview": "مراجعة بالاختيار",
   "closeKeyboard": "إغلاق",
+  "comeBackHint": "عُد {{when}} لإجراء مراجعاتك القادمة.",
   "completionNextSteps": "يمكنك العودة إلى لوحة التعلم أو مراجعة تقدمك المحدّث قبل بدء جلسة أخرى.",
   "correctAnswerFeedback": "إجابة صحيحة. أُضيفت النقاط.",
   "continueSession": "تابع",
@@ -38,6 +39,8 @@
   "loadingCurrentQuestion": "جارٍ تحميل سؤال التدريب الحالي...",
   "niceWork": "عمل رائع",
   "noQuestionsAvailable": "لا توجد أسئلة الآن. جرّب لاحقًا.",
+  "noUpcomingReviewsDescription": "لا توجد مراجعات مجدولة الآن. تابع التدريب لجدولة المزيد من المراجعات.",
+  "noUpcomingReviewsTitle": "لا توجد مراجعات مجدولة بعد",
   "practiceInProgress": "التدريب جارٍ",
   "practiceIntroDescription": "ابدأ جلسة مراجعة ذكية بأسئلة من قائمة مراجعتك.",
   "practiceQuestionFallback": "سؤال تدريب",
@@ -70,8 +73,11 @@
   "tierLabel": "المستوى {{tier}}",
   "tierXp": "النقاط حسب المستوى",
   "tip": "نصيحة",
+  "upcomingReviewsDescription": "إليك الموضوعات التي ستراجعها قريبًا.",
+  "upcomingReviewsTitle": "المراجعات القادمة",
   "updatesDuringSet": "يتحدّث أثناء الجلسة",
   "upToTen": "حتى 10",
+  "viewFullSchedule": "عرض الجدول الكامل",
   "viewProgress": "عرض التقدم",
   "xpEarned": "النقاط المكتسبة"
 }

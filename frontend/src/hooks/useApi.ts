@@ -8,7 +8,7 @@ import {
   type ActivityTimeSeriesResponse,
   type DifficultyTierBreakdownResponse,
 } from '@/services/analytics'
-import { practiceService } from '@/services/practice'
+import { practiceService, type ReviewForecast } from '@/services/practice'
 import { authService, type UpdateCurrentUserPayload } from '@/services/auth'
 import {
   adminsService,
@@ -59,6 +59,7 @@ export const queryKeys = {
   practice: {
     sessions: ['practice', 'sessions'] as const,
     session: (id: string | number) => ['practice', 'session', id] as const,
+    reviewForecast: (days?: number) => ['practice', 'reviewForecast', days ?? null] as const,
   },
   auth: {
     currentUser: ['auth', 'currentUser'] as const,
@@ -223,6 +224,14 @@ export function usePracticeSessions() {
       const raw = await practiceService.getSessions()
       return Array.isArray(raw) ? raw : raw.results ?? []
     },
+  })
+}
+
+/** Fetch the learner's upcoming review forecast (agenda grouped by day). */
+export function useReviewForecast(days?: number) {
+  return useQuery<ReviewForecast>({
+    queryKey: queryKeys.practice.reviewForecast(days),
+    queryFn: () => practiceService.getReviewForecast(days),
   })
 }
 

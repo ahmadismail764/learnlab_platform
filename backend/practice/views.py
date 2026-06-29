@@ -1,4 +1,5 @@
 # Core django imports
+import random
 from django.utils import timezone as django_timezone
 from django.db import transaction
 # DRF imports
@@ -154,12 +155,17 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         session_questions = list(due_shuffled_qs[:limit])
 
         if not session_questions:
-            fallback_qs = Question.objects.order_by('?')
+            fallback_qs = Question.objects.all()
             if subtopic_id:
                 fallback_qs = fallback_qs.filter(subtopic_id=subtopic_id)
             elif topic_id:
                 fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
-            session_questions = list(fallback_qs[:limit])
+            # Random offset instead of ORDER BY RANDOM() — avoids a full-table sort
+            # which would scan every row before picking limit results.
+            count = fallback_qs.count()
+            if count:
+                offset = random.randint(0, max(0, count - limit))
+                session_questions = list(fallback_qs[offset:offset + limit])
 
         with transaction.atomic():
             session = PracticeSession.objects.create(learner=learner)

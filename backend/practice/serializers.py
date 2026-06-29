@@ -124,14 +124,11 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
         model = PracticeSession
         fields = ['id', 'learner', 'start_time', 'end_time', 'total_xp_earned', 'responses']
 
-    # FSRS runs only when the end-time is used
     def update(self, instance, validated_data):
         already_completed = instance.end_time is not None
         instance = super().update(instance, validated_data)
 
         if instance.end_time is not None and not already_completed:
-            if 'end_time' in validated_data:
-                validated_data['end_time'] = django_timezone.now()
             process_session(instance.learner, session=instance)
             learner = instance.learner
             learner.current_xp += instance.total_xp_earned
@@ -145,7 +142,9 @@ class PracticeSessionSerializer(serializers.ModelSerializer):
                 learner.streak_count = 1
 
             learner.last_practice_date = today
-            learner.save()
+            # Only touch the three columns we actually changed — avoids overwriting
+            # concurrent writes to other User fields (e.g. avatar, email).
+            learner.save(update_fields=['current_xp', 'streak_count', 'last_practice_date'])
 
         return instance
 

@@ -42,7 +42,7 @@ class SubtopicMastery(models.Model):
 
     # scheduling data
     last_review = models.DateTimeField(null=True, blank=True)
-    next_review = models.DateTimeField(null=True, blank=True)
+    next_review = models.DateTimeField(null=True, blank=True, db_index=True)
 
     class Meta:
         unique_together = ('learner', 'subtopic')

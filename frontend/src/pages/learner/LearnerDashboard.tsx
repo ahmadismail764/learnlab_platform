@@ -7,7 +7,6 @@ import {
   Clock3,
   Flame,
   Repeat2,
-  Target,
   TriangleAlert,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -139,14 +138,10 @@ export function LearnerDashboard() {
     return icons[status];
   };
 
+  // The mastered-topics count is shown in the Today's Focus ("Stable topics")
+  // and Learning Health ("Covered topics X/Y") panels below, so it is not
+  // repeated as a stat card here.
   const dashboardStats = [
-    {
-      icon: <Target className="h-5 w-5" />,
-      label: t("learner:questionsMastered"),
-      value: stats.totalMastered,
-      helper: t("learner:stableCoverage", { percent: masteredShare }),
-      tone: "primary" as const,
-    },
     {
       icon: <BookOpen className="h-5 w-5" />,
       label: t("learner:activeTopics"),
@@ -278,7 +273,7 @@ export function LearnerDashboard() {
         </Card>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {dashboardStats.map((item) => (
           <PageStatCard
             key={item.label}

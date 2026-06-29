@@ -14,7 +14,7 @@
   "lastName": "Last Name",
   "loadingMastery": "Loading mastery data...",
   "masteryScore": "Mastery score",
-  "masteryTrackingInfo": "Tracking {{count}} topic(s) with FSRS review data.",
+  "masteryTrackingInfo": "Tracking {{count}} topic(s) with spaced-repetition review data.",
   "masteryWillAppear": "Mastery data will appear here after you complete more practice sessions.",
   "memberSince": "Member Since",
   "myProfile": "My Profile",

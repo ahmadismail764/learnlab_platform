@@ -37,3 +37,4 @@ backend/db.sqlite3
 backend/postman/*.local.json
 
 # Logs
+*.log

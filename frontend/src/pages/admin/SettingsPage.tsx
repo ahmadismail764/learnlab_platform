@@ -81,7 +81,11 @@ function coerceLanguage(value: unknown, fallback: string) {
   return value === 'ar' || value === 'en' ? value : fallback
 }
 
-function normalizeSettings(preferences: UserPreferences): SettingsState {
+function normalizeSettings(
+  preferences: UserPreferences,
+  currentLanguage: string,
+  currentIsDark: boolean,
+): SettingsState {
   const storedSettings = isRecord(preferences.adminSettings)
     ? preferences.adminSettings
     : preferences
@@ -90,7 +94,9 @@ function normalizeSettings(preferences: UserPreferences): SettingsState {
     siteName: coerceString(storedSettings.siteName, defaultSettings.siteName),
     defaultLanguage: coerceLanguage(
       storedSettings.defaultLanguage ?? preferences.language,
-      defaultSettings.defaultLanguage,
+      // Fall back to the language the admin is actually using, not a hardcoded
+      // default — otherwise opening Settings would flip them to Arabic.
+      coerceLanguage(currentLanguage, defaultSettings.defaultLanguage),
     ),
     timezone: coerceString(storedSettings.timezone, defaultSettings.timezone),
     emailNotifications: coerceBoolean(storedSettings.emailNotifications, defaultSettings.emailNotifications),
@@ -108,7 +114,8 @@ function normalizeSettings(preferences: UserPreferences): SettingsState {
     accentColor: coerceString(storedSettings.accentColor, defaultSettings.accentColor),
     darkModeEnabled: coerceBoolean(
       storedSettings.darkModeEnabled ?? (preferences.theme === 'dark'),
-      defaultSettings.darkModeEnabled,
+      // Fall back to the admin's current resolved theme, not hardcoded light.
+      currentIsDark,
     ),
   }
 }
@@ -141,8 +148,8 @@ function ToggleSwitch({ checked, onChange, disabled = false }: ToggleSwitchProps
 }
 
 export function SettingsPage() {
-  const { t } = useTranslation(['admin', 'common'])
-  const { setTheme } = useTheme()
+  const { t, i18n } = useTranslation(['admin', 'common'])
+  const { setTheme, resolvedTheme } = useTheme()
   const { showSuccess, showError } = useToast()
   
   const [activeSection, setActiveSection] = useState('general')
@@ -171,15 +178,17 @@ export function SettingsPage() {
 
       try {
         const preferences = await authService.getPreferences()
-        const nextSettings = normalizeSettings(preferences)
+        const nextSettings = normalizeSettings(preferences, i18n.language, resolvedTheme === 'dark')
 
         if (!isMounted) return
 
         setSettings(nextSettings)
         setLastSavedSettings(nextSettings)
         setHasChanges(false)
-        setTheme(nextSettings.darkModeEnabled ? 'dark' : 'light')
-        await changeLanguage(nextSettings.defaultLanguage as SupportedLanguage)
+        // Do NOT apply theme/language here. Loading the settings form must not
+        // change the admin's active theme/language — only Save does. Applying
+        // them on mount flipped the UI to the stored/default values (Arabic +
+        // light) every time the page was opened.
       } catch (error) {
         if (!isMounted) return
         const message = error instanceof Error ? error.message : 'Failed to load settings'
@@ -196,7 +205,10 @@ export function SettingsPage() {
     return () => {
       isMounted = false
     }
-  }, [setTheme])
+    // Mount-only: seed the form from the current theme/language once. Re-running
+    // on theme/language changes would refetch and discard unsaved edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const updateSetting = <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     if (isLoadingSettings || isSavingSettings) return
@@ -220,7 +232,13 @@ export function SettingsPage() {
           weeklyDigest: settings.weeklyDigest,
         },
       })
-      const nextSettings = normalizeSettings(preferences)
+      // Saved values are the source of truth here; fall back to what was just
+      // chosen in the form if the backend echo omits them.
+      const nextSettings = normalizeSettings(
+        preferences,
+        settings.defaultLanguage,
+        settings.darkModeEnabled,
+      )
 
       setSettings(nextSettings)
       setLastSavedSettings(nextSettings)

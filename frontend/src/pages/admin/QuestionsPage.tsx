@@ -493,7 +493,11 @@ function QuestionsContent() {
                         </p>
                       </td>
                       <td className="px-4 py-4">
-                        <Badge variant="secondary" size="sm">
+                        <Badge
+                          variant="secondary"
+                          size="sm"
+                          className="max-w-[14rem] whitespace-normal rounded-md text-start leading-snug"
+                        >
                           {question.topic_name ? getTopicDisplayName(t, question.topic_name) : t('admin:questions.unlinked')}
                         </Badge>
                       </td>

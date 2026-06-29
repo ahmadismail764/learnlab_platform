@@ -6,6 +6,7 @@ import { AllCaughtUpIllustration, Button, Card } from '@/components/ui'
 import { Skeleton } from '@/components/ui/Loading'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useReviewForecast } from '@/hooks'
+import { cn } from '@/utils/cn'
 import { ReviewAgenda } from './ReviewAgenda'
 import { useForecastDateFormatter } from './reviewForecast'
 
@@ -22,7 +23,7 @@ const WINDOW_OPTIONS = [7, 14, 30] as const
 export function ReviewSchedulePage() {
   const { t } = useTranslation(['learner', 'common'])
   const [days, setDays] = useState<number>(7)
-  const { data, isLoading, isError } = useReviewForecast(days)
+  const { data, isLoading, isError, isFetching } = useReviewForecast(days)
   const formatDate = useForecastDateFormatter()
 
   const forecast = useMemo(() => data?.forecast ?? [], [data])
@@ -80,23 +81,28 @@ export function ReviewSchedulePage() {
           title={t('learner:reviewAgenda')}
           description={t('learner:reviewAgendaDescription')}
           action={(
-            <div className="inline-flex rounded-lg border border-neutral-200 p-0.5 dark:border-neutral-800">
+            <div className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 p-1 dark:bg-neutral-800/60">
               {WINDOW_OPTIONS.map((option) => (
-                <Button
+                <button
                   key={option}
-                  size="sm"
-                  variant={days === option ? 'primary' : 'ghost'}
+                  type="button"
                   onClick={() => setDays(option)}
                   aria-pressed={days === option}
+                  className={cn(
+                    'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-150',
+                    days === option
+                      ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-900 dark:text-neutral-100'
+                      : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200',
+                  )}
                 >
                   {t('learner:daysShort', { count: option })}
-                </Button>
+                </button>
               ))}
             </div>
           )}
         />
 
-        <div className="mt-5">
+        <div className={cn('mt-5 transition-opacity duration-200', isFetching && !isLoading && 'opacity-60')}>
           {isLoading ? (
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (

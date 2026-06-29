@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useSuspenseQuery, keepPreviousData } from '@tanstack/react-query'
 import { learnersService, type LearnerProfile, type LeaderboardLearner } from '@/services/learners'
 import { topicsService } from '@/services/topics'
 import {
@@ -247,6 +247,9 @@ export function useReviewForecast(days?: number) {
   return useQuery<ReviewForecast>({
     queryKey: queryKeys.practice.reviewForecast(days),
     queryFn: () => practiceService.getReviewForecast(days),
+    // Keep the current agenda on screen while a different window loads, so
+    // switching 7/14/30 doesn't flash the skeleton each time.
+    placeholderData: keepPreviousData,
   })
 }
 

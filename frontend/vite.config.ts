@@ -18,6 +18,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    // Dev workflow: run the backend in Docker (`bun run docker --no-frontend`)
+    // and the frontend with `bun run dev`. This proxies API calls to the
+    // containerized backend so requests stay same-origin (no CORS). Override the
+    // target with VITE_DEV_API_TARGET if the backend runs elsewhere.
+    proxy: {
+      '/api': {
+        target: process.env.VITE_DEV_API_TARGET || 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
   build: {
     rollupOptions: {
       output: {

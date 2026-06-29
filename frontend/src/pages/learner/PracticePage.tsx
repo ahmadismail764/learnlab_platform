@@ -1,33 +1,33 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   CheckCircle,
   XCircle,
-  Clock,
   TestTube2,
   Lightbulb,
   CheckCircle2,
-  Target,
   ArrowRight,
-  CalendarClock,
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
-import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
+import { PageStatCard, SectionHeading } from '@/components/common'
 import { useToast } from '@/contexts'
-import { practiceService, type ReviewForecast } from '@/services/practice'
+import { practiceService, WrittenAnswerInvalidError, type ReviewForecast } from '@/services/practice'
 import { cn } from '@/utils/cn'
 import { logger } from '@/utils/logger'
 import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/hooks'
 import { getTopicDisplayName } from '@/utils/topicLabels'
-import { PracticeGradePanel } from './PracticeGradePanel'
-import { ReviewAgenda } from './ReviewAgenda'
-import { useForecastDateFormatter } from './reviewForecast'
+import { PracticeIntro } from './PracticeIntro'
+import { PracticeComplete } from './PracticeComplete'
+// Lazy: pulls in MathLive (~800 kB), so only load it when a WRITTEN question
+// actually appears — MCQ-only sessions never download it.
+const WrittenAnswerPanel = lazy(() =>
+  import('./WrittenAnswerPanel').then((m) => ({ default: m.WrittenAnswerPanel })),
+)
 import {
   getQuestionXp,
   normalizePracticeQuestion,
-  type FSRSGrade,
   type PracticeQuestion,
   type QuestionState,
   type RawPracticeQuestion,
@@ -35,8 +35,10 @@ import {
 } from './practiceSession'
 
 /**
- * PracticePage (Experiment Mode)
- * Re-imagined as a high-stakes focus environment.
+ * PracticePage
+ * Drives one adaptive practice session through three states (selecting /
+ * practicing / complete). The selecting and complete screens are extracted into
+ * PracticeIntro and PracticeComplete; this component owns the live session loop.
  */
 
 export function PracticePage() {
@@ -56,7 +58,6 @@ export function PracticePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCompleting, setIsCompleting] = useState(false)
   const [nextReview, setNextReview] = useState<ReviewForecast | null>(null)
-  const formatForecastDate = useForecastDateFormatter()
 
   const currentQuestion = questions[currentIndex]
   const currentStatus = (currentQuestion && questionStates[currentIndex]) ? questionStates[currentIndex] : null
@@ -75,7 +76,10 @@ export function PracticePage() {
 
       const normalizedQuestions = data.questions.map((question: RawPracticeQuestion) =>
         normalizePracticeQuestion(question, t('practice:practiceQuestionFallback')),
-      ).filter((question: PracticeQuestion) => question.choices.length > 0)
+      ).filter((question: PracticeQuestion) =>
+        // Keep written questions (no choices) and well-formed MCQs.
+        question.questionType === 'WRITTEN' || question.choices.length > 0,
+      )
 
       if (normalizedQuestions.length === 0) {
         showWarning(t('practice:noQuestionsAvailable'))
@@ -94,8 +98,9 @@ export function PracticePage() {
           selectedAnswerIndex: null,
           answerState: 'unanswered',
           isCorrect: null,
-          grade: null,
-          startTime: Date.now()
+          startTime: Date.now(),
+          feedback: null,
+          revealedAnswer: null,
         }
       })
       setQuestionStates(initialStates)
@@ -109,7 +114,11 @@ export function PracticePage() {
     }
   }
 
-  const handleAnswer = useCallback((choice: string, selectedAnswerIndex: number) => {
+  // MCQ: selecting an answer submits it immediately. The learner no longer
+  // self-rates difficulty — the backend derives the FSRS outcome from
+  // correctness alone (any wrong -> Again, all correct -> Good).
+  const handleAnswer = useCallback(async (choice: string, selectedAnswerIndex: number) => {
+    if (isCompleting) return
     if (!currentQuestion || !currentStatus || !sessionRecord || currentStatus.answerState !== 'unanswered') return
 
     setQuestionStates((prev) => ({
@@ -118,59 +127,16 @@ export function PracticePage() {
         ...prev[currentIndex],
         userResponse: choice,
         selectedAnswerIndex,
-        answerState: 'selected',
+        answerState: 'submitting',
         isCorrect: null,
       }
-    }))
-  }, [currentQuestion, currentStatus, currentIndex, sessionRecord])
-
-  const completeSession = useCallback(async () => {
-    if (isCompleting) return
-    setIsCompleting(true)
-    if (sessionRecord) {
-      try {
-        const result = await practiceService.completeSession(sessionRecord.id)
-        // Surface the "what's next" agenda the backend returns on completion.
-        setNextReview(result?.next_review ?? null)
-        // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
-        queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
-        queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
-        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.global })
-        queryClient.invalidateQueries({ queryKey: ['leaderboard'] })
-        queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
-        queryClient.invalidateQueries({ queryKey: ['practice', 'reviewForecast'] })
-        queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
-        setSessionState('complete')
-      } catch (e) {
-        logger.warn('Failed to complete session', e)
-        showError(t('practice:couldNotCompleteSession'))
-      } finally {
-        setIsCompleting(false)
-      }
-    } else {
-      setIsCompleting(false)
-    }
-  }, [isCompleting, queryClient, sessionRecord, showError, t])
-
-  const handleGrade = useCallback(async (grade: FSRSGrade) => {
-    if (isCompleting) return
-    if (!currentQuestion || !currentStatus || !sessionRecord || currentStatus.answerState !== 'selected') return
-    if (currentStatus.selectedAnswerIndex === null) {
-      showError(t('practice:couldNotSubmitAnswer'))
-      return
-    }
-
-    setQuestionStates((prev) => ({
-      ...prev,
-      [currentIndex]: { ...prev[currentIndex], answerState: 'submitting', grade }
     }))
 
     try {
       const response = await practiceService.submitInteraction({
         session: sessionRecord.id,
         question: currentQuestion.id,
-        selected_answer_index: currentStatus.selectedAnswerIndex,
-        confidence_rating: grade,
+        selected_answer_index: selectedAnswerIndex,
       })
       const backendIsCorrect = Boolean(response?.is_correct)
       if (typeof response?.correct_answer_index === 'number') {
@@ -189,7 +155,6 @@ export function PracticePage() {
           ...prev[currentIndex],
           answerState: 'answered',
           isCorrect: backendIsCorrect,
-          grade,
         }
       }))
     } catch (err) {
@@ -198,13 +163,89 @@ export function PracticePage() {
         ...prev,
         [currentIndex]: {
           ...prev[currentIndex],
-          answerState: 'selected',
-          grade: null,
+          userResponse: null,
+          selectedAnswerIndex: null,
+          answerState: 'unanswered',
+          isCorrect: null,
         }
       }))
       showError(t('practice:couldNotSubmitAnswer'))
     }
   }, [currentQuestion, currentStatus, currentIndex, isCompleting, sessionRecord, showError, t])
+
+  // Written: submit free-response (plain ASCII math). A 422 means the answer
+  // couldn't be parsed/graded and was NOT recorded — keep the question
+  // answerable so the learner can revise.
+  const handleSubmitWritten = useCallback(async (asciiAnswer: string) => {
+    if (isCompleting) return
+    if (!currentQuestion || !currentStatus || !sessionRecord || currentStatus.answerState !== 'unanswered') return
+
+    setQuestionStates((prev) => ({
+      ...prev,
+      [currentIndex]: { ...prev[currentIndex], userResponse: asciiAnswer, answerState: 'submitting', isCorrect: null }
+    }))
+
+    try {
+      const response = await practiceService.submitInteraction({
+        session: sessionRecord.id,
+        question: currentQuestion.id,
+        written_answer: asciiAnswer,
+      })
+      const backendIsCorrect = Boolean(response?.is_correct)
+      if (backendIsCorrect) {
+        setEarnedXp((prev) => prev + getQuestionXp(currentQuestion))
+      }
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: {
+          ...prev[currentIndex],
+          answerState: 'answered',
+          isCorrect: backendIsCorrect,
+          revealedAnswer: typeof response?.correct_answer === 'string' ? response.correct_answer : null,
+          feedback: typeof response?.feedback === 'string' ? response.feedback : null,
+        }
+      }))
+    } catch (err) {
+      // Reset to unanswered either way so the learner can try again.
+      setQuestionStates((prev) => ({
+        ...prev,
+        [currentIndex]: { ...prev[currentIndex], answerState: 'unanswered', isCorrect: null }
+      }))
+      if (err instanceof WrittenAnswerInvalidError) {
+        showWarning(err.message)
+        return
+      }
+      logger.warn('Failed to submit written answer', err)
+      showError(t('practice:couldNotSubmitAnswer'))
+    }
+  }, [currentQuestion, currentStatus, currentIndex, isCompleting, sessionRecord, showError, showWarning, t])
+
+  const completeSession = useCallback(async () => {
+    if (isCompleting) return
+    setIsCompleting(true)
+    if (sessionRecord) {
+      try {
+        const result = await practiceService.completeSession(sessionRecord.id)
+        // Surface the "what's next" agenda the backend returns on completion.
+        setNextReview(result?.next_review ?? null)
+        // Invalidate all related caches to synchronize XP, leaderboard, and mastery UI instantly
+        queryClient.invalidateQueries({ queryKey: queryKeys.learner.profile })
+        queryClient.invalidateQueries({ queryKey: queryKeys.learner.mastery })
+        queryClient.invalidateQueries({ queryKey: queryKeys.leaderboard.all })
+        queryClient.invalidateQueries({ queryKey: queryKeys.practice.sessions })
+        queryClient.invalidateQueries({ queryKey: queryKeys.practice.reviewForecastAll })
+        queryClient.invalidateQueries({ queryKey: queryKeys.analytics.aggregated })
+        setSessionState('complete')
+      } catch (e) {
+        logger.warn('Failed to complete session', e)
+        showError(t('practice:couldNotCompleteSession'))
+      } finally {
+        setIsCompleting(false)
+      }
+    } else {
+      setIsCompleting(false)
+    }
+  }, [isCompleting, queryClient, sessionRecord, showError, t])
 
   const continueAfterFeedback = useCallback(() => {
     if (isCompleting) return
@@ -233,19 +274,12 @@ export function PracticePage() {
 
       const key = e.key
       const isAnswered = currentStatus.answerState === 'answered'
-      const isSelected = currentStatus.answerState === 'selected'
 
-      if (currentStatus.answerState === 'unanswered') {
+      // Number keys pick (and immediately submit) the matching MCQ choice.
+      if (currentQuestion.questionType === 'MCQ' && currentStatus.answerState === 'unanswered') {
         const selectedIndex = Number(key) - 1
         const selectedChoice = currentQuestion.choices[selectedIndex]
         if (selectedChoice) handleAnswer(selectedChoice, selectedIndex)
-      }
-
-      if (isSelected) {
-        if (key === '1') handleGrade(1)
-        if (key === '2') handleGrade(2)
-        if (key === '3') handleGrade(3)
-        if (key === '4') handleGrade(4)
       }
 
       if (isAnswered && key === 'Enter') {
@@ -255,187 +289,19 @@ export function PracticePage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [continueAfterFeedback, currentQuestion, currentStatus, handleAnswer, handleGrade, sessionState])
+  }, [continueAfterFeedback, currentQuestion, currentStatus, handleAnswer, sessionState])
 
   if (sessionState === 'selecting') {
-    return (
-      <div className="mx-auto max-w-4xl space-y-6">
-        <PageIntro
-          eyebrow={t('practice:practiceSessionEyebrow')}
-          title={t('practice:readyForFocusedReview')}
-          description={t('practice:practiceIntroDescription')}
-          icon={<TestTube2 className="h-6 w-6" />}
-          tone="primary"
-          actions={(
-            <Button
-              onClick={startSession}
-              isLoading={isLoading}
-              rightIcon={!isLoading ? <ArrowRight className="h-4 w-4 rtl:rotate-180" /> : undefined}
-            >
-              {t('practice:startSession')}
-            </Button>
-          )}
-        />
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <PageStatCard
-            icon={<Target className="h-5 w-5" />}
-            label={t('practice:questionSet')}
-            value={t('practice:upToTen')}
-            helper={t('practice:adaptiveReviewMix')}
-            tone="primary"
-          />
-          <PageStatCard
-            icon={<Clock className="h-5 w-5" />}
-            label={t('practice:estimatedTime')}
-            value={t('practice:tenToFifteenMinutes')}
-            helper={t('practice:choiceBasedReview')}
-            tone="secondary"
-          />
-          <PageStatCard
-            icon={<XpBadge size="lg" variant="amber" />}
-            label={t('practice:reward')}
-            value={t('practice:tierXp')}
-            helper={t('practice:harderItemsReward')}
-            tone="accent"
-          />
-        </div>
-
-        <Card>
-          <SectionHeading
-            title={t('practice:howSessionWorks')}
-            description={t('practice:howSessionWorksDescription')}
-          />
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <div className="surface-inset">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                {t('practice:solveStep')}
-              </p>
-              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                {t('practice:solveDescription')}
-              </p>
-            </div>
-            <div className="surface-inset">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                {t('practice:reflectStep')}
-              </p>
-              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                {t('practice:reflectDescription')}
-              </p>
-            </div>
-            <div className="surface-inset">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                {t('practice:keepMomentumStep')}
-              </p>
-              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                {t('practice:keepMomentumDescription')}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-    )
+    return <PracticeIntro onStart={startSession} isLoading={isLoading} />
   }
 
   if (sessionState === 'complete') {
     return (
-      <div className="mx-auto max-w-4xl space-y-6">
-        <PageIntro
-          eyebrow={t('practice:sessionCompleteEyebrow')}
-          title={t('practice:niceWork')}
-          description={t('practice:sessionCompleteDescription')}
-          icon={<CheckCircle2 className="h-6 w-6 text-green-500" />}
-          tone="success"
-          actions={(
-            <Link to="/learner/progress">
-              <Button rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}>
-                {t('practice:viewProgress')}
-              </Button>
-            </Link>
-          )}
-        />
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <PageStatCard
-            icon={<XpBadge size="lg" variant="amber" />}
-            label={t('practice:xpEarned')}
-            value={`+${earnedXp}`}
-            tone="accent"
-          />
-          <PageStatCard
-            icon={<Target className="h-5 w-5" />}
-            label={t('practice:questionsCompleted')}
-            value={questions.length}
-            tone="primary"
-          />
-          <PageStatCard
-            icon={<CheckCircle className="h-5 w-5" />}
-            label={t('practice:sessionStatus')}
-            value={t('common:saved')}
-            helper={t('practice:reviewDataSynced')}
-            tone="success"
-          />
-        </div>
-
-        {nextReview && nextReview.forecast.length > 0 ? (
-          <Card>
-            <SectionHeading
-              title={t('practice:upcomingReviewsTitle')}
-              description={
-                nextReview.next_review_at
-                  ? t('practice:comeBackHint', {
-                      when: formatForecastDate(nextReview.next_review_at).relative.toLowerCase(),
-                    })
-                  : t('practice:upcomingReviewsDescription')
-              }
-              action={(
-                <Link to="/learner/schedule">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
-                  >
-                    {t('practice:viewFullSchedule')}
-                  </Button>
-                </Link>
-              )}
-            />
-            <div className="mt-4">
-              <ReviewAgenda days={nextReview.forecast.slice(0, 5)} />
-            </div>
-          </Card>
-        ) : nextReview ? (
-          <Card>
-            <div className="flex items-start gap-3">
-              <CalendarClock className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" />
-              <div>
-                <p className="font-semibold text-neutral-900 dark:text-neutral-100">
-                  {t('practice:noUpcomingReviewsTitle')}
-                </p>
-                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                  {t('practice:noUpcomingReviewsDescription')}
-                </p>
-              </div>
-            </div>
-          </Card>
-        ) : null}
-
-        <Card>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">
-                {t('practice:keepMomentumGoing')}
-              </h3>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                {t('practice:completionNextSteps')}
-              </p>
-            </div>
-            <Link to="/learner">
-              <Button variant="outline">{t('practice:backToDashboard')}</Button>
-            </Link>
-          </div>
-        </Card>
-      </div>
+      <PracticeComplete
+        earnedXp={earnedXp}
+        questionCount={questions.length}
+        nextReview={nextReview}
+      />
     )
   }
 
@@ -453,7 +319,8 @@ export function PracticePage() {
   }
 
   const isAnswered = currentStatus.answerState === 'answered'
-  const isAwaitingRating = currentStatus.answerState === 'selected' || currentStatus.answerState === 'submitting'
+  const isMcq = currentQuestion.questionType === 'MCQ'
+  const isWritten = currentQuestion.questionType === 'WRITTEN'
   const isInteractionLocked = currentStatus.answerState !== 'unanswered'
   const sessionProgress = ((currentIndex + 1) / questions.length) * 100
   const elapsedSeconds = Math.round((Date.now() - currentStatus.startTime) / 1000)
@@ -469,6 +336,9 @@ export function PracticePage() {
               </Badge>
               <Badge variant="outline" size="sm">
                 {t('practice:tierLabel', { tier: currentQuestion.tier })}
+              </Badge>
+              <Badge variant="outline" size="sm">
+                {isWritten ? t('practice:writtenBadge') : t('practice:mcqBadge')}
               </Badge>
             </div>
             <div>
@@ -506,75 +376,97 @@ export function PracticePage() {
                 </h2>
               </div>
 
-              <div className="grid gap-3">
-                {currentQuestion.choices.map((choice: string, index: number) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(choice, index)}
-                    disabled={isInteractionLocked}
-                    className={cn(
-                      'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
-                      currentStatus.userResponse === choice
-                        ? currentStatus.isCorrect
-                          ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'
-                          : currentStatus.isCorrect === false
-                            ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/20 dark:text-red-200'
-                            : 'border-primary-500 bg-primary-50 text-primary-900 dark:bg-primary-950/20 dark:text-primary-200'
-                        : 'border-neutral-200 bg-white hover:border-primary-400 hover:bg-primary-50/40 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-primary-950/20',
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      {!isInteractionLocked && (
-                        <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-                          {index + 1}
-                        </kbd>
+              {isMcq && (
+                <div className="grid gap-3">
+                  {currentQuestion.choices.map((choice: string, index: number) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswer(choice, index)}
+                      disabled={isInteractionLocked}
+                      className={cn(
+                        'flex w-full items-center justify-between rounded-2xl border px-4 py-4 text-start transition-colors',
+                        currentStatus.userResponse === choice
+                          ? currentStatus.isCorrect
+                            ? 'border-green-500 bg-green-50 text-green-900 dark:bg-green-950/20 dark:text-green-200'
+                            : currentStatus.isCorrect === false
+                              ? 'border-red-500 bg-red-50 text-red-900 dark:bg-red-950/20 dark:text-red-200'
+                              : 'border-primary-500 bg-primary-50 text-primary-900 dark:bg-primary-950/20 dark:text-primary-200'
+                          : 'border-neutral-200 bg-white hover:border-primary-400 hover:bg-primary-50/40 dark:border-neutral-800 dark:bg-neutral-900/40 dark:hover:bg-primary-950/20',
                       )}
-                      <span className="text-base font-medium">{choice}</span>
-                    </div>
-                    <span className="shrink-0">
-                      {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
-                        <CheckCircle className={cn(
-                          'h-5 w-5',
-                          currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
-                        )} />
-                      ) : null}
-                      {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      ) : null}
-                    </span>
-                  </button>
-                ))}
-              </div>
+                    >
+                      <div className="flex items-center gap-3">
+                        {!isInteractionLocked && (
+                          <kbd className="inline-flex h-6 w-6 items-center justify-center rounded border border-neutral-300 bg-neutral-100 font-sans text-xs font-semibold text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                            {index + 1}
+                          </kbd>
+                        )}
+                        <span className="text-base font-medium">{choice}</span>
+                      </div>
+                      <span className="shrink-0">
+                        {isAnswered && currentQuestion.correct_answer_index !== null && index === currentQuestion.correct_answer_index ? (
+                          <CheckCircle className={cn(
+                            'h-5 w-5',
+                            currentStatus.userResponse === choice ? 'text-green-700 dark:text-green-300' : 'text-green-500',
+                          )} />
+                        ) : null}
+                        {currentStatus.userResponse === choice && currentStatus.isCorrect === false ? (
+                          <XCircle className="h-5 w-5 text-red-500" />
+                        ) : null}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {isAnswered && currentStatus.isCorrect !== null && (
                 <div
                   className={cn(
-                    'flex items-start gap-3 rounded-xl border px-4 py-3 text-sm font-medium',
+                    'space-y-2 rounded-xl border px-4 py-3 text-sm font-medium',
                     currentStatus.isCorrect
                       ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900/40 dark:bg-green-950/20 dark:text-green-200'
                       : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-200',
                   )}
                 >
-                  {currentStatus.isCorrect ? (
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-                  ) : (
-                    <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="flex items-start gap-3">
+                    {currentStatus.isCorrect ? (
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                    ) : (
+                      <XCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                    )}
+                    <p>
+                      {currentStatus.isCorrect
+                        ? t('practice:correctAnswerFeedback')
+                        : t('practice:incorrectAnswerFeedback')}
+                    </p>
+                  </div>
+                  {isWritten && (
+                    <div className="ms-8 space-y-1 font-normal">
+                      {currentStatus.userResponse && (
+                        <p dir="ltr" className="font-mono text-xs opacity-80">
+                          {t('practice:yourAnswerLabel', { answer: currentStatus.userResponse })}
+                        </p>
+                      )}
+                      {currentStatus.revealedAnswer && (
+                        <p dir="ltr" className="font-mono text-xs">
+                          {t('practice:correctAnswerWas', { answer: currentStatus.revealedAnswer })}
+                        </p>
+                      )}
+                      {currentStatus.feedback && <p className="text-xs">{currentStatus.feedback}</p>}
+                    </div>
                   )}
-                  <p>
-                    {currentStatus.isCorrect
-                      ? t('practice:correctAnswerFeedback')
-                      : t('practice:incorrectAnswerFeedback')}
-                  </p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          {isAwaitingRating && (
-            <PracticeGradePanel
-              onGrade={handleGrade}
-              isDisabled={isCompleting || currentStatus.answerState === 'submitting'}
-            />
+          {isWritten && !isAnswered && (
+            <Suspense fallback={<Card className="py-8 text-center text-sm text-neutral-500">{t('practice:loading')}</Card>}>
+              <WrittenAnswerPanel
+                onSubmit={handleSubmitWritten}
+                isSubmitting={currentStatus.answerState === 'submitting'}
+                disabled={isCompleting}
+              />
+            </Suspense>
           )}
 
           {isAnswered && (
@@ -660,7 +552,7 @@ export function PracticePage() {
                   {t('practice:tip')}
                 </p>
                 <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                  {t('practice:ratingTip')}
+                  {t('practice:practiceFlowTip')}
                 </p>
               </div>
             </div>

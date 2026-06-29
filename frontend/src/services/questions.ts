@@ -1,23 +1,40 @@
 import { api, throwApiError, type EntityId } from './api';
 
+/** How the learner answers a question. Matches backend Question.QuestionType. */
+export type QuestionType = 'MCQ' | 'WRITTEN';
+/** How the answer is graded. Matches backend Question.GradingMethod. */
+export type GradingMethod = 'EXACT_INDEX' | 'CAS' | 'LLM';
+
 export interface BackendQuestion {
   id: EntityId;
   subtopic?: EntityId | null;
   subtopic_name?: string | null;
   topic_name: string;
   text: string;
+  question_type: QuestionType;
+  grading_method: GradingMethod;
   choices: string[];
   correct_answer_index: number | null;
+  /** Canonical answer for written questions (admin-only; blank for MCQ). */
+  correct_answer: string;
   tier: number;
   tier_display?: string | null;
 }
 
+/**
+ * Question authoring payload. MCQ carries choices + correct_answer_index;
+ * WRITTEN carries correct_answer (plain ASCII math). The backend validates that
+ * the answer key matches the type and defaults WRITTEN → CAS grading.
+ */
 export interface QuestionMutationPayload {
   text: string;
-  choices: string[];
-  correct_answer_index: number;
   tier: number;
   subtopic?: EntityId | null;
+  question_type: QuestionType;
+  choices?: string[];
+  correct_answer_index?: number | null;
+  correct_answer?: string;
+  grading_method?: GradingMethod;
 }
 
 interface PaginatedResponse<T> {
@@ -38,8 +55,11 @@ function normalizeQuestion(raw: Partial<BackendQuestion>): BackendQuestion {
     subtopic_name: raw.subtopic_name ?? null,
     topic_name: raw.topic_name ?? raw.subtopic_name ?? '',
     text: raw.text ?? '',
+    question_type: raw.question_type === 'WRITTEN' ? 'WRITTEN' : 'MCQ',
+    grading_method: raw.grading_method ?? 'EXACT_INDEX',
     choices,
     correct_answer_index: typeof raw.correct_answer_index === 'number' ? raw.correct_answer_index : null,
+    correct_answer: raw.correct_answer ?? '',
     tier: Number(raw.tier ?? 1),
     tier_display: raw.tier_display ?? null,
   };
@@ -50,13 +70,29 @@ function toQuestionList(data: BackendQuestion[] | PaginatedResponse<BackendQuest
   return rows.map(normalizeQuestion);
 }
 
-function toBackendMutationPayload(data: QuestionMutationPayload): QuestionMutationPayload {
-  return {
+function toBackendMutationPayload(data: QuestionMutationPayload): Record<string, unknown> {
+  const base = {
     text: data.text,
-    choices: data.choices,
-    correct_answer_index: data.correct_answer_index,
     tier: data.tier,
     subtopic: data.subtopic ?? null,
+    question_type: data.question_type,
+  };
+
+  if (data.question_type === 'WRITTEN') {
+    return {
+      ...base,
+      // Written questions are graded by the CAS engine; choices stay empty.
+      choices: [],
+      correct_answer: data.correct_answer ?? '',
+      grading_method: data.grading_method ?? 'CAS',
+    };
+  }
+
+  return {
+    ...base,
+    choices: data.choices ?? [],
+    correct_answer_index: data.correct_answer_index ?? null,
+    grading_method: 'EXACT_INDEX',
   };
 }
 

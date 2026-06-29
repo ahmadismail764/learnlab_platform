@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { X, Save } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Card, CardHeader, Button } from '@/components/ui'
-import { questionsService, type BackendQuestion, type QuestionMutationPayload } from '@/services/questions'
+import { questionsService, type BackendQuestion, type QuestionMutationPayload, type QuestionType } from '@/services/questions'
 import { topicsService } from '@/services/topics'
 import { queryKeys } from '@/hooks'
 import { questionSchema } from '@/validation'
@@ -18,17 +18,21 @@ interface QuestionFormModalProps {
 }
 
 interface QuestionFormState {
+  questionType: QuestionType
   text: string
   choicesText: string
   correctAnswerIndex: string
+  correctAnswer: string
   tier: '1' | '2' | '3'
   relationId: string
 }
 
 const EMPTY_FORM: QuestionFormState = {
+  questionType: 'MCQ',
   text: '',
   choicesText: '',
   correctAnswerIndex: '',
+  correctAnswer: '',
   tier: '1',
   relationId: '',
 }
@@ -49,7 +53,7 @@ export function QuestionFormModal({
   const [form, setForm] = useState<QuestionFormState>({ ...EMPTY_FORM })
   const [error, setError] = useState('')
   const { data: subtopics = [], isLoading: isLoadingSubtopics } = useQuery({
-    queryKey: ['subtopics', 'list'],
+    queryKey: queryKeys.subtopics.list,
     queryFn: () => topicsService.getSubtopics(),
     enabled: isOpen,
   })
@@ -68,9 +72,11 @@ export function QuestionFormModal({
       if (editingQuestion) {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setForm({
+          questionType: editingQuestion.question_type ?? 'MCQ',
           text: editingQuestion.text,
           choicesText: editingQuestion.choices.join('\n'),
           correctAnswerIndex: editingQuestion.correct_answer_index === null ? '' : String(editingQuestion.correct_answer_index),
+          correctAnswer: editingQuestion.correct_answer ?? '',
           tier: String(editingQuestion.tier || 1) as QuestionFormState['tier'],
           relationId: String(editingQuestion.subtopic ?? ''),
         })
@@ -127,9 +133,11 @@ export function QuestionFormModal({
     setError('')
 
     const validationResult = questionSchema.safeParse({
+      questionType: form.questionType,
       text: form.text,
       choices: choicesArray,
       correctAnswerIndex: form.correctAnswerIndex,
+      correctAnswer: form.correctAnswer,
       tier: form.tier,
       relationId: form.relationId,
     })
@@ -141,13 +149,24 @@ export function QuestionFormModal({
       return
     }
 
-    const payload: QuestionMutationPayload = {
-      text: validationResult.data.text,
-      choices: validationResult.data.choices,
-      correct_answer_index: validationResult.data.correctAnswerIndex,
-      tier: validationResult.data.tier,
-      subtopic: validationResult.data.relationId || null,
-    }
+    const valid = validationResult.data
+    const payload: QuestionMutationPayload =
+      valid.questionType === 'WRITTEN'
+        ? {
+            question_type: 'WRITTEN',
+            text: valid.text,
+            correct_answer: valid.correctAnswer,
+            tier: valid.tier,
+            subtopic: valid.relationId || null,
+          }
+        : {
+            question_type: 'MCQ',
+            text: valid.text,
+            choices: valid.choices,
+            correct_answer_index: Number(valid.correctAnswerIndex),
+            tier: valid.tier,
+            subtopic: valid.relationId || null,
+          }
 
     if (editingQuestion) {
       updateQuestionMutation.mutate({ id: editingQuestion.id, payload })
@@ -204,6 +223,32 @@ export function QuestionFormModal({
               </CardHeader>
 
               <form onSubmit={handleFormSubmit} className="p-6 space-y-4">
+                {/* Question Type */}
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    {t('admin:questions.form.questionType')}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['MCQ', 'WRITTEN'] as const).map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        disabled={isSaving}
+                        onClick={() => setForm((prev) => ({ ...prev, questionType: type }))}
+                        className={`rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+                          form.questionType === type
+                            ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-950/30 dark:text-primary-300'
+                            : 'border-neutral-300 bg-white text-neutral-600 hover:border-primary-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                        }`}
+                      >
+                        {type === 'MCQ'
+                          ? t('admin:questions.form.typeMcq')
+                          : t('admin:questions.form.typeWritten')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Question Text */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -218,44 +263,65 @@ export function QuestionFormModal({
                   />
                 </div>
 
-                {/* Choices */}
-                <div>
-                  <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    {t('admin:questions.form.choices')} <span className="text-red-500">*</span>
-                  </label>
-                  <textarea
-                    value={form.choicesText}
-                    onChange={(e) => setForm((prev) => ({ ...prev, choicesText: e.target.value }))}
-                    disabled={isSaving}
-                    className="min-h-32 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
-                    placeholder={t('admin:questions.form.choicesPlaceholder')}
-                    required
-                  />
-                </div>
+                {form.questionType === 'MCQ' ? (
+                  <>
+                    {/* Choices */}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {t('admin:questions.form.choices')} <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        value={form.choicesText}
+                        onChange={(e) => setForm((prev) => ({ ...prev, choicesText: e.target.value }))}
+                        disabled={isSaving}
+                        className="min-h-32 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                        placeholder={t('admin:questions.form.choicesPlaceholder')}
+                      />
+                    </div>
 
-                {/* Inline Fields */}
-                <div className="grid gap-4 md:grid-cols-3">
-                  {/* Correct Index */}
+                    {/* Correct Index */}
+                    <div>
+                      <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        {t('admin:questions.form.correctIndex')}
+                      </label>
+                      <select
+                        value={form.correctAnswerIndex}
+                        onChange={(e) => setForm((prev) => ({ ...prev, correctAnswerIndex: e.target.value }))}
+                        disabled={isSaving}
+                        className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 h-[38px]"
+                      >
+                        <option value="">{t('admin:questions.form.selectCorrectAnswer')}</option>
+                        {Array.from({ length: Math.max(choicesArray.length, 1) }).map((_, index) => (
+                          <option key={index} value={index}>
+                            {index} ({t('admin:questions.form.optionLetter', { letter: String.fromCharCode(65 + index) })})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  /* Written canonical answer (plain ASCII math) */
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                      {t('admin:questions.form.correctIndex')}
+                      {t('admin:questions.form.correctAnswer')} <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      value={form.correctAnswerIndex}
-                      onChange={(e) => setForm((prev) => ({ ...prev, correctAnswerIndex: e.target.value }))}
+                    <input
+                      type="text"
+                      value={form.correctAnswer}
+                      onChange={(e) => setForm((prev) => ({ ...prev, correctAnswer: e.target.value }))}
                       disabled={isSaving}
-                      className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-800 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 h-[38px]"
-                      required
-                    >
-                      <option value="">{t('admin:questions.form.selectCorrectAnswer')}</option>
-                      {Array.from({ length: Math.max(choicesArray.length, 1) }).map((_, index) => (
-                        <option key={index} value={index}>
-                          {index} ({t('admin:questions.form.optionLetter', { letter: String.fromCharCode(65 + index) })})
-                        </option>
-                      ))}
-                    </select>
+                      dir="ltr"
+                      className="w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 font-mono text-sm text-neutral-800 outline-hidden focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
+                      placeholder={t('admin:questions.form.correctAnswerPlaceholder')}
+                    />
+                    <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                      {t('admin:questions.form.correctAnswerHelp')}
+                    </p>
                   </div>
+                )}
 
+                {/* Inline Fields */}
+                <div className="grid gap-4 md:grid-cols-2">
                   {/* Tier */}
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">

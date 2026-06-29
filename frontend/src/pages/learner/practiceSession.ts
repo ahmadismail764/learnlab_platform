@@ -1,12 +1,13 @@
 import type { EntityId } from '@/services/api'
+import type { QuestionType } from '@/services/questions'
 
 export type SessionState = 'selecting' | 'practicing' | 'complete'
-export type AnswerState = 'unanswered' | 'selected' | 'submitting' | 'answered'
-export type FSRSGrade = 1 | 2 | 3 | 4
+export type AnswerState = 'unanswered' | 'submitting' | 'answered'
 
 export interface PracticeQuestion {
   id: EntityId
   text: string
+  questionType: QuestionType
   choices: string[]
   correct_answer_index: number | null
   tier: number
@@ -14,8 +15,9 @@ export interface PracticeQuestion {
   topic_id?: EntityId
 }
 
-export interface RawPracticeQuestion extends Partial<PracticeQuestion> {
+export interface RawPracticeQuestion extends Partial<Omit<PracticeQuestion, 'questionType'>> {
   subtopic_name?: string | null
+  question_type?: string | null
 }
 
 export interface QuestionState {
@@ -24,41 +26,12 @@ export interface QuestionState {
   selectedAnswerIndex: number | null
   answerState: AnswerState
   isCorrect: boolean | null
-  grade: FSRSGrade | null
   startTime: number
+  /** Grader note revealed after a written answer is submitted. */
+  feedback: string | null
+  /** Canonical correct answer revealed after a written answer is submitted. */
+  revealedAnswer: string | null
 }
-
-export const FSRS_GRADE_OPTIONS: {
-  grade: FSRSGrade
-  labelKey: string
-  subKey: string
-  tone: string
-}[] = [
-  {
-    grade: 1,
-    labelKey: 'practice:gradeAgain',
-    subKey: 'practice:gradeAgainHint',
-    tone: 'bg-red-500 hover:bg-red-600',
-  },
-  {
-    grade: 2,
-    labelKey: 'practice:gradeHard',
-    subKey: 'practice:gradeHardHint',
-    tone: 'bg-orange-500 hover:bg-orange-600',
-  },
-  {
-    grade: 3,
-    labelKey: 'practice:gradeGood',
-    subKey: 'practice:gradeGoodHint',
-    tone: 'bg-primary-500 hover:bg-primary-600',
-  },
-  {
-    grade: 4,
-    labelKey: 'practice:gradeEasy',
-    subKey: 'practice:gradeEasyHint',
-    tone: 'bg-green-600 hover:bg-green-700',
-  },
-]
 
 export function normalizePracticeQuestion(
   raw: RawPracticeQuestion,
@@ -67,6 +40,7 @@ export function normalizePracticeQuestion(
   return {
     id: raw.id ?? '',
     text: raw.text ?? '',
+    questionType: raw.question_type === 'WRITTEN' ? 'WRITTEN' : 'MCQ',
     choices: Array.isArray(raw.choices) ? raw.choices.map(String) : [],
     correct_answer_index: typeof raw.correct_answer_index === 'number' ? raw.correct_answer_index : null,
     tier: Number(raw.tier ?? 1),

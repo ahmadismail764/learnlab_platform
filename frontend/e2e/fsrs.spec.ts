@@ -5,7 +5,7 @@ test('FSRS due queue updates correctly after 3 days of virtual time', async ({ p
   await page.clock.install();
 
   // 1. Log in
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.fill('#email-or-username', 'learner');
   await page.fill('#password', 'learner123');
   await page.click('button[type="submit"]');
@@ -29,14 +29,12 @@ test('FSRS due queue updates correctly after 3 days of virtual time', async ({ p
   await page.goto(`/learner/practice?topic=${topicId}`);
   await page.click('button:has-text("Start session")');
 
-  // Solve the first question and rate it "Good" (this updates next_review to ~2 days in the future)
+  // Solve the first question. Selecting an answer submits it immediately and
+  // updates the FSRS schedule (correct -> Good, wrong -> Again) — there is no
+  // separate difficulty-rating step anymore.
   const options = page.locator('button.border-neutral-200, button.border-neutral-800');
   await expect(options.first()).toBeVisible();
   await options.first().click();
-
-  const goodRating = page.locator('button:has-text("Good")');
-  await expect(goodRating).toBeVisible();
-  await goodRating.click();
 
   // Wait for and click the continue session button to commit interaction state properly
   const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Finish session")');

@@ -24,6 +24,7 @@ export function QuestionPreviewModal({
   if (!question) return null
   const correctAnswerIndex = question.correct_answer_index
   const hasCorrectAnswer = correctAnswerIndex !== null
+  const isWritten = question.question_type === 'WRITTEN'
 
   const getTierBadge = (tier: number) => {
     const configs: Record<number, { variant: 'success' | 'secondary' | 'accent'; label: string }> = {
@@ -73,9 +74,14 @@ export function QuestionPreviewModal({
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">{question.topic_name || t('admin:questions.unlinked')}</Badge>
                   {getTierBadge(question.tier)}
-                  <Badge variant="primary">
-                    {t('admin:questions.optionsCount', { count: question.choices?.length || 0 })}
+                  <Badge variant="outline">
+                    {isWritten ? t('admin:questions.form.typeWritten') : t('admin:questions.form.typeMcq')}
                   </Badge>
+                  {!isWritten && (
+                    <Badge variant="primary">
+                      {t('admin:questions.optionsCount', { count: question.choices?.length || 0 })}
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Question Text */}
@@ -129,14 +135,28 @@ export function QuestionPreviewModal({
                   </div>
                 )}
 
+                {/* Written canonical answer */}
+                {isWritten && (
+                  <div className="space-y-1.5">
+                    <h3 className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                      {t('admin:questions.form.correctAnswer')}
+                    </h3>
+                    <p dir="ltr" className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 font-mono text-sm text-green-800 dark:border-green-800/60 dark:bg-green-900/20 dark:text-green-200">
+                      {question.correct_answer || t('admin:questions.preview.notExposed')}
+                    </p>
+                  </div>
+                )}
+
                 {/* Question Metadata */}
                 <div className="grid grid-cols-2 gap-4 border-t border-neutral-200 dark:border-neutral-700 pt-4">
                   <div>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.correctAnswerIndex')}</p>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {hasCorrectAnswer
-                        ? `${correctAnswerIndex} (${String.fromCharCode(65 + correctAnswerIndex)})`
-                        : t('admin:questions.preview.notExposed')}
+                      {isWritten
+                        ? t('admin:questions.form.typeWritten')
+                        : hasCorrectAnswer
+                          ? `${correctAnswerIndex} (${String.fromCharCode(65 + correctAnswerIndex)})`
+                          : t('admin:questions.preview.notExposed')}
                     </p>
                   </div>
                   <div>

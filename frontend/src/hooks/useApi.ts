@@ -36,6 +36,8 @@ export const queryKeys = {
     mastery: ['learner', 'mastery'] as const,
   },
   leaderboard: {
+    // Base key — invalidate to refresh every leaderboard variant (global + per-topic).
+    all: ['leaderboard'] as const,
     global: ['leaderboard', 'global'] as const,
     topic: (topicId: string | number) => ['leaderboard', 'topic', topicId] as const,
   },
@@ -62,6 +64,8 @@ export const queryKeys = {
   practice: {
     sessions: ['practice', 'sessions'] as const,
     session: (id: string | number) => ['practice', 'session', id] as const,
+    // Base key — invalidate to refresh every forecast window at once.
+    reviewForecastAll: ['practice', 'reviewForecast'] as const,
     reviewForecast: (days?: number) => ['practice', 'reviewForecast', days ?? null] as const,
   },
   auth: {

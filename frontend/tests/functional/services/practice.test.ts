@@ -91,7 +91,7 @@ describe('practiceService', () => {
     );
   });
 
-  it('submits the selected answer index and confidence rating to the placeholder response endpoint', async () => {
+  it('submits only the selected answer index to the placeholder response endpoint', async () => {
     vi.mocked(api.patch).mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -102,12 +102,10 @@ describe('practiceService', () => {
       session: 'session-1',
       question: 'question-1',
       selected_answer_index: 2,
-      confidence_rating: 4,
     });
 
     expect(api.patch).toHaveBeenCalledWith('/practice/sessions/session-1/responses/question-1/', {
       selected_answer_index: 2,
-      confidence_rating: 4,
     });
   });
 

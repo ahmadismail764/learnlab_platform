@@ -129,16 +129,37 @@ def extract_questions_from_pdf_stream(pdf_bytes, num_questions=None):
         )
 
         try:
+            from google.genai import types
+            
+            question_schema = {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "topic": {"type": "string"},
+                        "subtopic": {"type": "string"},
+                        "tier": {"type": "integer"},
+                        "text": {"type": "string"},
+                        "choices": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "correct_answer_index": {"type": "integer"}
+                    },
+                    "required": ["topic", "subtopic", "tier", "text", "choices", "correct_answer_index"]
+                }
+            }
+
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=question_schema
+                )
             )
 
             response_text = response.text.strip()
-            if "```json" in response_text:
-                response_text = response_text.split("```json")[1].split("```")[0]
-            elif "```" in response_text:
-                response_text = response_text.split("```")[1].split("```")[0]
 
             questions_data = json.loads(response_text.strip())
             if not isinstance(questions_data, list):

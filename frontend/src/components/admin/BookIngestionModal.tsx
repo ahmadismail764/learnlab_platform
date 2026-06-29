@@ -1,11 +1,10 @@
 import { useMemo, useState, type FormEvent } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, FileText, Upload, X } from 'lucide-react'
 import { Button, Card, CardHeader, Input } from '@/components/ui'
 import { bookIngestionService } from '@/services/bookIngestion'
-import { queryKeys } from '@/hooks'
 
 interface BookIngestionModalProps {
   isOpen: boolean
@@ -23,7 +22,6 @@ export function BookIngestionModal({
   onSuccess,
 }: BookIngestionModalProps) {
   const { t } = useTranslation(['admin', 'common'])
-  const queryClient = useQueryClient()
 
   const [file, setFile] = useState<File | null>(null)
   const [numQuestions, setNumQuestions] = useState('')
@@ -52,11 +50,7 @@ export function BookIngestionModal({
       })
     },
     onSuccess: async (result) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.questions.list }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.topics.list }),
-      ])
-      onSuccess(t('admin:questions.ingestion.success', { count: result.extracted_count }))
+      onSuccess(result.message)
       setFile(null)
       setNumQuestions('')
       setError('')

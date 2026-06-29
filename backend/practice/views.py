@@ -24,6 +24,7 @@ from practice.serializers import (
 from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER, DEFAULT_FORECAST_DAYS, MAX_FORECAST_DAYS
+from practice.grading import grade_written_answer
 
 class QuestionViewSet(viewsets.ModelViewSet):
     # Optimized Join handling syntax
@@ -184,7 +185,12 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         request=AnswerSubmitSerializer,
         responses={
             200: QuestionResponseFeedbackSerializer,
-            400: inline_serializer('AlreadyAnsweredError', fields={'detail': serializers.CharField()}),
+            400: inline_serializer('AnswerSubmitError', fields={'detail': serializers.CharField()}),
+            422: inline_serializer('UnparseableAnswer', fields={
+                'detail': serializers.CharField(),
+                'status': serializers.CharField(),
+                'written_answer': serializers.CharField(),
+            }),
         },
         parameters=[
             OpenApiParameter('id', type=OpenApiTypes.UUID, location=OpenApiParameter.PATH, description='Practice session UUID'),
@@ -193,8 +199,10 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         description=(
             "Submit an answer for one question in an active practice session. "
             "The session must have been created via POST /sessions/ which seeds placeholder responses. "
-            "Returns the full feedback including correct_answer_index for post-submit reveal. "
-            "Re-submitting an already-answered question returns 400."
+            "MCQ questions take selected_answer_index; written questions take written_answer "
+            "(plain ASCII math). Returns the full feedback including the answer key for post-submit "
+            "reveal. A written answer that can't be parsed/graded returns 422 and is NOT recorded — "
+            "the learner should review and resubmit. Re-submitting an already-answered question returns 400."
         ),
     )
     @action(detail=True, methods=['patch'], url_path=r'responses/(?P<question_id>[^/.]+)')
@@ -205,22 +213,57 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
 
         response = get_object_or_404(QuestionResponse, session=session, question_id=question_id)
 
-        if response.selected_answer_index is not None:
+        # answered_at is the type-agnostic "already answered?" check (MCQ and
+        # written share it). An unparseable written attempt leaves it NULL, so a
+        # learner can resubmit after a 422.
+        if response.answered_at is not None:
             return Response({"detail": "This question has already been answered."}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = AnswerSubmitSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
 
-        selected = serializer.validated_data['selected_answer_index']
         question = response.question
         if question is None:
             return Response({"detail": "Question no longer exists."}, status=status.HTTP_410_GONE)
-        is_correct = (selected == question.correct_answer_index)
 
-        response.selected_answer_index = selected
+        if question.question_type == Question.QuestionType.WRITTEN:
+            written = (data.get('written_answer') or '').strip()
+            if not written:
+                return Response(
+                    {"detail": "written_answer is required for this question."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            result = grade_written_answer(question.correct_answer, written)
+            if result.is_invalid:
+                # Couldn't grade — hand the question back to the learner. Nothing
+                # is finalized: no answered_at, no XP, no FSRS impact. They can
+                # fix their input and resubmit.
+                return Response(
+                    {"detail": result.feedback, "status": "invalid", "written_answer": written},
+                    status=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                )
+
+            is_correct = result.is_correct
+            response.written_answer = written
+            response.feedback = result.feedback or (
+                "Correct!" if is_correct else f"Not quite. Expected: {question.correct_answer}"
+            )
+        else:
+            selected = data.get('selected_answer_index')
+            if selected is None:
+                return Response(
+                    {"detail": "selected_answer_index is required for this question."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            is_correct = (selected == question.correct_answer_index)
+            response.selected_answer_index = selected
+
         response.is_correct = is_correct
-        if 'confidence_rating' in serializer.validated_data:
-            response.confidence_rating = serializer.validated_data['confidence_rating']
+        response.answered_at = django_timezone.now()
+        if 'confidence_rating' in data:
+            response.confidence_rating = data['confidence_rating']
         response.save()
 
         if is_correct:

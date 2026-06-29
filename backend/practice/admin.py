@@ -6,23 +6,24 @@ from practice.models import Question, PracticeSession, QuestionResponse
 class QuestionResponseInline(TabularInline):
     model = QuestionResponse
     extra = 0
-    fields = ("question", "selected_answer_index", "is_correct", "time_taken_seconds", "confidence_rating")
-    readonly_fields = ("is_correct",)
+    fields = ("question", "selected_answer_index", "written_answer", "is_correct", "answered_at", "time_taken_seconds", "confidence_rating")
+    readonly_fields = ("is_correct", "answered_at")
     show_change_link = True
 
 
 @admin.register(Question)
 class QuestionAdmin(ModelAdmin):
-    list_display = ("short_text", "subtopic", "topic_name", "tier")
-    list_filter = ("tier", "subtopic__topic")
+    list_display = ("short_text", "subtopic", "topic_name", "question_type", "tier")
+    list_filter = ("question_type", "tier", "subtopic__topic")
     search_fields = ("text", "subtopic__name", "subtopic__topic__name")
     autocomplete_fields = ("subtopic",)
     readonly_fields = ("id",)
 
     fieldsets = (
-        (None, {"fields": ("id", "subtopic", "tier")}),
+        (None, {"fields": ("id", "subtopic", "tier", "question_type", "grading_method")}),
         ("Question Content", {
-            "fields": ("text", "choices", "correct_answer_index"),
+            # MCQ uses choices + correct_answer_index; written uses correct_answer.
+            "fields": ("text", "choices", "correct_answer_index", "correct_answer"),
             "classes": ["tab"],
         }),
     )
@@ -73,7 +74,7 @@ class PracticeSessionAdmin(ModelAdmin):
 class QuestionResponseAdmin(ModelAdmin):
     list_display = (
         "learner_name", "question_preview", "selected_answer_index",
-        "is_correct", "confidence_rating", "time_taken_seconds",
+        "written_answer", "is_correct", "confidence_rating", "time_taken_seconds",
     )
     list_filter = ("is_correct", "confidence_rating")
     search_fields = ("session__learner__username", "question__text")

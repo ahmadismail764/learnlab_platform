@@ -20,5 +20,6 @@ pyyaml==6.0.3
 referencing==0.37.0
 rpds-py==0.30.0
 sqlparse==0.5.5
+sympy==1.14.0
 typing-extensions==4.15.0
 uritemplate==4.2.0

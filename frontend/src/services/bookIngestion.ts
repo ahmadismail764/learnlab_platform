@@ -7,7 +7,6 @@ export interface ExtractQuestionsFromBookPayload {
 
 export interface ExtractQuestionsFromBookResult {
   message: string
-  extracted_count: number
 }
 
 export const bookIngestionService = {

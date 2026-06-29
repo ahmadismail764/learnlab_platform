@@ -35,3 +35,6 @@ backend/db.sqlite3
 
 # Ignore personal Postman environment overrides, but not the shared collection/template
 backend/postman/*.local.json
+
+# Logs
+*.log

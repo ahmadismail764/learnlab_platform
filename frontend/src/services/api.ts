@@ -167,7 +167,8 @@ export async function parseApiError(
       return { message: data.detail };
     }
     if (typeof data.error === "string") {
-      return { message: data.error };
+      const hint = typeof data.hint === "string" ? data.hint.trim() : "";
+      return { message: hint ? `${data.error} ${hint}` : data.error };
     }
     if (Array.isArray(data.non_field_errors) && data.non_field_errors[0]) {
       return { message: String(data.non_field_errors[0]) };

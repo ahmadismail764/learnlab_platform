@@ -69,6 +69,17 @@ describe('practiceService', () => {
     expect(session.questions[0].id).toBe('question-1');
   });
 
+  it('creates a session scoped to a subtopic, taking precedence over topic', async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 'session-2', responses: [] }),
+    } as unknown as Response);
+
+    await practiceService.createSession({ topicId: 'topic-1', subtopicId: 'sub-9' });
+
+    expect(api.post).toHaveBeenCalledWith('/practice/sessions/?subtopic=sub-9', {});
+  });
+
   it('requires created practice sessions to include an id', async () => {
     vi.mocked(api.post).mockResolvedValueOnce({
       ok: true,

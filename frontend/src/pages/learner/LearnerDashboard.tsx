@@ -97,8 +97,8 @@ export function LearnerDashboard() {
       )
       .slice(0, 5)
       .map((m) => ({
-        id: String(m.topic),
-        name: m.topic_name,
+        id: String(m.subtopic),
+        name: m.subtopic_name,
         progress: Math.round(Math.min(1, m.memory || 0) * 100),
         status: m.status as TopicMastery["status"],
       }));
@@ -111,8 +111,8 @@ export function LearnerDashboard() {
       .filter((m) => m.status !== "learned")
       .slice(0, 4)
       .map((m) => ({
-        id: String(m.topic),
-        name: m.topic_name,
+        id: String(m.subtopic),
+        name: m.subtopic_name,
         progress: Math.round(Math.min(1, m.memory || 0) * 100),
         status: m.status as TopicMastery["status"],
       }));
@@ -334,7 +334,7 @@ export function LearnerDashboard() {
                 {displayTopics.map((topic) => (
                   <Link
                     key={topic.id}
-                    to={`/learner/practice?topic=${topic.id}`}
+                    to={`/learner/practice?subtopic=${topic.id}`}
                     className="group -mx-2 block rounded-xl px-2 py-4 first:pt-0 last:pb-0 hover:bg-neutral-50/80 dark:hover:bg-neutral-900/60"
                   >
                     <div className="flex items-start gap-4">

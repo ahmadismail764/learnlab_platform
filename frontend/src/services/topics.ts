@@ -7,9 +7,25 @@ interface TopicPayload {
   question_count?: number;
 }
 
+/**
+ * A unit of learner mastery.
+ *
+ * Taxonomy mapping (DB → UI): backend `Topic` = UI **category**, backend
+ * `Subtopic` = UI **topic**, backend `Question` = UI question. The backend
+ * `/mastery/` endpoint returns one row per *subtopic*, so each row is a UI
+ * "topic". `topic`/`topic_name` carry the parent backend topic (the UI
+ * category); `subtopic`/`subtopic_name` are this row's UI-topic identity.
+ */
 export interface TopicMastery {
+  /** UI-topic id (the backend subtopic id). */
   id: EntityId;
+  /** Backend subtopic id (= UI topic). */
+  subtopic: EntityId;
+  /** UI-topic display name (backend subtopic name). */
+  subtopic_name: string;
+  /** Backend topic id (= UI category). */
   topic: EntityId;
+  /** UI-category display name (backend topic name). */
   topic_name: string;
   rep_num: number;
   memory: number;
@@ -24,6 +40,8 @@ interface BackendTopicMastery {
   id?: EntityId;
   topic?: EntityId;
   topic_name?: string;
+  subtopic?: EntityId;
+  subtopic_name?: string;
   reps?: number | string | null;
   rep_num?: number | string | null;
   memory?: number | string | null;
@@ -37,90 +55,28 @@ interface BackendTopicMastery {
   next_due?: string | null;
 }
 
-type MasteryStatus = TopicMastery['status'];
-
-interface TopicMasteryAccumulator extends TopicMastery {
-  _count: number;
-}
-
-const STATUS_PRIORITY: Record<MasteryStatus, number> = {
-  struggling: 0,
-  learning: 1,
-  new: 2,
-  learned: 3,
-};
-
-function latestDate(a: string | null, b: string | null) {
-  if (!a) return b;
-  if (!b) return a;
-  return new Date(a).getTime() >= new Date(b).getTime() ? a : b;
-}
-
-function earliestDate(a: string | null, b: string | null) {
-  if (!a) return b;
-  if (!b) return a;
-  return new Date(a).getTime() <= new Date(b).getTime() ? a : b;
-}
-
-function mergeTopicMastery(current: TopicMasteryAccumulator, next: TopicMastery): TopicMasteryAccumulator {
-  const count = current._count + 1;
-  const status =
-    STATUS_PRIORITY[next.status] < STATUS_PRIORITY[current.status]
-      ? next.status
-      : current.status;
-
-  return {
-    ...current,
-    rep_num: current.rep_num + next.rep_num,
-    memory: (current.memory * current._count + next.memory) / count,
-    speed: (current.speed * current._count + next.speed) / count,
-    difficulty: (current.difficulty * current._count + next.difficulty) / count,
-    status,
-    last_reviewed: latestDate(current.last_reviewed, next.last_reviewed),
-    next_due: earliestDate(current.next_due, next.next_due),
-    _count: count,
-  };
-}
-
+/**
+ * One row per backend subtopic (UI topic) — no longer collapsed to the parent
+ * topic, since the backend now exposes subtopic id/name on every mastery row.
+ */
 function normalizeTopicMasteries(rows: BackendTopicMastery[]): TopicMastery[] {
-  const grouped = new Map<string, TopicMasteryAccumulator>();
-
-  for (const row of rows) {
-    const topicKey = String(row.topic || row.id);
-    const normalized: TopicMastery = {
-      id: topicKey,
-      topic: topicKey,
+  return rows.map((row) => {
+    const subtopicId = String(row.subtopic ?? row.id ?? '');
+    return {
+      id: subtopicId,
+      subtopic: subtopicId,
+      subtopic_name: row.subtopic_name ?? '',
+      topic: String(row.topic ?? ''),
       topic_name: row.topic_name ?? '',
       rep_num: Number(row.reps ?? row.rep_num ?? 0),
-      memory: Number(row.memory ?? 0),
-      speed: Number(row.stability ?? row.speed ?? 0),
-      difficulty: Number(row.difficulty ?? 0),
+      memory: Number(Number(row.memory ?? 0).toFixed(4)),
+      speed: Number(Number(row.stability ?? row.speed ?? 0).toFixed(4)),
+      difficulty: Number(Number(row.difficulty ?? 0).toFixed(4)),
       status: row.status ?? 'new',
       last_reviewed: row.last_review ?? row.last_reviewed ?? null,
       next_due: row.next_review ?? row.next_due ?? null,
     };
-
-    const current = grouped.get(topicKey);
-    grouped.set(
-      topicKey,
-      current
-        ? mergeTopicMastery(current, normalized)
-        : { ...normalized, _count: 1 },
-    );
-  }
-
-  return Array.from(grouped.values()).map((entry) => ({
-    id: entry.id,
-    topic: entry.topic,
-    topic_name: entry.topic_name,
-    rep_num: entry.rep_num,
-    memory: Number(entry.memory.toFixed(4)),
-    speed: Number(entry.speed.toFixed(4)),
-    difficulty: Number(entry.difficulty.toFixed(4)),
-    status: entry.status,
-    last_reviewed: entry.last_reviewed,
-    next_due: entry.next_due,
-  }));
+  });
 }
 
 interface BackendTopic {

@@ -43,6 +43,9 @@ export const queryKeys = {
     list: ['topics', 'list'] as const,
     detail: (id: string | number) => ['topics', 'detail', id] as const,
   },
+  subtopics: {
+    list: ['subtopics', 'list'] as const,
+  },
   questions: {
     list: ['questions', 'list'] as const,
   },
@@ -105,11 +108,19 @@ export function useTopicLeaderboard(topicId: string | number | null) {
 
 // ── Topics & Questions Hooks ────────────────────────────────────────
 
-/** Fetch all topics */
+/** Fetch all topics (backend Topic = UI category) */
 export function useTopics() {
   return useQuery({
     queryKey: queryKeys.topics.list,
     queryFn: () => topicsService.getTopics(),
+  })
+}
+
+/** Fetch all subtopics (backend Subtopic = UI topic), each carrying its parent topic/category. */
+export function useSubtopics() {
+  return useQuery({
+    queryKey: queryKeys.subtopics.list,
+    queryFn: () => topicsService.getSubtopics(),
   })
 }
 

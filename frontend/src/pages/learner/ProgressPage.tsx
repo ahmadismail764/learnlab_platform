@@ -333,7 +333,7 @@ export function ProgressPage() {
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-semibold text-neutral-950 dark:text-neutral-50">
-                          {getTopicDisplayName(t, topic.topic_name)}
+                          {getTopicDisplayName(t, topic.subtopic_name)}
                         </p>
                         <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                           {t('reviewCount', { count: topic.rep_num })} • {formatDue(topic.next_due)}
@@ -500,7 +500,7 @@ export function ProgressPage() {
                       </div>
                       <div>
                         <h3 className="text-base font-semibold text-neutral-950 dark:text-neutral-50">
-                          {getTopicDisplayName(t, topic.topic_name)}
+                          {getTopicDisplayName(t, topic.subtopic_name)}
                         </h3>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
                           {t('reviewCount', { count: topic.rep_num })}

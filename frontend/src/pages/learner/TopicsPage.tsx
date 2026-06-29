@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Card, Button, Badge, Input, ProgressBar, AllCaughtUpIllustration } from "@/components/ui";
-import { useTopicMastery, useTopics } from "@/hooks";
+import { useSubtopics, useTopicMastery } from "@/hooks";
 import { getTopicCategoryDisplayName, getTopicDisplayName } from "@/utils/topicLabels";
 
 /**
@@ -53,18 +53,21 @@ export function TopicsPage() {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: rawTopics, isLoading: topicsLoading } = useTopics();
+  const { data: rawSubtopics, isLoading: topicsLoading } = useSubtopics();
   const { data: rawMasteries } = useTopicMastery();
 
-  const topics = useMemo(() => rawTopics ?? [], [rawTopics]);
+  // UI "topics" are backend subtopics; UI "categories" are backend topics.
+  const subtopics = useMemo(() => rawSubtopics ?? [], [rawSubtopics]);
   const masteries = useMemo(() => rawMasteries ?? [], [rawMasteries]);
 
   const mappedTopics = useMemo(() => {
-    return topics.map((t): TopicItem => {
-      const m = masteries.find((mastery) => mastery.topic === t.id);
+    return subtopics.map((s): TopicItem => {
+      const m = masteries.find((mastery) => mastery.subtopic === s.id);
 
+      // Category is the parent backend topic; pick an icon from its name.
+      const categoryName = s.topic_name || "Uncategorized";
       let icon = "📝";
-      const category = (t.category || '').toLowerCase();
+      const category = categoryName.toLowerCase();
       if (category.includes("logic")) icon = "🔢";
       else if (category.includes("set")) icon = "∪";
       else if (category.includes("relation")) icon = "≡";
@@ -78,9 +81,9 @@ export function TopicsPage() {
       let state: 'new' | 'learning' | 'review' | 'mastered' = 'new';
       let memory = 1.0;
       let nextReview: string | undefined = undefined;
-      
+
       let tier: 1 | 2 | 3 = 1;
-      const nameLower = t.name.toLowerCase();
+      const nameLower = s.name.toLowerCase();
       if (nameLower.includes("proof") || nameLower.includes("partial") || nameLower.includes("pigeon") || nameLower.includes("planar")) {
         tier = 3;
       } else if (nameLower.includes("propositional") || nameLower.includes("operation") || nameLower.includes("power") || nameLower.includes("equivalence") || nameLower.includes("permut") || nameLower.includes("combin") || nameLower.includes("path") || nameLower.includes("tree") || nameLower.includes("modular")) {
@@ -112,7 +115,7 @@ export function TopicsPage() {
       else if (nameLower.includes("modular")) nameKey = "numberTheory.modularArithmetic";
       else if (nameLower.includes("gcd")) nameKey = "numberTheory.gcd";
       else if (nameLower.includes("prime")) nameKey = "numberTheory.primes";
-      else nameKey = t.name;
+      else nameKey = s.name;
 
       if (m) {
         const isDue = m.next_due && new Date(m.next_due) <= new Date();
@@ -138,14 +141,14 @@ export function TopicsPage() {
       }
 
       return {
-        id: t.id.toString(),
-        name: t.name,
+        id: s.id.toString(),
+        name: s.name,
         nameKey,
-        description: t.description,
-        category: t.category || "Uncategorized",
+        description: s.description,
+        category: categoryName,
         icon,
         progress,
-        questionsTotal: t.question_count ?? 10,
+        questionsTotal: s.question_count ?? 10,
         questionsDue,
         lastReviewed,
         state,
@@ -154,7 +157,7 @@ export function TopicsPage() {
         nextReview,
       };
     });
-  }, [topics, masteries]);
+  }, [subtopics, masteries]);
 
   const mappedCategories = useMemo(() => {
     const groups: Record<string, TopicItem[]> = {};
@@ -484,7 +487,7 @@ export function TopicsPage() {
                         {topic.progress}%
                       </p>
                     </div>
-                    <Link to={`/learner/practice?topic=${topic.id}`}>
+                    <Link to={`/learner/practice?subtopic=${topic.id}`}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -558,7 +561,7 @@ export function TopicsPage() {
                         {topic.progress}%
                       </p>
                     </div>
-                    <Link to={`/learner/practice?topic=${topic.id}`}>
+                    <Link to={`/learner/practice?subtopic=${topic.id}`}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -710,7 +713,7 @@ export function TopicsPage() {
                                 {topic.progress}%
                               </p>
                             </div>
-                            <Link to={`/learner/practice?topic=${topic.id}`}>
+                            <Link to={`/learner/practice?subtopic=${topic.id}`}>
                               <Button
                                 variant="ghost"
                                 size="sm"

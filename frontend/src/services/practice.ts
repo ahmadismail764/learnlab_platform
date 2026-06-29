@@ -4,6 +4,8 @@ import { questionsService, type BackendQuestion } from "./questions";
 
 interface SessionCreatePayload {
   topicId?: string;
+  /** Backend Subtopic id. Takes precedence over topicId when both are set. */
+  subtopicId?: string;
 }
 
 interface SessionUpdatePayload {
@@ -83,9 +85,12 @@ export const practiceService = {
   },
 
   createSession: async (data: SessionCreatePayload = {}): Promise<PracticeSessionRecord> => {
-    const query = data.topicId
-      ? `?topic=${encodeURIComponent(data.topicId)}`
-      : '';
+    // Backend gives ?subtopic= precedence over ?topic=, so mirror that here.
+    const query = data.subtopicId
+      ? `?subtopic=${encodeURIComponent(data.subtopicId)}`
+      : data.topicId
+        ? `?topic=${encodeURIComponent(data.topicId)}`
+        : '';
     const response = await api.post(`/practice/sessions/${query}`, {});
     if (!response.ok) throw new Error("Failed to create session");
     const session = await response.json() as PracticeSessionRecord;
@@ -101,8 +106,8 @@ export const practiceService = {
     return await response.json();
   },
 
-  generateAdaptiveSession: async (topicId?: string): Promise<PracticeSessionRecord & { questions: BackendQuestion[] }> => {
-    const session = await practiceService.createSession({ topicId });
+  generateAdaptiveSession: async (topicId?: string, subtopicId?: string): Promise<PracticeSessionRecord & { questions: BackendQuestion[] }> => {
+    const session = await practiceService.createSession({ topicId, subtopicId });
     const responseRows = session.responses ?? [];
 
     if (responseRows.length === 0) {

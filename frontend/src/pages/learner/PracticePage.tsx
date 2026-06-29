@@ -45,6 +45,7 @@ export function PracticePage() {
   const queryClient = useQueryClient()
   const [searchParams] = useSearchParams()
   const topicId = searchParams.get('topic') || undefined
+  const subtopicId = searchParams.get('subtopic') || undefined
 
   const [sessionState, setSessionState] = useState<SessionState>('selecting')
   const [questions, setQuestions] = useState<PracticeQuestion[]>([])
@@ -64,7 +65,7 @@ export function PracticePage() {
   const startSession = async () => {
     setIsLoading(true)
     try {
-      const data = await practiceService.generateAdaptiveSession(topicId)
+      const data = await practiceService.generateAdaptiveSession(topicId, subtopicId)
 
       // Handle "all caught up" — no questions available
       if (!data.questions || data.questions.length === 0) {

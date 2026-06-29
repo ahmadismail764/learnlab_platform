@@ -16,7 +16,7 @@ describe('topicsService', () => {
   });
 
   describe('getTopicMastery', () => {
-    it('normalizes the current backend mastery contract for learner views', async () => {
+    it('normalizes the per-subtopic mastery contract (subtopic = UI topic, topic = UI category)', async () => {
       vi.mocked(api.get).mockResolvedValueOnce({
         ok: true,
         json: async () => [
@@ -24,6 +24,8 @@ describe('topicsService', () => {
             id: 'mastery-1',
             topic: 'topic-1',
             topic_name: 'Seeded Discrete Mathematics',
+            subtopic: 'sub-1',
+            subtopic_name: 'Logic Basics',
             reps: 3,
             memory: 0.82,
             stability: 6.5,
@@ -40,7 +42,9 @@ describe('topicsService', () => {
       expect(api.get).toHaveBeenCalledWith('/mastery/');
       expect(masteries).toEqual([
         {
-          id: 'topic-1',
+          id: 'sub-1',
+          subtopic: 'sub-1',
+          subtopic_name: 'Logic Basics',
           topic: 'topic-1',
           topic_name: 'Seeded Discrete Mathematics',
           rep_num: 3,
@@ -54,7 +58,7 @@ describe('topicsService', () => {
       ]);
     });
 
-    it('aggregates multiple mastery rows that belong to the same parent topic', async () => {
+    it('returns one row per subtopic and no longer collapses siblings into the parent topic', async () => {
       vi.mocked(api.get).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -63,6 +67,8 @@ describe('topicsService', () => {
               id: 'mastery-1',
               topic: 'topic-1',
               topic_name: 'Logic',
+              subtopic: 'sub-1',
+              subtopic_name: 'Propositional Logic',
               reps: 2,
               memory: 0.5,
               stability: 4,
@@ -75,6 +81,8 @@ describe('topicsService', () => {
               id: 'mastery-2',
               topic: 'topic-1',
               topic_name: 'Logic',
+              subtopic: 'sub-2',
+              subtopic_name: 'Predicate Logic',
               reps: 1,
               memory: 0.75,
               stability: 8,
@@ -87,19 +95,28 @@ describe('topicsService', () => {
         }),
       } as unknown as Response);
 
-      const [mastery] = await topicsService.getTopicMastery();
+      const masteries = await topicsService.getTopicMastery();
 
-      expect(mastery).toMatchObject({
-        id: 'topic-1',
+      expect(masteries).toHaveLength(2);
+      expect(masteries[0]).toMatchObject({
+        id: 'sub-1',
+        subtopic: 'sub-1',
+        subtopic_name: 'Propositional Logic',
         topic: 'topic-1',
         topic_name: 'Logic',
-        rep_num: 3,
-        memory: 0.625,
-        speed: 6,
-        difficulty: 4,
-        status: 'learning',
-        last_reviewed: '2026-06-24T10:00:00Z',
-        next_due: '2026-06-28T10:00:00Z',
+        rep_num: 2,
+        memory: 0.5,
+        speed: 4,
+      });
+      expect(masteries[1]).toMatchObject({
+        id: 'sub-2',
+        subtopic: 'sub-2',
+        subtopic_name: 'Predicate Logic',
+        topic: 'topic-1',
+        topic_name: 'Logic',
+        rep_num: 1,
+        memory: 0.75,
+        speed: 8,
       });
     });
   });

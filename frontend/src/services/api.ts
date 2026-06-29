@@ -93,6 +93,61 @@ export function clearStoredAuth() {
   }
 }
 
+/**
+ * Exchange the stored refresh token for a fresh access token.
+ *
+ * The backend runs SimpleJWT with ROTATE_REFRESH_TOKENS + BLACKLIST_AFTER_ROTATION,
+ * so each refresh returns a NEW refresh token and blacklists the old one. We must
+ * persist that rotated refresh token, otherwise the next refresh reuses a
+ * blacklisted token and the session dies after one access-token lifetime.
+ *
+ * Returns the new access token, or null if refreshing isn't possible/failed.
+ */
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = getToken("learnlab_refresh_token");
+  if (!refreshToken) return null;
+
+  try {
+    const refreshResponse = await fetchFromBase("/auth/refresh/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh: refreshToken }),
+    }, API_BASE);
+
+    if (!refreshResponse.ok) return null;
+
+    const data = await refreshResponse.json();
+    const access = typeof data?.access === "string" ? data.access : null;
+    if (!access) return null;
+
+    const storage = getTokenStorage();
+    storage.setItem("learnlab_auth_token", access);
+    // Persist the rotated refresh token so the next refresh doesn't reuse a
+    // now-blacklisted one.
+    if (typeof data?.refresh === "string") {
+      storage.setItem("learnlab_refresh_token", data.refresh);
+    }
+    return access;
+  } catch (error) {
+    logger.warn("Token refresh failed", error);
+    return null;
+  }
+}
+
+// Single-flight refresh: when several requests 401 at once, they share one
+// /auth/refresh/ call. Firing them in parallel would rotate the refresh token
+// multiple times and blacklist it out from under the others, logging the user out.
+let refreshInFlight: Promise<string | null> | null = null;
+
+function getRefreshedAccessToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = refreshAccessToken().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 async function fetchWithAuth(
   url: string,
   options: RequestInit = {},
@@ -110,33 +165,15 @@ async function fetchWithAuth(
   let response = await fetchFromBase(url, { ...options, headers }, baseUrl);
 
   if (response.status === 401) {
-    // Try refresh token
-    const refreshToken = getToken("learnlab_refresh_token");
-    if (refreshToken) {
-      try {
-        const refreshResponse = await fetchFromBase("/auth/refresh/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh: refreshToken }),
-        }, API_BASE);
-        if (refreshResponse.ok) {
-          const { access } = await refreshResponse.json();
-          const storage = getTokenStorage();
-          storage.setItem("learnlab_auth_token", access);
-          // Retry original request
-          const newHeaders = { ...headers, Authorization: `Bearer ${access}` };
-          response = await fetchFromBase(url, {
-            ...options,
-            headers: newHeaders,
-          }, baseUrl);
-          return response;
-        }
-      } catch (error) {
-        logger.warn("Token refresh failed", error);
-      }
+    const access = await getRefreshedAccessToken();
+    if (access) {
+      // Retry the original request with the fresh access token.
+      const newHeaders = { ...headers, Authorization: `Bearer ${access}` };
+      response = await fetchFromBase(url, { ...options, headers: newHeaders }, baseUrl);
+    } else {
+      // Refresh failed — clear auth from both storages and notify AuthContext.
+      clearStoredAuth();
     }
-    // Refresh failed — clear auth from both storages and notify AuthContext.
-    clearStoredAuth();
   }
 
   return response;
@@ -167,7 +204,8 @@ export async function parseApiError(
       return { message: data.detail };
     }
     if (typeof data.error === "string") {
-      return { message: data.error };
+      const hint = typeof data.hint === "string" ? data.hint.trim() : "";
+      return { message: hint ? `${data.error} ${hint}` : data.error };
     }
     if (Array.isArray(data.non_field_errors) && data.non_field_errors[0]) {
       return { message: String(data.non_field_errors[0]) };

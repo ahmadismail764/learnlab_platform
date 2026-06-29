@@ -69,6 +69,17 @@ describe('practiceService', () => {
     expect(session.questions[0].id).toBe('question-1');
   });
 
+  it('creates a session scoped to a subtopic, taking precedence over topic', async () => {
+    vi.mocked(api.post).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: 'session-2', responses: [] }),
+    } as unknown as Response);
+
+    await practiceService.createSession({ topicId: 'topic-1', subtopicId: 'sub-9' });
+
+    expect(api.post).toHaveBeenCalledWith('/practice/sessions/?subtopic=sub-9', {});
+  });
+
   it('requires created practice sessions to include an id', async () => {
     vi.mocked(api.post).mockResolvedValueOnce({
       ok: true,
@@ -80,7 +91,7 @@ describe('practiceService', () => {
     );
   });
 
-  it('submits the selected answer index and confidence rating to the placeholder response endpoint', async () => {
+  it('submits only the selected answer index to the placeholder response endpoint', async () => {
     vi.mocked(api.patch).mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -91,12 +102,10 @@ describe('practiceService', () => {
       session: 'session-1',
       question: 'question-1',
       selected_answer_index: 2,
-      confidence_rating: 4,
     });
 
     expect(api.patch).toHaveBeenCalledWith('/practice/sessions/session-1/responses/question-1/', {
       selected_answer_index: 2,
-      confidence_rating: 4,
     });
   });
 

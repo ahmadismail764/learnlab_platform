@@ -29,6 +29,7 @@ export {
   useGlobalLeaderboard,
   useTopicLeaderboard,
   useTopics,
+  useSubtopics,
   useQuestions,
   useAggregatedMetrics,
   useBulkTopicAnalytics,

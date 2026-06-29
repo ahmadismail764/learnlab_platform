@@ -4,6 +4,8 @@ import { questionsService, type BackendQuestion } from "./questions";
 
 interface SessionCreatePayload {
   topicId?: string;
+  /** Backend Subtopic id. Takes precedence over topicId when both are set. */
+  subtopicId?: string;
 }
 
 interface SessionUpdatePayload {
@@ -56,6 +58,18 @@ export interface SessionCompletionResult extends PracticeSessionRecord {
   next_review?: ReviewForecast;
 }
 
+/**
+ * A written answer that couldn't be parsed/graded (HTTP 422). The backend does
+ * NOT record it, so the learner should revise and resubmit — callers treat this
+ * differently from a hard failure (keep the question answerable, show the hint).
+ */
+export class WrittenAnswerInvalidError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WrittenAnswerInvalidError';
+  }
+}
+
 async function parseOptionalJson(response: Response) {
   if (response.status === 204) {
     return null;
@@ -83,9 +97,12 @@ export const practiceService = {
   },
 
   createSession: async (data: SessionCreatePayload = {}): Promise<PracticeSessionRecord> => {
-    const query = data.topicId
-      ? `?topic=${encodeURIComponent(data.topicId)}`
-      : '';
+    // Backend gives ?subtopic= precedence over ?topic=, so mirror that here.
+    const query = data.subtopicId
+      ? `?subtopic=${encodeURIComponent(data.subtopicId)}`
+      : data.topicId
+        ? `?topic=${encodeURIComponent(data.topicId)}`
+        : '';
     const response = await api.post(`/practice/sessions/${query}`, {});
     if (!response.ok) throw new Error("Failed to create session");
     const session = await response.json() as PracticeSessionRecord;
@@ -101,8 +118,8 @@ export const practiceService = {
     return await response.json();
   },
 
-  generateAdaptiveSession: async (topicId?: string): Promise<PracticeSessionRecord & { questions: BackendQuestion[] }> => {
-    const session = await practiceService.createSession({ topicId });
+  generateAdaptiveSession: async (topicId?: string, subtopicId?: string): Promise<PracticeSessionRecord & { questions: BackendQuestion[] }> => {
+    const session = await practiceService.createSession({ topicId, subtopicId });
     const responseRows = session.responses ?? [];
 
     if (responseRows.length === 0) {
@@ -120,29 +137,23 @@ export const practiceService = {
     }
   },
 
-  // Backward-compatibility aliases
-  generateSheet: async () => {
-    return practiceService.generateAdaptiveSession();
-  },
-
-  submitSheet: async (sessionId: EntityId, data: SessionUpdatePayload) => {
-    return practiceService.updateSession(sessionId, data);
-  },
-
-  getSubmissionHistory: async () => {
-    return practiceService.getSessions();
-  },
-
   submitInteraction: async (data: {
     session: EntityId;
     question: EntityId;
-    selected_answer_index: number;
-    confidence_rating?: number;
+    selected_answer_index?: number;
+    written_answer?: string;
   }) => {
     const response = await api.patch(`/practice/sessions/${data.session}/responses/${data.question}/`, {
-      selected_answer_index: data.selected_answer_index,
-      ...(data.confidence_rating ? { confidence_rating: data.confidence_rating } : {}),
+      ...(typeof data.selected_answer_index === 'number'
+        ? { selected_answer_index: data.selected_answer_index }
+        : {}),
+      ...(data.written_answer !== undefined ? { written_answer: data.written_answer } : {}),
     });
+    if (response.status === 422) {
+      // Unparseable/ungradeable written answer — not recorded; learner revises.
+      const { message } = await parseApiError(response, 'We could not read that answer. Please revise and try again.');
+      throw new WrittenAnswerInvalidError(message);
+    }
     if (!response.ok) {
       const { message } = await parseApiError(response, 'Failed to submit interaction');
       throw new Error(message);

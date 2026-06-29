@@ -198,7 +198,8 @@ This project follows **SOLID principles**:
 
 ## Development Notes
 
-Important frontend product and architecture decisions are tracked in [DECISIONS.md](./DECISIONS.md).
+Frontend documentation lives in [`docs/`](./docs/) — see its [index](./docs/README.md).
+Important product and architecture decisions are tracked in [docs/DECISIONS.md](./docs/DECISIONS.md).
 
 ### API Contract Reviews
 

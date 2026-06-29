@@ -36,12 +36,17 @@ export const queryKeys = {
     mastery: ['learner', 'mastery'] as const,
   },
   leaderboard: {
+    // Base key — invalidate to refresh every leaderboard variant (global + per-topic).
+    all: ['leaderboard'] as const,
     global: ['leaderboard', 'global'] as const,
     topic: (topicId: string | number) => ['leaderboard', 'topic', topicId] as const,
   },
   topics: {
     list: ['topics', 'list'] as const,
     detail: (id: string | number) => ['topics', 'detail', id] as const,
+  },
+  subtopics: {
+    list: ['subtopics', 'list'] as const,
   },
   questions: {
     list: ['questions', 'list'] as const,
@@ -59,6 +64,8 @@ export const queryKeys = {
   practice: {
     sessions: ['practice', 'sessions'] as const,
     session: (id: string | number) => ['practice', 'session', id] as const,
+    // Base key — invalidate to refresh every forecast window at once.
+    reviewForecastAll: ['practice', 'reviewForecast'] as const,
     reviewForecast: (days?: number) => ['practice', 'reviewForecast', days ?? null] as const,
   },
   auth: {
@@ -105,11 +112,19 @@ export function useTopicLeaderboard(topicId: string | number | null) {
 
 // ── Topics & Questions Hooks ────────────────────────────────────────
 
-/** Fetch all topics */
+/** Fetch all topics (backend Topic = UI category) */
 export function useTopics() {
   return useQuery({
     queryKey: queryKeys.topics.list,
     queryFn: () => topicsService.getTopics(),
+  })
+}
+
+/** Fetch all subtopics (backend Subtopic = UI topic), each carrying its parent topic/category. */
+export function useSubtopics() {
+  return useQuery({
+    queryKey: queryKeys.subtopics.list,
+    queryFn: () => topicsService.getSubtopics(),
   })
 }
 

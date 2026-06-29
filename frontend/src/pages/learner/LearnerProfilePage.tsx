@@ -121,7 +121,7 @@ export function LearnerProfilePage() {
           new: t('learner:stateNew'),
         }
         return {
-          name: getTopicDisplayName(t, m.topic_name),
+          name: getTopicDisplayName(t, m.subtopic_name),
           level: m.status ? (statusLabels[m.status] || t('learner:stateNew')) : t('learner:stateNew'),
           progress,
         }

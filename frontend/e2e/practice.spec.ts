@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('Learner can start and successfully complete a practice session', async ({ page }) => {
   // 1. Log in
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.fill('#email-or-username', 'learner');
   await page.fill('#password', 'learner123');
   await page.click('button[type="submit"]');
@@ -30,12 +30,9 @@ test('Learner can start and successfully complete a practice session', async ({ 
     // Wait for choice buttons to be visible
     const options = page.locator('button.border-neutral-200, button.border-neutral-800');
     await expect(options.first()).toBeVisible();
+    // Selecting an answer submits it immediately and reveals feedback —
+    // there is no separate difficulty-rating step anymore.
     await options.first().click();
-
-    // Click rating grade button (e.g., "Good")
-    const goodRating = page.locator('button:has-text("Good")');
-    await expect(goodRating).toBeVisible();
-    await goodRating.click();
 
     // Click the continue/finish button to move past the feedback stage
     const nextBtn = page.locator('button:has-text("Continue"), button:has-text("Finish session")');

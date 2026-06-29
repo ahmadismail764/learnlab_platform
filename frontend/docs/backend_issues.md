@@ -19,7 +19,7 @@ Source-verified at `HEAD 350b4bc` (by reading the merged backend tree):
   - `POST /api/v1/practice/sessions/?topic=<backend_topic_id>` accepts `{}` and creates placeholder responses.
   - Session creation now also accepts `?subtopic=<backend_subtopic_id>`, which takes precedence over `topic` when both are sent.
   - `GET /api/v1/practice/questions/<question_id>/` does not expose `correct_answer_index` to learners.
-  - `PATCH /api/v1/practice/sessions/<session_id>/responses/<question_id>/` accepts `selected_answer_index` and optional `confidence_rating`.
+  - `PATCH /api/v1/practice/sessions/<session_id>/responses/<question_id>/` accepts `selected_answer_index` (MCQ) or `written_answer` (WRITTEN, plain ASCII math). A written answer that can't be parsed/graded returns `422` and is **not** recorded. The frontend no longer sends `confidence_rating` (see note below).
   - `PATCH /api/v1/practice/sessions/<session_id>/` completes the session when `end_time` is sent, and now returns a `next_review` headline via `PracticeSessionCompletionSerializer`.
 - New FSRS review forecast endpoint: `GET /api/v1/practice/review-forecast/?days=N` (default 7, clamped to `[1, 30]`), returning a per-day agenda of due subtopics. Wired in `practice/urls.py`.
 - Preferences match the documented envelope contract:
@@ -83,3 +83,9 @@ Needs a Docker re-run to re-confirm (not executed for this update; #120 changed 
 - **Subtopic-scoped practice sessions**: `practiceService.createSession` accepts `subtopicId` → `?subtopic=` (mirrors backend precedence over `?topic=`); `PracticePage` reads `?subtopic=`, and learner practice links now pass `?subtopic=`.
 - **503 hint surfaced**: `parseApiError` now appends the backend `hint` to `error` so the admin book-ingestion modal shows the `GEMINI_API_KEY` guidance.
 - Unit tests in `tests/functional/services/{topics,practice}.test.ts` updated to the per-subtopic + subtopic-session contracts.
+
+## Frontend follow-ups (post-audit pass)
+
+- **Difficulty self-rating removed.** The learner no longer picks a 1–4 grade after answering. The backend scheduler (`fsrs_engine.process_session` → `aggregate_session_to_fsrs_rating`) already derives the FSRS outcome from correctness alone (any wrong → Again, all correct → Good) and ignores `confidence_rating`, so removing the manual step changes scheduling by zero. The frontend no longer sends `confidence_rating`.
+- **Written-answer questions are now wired end-to-end (frontend).** Admin authoring (`QuestionFormModal`) supports a question-type toggle and a canonical `correct_answer` (plain ASCII math); the learner answers WRITTEN questions with a MathLive keyboard (`WrittenAnswerPanel`, lazy-loaded so MCQ-only sessions don't download MathLive). LaTeX is converted to ASCII via `convertLatexToAsciiMath` before submit. The `422` "unparseable" path keeps the question answerable for a retry instead of recording a wrong answer. Consumes `question_type`, `correct_answer`, `grading_method` (written defaults to CAS server-side).
+- **Auth refresh hardened.** Backend `SIMPLE_JWT` runs `ROTATE_REFRESH_TOKENS` + `BLACKLIST_AFTER_ROTATION`, so `/auth/refresh/` returns a new refresh token and blacklists the old one. The frontend now persists the rotated refresh token (previously it kept the old, blacklisted one and the session died after one access lifetime) and uses a single-flight refresh so concurrent 401s don't rotate the token out from under each other.

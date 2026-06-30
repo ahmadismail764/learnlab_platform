@@ -272,6 +272,80 @@ html.dark .lab-grid {
   background-image: radial-gradient(var(--color-neutral-800) 1px, transparent 1px);
 }
 
+/* ============================================================
+ * Themed scrollbars
+ * Tracks the active theme via the .dark class on <html> (managed by
+ * ThemeContext). Standards-based scrollbar-color/scrollbar-width drive the
+ * page scroll on Firefox + Chromium 121+/Edge; ::-webkit-scrollbar covers
+ * Safari and older Blink. .scrollbar-styled is a slimmer, accent-on-hover
+ * variant for feature panels (notifications dropdown, tables, etc.).
+ * ============================================================ */
+
+/* Page scroll — standards property */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-300) transparent;
+}
+html.dark {
+  scrollbar-color: var(--color-neutral-700) transparent;
+}
+
+/* WebKit/Blink — themed scrollbars across the page and overflow containers */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-300);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-400);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-700);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-neutral-600);
+}
+
+/* Feature panels — slimmer, opt-in via .scrollbar-styled
+   (notifications dropdown, question bank table, dropdowns) */
+.scrollbar-styled {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-neutral-300) transparent;
+}
+html.dark .scrollbar-styled {
+  scrollbar-color: var(--color-neutral-600) transparent;
+}
+.scrollbar-styled::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-300);
+  background-clip: content-box;
+  border: 2px solid transparent;
+  border-radius: 9999px;
+}
+.scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-400);
+}
+html.dark .scrollbar-styled::-webkit-scrollbar-thumb {
+  background-color: var(--color-neutral-600);
+}
+html.dark .scrollbar-styled::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-primary-500);
+}
+
 /* Refined Component Styles */
 .btn {
   font-family: var(--font-display);

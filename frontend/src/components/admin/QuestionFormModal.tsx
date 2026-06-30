@@ -196,7 +196,7 @@ export function QuestionFormModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl z-10 bg-white dark:bg-neutral-900"
+            className="scrollbar-styled w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl z-10 bg-white dark:bg-neutral-900"
           >
             <Card className="border-0 shadow-none bg-transparent">
               <CardHeader className="flex flex-row items-start justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">

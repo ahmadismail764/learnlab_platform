@@ -120,6 +120,7 @@
 "noQuestions": "لا توجد أسئلة بعد",
 "noQuestionsInDatabase": "لا توجد أسئلة في قاعدة البيانات",
 "optionsCount": "{{count}} خيارات",
+"freeResponse": "إجابة حرة",
 "preview": {
 "answerChoices": "خيارات الإجابة",
 "correct": "صحيح",
@@ -127,7 +128,7 @@
 "general": "عام",
 "notExposed": "غير معروض للمتعلمين",
 "question": "السؤال",
-"subtopic": "الموضوع الفرعي",
+"category": "الفئة",
 "title": "معاينة السؤال"
 },
 "questionBank": "بنك الأسئلة",
@@ -142,7 +143,8 @@
 "subtitle": "أدر الأسئلة ومستويات الصعوبة والمحتوى",
 "table": {
 "actions": "الإجراءات",
-"choices": "الخيارات",
+"answer": "الإجابة",
+"type": "النوع",
 "difficulty": "الصعوبة",
 "question": "السؤال",
 "topic": "الموضوع"

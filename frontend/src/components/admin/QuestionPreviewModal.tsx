@@ -3,11 +3,14 @@ import { X, Edit2, Trash2 } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Card, CardHeader, CardContent, Button, Badge } from '@/components/ui'
 import type { BackendQuestion } from '@/services/questions'
+import { getTopicCategoryDisplayName } from '@/utils/topicLabels'
 
 interface QuestionPreviewModalProps {
   isOpen: boolean
   onClose: () => void
   question: BackendQuestion | null
+  /** Parent category (backend topic) of this question's topic, for the hierarchy. */
+  category?: string | null
   onEdit: () => void
   onDelete: () => void
 }
@@ -16,6 +19,7 @@ export function QuestionPreviewModal({
   isOpen,
   onClose,
   question,
+  category,
   onEdit,
   onDelete,
 }: QuestionPreviewModalProps) {
@@ -55,7 +59,7 @@ export function QuestionPreviewModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl z-10 bg-white dark:bg-neutral-900"
+            className="scrollbar-styled w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl z-10 bg-white dark:bg-neutral-900"
           >
             <Card className="border-0 shadow-none bg-transparent">
               <CardHeader className="flex flex-row items-start justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">
@@ -160,9 +164,9 @@ export function QuestionPreviewModal({
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.subtopic')}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{t('admin:questions.preview.category')}</p>
                     <p className="font-semibold text-neutral-900 dark:text-neutral-100 mt-0.5">
-                      {question.subtopic_name ?? t('admin:questions.preview.general')}
+                      {category ? getTopicCategoryDisplayName(t, category) : t('admin:questions.preview.general')}
                     </p>
                   </div>
                 </div>

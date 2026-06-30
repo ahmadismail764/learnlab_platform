@@ -133,7 +133,7 @@ export function TopicFormModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto z-10"
+            className="scrollbar-styled bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl w-full max-w-lg mx-auto max-h-[90vh] overflow-y-auto z-10"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-neutral-200 dark:border-neutral-700">

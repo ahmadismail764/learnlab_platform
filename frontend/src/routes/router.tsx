@@ -4,6 +4,7 @@ import { AuthLayout, DashboardLayout } from "@/components/layout";
 import type { User } from "@/types";
 import { LazyRoute } from "./LazyRoute";
 import { NotFoundPage } from "./NotFoundPage";
+import { hasCompletedOnboarding } from "@/utils/onboarding";
 
 /**
  * Application Router
@@ -78,7 +79,7 @@ function createDashboardElement(
   }
 
   if (user.role !== requiredRole) {
-    return <Navigate to={getDefaultRoute(user.role)} replace />;
+    return <Navigate to={getDefaultRoute(user)} replace />;
   }
 
   return (
@@ -97,7 +98,7 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
     {
       path: "/",
       element: user ? (
-        <Navigate to={getDefaultRoute(user.role)} replace />
+        <Navigate to={getDefaultRoute(user)} replace />
       ) : (
         <AuthLayout />
       ),
@@ -148,11 +149,10 @@ export function createAppRouter(user: User | null, onLogout?: () => void) {
   ]);
 }
 
-// Get default route based on user role
-function getDefaultRoute(role: User["role"]): string {
-  const routes: Record<User["role"], string> = {
-    learner: "/learner",
-    admin: "/admin",
-  };
-  return routes[role];
+// Default landing route. Learners who haven't completed onboarding go there
+// first — this is the router-level source of truth, so the post-login redirect
+// can't race past it to the dashboard.
+function getDefaultRoute(user: User): string {
+  if (user.role === "admin") return "/admin";
+  return hasCompletedOnboarding(user.id) ? "/learner" : "/learner/onboarding";
 }

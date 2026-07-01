@@ -1,4 +1,4 @@
-import { useState, useMemo, Suspense } from 'react'
+import { useState, useMemo, Suspense, useTransition } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Medal,
@@ -9,7 +9,7 @@ import {
   Users,
   TrendingUp,
 } from 'lucide-react'
-import { Card, Badge, Avatar, Button, Input, Skeleton } from '@/components/ui'
+import { Card, Badge, Avatar, Input, Skeleton } from '@/components/ui'
 import { PageIntro, PageStatCard, SectionHeading } from '@/components/common'
 import { useCurrentUser } from '@/contexts'
 import { useSuspenseTopics, useSuspenseGlobalLeaderboard, useSuspenseTopicLeaderboard } from '@/hooks'
@@ -165,6 +165,10 @@ function LeaderboardContent() {
   const [leaderboardType, setLeaderboardType] = useState<'global' | 'topic'>('global')
   const [selectedTopicOverride, setSelectedTopicOverride] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
+  // Switching scope/topic re-suspends the data query. Running it inside a
+  // transition keeps the current standings on screen (lightly dimmed) instead
+  // of collapsing the whole panel to a skeleton on every toggle.
+  const [isPending, startTransition] = useTransition()
 
   // Fetch topics for the filter dropdown
   const { data: rawTopics } = useSuspenseTopics()
@@ -187,52 +191,69 @@ function LeaderboardContent() {
         icon={<Crown className="h-6 w-6" />}
         tone="accent"
         actions={(
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 p-1 dark:bg-neutral-800/60">
             {(['global', 'topic'] as const).map((type) => (
-              <Button
+              <button
                 key={type}
-                size="sm"
-                variant={leaderboardType === type ? 'accent' : 'outline'}
-                onClick={() => setLeaderboardType(type)}
+                type="button"
+                onClick={() => startTransition(() => setLeaderboardType(type))}
+                aria-pressed={leaderboardType === type}
+                className={cn(
+                  'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors duration-150',
+                  leaderboardType === type
+                    ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-900 dark:text-neutral-100'
+                    : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200',
+                )}
               >
                 {type === 'global' ? t('learner:globalLeaderboard') : t('learner:byTopic')}
-              </Button>
+              </button>
             ))}
-
-            {leaderboardType === 'topic' && (
-              <select
-                value={selectedTopicId}
-                onChange={(event) => setSelectedTopicOverride(event.target.value)}
-                className="h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-700 outline-hidden dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
-              >
-                {topics.map((topic) => (
-                  <option key={topic.id} value={topic.id}>
-                    {getTopicDisplayName(t, topic.name)}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
         )}
       />
 
-      <Suspense fallback={<LeaderboardPageSkeleton />}>
-        {leaderboardType === 'global' ? (
-          <GlobalLeaderboardSection
-            currentUser={currentUser}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-        ) : (
-          <TopicLeaderboardSection
-            topicId={selectedTopicId}
-            selectedTopicName={selectedTopicName}
-            currentUser={currentUser}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
-        )}
-      </Suspense>
+      {/* Topic picker on its own row: keeps the two scope buttons fixed in the
+          header so switching global/topic never shifts them. */}
+      {leaderboardType === 'topic' && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">{t('learner:byTopic')}</span>
+          <select
+            value={selectedTopicId}
+            aria-label={t('learner:byTopic')}
+            onChange={(event) => {
+              const next = event.target.value
+              startTransition(() => setSelectedTopicOverride(next))
+            }}
+            className="h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm text-neutral-700 outline-hidden dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+          >
+            {topics.map((topic) => (
+              <option key={topic.id} value={topic.id}>
+                {getTopicDisplayName(t, topic.name)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className={cn('transition-opacity duration-200', isPending && 'pointer-events-none opacity-60')}>
+        <Suspense fallback={<LeaderboardPageSkeleton />}>
+          {leaderboardType === 'global' ? (
+            <GlobalLeaderboardSection
+              currentUser={currentUser}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
+          ) : (
+            <TopicLeaderboardSection
+              topicId={selectedTopicId}
+              selectedTopicName={selectedTopicName}
+              currentUser={currentUser}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+            />
+          )}
+        </Suspense>
+      </div>
     </div>
   )
 }

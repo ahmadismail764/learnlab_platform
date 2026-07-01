@@ -185,7 +185,7 @@ export function Sidebar({
         </div>
 
         {/* Navigation */}
-        <nav className={cn("flex-1 overflow-y-auto overflow-x-hidden", isCollapsed ? "py-4" : "py-3")}>
+        <nav className={cn("scrollbar-styled flex-1 overflow-y-auto overflow-x-hidden", isCollapsed ? "py-4" : "py-3")}>
           <ul className={cn('space-y-1', isCollapsed ? 'px-2' : 'px-3')}>
             {visibleItems.map((item) => {
               const isActive = location.pathname === item.href;

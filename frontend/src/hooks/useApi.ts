@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useSuspenseQuery, keepPreviousData } from '@tanstack/react-query'
 import { learnersService, type LearnerProfile, type LeaderboardLearner } from '@/services/learners'
 import { topicsService } from '@/services/topics'
 import {
@@ -9,6 +9,7 @@ import {
   type DifficultyTierBreakdownResponse,
 } from '@/services/analytics'
 import { practiceService, type ReviewForecast } from '@/services/practice'
+import { enrollmentsService, type Enrollment } from '@/services/enrollments'
 import { authService, type UpdateCurrentUserPayload } from '@/services/auth'
 import {
   adminsService,
@@ -47,6 +48,9 @@ export const queryKeys = {
   },
   subtopics: {
     list: ['subtopics', 'list'] as const,
+  },
+  enrollments: {
+    list: ['enrollments', 'list'] as const,
   },
   questions: {
     list: ['questions', 'list'] as const,
@@ -125,6 +129,50 @@ export function useSubtopics() {
   return useQuery({
     queryKey: queryKeys.subtopics.list,
     queryFn: () => topicsService.getSubtopics(),
+  })
+}
+
+/** Fetch the learner's enrolled subtopics (UI: "My Topics"). */
+export function useEnrollments() {
+  return useQuery<Enrollment[]>({
+    queryKey: queryKeys.enrollments.list,
+    queryFn: () => enrollmentsService.list(),
+  })
+}
+
+/** Invalidate every cache whose contents depend on the enrolled set. */
+function invalidateEnrollmentScopedCaches(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: queryKeys.enrollments.list })
+  qc.invalidateQueries({ queryKey: queryKeys.learner.mastery })
+  qc.invalidateQueries({ queryKey: queryKeys.questions.list })
+  qc.invalidateQueries({ queryKey: queryKeys.practice.reviewForecastAll })
+}
+
+/** Enroll the learner in a subtopic (idempotent). */
+export function useEnroll() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (subtopicId: string | number) => enrollmentsService.enroll(subtopicId),
+    onSuccess: () => invalidateEnrollmentScopedCaches(qc),
+  })
+}
+
+/** Unenroll the learner from a subtopic by enrollment id (discards FSRS history). */
+export function useUnenroll() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (enrollmentId: string | number) => enrollmentsService.unenroll(enrollmentId),
+    onSuccess: () => invalidateEnrollmentScopedCaches(qc),
+  })
+}
+
+/** Enroll in several subtopics at once (fans out — enroll is a per-subtopic POST). */
+export function useEnrollMany() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (subtopicIds: (string | number)[]) =>
+      Promise.all(subtopicIds.map((id) => enrollmentsService.enroll(id))),
+    onSuccess: () => invalidateEnrollmentScopedCaches(qc),
   })
 }
 
@@ -247,6 +295,9 @@ export function useReviewForecast(days?: number) {
   return useQuery<ReviewForecast>({
     queryKey: queryKeys.practice.reviewForecast(days),
     queryFn: () => practiceService.getReviewForecast(days),
+    // Keep the current agenda on screen while a different window loads, so
+    // switching 7/14/30 doesn't flash the skeleton each time.
+    placeholderData: keepPreviousData,
   })
 }
 

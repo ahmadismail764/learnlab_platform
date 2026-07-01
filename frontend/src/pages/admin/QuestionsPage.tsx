@@ -20,12 +20,12 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardContent, Button, Badge, Input, EmptyState, Skeleton } from '@/components/ui'
 import type { BackendQuestion } from '@/services/questions'
-import { useSuspenseQuestions } from '@/hooks'
+import { useSuspenseQuestions, useSubtopics } from '@/hooks'
 import { QuestionPreviewModal } from '@/components/admin/QuestionPreviewModal'
 import { QuestionFormModal } from '@/components/admin/QuestionFormModal'
 import { DeleteQuestionDialog } from '@/components/admin/DeleteQuestionDialog'
 import { BookIngestionModal } from '@/components/admin/BookIngestionModal'
-import { getTopicDisplayName } from '@/utils/topicLabels'
+import { getTopicDisplayName, getTopicCategoryDisplayName } from '@/utils/topicLabels'
 
 type FilterTier = 'all' | 1 | 2 | 3
 
@@ -79,7 +79,7 @@ function QuestionsPageSkeleton() {
           <table className="w-full">
             <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
               <tr>
-                {Array.from({ length: 6 }).map((_, i) => (
+                {Array.from({ length: 7 }).map((_, i) => (
                   <th key={i} className="px-4 py-3 text-start">
                     <Skeleton className="h-4 w-20" />
                   </th>
@@ -91,7 +91,8 @@ function QuestionsPageSkeleton() {
                 <tr key={rowIndex}>
                   <td className="px-4 py-4"><Skeleton className="h-4 w-8" /></td>
                   <td className="px-4 py-4"><Skeleton className="h-4 w-60" /></td>
-                  <td className="px-4 py-4"><Skeleton className="h-6 w-24 rounded-full" /></td>
+                  <td className="px-4 py-4"><Skeleton className="h-6 w-20 rounded-md" /></td>
+                  <td className="px-4 py-4"><Skeleton className="h-6 w-24 rounded-md" /></td>
                   <td className="px-4 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
                   <td className="px-4 py-4"><Skeleton className="h-4 w-16" /></td>
                   <td className="px-4 py-4 flex justify-end gap-2">
@@ -127,6 +128,18 @@ function QuestionsContent() {
     [rawQuestions]
   )
   const loadError = queryError ? (queryError instanceof Error ? queryError.message : t('admin:failedToLoadQuestions')) : ''
+
+  // Hierarchy: UI category -> topic -> question maps to backend topic ->
+  // subtopic -> question. A question only carries its subtopic; resolve the
+  // parent category (backend topic name) from the subtopics list.
+  const { data: subtopics } = useSubtopics()
+  const categoryBySubtopic = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const subtopic of subtopics ?? []) {
+      map.set(String(subtopic.id), subtopic.topic_name)
+    }
+    return map
+  }, [subtopics])
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState('')
@@ -464,13 +477,16 @@ function QuestionsContent() {
                       {t('admin:questions.table.question')}
                     </th>
                     <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
+                      {t('admin:questions.table.type')}
+                    </th>
+                    <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.topic')}
                     </th>
                     <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.difficulty')}
                     </th>
                     <th className="px-4 py-3 text-start text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
-                      {t('admin:questions.table.choices')}
+                      {t('admin:questions.table.answer')}
                     </th>
                     <th className="px-4 py-3 text-end text-xs font-semibold tracking-wider text-neutral-600 dark:text-neutral-400 uppercase">
                       {t('admin:questions.table.actions')}
@@ -478,7 +494,12 @@ function QuestionsContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                  {filteredQuestions.map((question, index) => (
+                  {filteredQuestions.map((question, index) => {
+                    const isWritten = question.question_type === 'WRITTEN'
+                    const category = question.subtopic != null
+                      ? categoryBySubtopic.get(String(question.subtopic))
+                      : undefined
+                    return (
                     <tr
                       key={question.id}
                       className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
@@ -493,14 +514,32 @@ function QuestionsContent() {
                         </p>
                       </td>
                       <td className="px-4 py-4">
-                        <Badge variant="secondary" size="sm">
-                          {question.topic_name ? getTopicDisplayName(t, question.topic_name) : t('admin:questions.unlinked')}
+                        <Badge variant={isWritten ? 'accent' : 'outline'} size="sm" className="rounded-md">
+                          {isWritten ? t('admin:questions.form.typeWritten') : t('admin:questions.form.typeMcq')}
                         </Badge>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div className="space-y-1">
+                          {category && (
+                            <p className="text-[11px] font-medium uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                              {getTopicCategoryDisplayName(t, category)}
+                            </p>
+                          )}
+                          <Badge
+                            variant="secondary"
+                            size="sm"
+                            className="max-w-[14rem] whitespace-normal rounded-md text-start leading-snug"
+                          >
+                            {question.topic_name ? getTopicDisplayName(t, question.topic_name) : t('admin:questions.unlinked')}
+                          </Badge>
+                        </div>
                       </td>
                       <td className="px-4 py-4">{getTierBadge(question.tier)}</td>
                       <td className="px-4 py-4">
                         <span className="text-sm text-neutral-500">
-                          {t('admin:questions.optionsCount', { count: question.choices?.length || 0 })}
+                          {isWritten
+                            ? t('admin:questions.freeResponse')
+                            : t('admin:questions.optionsCount', { count: question.choices?.length || 0 })}
                         </span>
                       </td>
                       <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
@@ -533,7 +572,8 @@ function QuestionsContent() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -546,6 +586,7 @@ function QuestionsContent() {
         isOpen={!!selectedQuestion}
         onClose={() => setSelectedQuestion(null)}
         question={selectedQuestion}
+        category={selectedQuestion?.subtopic != null ? categoryBySubtopic.get(String(selectedQuestion.subtopic)) : undefined}
         onEdit={() => {
           if (selectedQuestion) openEditForm(selectedQuestion)
           setSelectedQuestion(null)

@@ -120,6 +120,7 @@
     "noQuestions": "No Questions Yet",
     "noQuestionsInDatabase": "No questions in the database",
     "optionsCount": "{{count}} options",
+    "freeResponse": "Free response",
     "preview": {
       "answerChoices": "Answer Choices",
       "correct": "Correct",
@@ -127,7 +128,7 @@
       "general": "General",
       "notExposed": "Not shown to learners",
       "question": "Question",
-      "subtopic": "Subtopic",
+      "category": "Category",
       "title": "Question Preview"
     },
     "questionBank": "Question Bank",
@@ -142,7 +143,8 @@
     "subtitle": "Manage questions, difficulty tiers, and content",
     "table": {
       "actions": "Actions",
-      "choices": "Choices",
+      "answer": "Answer",
+      "type": "Type",
       "difficulty": "Difficulty",
       "question": "Question",
       "topic": "Topic"

@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, Button, Badge, ProgressBar, XpBadge } from '@/components/ui'
-import { PageStatCard, SectionHeading } from '@/components/common'
+import { SectionHeading } from '@/components/common'
 import { useToast } from '@/contexts'
 import { practiceService, WrittenAnswerInvalidError, type ReviewForecast } from '@/services/practice'
 import { cn } from '@/utils/cn'
@@ -495,13 +495,19 @@ export function PracticePage() {
         </div>
 
         <div className="space-y-4 lg:col-span-4">
-          <PageStatCard
-            icon={<XpBadge size="lg" />}
-            label={t('practice:sessionXp')}
-            value={`+${earnedXp}`}
-            helper={t('practice:updatesDuringSet')}
-            tone="secondary"
-          />
+          <Card padding="sm">
+            <div className="flex items-center gap-3">
+              <XpBadge size="lg" />
+              <div className="min-w-0">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+                  {t('practice:sessionXp')}
+                </p>
+                <p className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                  {`+${earnedXp}`}
+                </p>
+              </div>
+            </div>
+          </Card>
 
           <Card>
             <SectionHeading

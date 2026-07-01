@@ -1,12 +1,13 @@
 {
   "accent": "مميز",
   "admin": "مسؤول",
+  "back": "رجوع",
   "cancel": "إلغاء",
   "clearFilters": "مسح عوامل التصفية",
-  "close": "أغلِق",
-  "delete": "احذف",
-  "dismissNotification": "أغلق الإشعار",
-  "edit": "عدِّل",
+  "close": "إغلاق",
+  "delete": "حذف",
+  "dismissNotification": "إغلاق الإشعار",
+  "edit": "تعديل",
   "empty": {
     "content": {
       "description": "راجِع لاحقًا لتجد مواد تعلم جديدة.",
@@ -52,8 +53,8 @@
   "pageNotFound": "الصفحة غير موجودة",
   "primary": "أساسي",
   "refresh": "تحديث",
-  "reset": "أعِد الضبط",
-  "saveChanges": "احفظ التغييرات",
+  "reset": "إعادة الضبط",
+  "saveChanges": "حفظ التغييرات",
   "saved": "حُفِظ",
-  "tryAgain": "أعِد المحاولة"
+  "tryAgain": "إعادة المحاولة"
 }

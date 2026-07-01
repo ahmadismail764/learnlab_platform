@@ -88,7 +88,7 @@ export function BookIngestionModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.15, ease: 'easeOut' }}
-            className="z-10 max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-neutral-900"
+            className="scrollbar-styled z-10 max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl dark:bg-neutral-900"
           >
             <Card className="border-0 bg-transparent shadow-none">
               <CardHeader className="flex flex-row items-start justify-between border-b border-neutral-200 p-6 dark:border-neutral-700">

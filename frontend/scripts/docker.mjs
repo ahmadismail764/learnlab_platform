@@ -16,6 +16,10 @@ const dryRun = args.has('--dry-run');
 const forceAll = args.has('--all');
 const noBuild = args.has('--no-build');
 const skipPs = args.has('--no-ps');
+// Backend-only mode: skip the frontend image entirely so you can run the SPA
+// with `bun run dev` (which proxies /api to the backend on :8000) and keep
+// Docker for db/redis/backend + final verification.
+const noFrontend = args.has('--no-frontend') || args.has('--backend-only');
 
 if (args.has('--help') || args.has('-h')) {
   printHelp();
@@ -46,6 +50,16 @@ function main() {
     }
   }
 
+  // Backend-only: never build or start the frontend image, and which services
+  // to bring up shrinks to db/redis/backend.
+  const coreServices = noFrontend
+    ? CORE_SERVICES.filter((service) => service !== 'frontend')
+    : CORE_SERVICES;
+  if (noFrontend) {
+    affected.delete('frontend');
+    log('Backend-only mode (--no-frontend): skipping the frontend image; run the SPA with `bun run dev`.');
+  }
+
   if (!hasPreviousBuild) {
     warn('No previous Docker helper stamp found; rebuilding all buildable images.');
   } else if (!gitInspectionReliable) {
@@ -69,7 +83,12 @@ function main() {
     log('No affected build images detected; skipping docker compose build.');
   }
 
-  run('docker', ['compose', 'up', '-d', ...CORE_SERVICES]);
+  if (noFrontend) {
+    // Free up :5173 for `bun run dev`; harmless if it isn't running.
+    run('docker', ['compose', 'stop', 'frontend']);
+  }
+
+  run('docker', ['compose', 'up', '-d', ...coreServices]);
 
   if (!skipPs) {
     run('docker', ['compose', 'ps']);
@@ -231,15 +250,22 @@ Usage:
   npm run docker
 
 Options:
-  --all       Rebuild all buildable images before starting services.
-  --no-build  Start services without rebuilding images.
-  --no-ps     Skip the final docker compose ps output.
-  --dry-run   Print the Docker commands without running them.
+  --all           Rebuild all buildable images before starting services.
+  --no-build      Start services without rebuilding images.
+  --no-frontend   Backend-only: skip the frontend image and stop it if running,
+                  so you can run the SPA with \`bun run dev\` (alias: --backend-only).
+  --no-ps         Skip the final docker compose ps output.
+  --dry-run       Print the Docker commands without running them.
 
 What it does:
   1. Inspects changed and untracked files with Git.
   2. Maps frontend/ changes to the frontend image and backend/ changes to the backend image.
   3. Rebuilds only affected build images, unless --all or --no-build is used.
   4. Starts db, redis, backend, and frontend with docker compose up -d.
+
+Typical dev loop:
+  bun run docker --no-frontend   # db + redis + backend in Docker
+  bun run dev                    # SPA on :5173, /api proxied to the backend
+  bun run docker                 # full stack for final verification
 `);
 }

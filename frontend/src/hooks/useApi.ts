@@ -166,6 +166,16 @@ export function useUnenroll() {
   })
 }
 
+/** Enroll in several subtopics at once (fans out — enroll is a per-subtopic POST). */
+export function useEnrollMany() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (subtopicIds: (string | number)[]) =>
+      Promise.all(subtopicIds.map((id) => enrollmentsService.enroll(id))),
+    onSuccess: () => invalidateEnrollmentScopedCaches(qc),
+  })
+}
+
 /** Fetch all questions */
 export function useQuestions() {
   return useQuery({

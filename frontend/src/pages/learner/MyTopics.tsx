@@ -102,7 +102,6 @@ export function MyTopics({ topics, onRequestUnenroll, unenrollingId }: MyTopicsP
   const topicsDue = dueTodayTopics.length
   const avgProgress =
     totalTopics > 0 ? Math.round(allTopics.reduce((sum, tp) => sum + tp.progress, 0) / totalTopics) : 0
-  const allCaughtUp = topicsDue === 0
 
   const unenrollButton = (topic: TopicItem) => (
     <Button
@@ -179,36 +178,8 @@ export function MyTopics({ topics, onRequestUnenroll, unenrollingId }: MyTopicsP
         className="rounded-xl py-2.5"
       />
 
-      {/* All caught up / start-practice CTA */}
-      {allCaughtUp ? (
-        <Card className="py-8 text-center">
-          <div className="flex flex-col items-center gap-3">
-            <AllCaughtUpIllustration className="mx-auto" />
-            <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
-              {t('learner:allCaughtUp')}
-            </h2>
-            <p className="max-w-md text-neutral-500 dark:text-neutral-400">
-              {t('learner:allCaughtUpDescription')}
-            </p>
-            <div className="mt-2 flex items-center gap-3">
-              {futureReviewTopics.length > 0 && (
-                <Link to="/learner/practice">
-                  <Button variant="outline" leftIcon={<TrendingUp className="h-4 w-4" />}>
-                    {t('learner:studyAhead')}
-                  </Button>
-                </Link>
-              )}
-              {newTopics.length > 0 && (
-                <Link to="/learner/practice">
-                  <Button leftIcon={<BookOpen className="h-4 w-4" />}>
-                    {t('learner:exploreNewTopics', { count: newTopics.length })}
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </Card>
-      ) : (
+      {/* CTA: due review / new topics to start / genuinely caught up */}
+      {topicsDue > 0 ? (
         <Card className="border-0 bg-linear-to-r from-primary-500 to-primary-600 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -224,6 +195,43 @@ export function MyTopics({ topics, onRequestUnenroll, unenrollingId }: MyTopicsP
                 {t('learner:startSession')}
               </Button>
             </Link>
+          </div>
+        </Card>
+      ) : newTopics.length > 0 ? (
+        <Card className="border-0 bg-linear-to-r from-secondary-500 to-secondary-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">{t('learner:readyToStartTitle', { count: newTopics.length })}</p>
+              <p className="text-sm text-white/80">{t('learner:readyToStartDescription')}</p>
+            </div>
+            <Link to="/learner/practice">
+              <Button
+                variant="outline"
+                className="border-white/50 text-white hover:border-white/70 hover:bg-white/20 dark:border-white/50 dark:hover:border-white/70 dark:hover:bg-white/20"
+                leftIcon={<Play className="h-4 w-4" />}
+              >
+                {t('learner:startSession')}
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <Card className="py-8 text-center">
+          <div className="flex flex-col items-center gap-3">
+            <AllCaughtUpIllustration className="mx-auto" />
+            <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
+              {t('learner:allCaughtUp')}
+            </h2>
+            <p className="max-w-md text-neutral-500 dark:text-neutral-400">
+              {t('learner:allCaughtUpDescription')}
+            </p>
+            {futureReviewTopics.length > 0 && (
+              <Link to="/learner/practice" className="mt-2">
+                <Button variant="outline" leftIcon={<TrendingUp className="h-4 w-4" />}>
+                  {t('learner:studyAhead')}
+                </Button>
+              </Link>
+            )}
           </div>
         </Card>
       )}

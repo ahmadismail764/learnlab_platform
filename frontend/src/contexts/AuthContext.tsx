@@ -14,6 +14,7 @@ import {
 } from "@/services/auth";
 import { AUTH_CLEARED_EVENT, getToken } from "@/services/api";
 import { logger } from "@/utils/logger";
+import { syncOnboardingFlag } from "@/utils/onboarding";
 import { AuthContext, type AuthContextValue } from "./authContextValue";
 
 /**
@@ -145,6 +146,18 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
     await authService.login(credentials);
     const backendUser = await authService.getCurrentUser();
     const user = mapBackendUser(backendUser);
+
+    // Reconcile the local onboarding flag with the durable backend preference so
+    // a stale/reused-id flag can't skip onboarding for a learner who never
+    // completed it (and so it works across devices). Best-effort — never block login.
+    if (user.role === "learner") {
+      try {
+        const preferences = await authService.getPreferences();
+        syncOnboardingFlag(user.id, preferences?.onboardingCompleted === true);
+      } catch (error) {
+        logger.warn("Could not reconcile onboarding preference", error);
+      }
+    }
 
     setState({
       user,

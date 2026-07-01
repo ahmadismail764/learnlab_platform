@@ -32,6 +32,7 @@ export {
   useSubtopics,
   useEnrollments,
   useEnroll,
+  useEnrollMany,
   useUnenroll,
   useQuestions,
   useAggregatedMetrics,

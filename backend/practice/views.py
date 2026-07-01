@@ -180,6 +180,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             ]
             QuestionResponse.objects.bulk_create(placeholders)
 
+        session.refresh_from_db()
         session_serializer = PracticeSessionSerializer(session, context={'request': request})
         response_data = session_serializer.data
         response_data['message'] = f'Generated adaptive session with {len(session_questions)} placeholders.'

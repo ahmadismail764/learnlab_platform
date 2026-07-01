@@ -96,3 +96,51 @@ Decision:
 Rationale:
 - Current E2E failures include onboarding-aware learner flow, admin selector drift, and auth/setup assumptions.
 - Fixing those properly needs test fixtures and role/session setup, not just selector edits.
+
+## 2026-07-01: Subtopic Enrollment — Topics Page Shape
+
+Context:
+- Backend added existence-based subtopic enrollment (a learner is enrolled iff a
+  `SubtopicMastery` row exists). Learner endpoints are now enrollment-scoped, and
+  `POST /practice/sessions/?subtopic=<id>` returns `403` if the learner is not
+  enrolled. See `docs/enrollment_api_contract.md` (root) for the contract.
+
+Decision (chosen approach):
+- **One Topics page, two sections.** *My Topics* (enrolled) is open by default and
+  keeps the existing rich cards (progress, due, mastery state). *Explore* (the
+  catalog of not-yet-enrolled topics) is a collapsed accordion below it, labelled
+  invitingly ("Explore N more topics", not "enroll").
+- **Adaptive default:** when the learner has zero enrollments, Explore auto-expands
+  (or My Topics shows an empty state that leads into it) — never present an empty
+  plan with the fix hidden.
+- **Explicit enrollment (not auto-enroll-on-click).** Un-enrolled topics show an
+  **Add/Enroll** action; enrolling then offers an immediate "start practicing"
+  handoff so it stays explicit without being a two-trip chore.
+- **Unenroll is destructive** (discards FSRS history per the contract) → confirm
+  dialog with that warning.
+- **Reuse:** the Explore catalog is one component, shared between this page
+  (collapsed) and first-run onboarding (expanded, with a suggested set pre-checked).
+- **Data model in the UI:** enrolled set + the `SubtopicMastery` id needed for
+  unenroll come from `GET /enrollments/`; the full catalog for Explore comes from
+  `GET /subtopics/`; Explore = catalog minus enrolled. Rich My-Topics card metrics
+  (retention %, state) continue to come from `/mastery/`.
+
+Alternatives considered (documented because topic counts are still unknown):
+- **Tabs instead of an accordion** (*My Topics | Explore*). Ages better if lists
+  grow large (20+ enrolled, 30+ catalog) since only one list scrolls at a time.
+  We chose the accordion for v1 (simpler, single scroll); **switch to tabs if
+  either list routinely exceeds ~15–20 items.** This is a presentational swap, not
+  a data change.
+- **Auto-enroll on clicking a topic (option a).** Rejected: browsing shouldn't
+  mutate the study plan, and since unenroll discards FSRS history, silent enroll +
+  practice could create history the learner never intended.
+- **Separate "Browse topics" route** instead of an in-page section. Rejected for
+  v1 to keep everything topic-related in one place; revisit if the page gets heavy.
+
+Follow-up:
+- Onboarding becomes the first-run instance of the Explore catalog (defaults
+  pre-selected, "change anytime" copy, at least one pick to proceed).
+- As the catalog folds into the ~740-line TopicsPage, extract the enrolled list and
+  the catalog into their own components so the page doesn't balloon.
+- Delete `docs/enrollment_api_contract.md` once this UI ships (OpenAPI schema is the
+  durable source of truth).

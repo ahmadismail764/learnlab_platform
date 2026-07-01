@@ -1,739 +1,131 @@
-import { useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import {
-  ChevronRight,
-  ChevronDown,
-  BookOpen,
-  Target,
-  Clock,
-  Play,
-  Search,
-  Calendar,
-  TrendingUp,
-} from "lucide-react";
-import { Card, Button, Badge, Input, ProgressBar, AllCaughtUpIllustration } from "@/components/ui";
-import { useSubtopics, useTopicMastery } from "@/hooks";
-import { getTopicCategoryDisplayName, getTopicDisplayName } from "@/utils/topicLabels";
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Card } from '@/components/ui'
+import { useToast } from '@/contexts'
+import { useSubtopics, useTopicMastery, useEnrollments, useEnroll, useUnenroll } from '@/hooks'
+import { getTopicDisplayName } from '@/utils/topicLabels'
+import { buildTopicItems, type TopicItem } from './topicItems'
+import { MyTopics } from './MyTopics'
+import { ExploreTopics } from './ExploreTopics'
+import { UnenrollTopicDialog } from './UnenrollTopicDialog'
 
 /**
- * TopicsPage (UC-08 — View Topics: Learner Dashboard & Progress)
+ * TopicsPage
  *
- * Browse Discrete Mathematics topics organized by category.
- * Shows FSRS-based progress and review status for each topic.
+ * One place for everything topic-related. *My Topics* (enrolled) is the primary
+ * view; *Explore* (collapsed) is the enroll catalog. Enrollment = a
+ * SubtopicMastery row, so enrolled subtopics are those with mastery; the rest
+ * are the catalog. Heavy rendering lives in MyTopics / ExploreTopics.
  */
-
-const TIER_BADGE: Record<number, string> = {
-  1: "🥉",
-  2: "🥈",
-  3: "🥇",
-};
-
-interface TopicItem {
-  id: string;
-  name: string;
-  nameKey: string;
-  description: string;
-  category: string;
-  icon: string;
-  progress: number;
-  questionsTotal: number;
-  questionsDue: number;
-  lastReviewed?: string;
-  state: "new" | "learning" | "review" | "mastered";
-  memory: number;
-  tier: 1 | 2 | 3;
-  nextReview?: string;
-}
-
 export function TopicsPage() {
-  const { t } = useTranslation(["topics", "learner", "common"]);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(["logic", "sets"]),
-  );
-  const [searchQuery, setSearchQuery] = useState("");
+  const { t } = useTranslation(['topics', 'learner', 'common'])
+  const { showError, showSuccess } = useToast()
 
-  const { data: rawSubtopics, isLoading: topicsLoading } = useSubtopics();
-  const { data: rawMasteries } = useTopicMastery();
+  const { data: rawSubtopics, isLoading: topicsLoading } = useSubtopics()
+  const { data: rawMasteries } = useTopicMastery()
+  const { data: rawEnrollments } = useEnrollments()
 
-  // UI "topics" are backend subtopics; UI "categories" are backend topics.
-  const subtopics = useMemo(() => rawSubtopics ?? [], [rawSubtopics]);
-  const masteries = useMemo(() => rawMasteries ?? [], [rawMasteries]);
+  const subtopics = useMemo(() => rawSubtopics ?? [], [rawSubtopics])
+  const masteries = useMemo(() => rawMasteries ?? [], [rawMasteries])
+  const enrollments = useMemo(() => rawEnrollments ?? [], [rawEnrollments])
 
-  const mappedTopics = useMemo(() => {
-    return subtopics.map((s): TopicItem => {
-      const m = masteries.find((mastery) => mastery.subtopic === s.id);
+  // subtopic id -> enrollment (SubtopicMastery) id, needed to unenroll.
+  const enrollmentIdBySubtopic = useMemo(() => {
+    const map = new Map<string, string | number>()
+    for (const enrollment of enrollments) map.set(String(enrollment.subtopic), enrollment.id)
+    return map
+  }, [enrollments])
 
-      // Category is the parent backend topic; pick an icon from its name.
-      const categoryName = s.topic_name || "Uncategorized";
-      let icon = "📝";
-      const category = categoryName.toLowerCase();
-      if (category.includes("logic")) icon = "🔢";
-      else if (category.includes("set")) icon = "∪";
-      else if (category.includes("relation")) icon = "≡";
-      else if (category.includes("combinatorics")) icon = "📊";
-      else if (category.includes("graph")) icon = "🔗";
-      else if (category.includes("number")) icon = "🔢";
+  const enrolledSubtopics = useMemo(
+    () => subtopics.filter((s) => enrollmentIdBySubtopic.has(String(s.id))),
+    [subtopics, enrollmentIdBySubtopic],
+  )
+  const catalogSubtopics = useMemo(
+    () => subtopics.filter((s) => !enrollmentIdBySubtopic.has(String(s.id))),
+    [subtopics, enrollmentIdBySubtopic],
+  )
+  const enrolledTopicItems = useMemo(
+    () => buildTopicItems(enrolledSubtopics, masteries),
+    [enrolledSubtopics, masteries],
+  )
 
-      let progress = 0;
-      let questionsDue = 0;
-      let lastReviewed: string | undefined = undefined;
-      let state: 'new' | 'learning' | 'review' | 'mastered' = 'new';
-      let memory = 1.0;
-      let nextReview: string | undefined = undefined;
+  const enroll = useEnroll()
+  const unenroll = useUnenroll()
+  const [unenrollTarget, setUnenrollTarget] = useState<TopicItem | null>(null)
 
-      let tier: 1 | 2 | 3 = 1;
-      const nameLower = s.name.toLowerCase();
-      if (nameLower.includes("proof") || nameLower.includes("partial") || nameLower.includes("pigeon") || nameLower.includes("planar")) {
-        tier = 3;
-      } else if (nameLower.includes("propositional") || nameLower.includes("operation") || nameLower.includes("power") || nameLower.includes("equivalence") || nameLower.includes("permut") || nameLower.includes("combin") || nameLower.includes("path") || nameLower.includes("tree") || nameLower.includes("modular")) {
-        tier = 2;
-      }
+  const handleEnroll = (subtopicId: string) => {
+    enroll.mutate(subtopicId, {
+      onSuccess: () => showSuccess(t('learner:enrollSuccess')),
+      onError: (err) => showError(err instanceof Error ? err.message : t('learner:enrollFailed')),
+    })
+  }
 
-      let nameKey = "";
-      if (nameLower.includes("propositional")) nameKey = "logic.propositional";
-      else if (nameLower.includes("predicate")) nameKey = "logic.predicates";
-      else if (nameLower.includes("proof")) nameKey = "logic.proofTechniques";
-      else if (nameLower.includes("quantifier")) nameKey = "logic.quantifiers";
-      else if (nameLower.includes("cartesian")) nameKey = "sets.cartesianProduct";
-      else if (nameLower.includes("operation")) nameKey = "sets.operations";
-      else if (nameLower.includes("power")) nameKey = "sets.powerSets";
-      else if (nameLower.includes("venn")) nameKey = "sets.vennDiagrams";
-      else if (nameLower.includes("equivalence")) nameKey = "relations.equivalence";
-      else if (nameLower.includes("function")) nameKey = "relations.functions";
-      else if (nameLower.includes("partial")) nameKey = "relations.partialOrders";
-      else if (nameLower.includes("properties")) nameKey = "relations.properties";
-      else if (nameLower.includes("counting")) nameKey = "combinatorics.counting";
-      else if (nameLower.includes("permut")) nameKey = "combinatorics.permutations";
-      else if (nameLower.includes("combin")) nameKey = "combinatorics.combinations";
-      else if (nameLower.includes("pigeon")) nameKey = "combinatorics.pigeonhole";
-      else if (nameLower.includes("basic") || nameLower.includes("definition")) nameKey = "graphTheory.basics";
-      else if (nameLower.includes("path") || nameLower.includes("cycle")) nameKey = "graphTheory.paths";
-      else if (nameLower.includes("planar")) nameKey = "graphTheory.planarity";
-      else if (nameLower.includes("tree")) nameKey = "graphTheory.trees";
-      else if (nameLower.includes("divis")) nameKey = "numberTheory.divisibility";
-      else if (nameLower.includes("modular")) nameKey = "numberTheory.modularArithmetic";
-      else if (nameLower.includes("gcd")) nameKey = "numberTheory.gcd";
-      else if (nameLower.includes("prime")) nameKey = "numberTheory.primes";
-      else nameKey = s.name;
-
-      if (m) {
-        const isDue = m.next_due && new Date(m.next_due) <= new Date();
-        const lastReviewedStr = m.last_reviewed
-          ? new Date(m.last_reviewed).toLocaleDateString()
-          : undefined;
-
-        if (m.status === 'learned') {
-          state = isDue ? 'review' : 'mastered';
-        } else if (m.status === 'struggling') {
-          state = 'review';
-        } else if (m.status === 'learning') {
-          state = 'learning';
-        } else if (m.status === 'new') {
-          state = 'new';
-        }
-
-        progress = Math.round((m.memory || 0) * 100);
-        questionsDue = isDue ? 5 : 0;
-        lastReviewed = lastReviewedStr;
-        memory = m.memory || 0;
-        nextReview = isDue ? 'today' : m.next_due ? new Date(m.next_due).toLocaleDateString() : undefined;
-      }
-
-      return {
-        id: s.id.toString(),
-        name: s.name,
-        nameKey,
-        description: s.description,
-        category: categoryName,
-        icon,
-        progress,
-        questionsTotal: s.question_count ?? 10,
-        questionsDue,
-        lastReviewed,
-        state,
-        memory,
-        tier,
-        nextReview,
-      };
-    });
-  }, [subtopics, masteries]);
-
-  const mappedCategories = useMemo(() => {
-    const groups: Record<string, TopicItem[]> = {};
-    mappedTopics.forEach((topic) => {
-      const category = topic.category;
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push(topic);
-    });
-
-    const categoryIcons: Record<string, string> = {
-      "Logic": "🧠",
-      "Sets": "∪",
-      "Relations": "≡",
-      "Combinatorics": "🎲",
-      "Graph Theory": "🔗",
-      "Number Theory": "🧮",
-      "Uncategorized": "📝",
-    };
-
-    return Object.entries(groups).map(([name, groupTopics]) => {
-      const id = name.toLowerCase().replace(/\s+/g, "-");
-      return {
-        id,
-        nameKey: name,
-        icon: categoryIcons[name] ?? "📝",
-        topics: groupTopics,
-      };
-    });
-  }, [mappedTopics]);
-
-  const toggleCategory = (categoryId: string) => {
-    setExpandedCategories((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(categoryId)) {
-        newSet.delete(categoryId);
-      } else {
-        newSet.add(categoryId);
-      }
-      return newSet;
-    });
-  };
-
-  const getStateColor = (state: TopicItem["state"]) => {
-    switch (state) {
-      case "mastered":
-        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300";
-      case "review":
-        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300";
-      case "learning":
-        return "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300";
-      case "new":
-        return "bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400";
+  const confirmUnenroll = () => {
+    if (!unenrollTarget) return
+    const enrollmentId = enrollmentIdBySubtopic.get(unenrollTarget.id)
+    if (!enrollmentId) {
+      setUnenrollTarget(null)
+      return
     }
-  };
+    unenroll.mutate(enrollmentId, {
+      onSuccess: () => showSuccess(t('learner:removeTopicSuccess')),
+      onError: (err) => showError(err instanceof Error ? err.message : t('learner:removeTopicFailed')),
+      onSettled: () => setUnenrollTarget(null),
+    })
+  }
 
-  const getStateLabel = (state: TopicItem["state"]) => {
-    switch (state) {
-      case "mastered":
-        return t("learner:stateMastered");
-      case "review":
-        return t("learner:stateReview");
-      case "learning":
-        return t("learner:stateLearning");
-      case "new":
-        return t("learner:stateNew");
-    }
-  };
-
-  // --- Search / filter (UC-08 Alt Flow 5a) ---
-  const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) return mappedCategories;
-    const q = searchQuery.toLowerCase();
-    return mappedCategories
-      .map((cat) => ({
-        ...cat,
-        topics: cat.topics.filter((topic) =>
-          topic.name.toLowerCase().includes(q) ||
-          (topic.description || '').toLowerCase().includes(q)
-        ),
-      }))
-      .filter((cat) => cat.topics.length > 0);
-  }, [searchQuery, mappedCategories]);
-
-  // --- Due Today vs Future Reviews (UC-08 Step 3) ---
-  const allTopics = useMemo(
-    () => mappedCategories.flatMap((cat) => cat.topics),
-    [mappedCategories],
-  );
-
-  const dueTodayTopics = useMemo(
-    () =>
-      allTopics
-        .filter((t) => t.nextReview === "today")
-        .sort((a, b) => a.memory - b.memory), // UC-08 Step 4: lowest memory first
-    [allTopics],
-  );
-
-  const futureReviewTopics = useMemo(
-    () =>
-      allTopics.filter(
-        (t) => t.nextReview && t.nextReview !== "today" && t.state !== "new",
-      ),
-    [allTopics],
-  );
-
-  const newTopics = useMemo(
-    () => allTopics.filter((t) => t.state === "new"),
-    [allTopics],
-  );
-
-  // Calculate overall stats
-  const totalTopics = allTopics.length;
-  const topicsDue = dueTodayTopics.length;
-  const avgProgress = totalTopics > 0 ? Math.round(
-    allTopics.reduce((sum, t) => sum + t.progress, 0) / totalTopics,
-  ) : 0;
-
-  // UC-08 Alt Flow 3a: All caught up?
-  const allCaughtUp = topicsDue === 0;
+  const hasNoEnrollments = enrolledSubtopics.length === 0
 
   if (topicsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t("common:loading")}</p>
+      <div className="flex min-h-[400px] items-center justify-center">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('common:loading')}</p>
       </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-          {t("topics:discreteMath")}
+          {t('topics:discreteMath')}
         </h1>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">
-          {t("learner:browseTopics")}
-        </p>
+        <p className="mt-1 text-neutral-600 dark:text-neutral-400">{t('learner:browseTopics')}</p>
       </div>
 
-      {/* Overview stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-              <BookOpen className="w-5 h-5 text-primary-600 dark:text-primary-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {totalTopics}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("learner:totalTopics")}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-secondary-100 dark:bg-secondary-900/30 rounded-lg">
-              <Clock className="w-5 h-5 text-secondary-600 dark:text-secondary-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {topicsDue}
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("learner:dueForReview")}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card padding="sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-accent-100 dark:bg-accent-900/30 rounded-lg">
-              <Target className="w-5 h-5 text-accent-600 dark:text-accent-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
-                {avgProgress}%
-              </p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                {t("learner:avgProgress")}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Search bar (UC-08 Alt Flow 5a) */}
-      <Input
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder={t("learner:searchTopics")}
-        leftIcon={<Search className="h-4 w-4" />}
-        size="md"
-        className="rounded-xl py-2.5"
-      />
-
-      {/* ═══ All Caught Up state (UC-08 Alt Flow 3a) ═══ */}
-      {allCaughtUp ? (
-        <Card className="text-center py-8">
-          <div className="flex flex-col items-center gap-3">
-            <AllCaughtUpIllustration className="mx-auto" />
-            <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">
-              {t("learner:allCaughtUp")}
-            </h2>
-            <p className="text-neutral-500 dark:text-neutral-400 max-w-md">
-              {t("learner:allCaughtUpDescription")}
-            </p>
-            <div className="flex items-center gap-3 mt-2">
-              {futureReviewTopics.length > 0 && (
-                <Link to="/learner/practice">
-                  <Button
-                    variant="outline"
-                    leftIcon={<TrendingUp className="w-4 h-4" />}
-                  >
-                    {t("learner:studyAhead")}
-                  </Button>
-                </Link>
-              )}
-              {newTopics.length > 0 && (
-                <Link to="/learner/practice">
-                  <Button leftIcon={<BookOpen className="w-4 h-4" />}>
-                    {t("learner:exploreNewTopics", { count: newTopics.length })}
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
+      {hasNoEnrollments ? (
+        <Card className="py-8 text-center">
+          <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100">
+            {t('learner:noEnrolledTopicsTitle')}
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-neutral-500 dark:text-neutral-400">
+            {t('learner:noEnrolledTopicsDescription')}
+          </p>
         </Card>
       ) : (
-        /* Start practice CTA — only when topics are due */
-        <Card className="bg-linear-to-r from-primary-500 to-primary-600 text-white border-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold">
-                {t("learner:topicsProgress", { due: topicsDue })}
-              </p>
-              <p className="text-sm text-primary-100">
-                {t("learner:keepKnowledgeFresh")}
-              </p>
-            </div>
-            <Link to="/learner/practice">
-              <Button
-                variant="outline"
-                className="border-white/50 dark:border-white/50 text-white hover:bg-white/20 hover:border-white/70 dark:hover:bg-white/20 dark:hover:border-white/70"
-                leftIcon={<Play className="w-4 h-4" />}
-              >
-                {t("learner:startSession")}
-              </Button>
-            </Link>
-          </div>
-        </Card>
+        <MyTopics
+          topics={enrolledTopicItems}
+          onRequestUnenroll={setUnenrollTarget}
+          unenrollingId={unenroll.isPending ? unenrollTarget?.id ?? null : null}
+        />
       )}
 
-      {/* ═══ Due Today section (UC-08 Step 3) — sorted by memory ═══ */}
-      {dueTodayTopics.length > 0 && !searchQuery && (
-        <div>
-          <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
-            <Clock className="w-5 h-5 text-primary-500" />
-            {t("learner:dueToday")}
-            <Badge variant="primary" size="sm">
-              {dueTodayTopics.length}
-            </Badge>
-          </h2>
-          <div className="space-y-2">
-            {dueTodayTopics.map((topic) => (
-              <Card
-                key={topic.id}
-                padding="sm"
-                className="hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-center gap-4">
-                  <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono shrink-0">
-                    {topic.icon}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                        {getTopicDisplayName(t, topic.name)}
-                      </h4>
-                      {/* Tier badge (UC-08 Step 5) */}
-                      <span
-                        className="text-sm"
-                        title={t("learner:tier", { level: topic.tier })}
-                      >
-                        {TIER_BADGE[topic.tier]}
-                      </span>
-                      <Badge size="sm" className={getStateColor(topic.state)}>
-                        {getStateLabel(topic.state)}
-                      </Badge>
-                      {/* "Review!" cue (UC-08 Step 5) */}
-                      <Badge
-                        size="sm"
-                        variant="primary"
-                        className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 animate-pulse"
-                      >
-                        {t("learner:reviewCue")}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                      <span>
-                        {topic.questionsTotal} {t("learner:questions")}
-                      </span>
-                      <span className="text-primary-600 dark:text-primary-400 font-medium">
-                        {topic.questionsDue} {t("learner:due")}
-                      </span>
-                      <span>
-                        {t("learner:memoryLabel")}:{" "}
-                        {Math.round(topic.memory * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-20">
-                      <ProgressBar
-                        value={topic.progress}
-                        size="sm"
-                        showLabel={false}
-                      />
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-1">
-                        {topic.progress}%
-                      </p>
-                    </div>
-                    <Link to={`/learner/practice?subtopic=${topic.id}`}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
-                        title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
-                      >
-                        <Play className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+      <ExploreTopics
+        subtopics={catalogSubtopics}
+        onEnroll={handleEnroll}
+        enrollingId={enroll.isPending ? enroll.variables ?? null : null}
+        defaultOpen={hasNoEnrollments}
+      />
 
-      {/* ═══ Future Reviews section (UC-08 Step 3) ═══ */}
-      {futureReviewTopics.length > 0 && !searchQuery && (
-        <div>
-          <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-amber-500" />
-            {t("learner:futureReviews")}
-            <Badge variant="default" size="sm">
-              {futureReviewTopics.length}
-            </Badge>
-          </h2>
-          <div className="space-y-2">
-            {futureReviewTopics.map((topic) => (
-              <Card
-                key={topic.id}
-                padding="sm"
-                className="opacity-80 hover:opacity-100 transition-opacity"
-              >
-                <div className="flex items-center gap-4">
-                  <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono shrink-0">
-                    {topic.icon}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                        {getTopicDisplayName(t, topic.name)}
-                      </h4>
-                      <span
-                        className="text-sm"
-                        title={t("learner:tier", { level: topic.tier })}
-                      >
-                        {TIER_BADGE[topic.tier]}
-                      </span>
-                      <Badge size="sm" className={getStateColor(topic.state)}>
-                        {getStateLabel(topic.state)}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                      <span>
-                        {topic.questionsTotal} {t("learner:questions")}
-                      </span>
-                      <span>
-                        {t("learner:nextReviewIn")}: {topic.nextReview}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-20">
-                      <ProgressBar
-                        value={topic.progress}
-                        size="sm"
-                        showLabel={false}
-                      />
-                      <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-1">
-                        {topic.progress}%
-                      </p>
-                    </div>
-                    <Link to={`/learner/practice?subtopic=${topic.id}`}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
-                        title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
-                      >
-                        <Play className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ═══ Browse by category (with search filtering) ═══ */}
-      <div>
-        <h2 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3">
-          {t("learner:browseByCategory")}
-        </h2>
-        <div className="space-y-4">
-          {filteredCategories.length === 0 ? (
-            <Card className="text-center py-8">
-              <div className="flex flex-col items-center gap-2">
-                <Search className="w-8 h-8 text-neutral-300 dark:text-neutral-600" />
-                <p className="text-neutral-500 dark:text-neutral-400">
-                  {t("common:noResults")}
-                </p>
-              </div>
-            </Card>
-          ) : (
-            filteredCategories.map((category) => {
-              const isExpanded = expandedCategories.has(category.id);
-              const categoryProgress = Math.round(
-                category.topics.reduce((sum, t) => sum + t.progress, 0) /
-                  category.topics.length,
-              );
-              const categoryDue = category.topics.filter(
-                (t) => t.questionsDue > 0,
-              ).length;
-
-              return (
-                <Card key={category.id} className="overflow-hidden">
-                  {/* Category header */}
-                  <button
-                    onClick={() => toggleCategory(category.id)}
-                    className="w-full p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors"
-                  >
-                    <span className="text-2xl">{category.icon}</span>
-                    <div className="flex-1 text-start">
-                      <h3 className="font-semibold text-neutral-800 dark:text-neutral-100">
-                        {getTopicCategoryDisplayName(t, category.nameKey)}
-                      </h3>
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                        {t("learner:categoryInfo", {
-                          count: category.topics.length,
-                          progress: categoryProgress,
-                        })}
-                        {categoryDue > 0 && (
-                          <span className="text-primary-600 dark:text-primary-400 ms-2">
-                            · {t("learner:categoryDue", { count: categoryDue })}
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                    <ProgressBar
-                      value={categoryProgress}
-                      size="sm"
-                      className="w-24"
-                      showLabel={false}
-                    />
-                    {isExpanded ? (
-                      <ChevronDown className="w-5 h-5 text-neutral-400" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-neutral-400 rtl:rotate-180" />
-                    )}
-                  </button>
-
-                  {/* Topic list */}
-                  {isExpanded && (
-                    <div className="border-t border-neutral-100 dark:border-neutral-700">
-                      {category.topics.map((topic, index) => (
-                        <div
-                          key={topic.id}
-                          className={`p-4 flex items-center gap-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 ${
-                            index !== category.topics.length - 1
-                              ? "border-b border-neutral-100 dark:border-neutral-700"
-                              : ""
-                          }`}
-                        >
-                          <span className="w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg font-mono shrink-0">
-                            {topic.icon}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium text-neutral-800 dark:text-neutral-100 truncate">
-                                {getTopicDisplayName(t, topic.name)}
-                              </h4>
-                              {/* Tier badge (UC-08 Step 5) */}
-                              <span
-                                className="text-sm"
-                                title={t("learner:tier", { level: topic.tier })}
-                              >
-                                {TIER_BADGE[topic.tier]}
-                              </span>
-                              <Badge
-                                size="sm"
-                                className={`shrink-0 ${getStateColor(topic.state)}`}
-                              >
-                                {getStateLabel(topic.state)}
-                              </Badge>
-                              {/* "Review!" cue for due topics */}
-                              {topic.nextReview === "today" && (
-                                <Badge
-                                  size="sm"
-                                  className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px]"
-                                >
-                                  {t("learner:reviewCue")}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                              <span>
-                                {topic.questionsTotal} {t("learner:questions")}
-                              </span>
-                              {topic.questionsDue > 0 && (
-                                <span className="text-primary-600 dark:text-primary-400 font-medium">
-                                  {topic.questionsDue} {t("learner:due")}
-                                </span>
-                              )}
-                              {topic.lastReviewed && (
-                                <span>
-                                  {t("learner:lastReviewed")}:{" "}
-                                  {topic.lastReviewed}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="w-20">
-                              <ProgressBar
-                                value={topic.progress}
-                                size="sm"
-                                showLabel={false}
-                              />
-                              <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-1">
-                                {topic.progress}%
-                              </p>
-                            </div>
-                            <Link to={`/learner/practice?subtopic=${topic.id}`}>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                aria-label={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
-                                title={t("learner:practiceTopic", { topic: getTopicDisplayName(t, topic.name) })}
-                              >
-                                <Play className="w-4 h-4" />
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              );
-            })
-          )}
-        </div>
-      </div>
+      <UnenrollTopicDialog
+        isOpen={!!unenrollTarget}
+        topicName={unenrollTarget ? getTopicDisplayName(t, unenrollTarget.name) : ''}
+        isPending={unenroll.isPending}
+        onConfirm={confirmUnenroll}
+        onClose={() => {
+          if (!unenroll.isPending) setUnenrollTarget(null)
+        }}
+      />
     </div>
-  );
+  )
 }

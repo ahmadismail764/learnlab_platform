@@ -290,6 +290,28 @@ def _schedule_dict(mastery: SubtopicMastery) -> dict:
     }
 
 
+def _locked_mastery(learner, subtopic: Subtopic) -> SubtopicMastery:
+    """Fetch (or create) the (learner, subtopic) mastery row under a write lock.
+
+    Concurrency guard for the Key Risk "DB concurrency during high-frequency
+    interval updates". FSRS is read-modify-write on a single row, so two reviews
+    landing at once could read the same state and the second save would clobber
+    the first (a lost update). ``select_for_update`` serialises them: the second
+    review blocks until the first commits, then reads the already-advanced
+    state. Must run inside an atomic block (callers are ``@transaction.atomic``).
+
+    The math is untouched — this only controls *when* each review reads the row.
+    On engines without row locking (e.g. SQLite in tests) Django degrades the
+    clause to a no-op, so behaviour and results are identical.
+    """
+    # get_or_create first so a brand-new card exists, then re-select FOR UPDATE
+    # to take the lock (get_or_create can't be combined with select_for_update).
+    SubtopicMastery.objects.get_or_create(learner=learner, subtopic=subtopic)
+    return SubtopicMastery.objects.select_for_update().get(
+        learner=learner, subtopic=subtopic
+    )
+
+
 @transaction.atomic
 def process_review(
     learner,
@@ -314,10 +336,7 @@ def process_review(
     Returns the schedule dict (see ``_schedule_dict``): next_review,
     interval_days, stability, difficulty, state, reps, lapses, last_review.
     """
-    mastery, _created = SubtopicMastery.objects.get_or_create(
-        learner=learner,
-        subtopic=subtopic,
-    )
+    mastery = _locked_mastery(learner, subtopic)
     rating = rating_from_outcome(is_correct, confidence)
     apply_fsrs(mastery, rating, now=now)
     mastery.save()
@@ -351,10 +370,7 @@ def process_session(learner, session, *, now=None) -> dict:
     results = {}
     for subtopic, group in by_subtopic.items():
         rating = aggregate_session_to_fsrs_rating(group)
-        mastery, _created = SubtopicMastery.objects.get_or_create(
-            learner=learner,
-            subtopic=subtopic,
-        )
+        mastery = _locked_mastery(learner, subtopic)
         apply_fsrs(mastery, rating, now=now)
         mastery.save()
         results[subtopic.id] = _schedule_dict(mastery)

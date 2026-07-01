@@ -37,6 +37,35 @@ class SubtopicSerializer(serializers.ModelSerializer):
     def get_question_count(self, obj) -> int:
         return obj.questions.count()
 
+# ===================================================
+# Enrollment serializers (backed by SubtopicMastery)
+# ===================================================
+class EnrollmentSerializer(serializers.ModelSerializer):
+    """Read serializer for /enrollments/ — an enrolled subtopic + its FSRS snapshot.
+
+    Reads straight off SubtopicMastery, whose existence *is* the enrollment.
+    Enrollment-focused shape (lighter than SubtopicMasterySerializer, which is
+    the full progress-dashboard view).
+    """
+    topic = serializers.UUIDField(source='subtopic.topic_id', read_only=True)
+    topic_name = serializers.CharField(source='subtopic.topic.name', read_only=True)
+    subtopic_name = serializers.CharField(source='subtopic.name', read_only=True)
+    mastery_state = serializers.CharField(source='state', read_only=True)
+
+    class Meta:
+        model = SubtopicMastery
+        fields = [
+            'id', 'subtopic', 'subtopic_name', 'topic', 'topic_name',
+            'mastery_state', 'next_review',
+        ]
+        read_only_fields = fields
+
+
+class EnrollmentCreateSerializer(serializers.Serializer):
+    """Write serializer for POST /enrollments/ — the frontend sends one field."""
+    subtopic = serializers.PrimaryKeyRelatedField(queryset=Subtopic.objects.all())
+
+
 class SubtopicMasterySerializer(serializers.ModelSerializer):
     topic = serializers.UUIDField(source='subtopic.topic.id', read_only=True)
     topic_name = serializers.CharField(source='subtopic.topic.name', read_only=True)

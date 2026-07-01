@@ -7,6 +7,7 @@ from topics.views import (
     TopicViewSet,
     SubtopicViewSet,
     SubtopicMasteryViewSet,
+    EnrollmentViewSet,
     LeaderboardView,
     ExtractQuestionsAPIView
 )
@@ -21,7 +22,15 @@ subtopics_router.register(r'subtopics', SubtopicViewSet, basename='subtopic')
 mastery_router = DefaultRouter()
 mastery_router.register(r'mastery', SubtopicMasteryViewSet, basename='subtopic-mastery')
 
-urlpatterns = topics_router.urls + subtopics_router.urls + mastery_router.urls
+enrollment_router = DefaultRouter()
+enrollment_router.register(r'enrollments', EnrollmentViewSet, basename='enrollment')
+
+urlpatterns = (
+    topics_router.urls
+    + subtopics_router.urls
+    + mastery_router.urls
+    + enrollment_router.urls
+)
 
 urlpatterns.append(path('leaderboard/', LeaderboardView.as_view(), name='leaderboard'))
 urlpatterns.append(path('extract-questions/', ExtractQuestionsAPIView.as_view(), name='extract-questions'))

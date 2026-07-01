@@ -1,7 +1,7 @@
 # Core django imports
 from django.db.models import Count
 # DRF imports
-from rest_framework import generics, viewsets
+from rest_framework import generics, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser
@@ -29,6 +29,8 @@ from topics.serializers import (
     TopicSerializer,
     SubtopicSerializer,
     SubtopicMasterySerializer,
+    EnrollmentSerializer,
+    EnrollmentCreateSerializer,
 )
 
 """
@@ -102,7 +104,78 @@ class SubtopicMasteryViewSet(viewsets.ReadOnlyModelViewSet):
         if user.is_staff:
             return SubtopicMastery.objects.select_related('learner', 'subtopic__topic').all()
         return SubtopicMastery.objects.select_related('subtopic__topic').filter(learner=user)
-    
+
+
+@extend_schema_view(
+    list=extend_schema(
+        operation_id='enrollments_list',
+        description="List the authenticated learner's subtopic enrollments (staff see all).",
+    ),
+    retrieve=extend_schema(operation_id='enrollments_retrieve'),
+    create=extend_schema(
+        operation_id='enrollments_create',
+        request=EnrollmentCreateSerializer,
+        responses={200: EnrollmentSerializer, 201: EnrollmentSerializer},
+        description=(
+            "Enroll the authenticated learner in a subtopic. Creates the "
+            "SubtopicMastery row (state NEW) whose existence *is* the enrollment. "
+            "Idempotent: re-posting an existing enrollment returns 200 (and leaves "
+            "any accumulated FSRS state untouched); a brand new enrollment returns 201."
+        ),
+    ),
+    destroy=extend_schema(
+        operation_id='enrollments_destroy',
+        description=(
+            "Unenroll: delete the learner's SubtopicMastery for this subtopic. The "
+            "subtopic stops surfacing questions and sessions immediately. Note this "
+            "discards the FSRS history — re-enrolling starts fresh from NEW."
+        ),
+    ),
+)
+class EnrollmentViewSet(viewsets.ModelViewSet):
+    """Student-facing enrollment flow, backed by SubtopicMastery.
+
+    Enrollment is existence-based: a SubtopicMastery row for (learner, subtopic)
+    *is* the enrollment. A learner enrolls (POST), lists their enrollments (GET),
+    and unenrolls (DELETE). There is no status field and no separate table — the
+    row's presence is the whole signal. PATCH/PUT are unsupported because there is
+    nothing enrollment-specific to edit (FSRS fields are engine-only).
+    """
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return EnrollmentCreateSerializer
+        return EnrollmentSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_anonymous:
+            return SubtopicMastery.objects.none()
+        qs = SubtopicMastery.objects.select_related('subtopic__topic')
+        if user.is_staff:
+            return qs.all()
+        return qs.filter(learner=user)
+
+    def create(self, request, *args, **kwargs):
+        serializer = EnrollmentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        subtopic = serializer.validated_data['subtopic']
+
+        # Existence of the mastery row is the enrollment. get_or_create makes the
+        # write idempotent and never resets an existing card's FSRS state.
+        mastery, created = SubtopicMastery.objects.get_or_create(
+            learner=request.user, subtopic=subtopic,
+        )
+
+        out = EnrollmentSerializer(mastery, context=self.get_serializer_context())
+        return Response(
+            out.data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+
 @extend_schema_view(
     list=extend_schema(
         operation_id='practice_leaderboard_list',

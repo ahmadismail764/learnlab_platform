@@ -18,7 +18,20 @@ class Subtopic(models.Model):
 
     def __str__(self):
         return self.name
+
+
 class SubtopicMastery(models.Model):
+    """A learner's FSRS memory state for one subtopic.
+
+    The *existence* of a row is also the enrollment signal: a learner has a
+    SubtopicMastery for a subtopic iff they are studying (enrolled in) it. The
+    ``unique_together`` below guarantees one row per (learner, subtopic), so
+    enrollment can never be ambiguous or duplicated. Enrolling creates the row
+    (state NEW); unenrolling deletes it. There is no separate enrollment table
+    or status field — see topics.views.EnrollmentViewSet and
+    practice.views.questions_for_learner.
+    """
+
     class StateChoices(models.TextChoices):
         NEW = 'NEW', 'New'
         LEARNING = 'LEARNING', 'Learning'

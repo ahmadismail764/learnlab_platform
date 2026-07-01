@@ -26,11 +26,42 @@ from django.shortcuts import get_object_or_404
 from practice.models import Question, PracticeSession, QuestionResponse
 from practice.constants import XP_PER_CORRECT_ANSWER, DEFAULT_FORECAST_DAYS, MAX_FORECAST_DAYS
 from practice.grading import grade_written_answer
+from topics.models import SubtopicMastery
+
+
+def questions_for_learner(user):
+    """Questions the learner is allowed to see — the single isolation gate.
+
+    Enrollment is existence-based: a learner is enrolled in a subtopic iff they
+    have a SubtopicMastery row for it. This filter is the one place that rule is
+    encoded, so every call site (question list/retrieve and both session-sourcing
+    passes) inherits the same WHERE clause and no code path can leak a question
+    from a subtopic the learner isn't studying. Staff bypass isolation.
+    """
+    qs = Question.objects.select_related('subtopic__topic')
+    if getattr(user, 'is_staff', False):
+        return qs
+    if user is None or not getattr(user, 'is_authenticated', False):
+        return qs.none()
+    return qs.filter(subtopic__masteries__learner=user)
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     # Optimized Join handling syntax
     queryset = Question.objects.select_related('subtopic__topic').all()
-    
+
+    def get_queryset(self):
+        """Structurally isolate learner reads to their enrolled subtopics.
+
+        list/retrieve run through ``questions_for_learner`` so a learner can
+        never fetch — or even 404-probe — a question from a subtopic they aren't
+        studying. Admin write actions keep the unfiltered queryset so staff can
+        author across all subtopics.
+        """
+        if self.action in ['list', 'retrieve']:
+            return questions_for_learner(self.request.user)
+        return Question.objects.select_related('subtopic__topic').all()
+
     def get_permissions(self):
         """
         Explicitly assign permissions based on the active ViewSet action lifecycle.
@@ -136,6 +167,12 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         """
         Create a session and immediately seed it with empty response placeholders.
+
+        Question sourcing is localized to the learner's enrolled subtopics: both
+        the due-first pass and the fallback draw from ``questions_for_learner``
+        so an un-enrolled subtopic can never leak into a session (Strict
+        Isolation). A ``subtopic`` filter the learner isn't enrolled in is
+        rejected with 403 rather than silently returning an empty session.
         """
         limit = int(request.query_params.get('limit', 10))
         topic_id = request.query_params.get('topic')
@@ -143,29 +180,41 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
         learner = request.user
         now = django_timezone.now()
 
-        # Gather adaptive or fallback questions
-        due_shuffled_qs = Question.objects.filter(
-            subtopic__masteries__learner=learner,
-            subtopic__masteries__next_review__lte=now
-        ).order_by('?')
+        # Base pool: only questions from subtopics this learner is enrolled in
+        # (i.e. has a SubtopicMastery row for).
+        enrolled_questions = questions_for_learner(learner)
+
         if subtopic_id:
-            due_shuffled_qs = due_shuffled_qs.filter(subtopic_id=subtopic_id)
+            is_enrolled = SubtopicMastery.objects.filter(
+                learner=learner,
+                subtopic_id=subtopic_id,
+            ).exists()
+            if not is_enrolled:
+                return Response(
+                    {"detail": "You are not enrolled in this subtopic."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            enrolled_questions = enrolled_questions.filter(subtopic_id=subtopic_id)
         elif topic_id:
-            due_shuffled_qs = due_shuffled_qs.filter(subtopic__topic_id=topic_id)
+            enrolled_questions = enrolled_questions.filter(subtopic__topic_id=topic_id)
+
+        # Due-first: subtopics whose FSRS review is already due, shuffled.
+        due_shuffled_qs = enrolled_questions.filter(
+            subtopic__masteries__learner=learner,
+            subtopic__masteries__next_review__lte=now,
+        ).order_by('?')
         session_questions = list(due_shuffled_qs[:limit])
 
+        # Fallback stays inside the enrolled pool — never the global bank.
         if not session_questions:
-            fallback_qs = Question.objects.all()
-            if subtopic_id:
-                fallback_qs = fallback_qs.filter(subtopic_id=subtopic_id)
-            elif topic_id:
-                fallback_qs = fallback_qs.filter(subtopic__topic_id=topic_id)
-            # Random offset instead of ORDER BY RANDOM() — avoids a full-table sort
-            # which would scan every row before picking limit results.
-            count = fallback_qs.count()
+            # enrolled_questions already carries any subtopic/topic filter applied
+            # above, so we never reach an un-enrolled subtopic here. Random offset
+            # instead of ORDER BY RANDOM() — avoids a full-table sort that would
+            # scan every row before picking `limit` results.
+            count = enrolled_questions.count()
             if count:
                 offset = random.randint(0, max(0, count - limit))
-                session_questions = list(fallback_qs[offset:offset + limit])
+                session_questions = list(enrolled_questions[offset:offset + limit])
 
         with transaction.atomic():
             session = PracticeSession.objects.create(learner=learner)
@@ -180,6 +229,7 @@ class PracticeSessionViewSet(viewsets.ModelViewSet):
             ]
             QuestionResponse.objects.bulk_create(placeholders)
 
+        session.refresh_from_db()
         session_serializer = PracticeSessionSerializer(session, context={'request': request})
         response_data = session_serializer.data
         response_data['message'] = f'Generated adaptive session with {len(session_questions)} placeholders.'

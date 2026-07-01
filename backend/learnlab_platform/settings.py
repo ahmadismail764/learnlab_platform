@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'practice',
     'topics',
     'analytics',
+    'notifications',
 ]
 if DEBUG:
     INSTALLED_APPS.append('silk')  # Silk profiler for development only

@@ -1,0 +1,16 @@
+{% autoescape off %}Hi {{ first_name }},
+
+You have {{ due_now_count }} review{{ due_now_count|pluralize }} ready on LearnLab. A few minutes now keeps these fresh in your memory:
+{% for s in due_subtopics %}
+  - {{ s.name }}{% if s.topic_name %} — {{ s.topic_name }}{% endif %}{% endfor %}
+
+Review now:
+{{ practice_url }}
+{% if next_review_at %}
+After today, your next review is scheduled for {{ next_review_at }}.
+{% endif %}
+You're receiving this because review reminders are on for your account.
+You can turn them off anytime in your LearnLab settings.
+
+— The LearnLab Team
+{% endautoescape %}
